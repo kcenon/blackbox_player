@@ -8,9 +8,11 @@
 import SwiftUI
 
 struct FileListView: View {
-    // Sample data for development
-    @State private var videoFiles: [VideoFile] = VideoFile.allSamples
-    @State private var selectedFile: VideoFile?
+    // Bindings from parent view
+    @Binding var videoFiles: [VideoFile]
+    @Binding var selectedFile: VideoFile?
+
+    // Local filter states
     @State private var searchText = ""
     @State private var selectedEventType: EventType? = nil
 
@@ -36,88 +38,67 @@ struct FileListView: View {
     }
 
     var body: some View {
-        NavigationView {
-            // Left sidebar - File list
-            VStack(spacing: 0) {
-                // Search bar
-                HStack {
-                    Image(systemName: "magnifyingglass")
-                        .foregroundColor(.secondary)
-                    TextField("Search videos...", text: $searchText)
-                        .textFieldStyle(.plain)
-                    if !searchText.isEmpty {
-                        Button(action: { searchText = "" }) {
-                            Image(systemName: "xmark.circle.fill")
-                                .foregroundColor(.secondary)
-                        }
-                        .buttonStyle(.plain)
+        VStack(spacing: 0) {
+            // Search bar
+            HStack {
+                Image(systemName: "magnifyingglass")
+                    .foregroundColor(.secondary)
+                TextField("Search videos...", text: $searchText)
+                    .textFieldStyle(.plain)
+                if !searchText.isEmpty {
+                    Button(action: { searchText = "" }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundColor(.secondary)
                     }
+                    .buttonStyle(.plain)
                 }
-                .padding(8)
-                .background(Color(nsColor: .controlBackgroundColor))
-                .cornerRadius(6)
-                .padding()
+            }
+            .padding(8)
+            .background(Color(nsColor: .controlBackgroundColor))
+            .cornerRadius(6)
+            .padding()
 
-                // Event type filter
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 8) {
+            // Event type filter
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    FilterButton(
+                        title: "All",
+                        isSelected: selectedEventType == nil,
+                        action: { selectedEventType = nil }
+                    )
+
+                    ForEach(EventType.allCases, id: \.self) { eventType in
                         FilterButton(
-                            title: "All",
-                            isSelected: selectedEventType == nil,
-                            action: { selectedEventType = nil }
+                            title: eventType.displayName,
+                            color: Color(hex: eventType.colorHex),
+                            isSelected: selectedEventType == eventType,
+                            action: { selectedEventType = eventType }
                         )
-
-                        ForEach(EventType.allCases, id: \.self) { eventType in
-                            FilterButton(
-                                title: eventType.displayName,
-                                color: Color(hex: eventType.colorHex),
-                                isSelected: selectedEventType == eventType,
-                                action: { selectedEventType = eventType }
-                            )
-                        }
                     }
-                    .padding(.horizontal)
                 }
-                .padding(.bottom, 8)
-
-                Divider()
-
-                // File list
-                if filteredFiles.isEmpty {
-                    EmptyStateView()
-                } else {
-                    List(filteredFiles, selection: $selectedFile) { file in
-                        FileRow(videoFile: file, isSelected: selectedFile?.id == file.id)
-                            .tag(file)
-                            .listRowInsets(EdgeInsets(top: 4, leading: 8, bottom: 4, trailing: 8))
-                    }
-                    .listStyle(.plain)
-                }
-
-                Divider()
-
-                // Status bar
-                StatusBar(fileCount: filteredFiles.count, totalCount: videoFiles.count)
+                .padding(.horizontal)
             }
-            .navigationTitle("Dashcam Videos")
-            .toolbar {
-                ToolbarItem(placement: .primaryAction) {
-                    Button(action: {
-                        // TODO: Refresh file list
-                    }) {
-                        Label("Refresh", systemImage: "arrow.clockwise")
-                    }
-                }
-            }
+            .padding(.bottom, 8)
 
-            // Right detail view
-            if let file = selectedFile {
-                FileDetailView(videoFile: file)
+            Divider()
+
+            // File list
+            if filteredFiles.isEmpty {
+                EmptyStateView()
             } else {
-                PlaceholderView()
+                List(filteredFiles, selection: $selectedFile) { file in
+                    FileRow(videoFile: file, isSelected: selectedFile?.id == file.id)
+                        .tag(file)
+                        .listRowInsets(EdgeInsets(top: 4, leading: 8, bottom: 4, trailing: 8))
+                }
+                .listStyle(.plain)
             }
+
+            Divider()
+
+            // Status bar
+            StatusBar(fileCount: filteredFiles.count, totalCount: videoFiles.count)
         }
-        .frame(minWidth: 800, minHeight: 600)
     }
 }
 
@@ -350,6 +331,16 @@ struct ChannelRow: View {
 
 struct FileListView_Previews: PreviewProvider {
     static var previews: some View {
-        FileListView()
+        FileListViewPreviewWrapper()
+    }
+}
+
+private struct FileListViewPreviewWrapper: View {
+    @State private var videoFiles: [VideoFile] = VideoFile.allSamples
+    @State private var selectedFile: VideoFile?
+
+    var body: some View {
+        FileListView(videoFiles: $videoFiles, selectedFile: $selectedFile)
+            .frame(width: 400, height: 600)
     }
 }
