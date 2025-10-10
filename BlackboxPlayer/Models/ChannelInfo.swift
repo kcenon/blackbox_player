@@ -42,6 +42,9 @@ struct ChannelInfo: Codable, Equatable, Identifiable, Hashable {
     /// File size in bytes
     let fileSize: UInt64
 
+    /// Duration of video in seconds
+    let duration: TimeInterval
+
     // MARK: - Initialization
 
     init(
@@ -55,7 +58,8 @@ struct ChannelInfo: Codable, Equatable, Identifiable, Hashable {
         codec: String? = nil,
         audioCodec: String? = nil,
         isEnabled: Bool = true,
-        fileSize: UInt64 = 0
+        fileSize: UInt64 = 0,
+        duration: TimeInterval = 0
     ) {
         self.id = id
         self.position = position
@@ -68,6 +72,7 @@ struct ChannelInfo: Codable, Equatable, Identifiable, Hashable {
         self.audioCodec = audioCodec
         self.isEnabled = isEnabled
         self.fileSize = fileSize
+        self.duration = duration
     }
 
     // MARK: - Computed Properties
