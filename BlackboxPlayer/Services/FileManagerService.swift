@@ -15,6 +15,14 @@ class FileManagerService {
     private let favoritesKey = "com.blackboxplayer.favorites"
     private let notesKey = "com.blackboxplayer.notes"
 
+    /// File information cache
+    private var fileCache: [String: CachedFileInfo] = [:]
+    private let cacheLock = NSLock()
+
+    /// Cache configuration
+    private let maxCacheAge: TimeInterval = 300 // 5 minutes
+    private let maxCacheSize: Int = 1000 // Maximum cached files
+
     // MARK: - Initialization
 
     init(userDefaults: UserDefaults = .standard) {
@@ -281,6 +289,103 @@ class FileManagerService {
     private func saveNotes(_ notes: [String: String]) {
         userDefaults.set(notes, forKey: notesKey)
     }
+
+    // MARK: - File Cache
+
+    /// Get cached file information
+    /// - Parameter filePath: Path to file
+    /// - Returns: Cached file info or nil if not cached or expired
+    func getCachedFileInfo(for filePath: String) -> VideoFile? {
+        cacheLock.lock()
+        defer { cacheLock.unlock() }
+
+        guard let cached = fileCache[filePath] else {
+            return nil
+        }
+
+        // Check if cache is still valid
+        let age = Date().timeIntervalSince(cached.cachedAt)
+        guard age < maxCacheAge else {
+            // Cache expired, remove it
+            fileCache.removeValue(forKey: filePath)
+            return nil
+        }
+
+        return cached.videoFile
+    }
+
+    /// Cache file information
+    /// - Parameters:
+    ///   - videoFile: VideoFile to cache
+    ///   - filePath: File path to use as cache key
+    func cacheFileInfo(_ videoFile: VideoFile, for filePath: String) {
+        cacheLock.lock()
+        defer { cacheLock.unlock() }
+
+        // Check cache size limit
+        if fileCache.count >= maxCacheSize {
+            // Remove oldest entries
+            let sortedKeys = fileCache.keys.sorted { key1, key2 in
+                fileCache[key1]!.cachedAt < fileCache[key2]!.cachedAt
+            }
+
+            // Remove oldest 20% of cache
+            let removeCount = maxCacheSize / 5
+            for key in sortedKeys.prefix(removeCount) {
+                fileCache.removeValue(forKey: key)
+            }
+        }
+
+        // Add to cache
+        fileCache[filePath] = CachedFileInfo(
+            videoFile: videoFile,
+            cachedAt: Date()
+        )
+    }
+
+    /// Invalidate cache for specific file
+    /// - Parameter filePath: File path to invalidate
+    func invalidateCache(for filePath: String) {
+        cacheLock.lock()
+        defer { cacheLock.unlock() }
+
+        fileCache.removeValue(forKey: filePath)
+    }
+
+    /// Clear entire file cache
+    func clearCache() {
+        cacheLock.lock()
+        defer { cacheLock.unlock() }
+
+        fileCache.removeAll()
+    }
+
+    /// Get cache statistics
+    /// - Returns: Tuple of (cached files count, oldest cache age)
+    func getCacheStats() -> (count: Int, oldestAge: TimeInterval?) {
+        cacheLock.lock()
+        defer { cacheLock.unlock() }
+
+        let count = fileCache.count
+        let oldestAge = fileCache.values.map { Date().timeIntervalSince($0.cachedAt) }.max()
+
+        return (count, oldestAge)
+    }
+
+    /// Cleanup expired cache entries
+    func cleanupExpiredCache() {
+        cacheLock.lock()
+        defer { cacheLock.unlock() }
+
+        let now = Date()
+        let expiredKeys = fileCache.filter { key, value in
+            now.timeIntervalSince(value.cachedAt) >= maxCacheAge
+        }.map { $0.key }
+
+        for key in expiredKeys {
+            fileCache.removeValue(forKey: key)
+        }
+    }
 }
 
 // MARK: - VideoFile Extension
@@ -306,4 +411,12 @@ extension VideoFile {
             isCorrupted: isCorrupted
         )
     }
+}
+
+// MARK: - Supporting Types
+
+/// Cached file information with timestamp
+private struct CachedFileInfo {
+    let videoFile: VideoFile
+    let cachedAt: Date
 }
