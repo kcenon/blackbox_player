@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import AppKit
 
 /// Main video player view with controls
 struct VideoPlayerView: View {
@@ -14,6 +15,8 @@ struct VideoPlayerView: View {
     @StateObject private var viewModel = VideoPlayerViewModel()
     @State private var showControls = true
     @State private var controlsTimer: Timer?
+    @State private var isFullscreen = false
+    @State private var keyMonitor: Any?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -37,10 +40,12 @@ struct VideoPlayerView: View {
         .onAppear {
             viewModel.loadVideo(videoFile)
             resetControlsTimer()
+            setupKeyboardMonitor()
         }
         .onDisappear {
             viewModel.stop()
             controlsTimer?.invalidate()
+            removeKeyboardMonitor()
         }
     }
 
@@ -97,6 +102,79 @@ struct VideoPlayerView: View {
                 withAnimation {
                     showControls = false
                 }
+            }
+        }
+    }
+
+    // MARK: - Keyboard Shortcuts
+
+    private func setupKeyboardMonitor() {
+        keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [self] event in
+            handleKeyEvent(event)
+        }
+    }
+
+    private func removeKeyboardMonitor() {
+        if let monitor = keyMonitor {
+            NSEvent.removeMonitor(monitor)
+            keyMonitor = nil
+        }
+    }
+
+    private func handleKeyEvent(_ event: NSEvent) -> NSEvent? {
+        // Get the key code
+        let keyCode = event.keyCode
+
+        switch keyCode {
+        case 49: // Space
+            viewModel.togglePlayPause()
+            return nil
+
+        case 123: // Left arrow
+            viewModel.seekBySeconds(-5.0)
+            return nil
+
+        case 124: // Right arrow
+            viewModel.seekBySeconds(5.0)
+            return nil
+
+        case 126: // Up arrow
+            viewModel.adjustVolume(by: 0.1)
+            return nil
+
+        case 125: // Down arrow
+            viewModel.adjustVolume(by: -0.1)
+            return nil
+
+        case 3: // F key
+            toggleFullscreen()
+            return nil
+
+        case 53: // ESC
+            if isFullscreen {
+                toggleFullscreen()
+                return nil
+            }
+
+        default:
+            break
+        }
+
+        return event
+    }
+
+    // MARK: - Fullscreen
+
+    private func toggleFullscreen() {
+        guard let window = NSApplication.shared.keyWindow else { return }
+
+        isFullscreen.toggle()
+
+        if isFullscreen {
+            window.toggleFullScreen(nil)
+        } else {
+            if window.styleMask.contains(.fullScreen) {
+                window.toggleFullScreen(nil)
             }
         }
     }

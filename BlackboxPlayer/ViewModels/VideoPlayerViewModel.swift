@@ -199,6 +199,18 @@ class VideoPlayerViewModel: ObservableObject {
         // TODO: Apply volume to audio playback
     }
 
+    /// Seek by relative seconds
+    /// - Parameter seconds: Number of seconds to seek (positive = forward, negative = backward)
+    func seekBySeconds(_ seconds: Double) {
+        seekToTime(currentTime + seconds)
+    }
+
+    /// Adjust volume by delta
+    /// - Parameter delta: Volume change (-1.0 to 1.0)
+    func adjustVolume(by delta: Double) {
+        setVolume(volume + delta)
+    }
+
     // MARK: - Private Methods
 
     private func startPlaybackTimer() {
