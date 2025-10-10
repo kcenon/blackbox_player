@@ -46,6 +46,7 @@ class VideoPlayerViewModel: ObservableObject {
     private var videoFile: VideoFile?
     private var playbackTimer: Timer?
     private var targetFrameRate: Double = 30.0
+    private var audioPlayer: AudioPlayer?
 
     // MARK: - Initialization
 
@@ -94,6 +95,19 @@ class VideoPlayerViewModel: ObservableObject {
             // Load first frame
             loadFrameAt(time: 0)
 
+            // Initialize audio player if audio stream exists
+            if decoder.audioInfo != nil {
+                let audioPlayer = AudioPlayer()
+                do {
+                    try audioPlayer.start()
+                    audioPlayer.setVolume(Float(volume))
+                    self.audioPlayer = audioPlayer
+                } catch {
+                    print("Warning: Failed to start audio player: \(error.localizedDescription)")
+                    // Continue without audio
+                }
+            }
+
             playbackState = .paused
             errorMessage = nil
 
@@ -108,6 +122,7 @@ class VideoPlayerViewModel: ObservableObject {
         guard playbackState != .playing, decoder != nil else { return }
 
         playbackState = .playing
+        audioPlayer?.resume()
         startPlaybackTimer()
     }
 
@@ -116,6 +131,7 @@ class VideoPlayerViewModel: ObservableObject {
         guard playbackState == .playing else { return }
 
         playbackState = .paused
+        audioPlayer?.pause()
         stopPlaybackTimer()
     }
 
@@ -131,6 +147,8 @@ class VideoPlayerViewModel: ObservableObject {
     /// Stop playback and reset
     func stop() {
         stopPlaybackTimer()
+        audioPlayer?.stop()
+        audioPlayer = nil
         playbackState = .stopped
         currentTime = 0.0
         playbackPosition = 0.0
@@ -159,6 +177,9 @@ class VideoPlayerViewModel: ObservableObject {
             try decoder.seek(to: clampedTime)
             currentTime = clampedTime
             playbackPosition = duration > 0 ? clampedTime / duration : 0.0
+
+            // Flush audio buffer
+            audioPlayer?.flush()
 
             // Load frame at new position
             loadFrameAt(time: clampedTime)
@@ -196,7 +217,7 @@ class VideoPlayerViewModel: ObservableObject {
     /// - Parameter volume: Volume (0.0 to 1.0)
     func setVolume(_ volume: Double) {
         self.volume = max(0.0, min(1.0, volume))
-        // TODO: Apply volume to audio playback
+        audioPlayer?.setVolume(Float(self.volume))
     }
 
     /// Seek by relative seconds
@@ -241,6 +262,16 @@ class VideoPlayerViewModel: ObservableObject {
                     currentFrame = videoFrame
                     currentTime = videoFrame.timestamp
                     playbackPosition = duration > 0 ? currentTime / duration : 0.0
+                }
+
+                // Enqueue audio frame if present
+                if let audioFrame = result.audio {
+                    do {
+                        try audioPlayer?.enqueue(audioFrame)
+                    } catch {
+                        // Log audio error but continue video playback
+                        print("Warning: Failed to enqueue audio frame: \(error.localizedDescription)")
+                    }
                 }
             } else {
                 // End of file reached
