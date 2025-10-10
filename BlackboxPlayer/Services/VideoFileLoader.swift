@@ -11,13 +11,13 @@ import Foundation
 class VideoFileLoader {
     // MARK: - Properties
 
-    /// Metadata extractor (will be set in Step 5)
-    private var metadataExtractor: MetadataExtractor?
+    /// Metadata extractor
+    private let metadataExtractor: MetadataExtractor
 
     // MARK: - Initialization
 
     init() {
-        // Metadata extractor will be initialized in Step 5
+        self.metadataExtractor = MetadataExtractor()
     }
 
     // MARK: - Public Methods
@@ -42,8 +42,15 @@ class VideoFileLoader {
         // Get duration from first channel
         let duration = channels.first?.duration ?? 0
 
-        // Create metadata (empty for now, will be populated in Step 5)
-        let metadata = VideoMetadata()
+        // Extract metadata from first channel (front camera if available)
+        let frontChannel = group.files.first { $0.position == .front } ?? group.files.first
+        let metadata: VideoMetadata
+        if let frontChannel = frontChannel,
+           let extractedMetadata = metadataExtractor.extractMetadata(from: frontChannel.url.path) {
+            metadata = extractedMetadata
+        } else {
+            metadata = VideoMetadata()
+        }
 
         // Create VideoFile
         let videoFile = VideoFile(
