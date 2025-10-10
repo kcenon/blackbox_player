@@ -47,6 +47,11 @@ enum CameraPosition: String, Codable, CaseIterable {
         }
     }
 
+    /// Short name for UI display
+    var shortName: String {
+        return rawValue
+    }
+
     /// Full descriptive name
     var fullName: String {
         switch self {
