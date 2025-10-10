@@ -30,6 +30,12 @@ Temporary Items
 build/
 DerivedData/
 
+## Generated Xcode projects (use xcodegen to regenerate)
+*.xcodeproj
+*.xcworkspace
+!*.xcworkspace/contents.xcworkspacedata
+!*.xcworkspace/xcshareddata/
+
 ## Various settings
 *.pbxuser
 !default.pbxuser
