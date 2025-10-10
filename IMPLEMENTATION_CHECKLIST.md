@@ -12,15 +12,15 @@ This document provides a detailed checklist for implementing the macOS Blackbox 
 ## Progress Overview
 
 ```
-Phase 0: Preparation           [███████░░░] 10/15 tasks  (Week 1) ✓ Environment & FFmpeg Ready
-Phase 1: File System & Data    [ ] 0/24 tasks   (Weeks 2-4)
+Phase 0: Preparation           [█████████░] 11/15 tasks  (Week 1) ✓ EXT4 Interface Ready
+Phase 1: File System & Data    [█░░░░░░░░] 3/24 tasks   (Weeks 2-4) ✓ Protocol Layer Complete
 Phase 2: Single Channel        [ ] 0/22 tasks   (Weeks 5-7)
 Phase 3: Multi-Channel Sync    [ ] 0/21 tasks   (Weeks 8-10)
 Phase 4: Additional Features   [ ] 0/18 tasks   (Weeks 11-12)
 Phase 5: Export & Settings     [ ] 0/16 tasks   (Weeks 13-14)
 Phase 6: Localization & Polish [ ] 0/20 tasks   (Weeks 15-16)
 ─────────────────────────────────────────────────────
-Total Progress                 [█░░░░░░░░░] 10/136 tasks (7.4%)
+Total Progress                 [█░░░░░░░░░] 14/136 tasks (10.3%)
 ```
 
 ---
@@ -74,7 +74,12 @@ Total Progress                 [█░░░░░░░░░] 10/136 tasks (7.
 
 - [ ] Obtain EXT4 C/C++ library from vendor (external dependency)
 - [x] Create Objective-C++ bridging header (BridgingHeader.h)
-- [ ] Test basic EXT4 read operation (library required)
+- [x] Design EXT4 filesystem protocol interface (EXT4FileSystemProtocol)
+- [x] Implement mock EXT4 filesystem for development (MockEXT4FileSystem)
+- [x] Create EXT4Bridge stub for future C library integration
+- [x] Write comprehensive unit tests for EXT4 interface (22 tests passing)
+- [x] Document C library integration guide (EXT4_INTEGRATION_GUIDE.md)
+- [ ] Test basic EXT4 read operation with real C library (library required)
 - [ ] Verify EXT4 library macOS compatibility (library required)
 - [x] Link FFmpeg libraries to project (configured in project.yml)
 - [ ] Create basic FFmpeg Swift wrapper (planned for Phase 1-2)
@@ -111,18 +116,28 @@ Total Progress                 [█░░░░░░░░░] 10/136 tasks (7.
 
 ### Week 1: EXT4 Integration
 
-#### EXT4 Bridge Implementation
+#### EXT4 Protocol Layer (Preparatory Work - Completed ✓)
 
+- [x] Design `EXT4FileSystemProtocol` interface
+- [x] Create comprehensive error types (EXT4Error)
+- [x] Define data models (EXT4FileInfo, EXT4DeviceInfo)
+- [x] Create `MockEXT4FileSystem` for testing
+- [x] Create `EXT4Bridge` stub with integration examples
+- [x] Write unit tests (mount, unmount, file ops, performance)
+- [x] Document C library integration process
+
+#### EXT4 Bridge Implementation (Awaiting C Library)
+
+- [ ] Obtain C/C++ library from vendor
 - [ ] Create `EXT4Wrapper.h` (Objective-C++ header)
 - [ ] Create `EXT4Wrapper.mm` (Objective-C++ implementation)
-- [ ] Implement `mount(device:)` method
-- [ ] Implement `unmount()` method
-- [ ] Implement `listFiles(at:)` method
-- [ ] Implement `readFile(at:)` method
-- [ ] Implement `writeFile(data:to:)` method
-- [ ] Create Swift `EXT4Bridge` class
-- [ ] Add comprehensive error handling
-- [ ] Write unit tests for EXT4Bridge
+- [ ] Implement `mount(device:)` method with C library
+- [ ] Implement `unmount()` method with C library
+- [ ] Implement `listFiles(at:)` method with C library
+- [ ] Implement `readFile(at:)` method with C library
+- [ ] Implement `writeFile(data:to:)` method with C library
+- [ ] Update `EXT4Bridge` to use C library wrapper
+- [ ] Update unit tests for real hardware
 - [ ] Test with real SD card hardware
 
 #### Device Detection
