@@ -12,7 +12,7 @@ This document provides a detailed checklist for implementing the macOS Blackbox 
 ## Progress Overview
 
 ```
-Phase 0: Preparation           [█████░░░░░] 9/15 tasks   (Week 1) ✓ Environment Ready
+Phase 0: Preparation           [███████░░░] 10/15 tasks  (Week 1) ✓ Environment & FFmpeg Ready
 Phase 1: File System & Data    [ ] 0/24 tasks   (Weeks 2-4)
 Phase 2: Single Channel        [ ] 0/22 tasks   (Weeks 5-7)
 Phase 3: Multi-Channel Sync    [ ] 0/21 tasks   (Weeks 8-10)
@@ -20,7 +20,7 @@ Phase 4: Additional Features   [ ] 0/18 tasks   (Weeks 11-12)
 Phase 5: Export & Settings     [ ] 0/16 tasks   (Weeks 13-14)
 Phase 6: Localization & Polish [ ] 0/20 tasks   (Weeks 15-16)
 ─────────────────────────────────────────────────────
-Total Progress                 [█░░░░░░░░░] 9/136 tasks (6.6%)
+Total Progress                 [█░░░░░░░░░] 10/136 tasks (7.4%)
 ```
 
 ---
@@ -72,13 +72,13 @@ Total Progress                 [█░░░░░░░░░] 9/136 tasks (6.6
 
 ### Library Integration
 
-- [ ] Obtain EXT4 C/C++ library from vendor
-- [ ] Create Objective-C++ bridging header
-- [ ] Test basic EXT4 read operation
-- [ ] Verify EXT4 library macOS compatibility
-- [ ] Link FFmpeg libraries to project
-- [ ] Create basic FFmpeg Swift wrapper
-- [ ] Test H.264 video decoding with FFmpeg
+- [ ] Obtain EXT4 C/C++ library from vendor (external dependency)
+- [x] Create Objective-C++ bridging header (BridgingHeader.h)
+- [ ] Test basic EXT4 read operation (library required)
+- [ ] Verify EXT4 library macOS compatibility (library required)
+- [x] Link FFmpeg libraries to project (configured in project.yml)
+- [ ] Create basic FFmpeg Swift wrapper (planned for Phase 1-2)
+- [ ] Test H.264 video decoding with FFmpeg (planned for Phase 1-2)
 
 ### Sample Data Collection
 
