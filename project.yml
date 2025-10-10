@@ -52,6 +52,9 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.blackboxplayer.tests
         CODE_SIGN_STYLE: Automatic
         GENERATE_INFOPLIST_FILE: YES
+        SWIFT_OBJC_BRIDGING_HEADER: BlackboxPlayer/Utilities/BridgingHeader.h
+        HEADER_SEARCH_PATHS: /opt/homebrew/Cellar/ffmpeg/8.0_1/include
+        LIBRARY_SEARCH_PATHS: /opt/homebrew/Cellar/ffmpeg/8.0_1/lib
     dependencies:
       - target: BlackboxPlayer
 
