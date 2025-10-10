@@ -67,6 +67,13 @@ class VideoPlayerViewModel: ObservableObject {
 
         self.videoFile = videoFile
 
+        // Check if file is corrupted
+        if videoFile.isCorrupted {
+            errorMessage = "Cannot play corrupted video file. The file may be damaged or incomplete."
+            playbackState = .stopped
+            return
+        }
+
         // Get front camera file path (or first available channel)
         guard let frontChannel = videoFile.channel(for: .front) ?? videoFile.channels.first else {
             errorMessage = "No video channel available"

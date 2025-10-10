@@ -66,6 +66,24 @@ class VideoFileLoader {
             isCorrupted: false
         )
 
+        // Check for corruption
+        let isCorrupted = videoFile.checkCorruption()
+        if isCorrupted {
+            // Return corrupted VideoFile for display with warning
+            return VideoFile(
+                id: videoFile.id,
+                timestamp: videoFile.timestamp,
+                eventType: videoFile.eventType,
+                duration: videoFile.duration,
+                channels: videoFile.channels,
+                metadata: videoFile.metadata,
+                basePath: videoFile.basePath,
+                isFavorite: false,
+                notes: nil,
+                isCorrupted: true
+            )
+        }
+
         return videoFile
     }
 
@@ -96,9 +114,23 @@ class VideoFileLoader {
     private func extractChannelInfo(from fileInfo: VideoFileInfo) -> ChannelInfo? {
         let filePath = fileInfo.url.path
 
+        // Check if file exists first
+        guard FileManager.default.fileExists(atPath: filePath) else {
+            print("Warning: File does not exist: \(filePath)")
+            return nil
+        }
+
+        // Check if file is readable
+        guard FileManager.default.isReadableFile(atPath: filePath) else {
+            print("Warning: File is not readable: \(filePath)")
+            return nil
+        }
+
         // Open video file with FFmpeg
         var formatContext: OpaquePointer?
-        guard avformat_open_input(&formatContext, filePath, nil, nil) == 0 else {
+        let openResult = avformat_open_input(&formatContext, filePath, nil, nil)
+        guard openResult == 0 else {
+            print("Warning: Failed to open file with FFmpeg (error \(openResult)): \(filePath)")
             return nil
         }
         defer {
@@ -109,8 +141,9 @@ class VideoFileLoader {
         }
 
         // Find stream info
-        guard avformat_find_stream_info(formatContext, nil) >= 0,
-              let formatCtx = formatContext else {
+        let streamInfoResult = avformat_find_stream_info(formatContext, nil)
+        guard streamInfoResult >= 0, let formatCtx = formatContext else {
+            print("Warning: Failed to find stream info (error \(streamInfoResult)): \(filePath)")
             return nil
         }
 
@@ -133,6 +166,7 @@ class VideoFileLoader {
         }
 
         guard let stream = videoStream else {
+            print("Warning: No video stream found: \(filePath)")
             return nil
         }
 
