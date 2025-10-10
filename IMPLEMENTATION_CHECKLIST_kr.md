@@ -12,7 +12,7 @@
 ## 진행 상황 개요
 
 ```
-단계 0: 준비                [ ] 0/15 작업   (1주차)
+단계 0: 준비                [█████░░░░░] 9/15 작업   (1주차) ✓ 환경 설정 완료
 단계 1: 파일 시스템 및 데이터 [ ] 0/24 작업   (2-4주차)
 단계 2: 단일 채널 재생       [ ] 0/22 작업   (5-7주차)
 단계 3: 다채널 동기화        [ ] 0/21 작업   (8-10주차)
@@ -20,7 +20,7 @@
 단계 5: 내보내기 및 설정     [ ] 0/16 작업   (13-14주차)
 단계 6: 현지화 및 마무리     [ ] 0/20 작업   (15-16주차)
 ─────────────────────────────────────────────────────
-전체 진행률                 [ ] 0/136 작업
+전체 진행률                 [█░░░░░░░░░] 9/136 작업 (6.6%)
 ```
 
 ---
@@ -31,30 +31,30 @@
 
 ### 환경 설정
 
-- [ ] Mac App Store에서 Xcode 15+ 설치
-- [ ] Homebrew 패키지 관리자 설치
+- [x] Mac App Store에서 Xcode 15+ 설치 (26.0.1 installed)
+- [x] Homebrew 패키지 관리자 설치 (4.6.11 installed)
   ```bash
   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
   ```
-- [ ] 개발 도구 설치
+- [x] 개발 도구 설치 (FFmpeg 8.0, Git LFS 3.7.0, SwiftLint 0.61.0)
   ```bash
   brew install ffmpeg cmake git git-lfs swiftlint
   ```
-- [ ] Xcode 명령줄 도구 설치
+- [x] Xcode 명령줄 도구 설치
   ```bash
   xcode-select --install
   ```
-- [ ] Apple Developer 계정 생성/확인
-- [ ] Xcode에서 코드 서명 인증서 구성
+- [ ] Apple Developer 계정 생성/확인 (사용자가 직접 수행 필요)
+- [ ] Xcode에서 코드 서명 인증서 구성 (사용자가 직접 수행 필요)
 
 ### 프로젝트 초기화
 
-- [ ] 새 Xcode 프로젝트 생성
+- [x] 새 Xcode 프로젝트 생성 (xcodegen 사용)
   - 템플릿: macOS App
   - 인터페이스: SwiftUI
   - 언어: Swift
   - 최소 배포 대상: macOS 12.0
-- [ ] 프로젝트 폴더 구조 설정
+- [x] 프로젝트 폴더 구조 설정
   ```
   BlackboxPlayer/
   ├── App/
@@ -66,9 +66,9 @@
   ├── Resources/
   └── Tests/
   ```
-- [ ] Xcode용 .gitignore 구성
-- [ ] 초기 커밋으로 Git 저장소 설정
-- [ ] CI/CD 파이프라인 구성 (GitHub Actions)
+- [x] Xcode용 .gitignore 구성
+- [x] 초기 커밋으로 Git 저장소 설정
+- [x] CI/CD 파이프라인 구성 (GitHub Actions)
 
 ### 라이브러리 통합
 
