@@ -8,7 +8,7 @@
 import Foundation
 
 /// Information about a video channel/camera in a multi-camera system
-struct ChannelInfo: Codable, Equatable, Identifiable {
+struct ChannelInfo: Codable, Equatable, Identifiable, Hashable {
     /// Unique identifier for this channel
     let id: UUID
 

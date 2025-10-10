@@ -8,7 +8,7 @@
 import Foundation
 
 /// Metadata associated with a dashcam video file
-struct VideoMetadata: Codable, Equatable {
+struct VideoMetadata: Codable, Equatable, Hashable {
     /// GPS data points throughout the recording
     let gpsPoints: [GPSPoint]
 
@@ -141,7 +141,7 @@ struct VideoMetadata: Codable, Equatable {
 // MARK: - Supporting Types
 
 /// Device/dashcam information
-struct DeviceInfo: Codable, Equatable {
+struct DeviceInfo: Codable, Equatable, Hashable {
     /// Device manufacturer
     let manufacturer: String?
 

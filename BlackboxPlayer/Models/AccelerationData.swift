@@ -8,7 +8,7 @@
 import Foundation
 
 /// G-Sensor acceleration data point from dashcam recording
-struct AccelerationData: Codable, Equatable {
+struct AccelerationData: Codable, Equatable, Hashable {
     /// Timestamp of this reading
     let timestamp: Date
 

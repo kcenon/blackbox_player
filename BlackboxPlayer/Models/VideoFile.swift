@@ -8,7 +8,7 @@
 import Foundation
 
 /// Dashcam video file with metadata and channel information
-struct VideoFile: Codable, Equatable, Identifiable {
+struct VideoFile: Codable, Equatable, Identifiable, Hashable {
     /// Unique identifier
     let id: UUID
 

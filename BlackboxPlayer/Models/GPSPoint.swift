@@ -9,7 +9,7 @@ import Foundation
 import CoreLocation
 
 /// GPS location data point from dashcam recording
-struct GPSPoint: Codable, Equatable {
+struct GPSPoint: Codable, Equatable, Hashable {
     /// Timestamp of this GPS reading
     let timestamp: Date
 
