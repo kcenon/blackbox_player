@@ -9,7 +9,7 @@ import SwiftUI
 
 /// Graph overlay showing real-time acceleration data
 struct GraphOverlayView: View {
-    let videoFile: VideoFile
+    @ObservedObject var gsensorService: GSensorService
     let currentTime: TimeInterval
 
     /// Time window to display (in seconds)
@@ -20,9 +20,9 @@ struct GraphOverlayView: View {
             Spacer()
 
             HStack {
-                if videoFile.hasAccelerationData {
+                if gsensorService.hasData {
                     accelerationGraph
-                        .frame(width: 350, height: 150)
+                        .frame(width: 400, height: 180)
                         .background(Color.black.opacity(0.6))
                         .cornerRadius(8)
                         .shadow(radius: 4)
@@ -38,7 +38,7 @@ struct GraphOverlayView: View {
 
     private var accelerationGraph: some View {
         VStack(spacing: 8) {
-            // Title
+            // Title and Current G-Force
             HStack {
                 Image(systemName: "waveform.path.ecg")
                     .font(.caption)
@@ -47,6 +47,22 @@ struct GraphOverlayView: View {
                     .fontWeight(.medium)
 
                 Spacer()
+
+                // Current G-Force Display
+                if let currentAccel = gsensorService.currentAcceleration {
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Text(currentAccel.magnitudeString)
+                            .font(.system(.caption, design: .monospaced))
+                            .fontWeight(.bold)
+                            .foregroundColor(gforceColor(for: currentAccel.magnitude))
+
+                        if currentAccel.isImpact {
+                            Text(currentAccel.impactSeverity.displayName)
+                                .font(.caption2)
+                                .foregroundColor(.red)
+                        }
+                    }
+                }
 
                 // Legend
                 HStack(spacing: 12) {
@@ -61,13 +77,26 @@ struct GraphOverlayView: View {
             .padding(.top, 8)
 
             // Graph
-            AccelerationGraphView(
+            EnhancedAccelerationGraphView(
                 accelerationData: visibleAccelerationData,
+                impactEvents: visibleImpactEvents,
                 currentTime: currentTime,
                 timeWindow: timeWindow
             )
             .padding(.horizontal)
             .padding(.bottom, 8)
+        }
+    }
+
+    private func gforceColor(for magnitude: Double) -> Color {
+        if magnitude > 4.0 {
+            return .red
+        } else if magnitude > 2.5 {
+            return .orange
+        } else if magnitude > 1.5 {
+            return .yellow
+        } else {
+            return .green
         }
     }
 
@@ -85,19 +114,22 @@ struct GraphOverlayView: View {
     private var visibleAccelerationData: [AccelerationData] {
         let startTime = max(0, currentTime - timeWindow)
         let endTime = currentTime
+        return gsensorService.getData(from: startTime, to: endTime)
+    }
 
-        return videoFile.metadata.accelerationData.filter { data in
-            let dataTime = data.timestamp.timeIntervalSince(videoFile.timestamp)
-            return dataTime >= startTime && dataTime <= endTime
-        }
+    private var visibleImpactEvents: [AccelerationData] {
+        let startTime = max(0, currentTime - timeWindow)
+        let endTime = currentTime
+        return gsensorService.getImpacts(from: startTime, to: endTime, minSeverity: .moderate)
     }
 }
 
-// MARK: - Acceleration Graph View
+// MARK: - Enhanced Acceleration Graph View
 
-/// Custom graph view for acceleration data
-struct AccelerationGraphView: View {
+/// Enhanced graph view for acceleration data with impact highlighting
+struct EnhancedAccelerationGraphView: View {
     let accelerationData: [AccelerationData]
+    let impactEvents: [AccelerationData]
     let currentTime: TimeInterval
     let timeWindow: TimeInterval
 
@@ -115,6 +147,9 @@ struct AccelerationGraphView: View {
                 }
                 .stroke(Color.white.opacity(0.3), lineWidth: 1)
 
+                // Impact event background highlights
+                impactHighlights(in: geometry)
+
                 // X axis line
                 linePath(for: \.x, in: geometry, color: .red)
 
@@ -124,11 +159,14 @@ struct AccelerationGraphView: View {
                 // Z axis line
                 linePath(for: \.z, in: geometry, color: .blue)
 
+                // Impact markers
+                impactMarkers(in: geometry)
+
                 // Current time indicator
                 currentTimeIndicator(in: geometry)
             }
         }
-        .frame(height: 100)
+        .frame(height: 120)
     }
 
     // MARK: - Grid Lines
@@ -195,6 +233,50 @@ struct AccelerationGraphView: View {
         .stroke(Color.yellow, style: StrokeStyle(lineWidth: 2, dash: [5, 3]))
     }
 
+    // MARK: - Impact Highlights
+
+    private func impactHighlights(in geometry: GeometryProxy) -> some View {
+        ForEach(impactEvents, id: \.timestamp) { impact in
+            let startTime = currentTime - timeWindow
+            let impactTime = impact.timestamp.timeIntervalSince1970 - accelerationData.first!.timestamp.timeIntervalSince1970 + startTime
+            let x = xPosition(for: impactTime, startTime: startTime, in: geometry)
+
+            Rectangle()
+                .fill(impactColor(for: impact).opacity(0.2))
+                .frame(width: 20)
+                .position(x: x, y: geometry.size.height / 2)
+        }
+    }
+
+    private func impactMarkers(in geometry: GeometryProxy) -> some View {
+        ForEach(impactEvents, id: \.timestamp) { impact in
+            let startTime = currentTime - timeWindow
+            let impactTime = impact.timestamp.timeIntervalSince1970 - accelerationData.first!.timestamp.timeIntervalSince1970 + startTime
+            let x = xPosition(for: impactTime, startTime: startTime, in: geometry)
+
+            Path { path in
+                path.move(to: CGPoint(x: x, y: 0))
+                path.addLine(to: CGPoint(x: x, y: geometry.size.height))
+            }
+            .stroke(impactColor(for: impact), style: StrokeStyle(lineWidth: 2, dash: [3, 2]))
+        }
+    }
+
+    private func impactColor(for impact: AccelerationData) -> Color {
+        switch impact.impactSeverity {
+        case .severe:
+            return .red
+        case .high:
+            return .orange
+        case .moderate:
+            return .yellow
+        case .low:
+            return .cyan
+        case .none:
+            return .white
+        }
+    }
+
     // MARK: - Position Calculations
 
     private func xPosition(for time: TimeInterval, startTime: TimeInterval, in geometry: GeometryProxy) -> CGFloat {
@@ -215,11 +297,17 @@ struct AccelerationGraphView: View {
 
 struct GraphOverlayView_Previews: PreviewProvider {
     static var previews: some View {
-        ZStack {
+        let gsensorService = GSensorService()
+        let videoFile = VideoFile.allSamples.first!
+
+        // Load sample data
+        gsensorService.loadAccelerationData(from: videoFile.metadata, startTime: videoFile.timestamp)
+
+        return ZStack {
             Color.black
 
             GraphOverlayView(
-                videoFile: VideoFile.allSamples.first!,
+                gsensorService: gsensorService,
                 currentTime: 10.0
             )
         }

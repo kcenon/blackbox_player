@@ -10,7 +10,8 @@ import MapKit
 
 /// Mini map overlay showing current GPS location and route
 struct MapOverlayView: View {
-    let videoFile: VideoFile
+    @ObservedObject var gpsService: GPSService
+    @ObservedObject var gsensorService: GSensorService
     let currentTime: TimeInterval
 
     @State private var region = MKCoordinateRegion(
@@ -25,7 +26,7 @@ struct MapOverlayView: View {
             HStack {
                 Spacer()
 
-                if videoFile.hasGPSData {
+                if gpsService.hasData {
                     miniMap
                         .frame(width: 250, height: 200)
                         .cornerRadius(8)
@@ -40,11 +41,14 @@ struct MapOverlayView: View {
 
     private var miniMap: some View {
         ZStack(alignment: .topTrailing) {
-            // Map view
-            MapView(
+            // Enhanced map view with route segmentation
+            let segments = gpsService.getRouteSegments(at: currentTime)
+            EnhancedMapView(
                 region: $region,
-                routePoints: videoFile.metadata.routeCoordinates,
-                currentPoint: currentGPSPoint
+                pastRoute: segments.past,
+                futureRoute: segments.future,
+                currentPoint: gpsService.currentLocation,
+                impactEvents: gsensorService.impactEvents
             )
 
             // Map controls
@@ -73,7 +77,7 @@ struct MapOverlayView: View {
             updateMapRegion()
         }
         .onChange(of: currentTime) { _ in
-            if let point = currentGPSPoint {
+            if let point = gpsService.currentLocation {
                 centerOnCoordinate(point.coordinate)
             }
         }
@@ -81,17 +85,13 @@ struct MapOverlayView: View {
 
     // MARK: - Helper Methods
 
-    private var currentGPSPoint: GPSPoint? {
-        return videoFile.metadata.gpsPoint(at: currentTime)
-    }
-
     private func updateMapRegion() {
-        if let point = currentGPSPoint {
+        if let point = gpsService.currentLocation {
             region = MKCoordinateRegion(
                 center: point.coordinate,
                 span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
             )
-        } else if let firstPoint = videoFile.metadata.routeCoordinates.first {
+        } else if let firstPoint = gpsService.routePoints.first {
             region = MKCoordinateRegion(
                 center: firstPoint.coordinate,
                 span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
@@ -100,7 +100,7 @@ struct MapOverlayView: View {
     }
 
     private func centerOnCurrentLocation() {
-        if let point = currentGPSPoint {
+        if let point = gpsService.currentLocation {
             withAnimation {
                 centerOnCoordinate(point.coordinate)
             }
@@ -115,7 +115,7 @@ struct MapOverlayView: View {
     }
 
     private func fitRouteToView() {
-        let coordinates = videoFile.metadata.routeCoordinates.map { $0.coordinate }
+        let coordinates = gpsService.routePoints.map { $0.coordinate }
         guard !coordinates.isEmpty else { return }
 
         // Calculate bounding box
@@ -140,13 +140,15 @@ struct MapOverlayView: View {
     }
 }
 
-// MARK: - MapKit View Wrapper
+// MARK: - Enhanced MapKit View Wrapper
 
-/// NSViewRepresentable wrapper for MKMapView
-struct MapView: NSViewRepresentable {
+/// Enhanced NSViewRepresentable wrapper for MKMapView with route segmentation
+struct EnhancedMapView: NSViewRepresentable {
     @Binding var region: MKCoordinateRegion
-    let routePoints: [GPSPoint]
+    let pastRoute: [GPSPoint]
+    let futureRoute: [GPSPoint]
     let currentPoint: GPSPoint?
+    let impactEvents: [AccelerationData]
 
     func makeNSView(context: Context) -> MKMapView {
         let mapView = MKMapView()
@@ -166,11 +168,32 @@ struct MapView: NSViewRepresentable {
         mapView.removeOverlays(mapView.overlays)
         mapView.removeAnnotations(mapView.annotations)
 
-        // Add route polyline
-        if !routePoints.isEmpty {
-            let coordinates = routePoints.map { $0.coordinate }
+        // Add past route polyline (traveled path - blue)
+        if !pastRoute.isEmpty {
+            let coordinates = pastRoute.map { $0.coordinate }
             let polyline = MKPolyline(coordinates: coordinates, count: coordinates.count)
+            polyline.title = "past"
             mapView.addOverlay(polyline)
+        }
+
+        // Add future route polyline (not yet traveled - gray)
+        if !futureRoute.isEmpty {
+            let coordinates = futureRoute.map { $0.coordinate }
+            let polyline = MKPolyline(coordinates: coordinates, count: coordinates.count)
+            polyline.title = "future"
+            mapView.addOverlay(polyline)
+        }
+
+        // Add impact event markers
+        for impact in impactEvents {
+            // Find GPS point closest to impact timestamp
+            // For now, we'll use a simple approach - in production, we'd query GPSService
+            let annotation = MKPointAnnotation()
+            // Note: We need to convert impact timestamp to coordinate
+            // This would require GPSService integration - placeholder for now
+            annotation.title = "Impact"
+            annotation.subtitle = impact.impactSeverity.displayName
+            // mapView.addAnnotation(annotation)  // Commented out until we have proper coordinate mapping
         }
 
         // Add current location annotation
@@ -178,6 +201,9 @@ struct MapView: NSViewRepresentable {
             let annotation = MKPointAnnotation()
             annotation.coordinate = currentPoint.coordinate
             annotation.title = "Current Position"
+            if let speed = currentPoint.speed {
+                annotation.subtitle = String(format: "%.1f km/h", speed)
+            }
             mapView.addAnnotation(annotation)
         }
     }
@@ -189,40 +215,70 @@ struct MapView: NSViewRepresentable {
     // MARK: - Coordinator
 
     class Coordinator: NSObject, MKMapViewDelegate {
-        var parent: MapView
+        var parent: EnhancedMapView
 
-        init(_ parent: MapView) {
+        init(_ parent: EnhancedMapView) {
             self.parent = parent
         }
 
         func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
             if let polyline = overlay as? MKPolyline {
                 let renderer = MKPolylineRenderer(polyline: polyline)
-                renderer.strokeColor = NSColor.systemBlue
-                renderer.lineWidth = 3.0
+
+                // Different colors for past and future routes
+                if polyline.title == "past" {
+                    renderer.strokeColor = NSColor.systemBlue
+                    renderer.lineWidth = 4.0
+                } else if polyline.title == "future" {
+                    renderer.strokeColor = NSColor.systemGray
+                    renderer.lineWidth = 3.0
+                    renderer.lineDashPattern = [2, 4]  // Dashed line for future route
+                } else {
+                    renderer.strokeColor = NSColor.systemBlue
+                    renderer.lineWidth = 3.0
+                }
+
                 return renderer
             }
             return MKOverlayRenderer(overlay: overlay)
         }
 
         func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
-            let identifier = "CurrentPosition"
+            if annotation.title == "Impact" {
+                // Impact marker
+                let identifier = "ImpactMarker"
+                var annotationView = mapView.dequeueReusableAnnotationView(withIdentifier: identifier)
 
-            var annotationView = mapView.dequeueReusableAnnotationView(withIdentifier: identifier)
+                if annotationView == nil {
+                    annotationView = MKAnnotationView(annotation: annotation, reuseIdentifier: identifier)
+                    annotationView?.canShowCallout = true
+                } else {
+                    annotationView?.annotation = annotation
+                }
 
-            if annotationView == nil {
-                annotationView = MKAnnotationView(annotation: annotation, reuseIdentifier: identifier)
-                annotationView?.canShowCallout = true
+                let image = NSImage(systemSymbolName: "exclamationmark.triangle.fill", accessibilityDescription: nil)
+                let config = NSImage.SymbolConfiguration(pointSize: 18, weight: .bold)
+                annotationView?.image = image?.withSymbolConfiguration(config)
+
+                return annotationView
             } else {
-                annotationView?.annotation = annotation
+                // Current position marker
+                let identifier = "CurrentPosition"
+                var annotationView = mapView.dequeueReusableAnnotationView(withIdentifier: identifier)
+
+                if annotationView == nil {
+                    annotationView = MKAnnotationView(annotation: annotation, reuseIdentifier: identifier)
+                    annotationView?.canShowCallout = true
+                } else {
+                    annotationView?.annotation = annotation
+                }
+
+                let image = NSImage(systemSymbolName: "location.circle.fill", accessibilityDescription: nil)
+                let config = NSImage.SymbolConfiguration(pointSize: 24, weight: .bold)
+                annotationView?.image = image?.withSymbolConfiguration(config)
+
+                return annotationView
             }
-
-            // Use custom image for current position
-            let image = NSImage(systemSymbolName: "location.circle.fill", accessibilityDescription: nil)
-            let config = NSImage.SymbolConfiguration(pointSize: 20, weight: .bold)
-            annotationView?.image = image?.withSymbolConfiguration(config)
-
-            return annotationView
         }
     }
 }
@@ -231,11 +287,20 @@ struct MapView: NSViewRepresentable {
 
 struct MapOverlayView_Previews: PreviewProvider {
     static var previews: some View {
-        ZStack {
+        let gpsService = GPSService()
+        let gsensorService = GSensorService()
+        let videoFile = VideoFile.allSamples.first!
+
+        // Load sample data
+        gpsService.loadGPSData(from: videoFile.metadata, startTime: videoFile.timestamp)
+        gsensorService.loadAccelerationData(from: videoFile.metadata, startTime: videoFile.timestamp)
+
+        return ZStack {
             Color.black
 
             MapOverlayView(
-                videoFile: VideoFile.allSamples.first!,
+                gpsService: gpsService,
+                gsensorService: gsensorService,
                 currentTime: 10.0
             )
         }
