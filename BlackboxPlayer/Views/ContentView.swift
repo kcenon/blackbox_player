@@ -7,6 +7,7 @@
 
 import SwiftUI
 import MapKit
+import AppKit
 
 /// Main application content view
 struct ContentView: View {
@@ -28,6 +29,21 @@ struct ContentView: View {
     @State private var volume: Double = 0.8
     @State private var showControls = true
 
+    /// Current opened folder path
+    @State private var currentFolderPath: String?
+
+    /// Loading state
+    @State private var isLoading = false
+
+    /// Error alert
+    @State private var showError = false
+    @State private var errorMessage = ""
+
+    // MARK: - Services
+
+    private let fileScanner = FileScanner()
+    private let videoFileLoader = VideoFileLoader()
+
     // MARK: - Body
 
     var body: some View {
@@ -48,6 +64,33 @@ struct ContentView: View {
                     Image(systemName: "sidebar.left")
                 }
                 .help("Toggle sidebar")
+
+                Button(action: openFolder) {
+                    Label("Open Folder", systemImage: "folder.badge.plus")
+                }
+                .help("Open blackbox video folder")
+                .disabled(isLoading)
+            }
+        }
+        .alert("Error", isPresented: $showError) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(errorMessage)
+        }
+        .overlay {
+            if isLoading {
+                ZStack {
+                    Color.black.opacity(0.5)
+                    VStack(spacing: 16) {
+                        ProgressView()
+                            .scaleEffect(1.5)
+                            .progressViewStyle(.circular)
+                        Text("Scanning folder...")
+                            .foregroundColor(.white)
+                            .font(.headline)
+                    }
+                }
+                .ignoresSafeArea()
             }
         }
     }
@@ -57,19 +100,48 @@ struct ContentView: View {
     private var sidebar: some View {
         VStack(spacing: 0) {
             // Header
-            HStack {
-                Text("Video Files")
-                    .font(.headline)
-                    .padding()
+            VStack(spacing: 8) {
+                HStack {
+                    Text("Video Files")
+                        .font(.headline)
 
-                Spacer()
+                    Spacer()
 
-                Button(action: refreshFileList) {
-                    Image(systemName: "arrow.clockwise")
+                    Button(action: refreshFileList) {
+                        Image(systemName: "arrow.clockwise")
+                    }
+                    .buttonStyle(.plain)
+                    .help("Refresh file list")
+                    .disabled(isLoading || currentFolderPath == nil)
                 }
-                .buttonStyle(.plain)
-                .help("Refresh file list")
-                .padding(.trailing)
+                .padding(.horizontal)
+                .padding(.top)
+
+                if let folderPath = currentFolderPath {
+                    HStack {
+                        Image(systemName: "folder.fill")
+                            .foregroundColor(.accentColor)
+                            .font(.caption)
+                        Text((folderPath as NSString).lastPathComponent)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                        Spacer()
+                        Text("\(videoFiles.count) files")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                    }
+                    .padding(.horizontal)
+                    .padding(.bottom, 8)
+                } else {
+                    Text("No folder selected")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal)
+                        .padding(.bottom, 8)
+                }
             }
 
             Divider()
@@ -643,10 +715,68 @@ struct ContentView: View {
 
     // MARK: - Actions
 
+    /// Open folder selection dialog
+    private func openFolder() {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.allowsMultipleSelection = false
+        panel.message = "Select a folder containing blackbox video files"
+        panel.prompt = "Select"
+
+        panel.begin { response in
+            if response == .OK, let url = panel.url {
+                scanAndLoadFolder(url)
+            }
+        }
+    }
+
+    /// Scan and load video files from folder
+    private func scanAndLoadFolder(_ folderURL: URL) {
+        isLoading = true
+        selectedVideoFile = nil
+
+        // Perform scanning on background thread
+        DispatchQueue.global(qos: .userInitiated).async {
+            do {
+                // Scan directory
+                let groups = try fileScanner.scanDirectory(folderURL)
+
+                // Load video files
+                let loadedFiles = videoFileLoader.loadVideoFiles(from: groups)
+
+                // Update UI on main thread
+                DispatchQueue.main.async {
+                    self.currentFolderPath = folderURL.path
+                    self.videoFiles = loadedFiles
+                    self.isLoading = false
+
+                    // Select first file if available
+                    if let firstFile = loadedFiles.first {
+                        self.selectedVideoFile = firstFile
+                    }
+                }
+            } catch {
+                // Handle error on main thread
+                DispatchQueue.main.async {
+                    self.isLoading = false
+                    self.errorMessage = "Failed to scan folder: \(error.localizedDescription)"
+                    self.showError = true
+                }
+            }
+        }
+    }
+
+    /// Refresh file list from current folder
     private func refreshFileList() {
-        // TODO: Implement actual file scanning
-        // For now, just reload samples
-        videoFiles = VideoFile.allSamples
+        guard let folderPath = currentFolderPath else {
+            // No folder selected, reload samples
+            videoFiles = VideoFile.allSamples
+            return
+        }
+
+        let folderURL = URL(fileURLWithPath: folderPath)
+        scanAndLoadFolder(folderURL)
     }
 }
 

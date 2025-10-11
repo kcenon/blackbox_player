@@ -164,18 +164,16 @@ class AccelerationParser {
         guard data.count >= 12 else { return nil }
 
         // Check if values look like floats (typical range: -10.0 to 10.0 G)
-        data.withUnsafeBytes { (ptr: UnsafeRawBufferPointer) in
+        let isFloat = data.withUnsafeBytes { (ptr: UnsafeRawBufferPointer) -> Bool in
             let x = ptr.baseAddress!.assumingMemoryBound(to: Float.self).pointee
             let y = ptr.baseAddress!.advanced(by: 4).assumingMemoryBound(to: Float.self).pointee
             let z = ptr.baseAddress!.advanced(by: 8).assumingMemoryBound(to: Float.self).pointee
 
             // Reasonable G-force range
-            if abs(x) < 20 && abs(y) < 20 && abs(z) < 20 {
-                return .float32
-            }
+            return abs(x) < 20 && abs(y) < 20 && abs(z) < 20
         }
 
-        return .int16  // Default fallback
+        return isFloat ? AccelDataFormat.float32 : AccelDataFormat.int16
     }
 }
 

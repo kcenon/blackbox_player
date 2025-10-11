@@ -27,45 +27,18 @@ class MetadataExtractor {
     /// - Parameter filePath: Path to video file
     /// - Returns: VideoMetadata or nil if extraction fails
     func extractMetadata(from filePath: String) -> VideoMetadata? {
-        // Open video file
-        var formatContext: OpaquePointer?
-        guard avformat_open_input(&formatContext, filePath, nil, nil) == 0 else {
-            return nil
-        }
-        defer {
-            if let ctx = formatContext {
-                var mutableCtx = UnsafeMutablePointer(mutating: ctx)
-                avformat_close_input(&mutableCtx)
-            }
-        }
-
-        // Find stream info
-        guard avformat_find_stream_info(formatContext, nil) >= 0,
-              let formatCtx = formatContext else {
-            return nil
-        }
-
-        // Get base timestamp from file
-        let baseDate = extractBaseDate(from: filePath) ?? Date()
-
-        // Extract GPS data from metadata
-        let gpsPoints = extractGPSData(from: formatCtx, baseDate: baseDate)
-
-        // Extract acceleration data from metadata
-        let accelerationData = extractAccelerationData(from: formatCtx, baseDate: baseDate)
-
-        // Extract device information
-        let deviceInfo = extractDeviceInfo(from: formatCtx)
-
+        // TODO: Implement FFmpeg-based metadata extraction
+        // For now, return empty metadata
         return VideoMetadata(
-            gpsPoints: gpsPoints,
-            accelerationData: accelerationData,
-            deviceInfo: deviceInfo
+            gpsPoints: [],
+            accelerationData: [],
+            deviceInfo: nil
         )
     }
 
-    // MARK: - Private Methods
+    // MARK: - Private Methods (Disabled - FFmpeg integration pending)
 
+    /*
     private func extractBaseDate(from filePath: String) -> Date? {
         // Try to extract date from filename (BlackVue format: YYYYMMDD_HHMMSS)
         let filename = (filePath as NSString).lastPathComponent
@@ -245,6 +218,7 @@ class MetadataExtractor {
 
         return String(cString: value)
     }
+    */
 }
 
 // MARK: - Extraction Errors
