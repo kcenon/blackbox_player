@@ -126,27 +126,143 @@ struct ContentView: View {
 
     private func videoThumbnail(for videoFile: VideoFile) -> some View {
         ZStack {
+            // Background
             Rectangle()
                 .fill(Color.gray.opacity(0.3))
                 .aspectRatio(16/9, contentMode: .fit)
 
-            VStack(spacing: 12) {
-                Image(systemName: "play.circle.fill")
-                    .font(.system(size: 64))
-                    .foregroundColor(.white.opacity(0.8))
-
-                Text("Video Player")
-                    .font(.title3)
-                    .fontWeight(.medium)
-                    .foregroundColor(.white)
-
-                Text("Implementation pending")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+            // Multi-channel layout visualization
+            if videoFile.channelCount > 1 {
+                multiChannelLayout(for: videoFile)
+            } else {
+                singleChannelPlaceholder
             }
         }
         .cornerRadius(12)
         .shadow(radius: 4)
+    }
+
+    private var singleChannelPlaceholder: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "play.circle.fill")
+                .font(.system(size: 64))
+                .foregroundColor(.white.opacity(0.8))
+
+            Text("Video Player")
+                .font(.title3)
+                .fontWeight(.medium)
+                .foregroundColor(.white)
+
+            Text("Implementation pending")
+                .font(.caption)
+                .foregroundColor(.secondary)
+        }
+    }
+
+    private func multiChannelLayout(for videoFile: VideoFile) -> some View {
+        GeometryReader { geometry in
+            let channels = videoFile.channels.filter(\.isEnabled)
+            let layout = calculateChannelLayout(count: channels.count, in: geometry.size)
+
+            ZStack {
+                ForEach(Array(channels.enumerated()), id: \.element.id) { index, channel in
+                    if index < layout.count {
+                        channelPlaceholder(for: channel)
+                            .frame(width: layout[index].width, height: layout[index].height)
+                            .position(x: layout[index].x, y: layout[index].y)
+                    }
+                }
+
+                // Play overlay
+                VStack(spacing: 8) {
+                    Image(systemName: "play.circle.fill")
+                        .font(.system(size: 48))
+                        .foregroundColor(.white.opacity(0.9))
+
+                    Text("\(channels.count) Channels")
+                        .font(.caption)
+                        .fontWeight(.medium)
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(Color.black.opacity(0.7))
+                        .cornerRadius(12)
+                }
+            }
+        }
+    }
+
+    private func channelPlaceholder(for channel: ChannelInfo) -> some View {
+        ZStack {
+            Rectangle()
+                .fill(Color.black.opacity(0.5))
+                .overlay(
+                    Rectangle()
+                        .stroke(Color.white.opacity(0.3), lineWidth: 1)
+                )
+
+            VStack(spacing: 4) {
+                Image(systemName: "video.fill")
+                    .font(.system(size: 16))
+                    .foregroundColor(.white.opacity(0.6))
+
+                Text(channel.position.shortName)
+                    .font(.caption2)
+                    .fontWeight(.medium)
+                    .foregroundColor(.white.opacity(0.8))
+            }
+        }
+    }
+
+    private func calculateChannelLayout(count: Int, in size: CGSize) -> [(x: CGFloat, y: CGFloat, width: CGFloat, height: CGFloat)] {
+        var layout: [(x: CGFloat, y: CGFloat, width: CGFloat, height: CGFloat)] = []
+
+        switch count {
+        case 1:
+            layout.append((x: size.width / 2, y: size.height / 2, width: size.width, height: size.height))
+
+        case 2:
+            // Side by side
+            let w = size.width / 2
+            layout.append((x: w / 2, y: size.height / 2, width: w, height: size.height))
+            layout.append((x: w + w / 2, y: size.height / 2, width: w, height: size.height))
+
+        case 3:
+            // One large on left, two stacked on right
+            let w = size.width * 2 / 3
+            let h = size.height / 2
+            layout.append((x: w / 2, y: size.height / 2, width: w, height: size.height))
+            layout.append((x: w + (size.width - w) / 2, y: h / 2, width: size.width - w, height: h))
+            layout.append((x: w + (size.width - w) / 2, y: h + h / 2, width: size.width - w, height: h))
+
+        case 4:
+            // 2x2 grid
+            let w = size.width / 2
+            let h = size.height / 2
+            layout.append((x: w / 2, y: h / 2, width: w, height: h))
+            layout.append((x: w + w / 2, y: h / 2, width: w, height: h))
+            layout.append((x: w / 2, y: h + h / 2, width: w, height: h))
+            layout.append((x: w + w / 2, y: h + h / 2, width: w, height: h))
+
+        case 5:
+            // 3 on top, 2 on bottom
+            let w = size.width / 3
+            let h = size.height / 2
+            // Top row
+            layout.append((x: w / 2, y: h / 2, width: w, height: h))
+            layout.append((x: w + w / 2, y: h / 2, width: w, height: h))
+            layout.append((x: 2 * w + w / 2, y: h / 2, width: w, height: h))
+            // Bottom row
+            let bottomW = size.width / 2
+            layout.append((x: bottomW / 2, y: h + h / 2, width: bottomW, height: h))
+            layout.append((x: bottomW + bottomW / 2, y: h + h / 2, width: bottomW, height: h))
+
+        default:
+            // Fallback: single channel
+            layout.append((x: size.width / 2, y: size.height / 2, width: size.width, height: size.height))
+        }
+
+        return layout
     }
 
     private func fileInformationCard(for videoFile: VideoFile) -> some View {
