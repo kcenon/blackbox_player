@@ -338,4 +338,158 @@ extension VideoFile {
         favoriteRecording,
         corruptedFile
     ]
+
+    // MARK: - Test Data with Real Files
+
+    /// Test video: comma2k19 sample with sensor data
+    static let comma2k19Test = VideoFile(
+        timestamp: Date(),
+        eventType: .normal,
+        duration: 48.0,
+        channels: [
+            ChannelInfo(
+                position: .front,
+                filePath: "/Users/dongcheolshin/Downloads/blackbox_test_data/comma2k19_sample.mp4",
+                width: 1164,
+                height: 874,
+                frameRate: 25.0,
+                bitrate: 2_570_000,
+                codec: "h264",
+                fileSize: 15_439_382,
+                duration: 48.0
+            )
+        ],
+        metadata: VideoMetadata.empty,
+        basePath: "/Users/dongcheolshin/Downloads/blackbox_test_data/comma2k19_sample"
+    )
+
+    /// Test video: 360p basic test
+    static let test360p = VideoFile(
+        timestamp: Date(),
+        eventType: .normal,
+        duration: 10.0,
+        channels: [
+            ChannelInfo(
+                position: .front,
+                filePath: "/Users/dongcheolshin/Downloads/blackbox_test_data/big_buck_bunny_360p.mp4",
+                width: 640,
+                height: 360,
+                frameRate: 30.0,
+                bitrate: 792_000,
+                codec: "h264",
+                fileSize: 991_232,
+                duration: 10.0
+            )
+        ],
+        metadata: VideoMetadata.empty,
+        basePath: "/Users/dongcheolshin/Downloads/blackbox_test_data/big_buck_bunny_360p"
+    )
+
+    /// Test video: 720p HD test
+    static let test720p = VideoFile(
+        timestamp: Date(),
+        eventType: .normal,
+        duration: 10.0,
+        channels: [
+            ChannelInfo(
+                position: .front,
+                filePath: "/Users/dongcheolshin/Downloads/blackbox_test_data/big_buck_bunny_720p.mp4",
+                width: 1280,
+                height: 720,
+                frameRate: 30.0,
+                bitrate: 3_900_000,
+                codec: "h264",
+                fileSize: 5_033_984,
+                duration: 10.0
+            )
+        ],
+        metadata: VideoMetadata.empty,
+        basePath: "/Users/dongcheolshin/Downloads/blackbox_test_data/big_buck_bunny_720p"
+    )
+
+    /// Test video: 1080p high quality test
+    static let test1080p = VideoFile(
+        timestamp: Date(),
+        eventType: .normal,
+        duration: 10.0,
+        channels: [
+            ChannelInfo(
+                position: .front,
+                filePath: "/Users/dongcheolshin/Downloads/blackbox_test_data/sample_1080p.mp4",
+                width: 1920,
+                height: 1080,
+                frameRate: 60.0,
+                bitrate: 8_300_000,
+                codec: "h264",
+                fileSize: 10_485_760,
+                duration: 10.0
+            )
+        ],
+        metadata: VideoMetadata.empty,
+        basePath: "/Users/dongcheolshin/Downloads/blackbox_test_data/sample_1080p"
+    )
+
+    /// Test video: Multi-channel simulation (4 channels using comma2k19)
+    static let multiChannel4Test = VideoFile(
+        timestamp: Date(),
+        eventType: .normal,
+        duration: 48.0,
+        channels: [
+            ChannelInfo(
+                position: .front,
+                filePath: "/Users/dongcheolshin/Downloads/blackbox_test_data/comma2k19_sample.mp4",
+                width: 1164,
+                height: 874,
+                frameRate: 25.0,
+                bitrate: 2_570_000,
+                codec: "h264",
+                fileSize: 15_439_382,
+                duration: 48.0
+            ),
+            ChannelInfo(
+                position: .rear,
+                filePath: "/Users/dongcheolshin/Downloads/blackbox_test_data/comma2k19_sample.mp4",
+                width: 1164,
+                height: 874,
+                frameRate: 25.0,
+                bitrate: 2_570_000,
+                codec: "h264",
+                fileSize: 15_439_382,
+                duration: 48.0
+            ),
+            ChannelInfo(
+                position: .left,
+                filePath: "/Users/dongcheolshin/Downloads/blackbox_test_data/comma2k19_sample.mp4",
+                width: 1164,
+                height: 874,
+                frameRate: 25.0,
+                bitrate: 2_570_000,
+                codec: "h264",
+                fileSize: 15_439_382,
+                duration: 48.0
+            ),
+            ChannelInfo(
+                position: .right,
+                filePath: "/Users/dongcheolshin/Downloads/blackbox_test_data/comma2k19_sample.mp4",
+                width: 1164,
+                height: 874,
+                frameRate: 25.0,
+                bitrate: 2_570_000,
+                codec: "h264",
+                fileSize: 15_439_382,
+                duration: 48.0
+            )
+        ],
+        metadata: VideoMetadata.empty,
+        basePath: "/Users/dongcheolshin/Downloads/blackbox_test_data/comma2k19_multichannel"
+    )
+
+    /// All real test files
+    static let allTestFiles: [VideoFile] = [
+        multiChannel4Test,  // Multi-channel test first for easy access
+        comma2k19Test,
+        test1080p,
+        test720p,
+        test360p
+    ]
 }
