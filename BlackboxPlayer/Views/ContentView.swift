@@ -21,6 +21,13 @@ struct ContentView: View {
     /// Sidebar visibility
     @State private var showSidebar = true
 
+    /// Playback state (simulated)
+    @State private var isPlaying = false
+    @State private var currentPlaybackTime: Double = 0.0
+    @State private var playbackSpeed: Double = 1.0
+    @State private var volume: Double = 0.8
+    @State private var showControls = true
+
     // MARK: - Body
 
     var body: some View {
@@ -137,9 +144,23 @@ struct ContentView: View {
             } else {
                 singleChannelPlaceholder
             }
+
+            // Playback controls overlay
+            if showControls {
+                VStack {
+                    Spacer()
+                    playbackControls(for: videoFile)
+                        .transition(.move(edge: .bottom))
+                }
+            }
         }
         .cornerRadius(12)
         .shadow(radius: 4)
+        .onHover { hovering in
+            withAnimation {
+                showControls = hovering || isPlaying
+            }
+        }
     }
 
     private var singleChannelPlaceholder: some View {
@@ -470,6 +491,154 @@ struct ContentView: View {
         .padding()
         .background(Color.white.opacity(0.1))
         .cornerRadius(8)
+    }
+
+    // MARK: - Playback Controls
+
+    private func playbackControls(for videoFile: VideoFile) -> some View {
+        VStack(spacing: 0) {
+            // Timeline
+            timelineSlider(for: videoFile)
+                .padding(.horizontal)
+                .padding(.top, 8)
+
+            // Control buttons
+            HStack(spacing: 20) {
+                // Play/Pause button
+                Button(action: { isPlaying.toggle() }) {
+                    Image(systemName: isPlaying ? "pause.fill" : "play.fill")
+                        .font(.system(size: 20))
+                        .foregroundColor(.white)
+                        .frame(width: 40, height: 40)
+                }
+                .buttonStyle(.plain)
+
+                // Seek backward 10s
+                Button(action: { seekBy(-10, in: videoFile) }) {
+                    Image(systemName: "gobackward.10")
+                        .font(.system(size: 18))
+                        .foregroundColor(.white)
+                }
+                .buttonStyle(.plain)
+
+                // Seek forward 10s
+                Button(action: { seekBy(10, in: videoFile) }) {
+                    Image(systemName: "goforward.10")
+                        .font(.system(size: 18))
+                        .foregroundColor(.white)
+                }
+                .buttonStyle(.plain)
+
+                // Current time / Duration
+                Text(formatTime(currentPlaybackTime) + " / " + videoFile.durationString)
+                    .font(.system(size: 13, design: .monospaced))
+                    .foregroundColor(.white)
+
+                Spacer()
+
+                // Speed control
+                speedControl
+
+                // Volume control
+                volumeControl
+            }
+            .padding(.horizontal)
+            .padding(.vertical, 12)
+        }
+        .background(
+            LinearGradient(
+                colors: [Color.clear, Color.black.opacity(0.8)],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+        )
+    }
+
+    private func timelineSlider(for videoFile: VideoFile) -> some View {
+        GeometryReader { geometry in
+            ZStack(alignment: .leading) {
+                // Background track
+                Rectangle()
+                    .fill(Color.white.opacity(0.3))
+                    .frame(height: 4)
+
+                // Progress
+                Rectangle()
+                    .fill(Color.accentColor)
+                    .frame(width: geometry.size.width * (currentPlaybackTime / max(1, videoFile.duration)), height: 4)
+
+                // Thumb
+                Circle()
+                    .fill(Color.white)
+                    .frame(width: 12, height: 12)
+                    .offset(x: geometry.size.width * (currentPlaybackTime / max(1, videoFile.duration)) - 6)
+            }
+            .gesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { value in
+                        let newTime = Double(value.location.x / geometry.size.width) * videoFile.duration
+                        currentPlaybackTime = max(0, min(videoFile.duration, newTime))
+                    }
+            )
+        }
+        .frame(height: 12)
+    }
+
+    private var speedControl: some View {
+        Menu {
+            ForEach([0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0], id: \.self) { speed in
+                Button(action: { playbackSpeed = speed }) {
+                    HStack {
+                        Text(formatSpeed(speed))
+                        if playbackSpeed == speed {
+                            Image(systemName: "checkmark")
+                        }
+                    }
+                }
+            }
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: "gauge")
+                    .font(.system(size: 14))
+                Text(formatSpeed(playbackSpeed))
+                    .font(.system(size: 13))
+            }
+            .foregroundColor(.white)
+            .frame(width: 70, height: 28)
+            .background(Color.white.opacity(0.2))
+            .cornerRadius(6)
+        }
+        .menuStyle(.borderlessButton)
+    }
+
+    private var volumeControl: some View {
+        HStack(spacing: 8) {
+            Button(action: { volume = volume > 0 ? 0 : 0.8 }) {
+                Image(systemName: volume > 0 ? "speaker.wave.2.fill" : "speaker.slash.fill")
+                    .font(.system(size: 16))
+                    .foregroundColor(.white)
+            }
+            .buttonStyle(.plain)
+
+            Slider(value: $volume, in: 0...1)
+                .frame(width: 80)
+                .accentColor(.white)
+        }
+    }
+
+    private func seekBy(_ seconds: Double, in videoFile: VideoFile) {
+        currentPlaybackTime = max(0, min(videoFile.duration, currentPlaybackTime + seconds))
+    }
+
+    private func formatTime(_ time: TimeInterval) -> String {
+        let totalSeconds = Int(time)
+        let minutes = totalSeconds / 60
+        let seconds = totalSeconds % 60
+        return String(format: "%02d:%02d", minutes, seconds)
+    }
+
+    private func formatSpeed(_ speed: Double) -> String {
+        return String(format: "%.2gx", speed)
     }
 
     // MARK: - Actions
