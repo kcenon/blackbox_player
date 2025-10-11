@@ -36,6 +36,9 @@ class MultiChannelRenderer {
     /// Focused channel (for focus layout)
     private(set) var focusedPosition: CameraPosition = .front
 
+    /// Sampler state for texture sampling
+    private var samplerState: MTLSamplerState?
+
     // MARK: - Initialization
 
     init?() {
@@ -72,6 +75,7 @@ class MultiChannelRenderer {
         // Setup pipeline and vertex buffer
         setupPipeline()
         setupVertexBuffer()
+        setupSampler()
     }
 
     // MARK: - Setup
@@ -133,6 +137,17 @@ class MultiChannelRenderer {
         vertexBuffer = device.makeBuffer(bytes: vertices, length: size, options: [])
     }
 
+    private func setupSampler() {
+        let samplerDescriptor = MTLSamplerDescriptor()
+        samplerDescriptor.minFilter = .linear
+        samplerDescriptor.magFilter = .linear
+        samplerDescriptor.sAddressMode = .clampToEdge
+        samplerDescriptor.tAddressMode = .clampToEdge
+        samplerDescriptor.mipFilter = .notMipmapped
+
+        samplerState = device.makeSamplerState(descriptor: samplerDescriptor)
+    }
+
     // MARK: - Public Methods
 
     /// Render frames to drawable
@@ -146,6 +161,9 @@ class MultiChannelRenderer {
         drawableSize: CGSize
     ) {
         guard let pipelineState = pipelineState else { return }
+
+        // Early return if no frames
+        guard !frames.isEmpty else { return }
 
         // Create command buffer
         guard let commandBuffer = commandQueue.makeCommandBuffer() else { return }
@@ -164,13 +182,26 @@ class MultiChannelRenderer {
 
         renderEncoder.setRenderPipelineState(pipelineState)
 
+        // Create stable, sorted array of positions for thread-safe viewport calculation
+        let sortedPositions = frames.keys.sorted { $0.rawValue < $1.rawValue }
+
         // Calculate viewports for each channel
-        let viewports = calculateViewports(for: frames.keys, in: drawableSize)
+        let viewports = calculateViewports(for: sortedPositions, in: drawableSize)
 
         // Render each channel
         for (position, frame) in frames {
-            guard let viewport = viewports[position],
-                  let texture = createTexture(from: frame.pixelBuffer) else {
+            guard let viewport = viewports[position] else {
+                debugLog("[MultiChannelRenderer] No viewport for position \(position.displayName)")
+                continue
+            }
+
+            guard let pixelBuffer = frame.toPixelBuffer() else {
+                debugLog("[MultiChannelRenderer] Failed to create pixel buffer for frame at \(String(format: "%.2f", frame.timestamp))s")
+                continue
+            }
+
+            guard let texture = createTexture(from: pixelBuffer) else {
+                debugLog("[MultiChannelRenderer] Failed to create texture from pixel buffer")
                 continue
             }
 
@@ -191,6 +222,11 @@ class MultiChannelRenderer {
 
             // Set texture
             renderEncoder.setFragmentTexture(texture, index: 0)
+
+            // Set sampler
+            if let samplerState = samplerState {
+                renderEncoder.setFragmentSamplerState(samplerState, index: 0)
+            }
 
             // Draw quad
             renderEncoder.drawPrimitives(type: .triangleStrip, vertexStart: 0, vertexCount: 4)
@@ -218,10 +254,16 @@ class MultiChannelRenderer {
     // MARK: - Private Methods
 
     private func createTexture(from pixelBuffer: CVPixelBuffer) -> MTLTexture? {
-        guard let textureCache = textureCache else { return nil }
+        guard let textureCache = textureCache else {
+            debugLog("[MultiChannelRenderer] Texture cache is nil")
+            return nil
+        }
 
         let width = CVPixelBufferGetWidth(pixelBuffer)
         let height = CVPixelBufferGetHeight(pixelBuffer)
+        let pixelFormat = CVPixelBufferGetPixelFormatType(pixelBuffer)
+
+        debugLog("[MultiChannelRenderer] Creating texture: \(width)x\(height), format: \(pixelFormat)")
 
         var texture: CVMetalTexture?
         let result = CVMetalTextureCacheCreateTextureFromImage(
@@ -236,20 +278,30 @@ class MultiChannelRenderer {
             &texture
         )
 
-        guard result == kCVReturnSuccess,
-              let cvTexture = texture else {
+        guard result == kCVReturnSuccess else {
+            errorLog("[MultiChannelRenderer] CVMetalTextureCacheCreateTextureFromImage failed with code: \(result)")
             return nil
         }
 
-        return CVMetalTextureGetTexture(cvTexture)
+        guard let cvTexture = texture else {
+            errorLog("[MultiChannelRenderer] CVMetalTexture is nil after successful creation")
+            return nil
+        }
+
+        guard let metalTexture = CVMetalTextureGetTexture(cvTexture) else {
+            errorLog("[MultiChannelRenderer] Failed to get MTLTexture from CVMetalTexture")
+            return nil
+        }
+
+        debugLog("[MultiChannelRenderer] Successfully created Metal texture")
+        return metalTexture
     }
 
     private func calculateViewports(
-        for positions: Dictionary<CameraPosition, VideoFrame>.Keys,
+        for positions: [CameraPosition],
         in size: CGSize
     ) -> [CameraPosition: CGRect] {
         var viewports: [CameraPosition: CGRect] = [:]
-        let positions = Array(positions).sorted { $0.rawValue < $1.rawValue }
 
         switch layoutMode {
         case .grid:
