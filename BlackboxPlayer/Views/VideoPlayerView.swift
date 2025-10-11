@@ -202,9 +202,10 @@ struct VideoFrameView: View {
 
 // MARK: - Preview
 
-struct VideoPlayerView_Previews: PreviewProvider {
-    static var previews: some View {
-        VideoPlayerView(videoFile: VideoFile.allSamples.first!)
-            .frame(width: 800, height: 600)
-    }
-}
+// Preview temporarily disabled - requires sample data
+// struct VideoPlayerView_Previews: PreviewProvider {
+//     static var previews: some View {
+//         VideoPlayerView(videoFile: sampleVideoFile)
+//             .frame(width: 800, height: 600)
+//     }
+// }

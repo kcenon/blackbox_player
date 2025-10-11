@@ -8,6 +8,92 @@
 import SwiftUI
 import MapKit
 import AppKit
+import Combine
+
+// MARK: - Log Manager (inline for build compatibility)
+
+/// Log entry with timestamp and message
+struct LogEntry: Identifiable {
+    let id = UUID()
+    let timestamp: Date
+    let message: String
+    let level: LogLevel
+
+    var formattedMessage: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm:ss.SSS"
+        let timeString = formatter.string(from: timestamp)
+        return "[\(timeString)] [\(level.displayName)] \(message)"
+    }
+}
+
+/// Log level
+enum LogLevel: String {
+    case debug = "DEBUG"
+    case info = "INFO"
+    case warning = "WARNING"
+    case error = "ERROR"
+
+    var displayName: String {
+        return self.rawValue
+    }
+}
+
+/// Centralized log manager
+class LogManager: ObservableObject {
+    /// Shared instance
+    static let shared = LogManager()
+
+    /// Published log entries
+    @Published private(set) var logs: [LogEntry] = []
+
+    /// Maximum number of logs to keep
+    private let maxLogs = 500
+
+    /// Lock for thread-safe access
+    private let lock = NSLock()
+
+    private init() {}
+
+    /// Log a message
+    func log(_ message: String, level: LogLevel = .info) {
+        let entry = LogEntry(timestamp: Date(), message: message, level: level)
+
+        lock.lock()
+        logs.append(entry)
+
+        if logs.count > maxLogs {
+            logs.removeFirst(logs.count - maxLogs)
+        }
+        lock.unlock()
+
+        print("[\(level.displayName)] \(message)")
+    }
+
+    /// Clear all logs
+    func clear() {
+        lock.lock()
+        logs.removeAll()
+        lock.unlock()
+    }
+}
+
+/// Convenience logging functions
+func debugLog(_ message: String) {
+    LogManager.shared.log(message, level: .debug)
+}
+
+func infoLog(_ message: String) {
+    LogManager.shared.log(message, level: .info)
+}
+
+func warningLog(_ message: String) {
+    LogManager.shared.log(message, level: .warning)
+}
+
+func errorLog(_ message: String) {
+    LogManager.shared.log(message, level: .error)
+}
 
 /// Main application content view
 struct ContentView: View {
@@ -17,7 +103,7 @@ struct ContentView: View {
     @State private var selectedVideoFile: VideoFile?
 
     /// All video files
-    @State private var videoFiles: [VideoFile] = VideoFile.allSamples
+    @State private var videoFiles: [VideoFile] = VideoFile.allTestFiles
 
     /// Sidebar visibility
     @State private var showSidebar = true
@@ -38,6 +124,9 @@ struct ContentView: View {
     /// Error alert
     @State private var showError = false
     @State private var errorMessage = ""
+
+    /// Show debug log
+    @State private var showDebugLog = false
 
     // MARK: - Services
 
@@ -70,6 +159,11 @@ struct ContentView: View {
                 }
                 .help("Open blackbox video folder")
                 .disabled(isLoading)
+
+                Button(action: { showDebugLog.toggle() }) {
+                    Image(systemName: showDebugLog ? "terminal.fill" : "terminal")
+                }
+                .help("Toggle debug log")
             }
         }
         .alert("Error", isPresented: $showError) {
@@ -91,6 +185,13 @@ struct ContentView: View {
                     }
                 }
                 .ignoresSafeArea()
+            }
+        }
+        .overlay(alignment: .bottom) {
+            if showDebugLog {
+                DebugLogView()
+                    .padding()
+                    .transition(.move(edge: .bottom))
             }
         }
     }
@@ -204,35 +305,12 @@ struct ContentView: View {
     }
 
     private func videoThumbnail(for videoFile: VideoFile) -> some View {
-        ZStack {
-            // Background
-            Rectangle()
-                .fill(Color.gray.opacity(0.3))
-                .aspectRatio(16/9, contentMode: .fit)
-
-            // Multi-channel layout visualization
-            if videoFile.channelCount > 1 {
-                multiChannelLayout(for: videoFile)
-            } else {
-                singleChannelPlaceholder
-            }
-
-            // Playback controls overlay
-            if showControls {
-                VStack {
-                    Spacer()
-                    playbackControls(for: videoFile)
-                        .transition(.move(edge: .bottom))
-                }
-            }
-        }
-        .cornerRadius(12)
-        .shadow(radius: 4)
-        .onHover { hovering in
-            withAnimation {
-                showControls = hovering || isPlaying
-            }
-        }
+        // Multi-channel video player
+        MultiChannelPlayerView(videoFile: videoFile)
+            .id(videoFile.id)  // Force view recreation when video changes
+            .aspectRatio(16/9, contentMode: .fit)
+            .cornerRadius(12)
+            .shadow(radius: 4)
     }
 
     private var singleChannelPlaceholder: some View {
@@ -770,8 +848,8 @@ struct ContentView: View {
     /// Refresh file list from current folder
     private func refreshFileList() {
         guard let folderPath = currentFolderPath else {
-            // No folder selected, reload samples
-            videoFiles = VideoFile.allSamples
+            // No folder selected, reload test files
+            videoFiles = VideoFile.allTestFiles
             return
         }
 
@@ -981,6 +1059,116 @@ struct AccelerationGraphView: View {
         .padding(8)
         .background(Color.black.opacity(0.6))
         .cornerRadius(6)
+    }
+}
+
+// MARK: - Debug Log View
+
+/// Debug log viewer overlay
+struct DebugLogView: View {
+    @ObservedObject var logManager = LogManager.shared
+    @State private var autoScroll = true
+    @State private var showCopyConfirmation = false
+
+    var body: some View {
+        VStack(spacing: 0) {
+            // Header
+            HStack {
+                Text("Debug Log")
+                    .font(.headline)
+                    .foregroundColor(.white)
+
+                Spacer()
+
+                // Auto-scroll toggle
+                Toggle("Auto-scroll", isOn: $autoScroll)
+                    .toggleStyle(.switch)
+                    .controlSize(.mini)
+                    .foregroundColor(.white)
+
+                // Copy all button
+                Button(action: copyAllLogs) {
+                    Image(systemName: showCopyConfirmation ? "checkmark" : "doc.on.doc")
+                        .foregroundColor(.white)
+                }
+                .buttonStyle(.plain)
+                .help("Copy all logs")
+
+                // Clear button
+                Button(action: { logManager.clear() }) {
+                    Image(systemName: "trash")
+                        .foregroundColor(.white)
+                }
+                .buttonStyle(.plain)
+                .help("Clear logs")
+            }
+            .padding()
+            .background(Color.black.opacity(0.9))
+
+            Divider()
+
+            // Log list
+            ScrollViewReader { proxy in
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 4) {
+                        ForEach(logManager.logs) { entry in
+                            LogEntryRow(entry: entry)
+                                .id(entry.id)
+                        }
+                    }
+                    .padding(8)
+                }
+                .background(Color.black.opacity(0.8))
+                .onChange(of: logManager.logs.count) { _ in
+                    if autoScroll, let lastLog = logManager.logs.last {
+                        withAnimation {
+                            proxy.scrollTo(lastLog.id, anchor: .bottom)
+                        }
+                    }
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: 300)
+        .cornerRadius(8)
+        .shadow(radius: 10)
+    }
+
+    private func copyAllLogs() {
+        let allLogs = logManager.logs.map { $0.formattedMessage }.joined(separator: "\n")
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.setString(allLogs, forType: .string)
+
+        // Show confirmation
+        showCopyConfirmation = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            showCopyConfirmation = false
+        }
+    }
+}
+
+/// Single log entry row
+private struct LogEntryRow: View {
+    let entry: LogEntry
+
+    var body: some View {
+        Text(entry.formattedMessage)
+            .font(.system(size: 11, design: .monospaced))
+            .foregroundColor(textColor)
+            .textSelection(.enabled)
+    }
+
+    private var textColor: Color {
+        switch entry.level {
+        case .debug:
+            return .gray
+        case .info:
+            return .white
+        case .warning:
+            return .yellow
+        case .error:
+            return .red
+        }
     }
 }
 

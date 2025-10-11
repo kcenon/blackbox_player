@@ -215,9 +215,10 @@ struct PlayerControlsView: View {
 
 // MARK: - Preview
 
-struct PlayerControlsView_Previews: PreviewProvider {
-    static var previews: some View {
-        PlayerControlsView(viewModel: VideoPlayerViewModel())
-            .frame(height: 100)
-    }
-}
+// Preview temporarily disabled - requires sample data
+// struct PlayerControlsView_Previews: PreviewProvider {
+//     static var previews: some View {
+//         PlayerControlsView(viewModel: VideoPlayerViewModel())
+//             .frame(height: 100)
+//     }
+// }
