@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import MapKit
 
 /// Main application content view
 struct ContentView: View {
@@ -107,6 +108,16 @@ struct ContentView: View {
                 // Metadata information
                 if videoFile.hasGPSData || videoFile.hasAccelerationData {
                     metadataCard(for: videoFile)
+                }
+
+                // GPS Map
+                if videoFile.hasGPSData {
+                    gpsMapCard(for: videoFile)
+                }
+
+                // Acceleration Graph
+                if videoFile.hasAccelerationData {
+                    accelerationGraphCard(for: videoFile)
                 }
             }
             .padding()
@@ -285,6 +296,66 @@ struct ContentView: View {
         .foregroundColor(.white)
     }
 
+    // MARK: - GPS Map Card
+
+    private func gpsMapCard(for videoFile: VideoFile) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: "map.fill")
+                    .foregroundColor(.green)
+                Text("GPS Route")
+                    .font(.headline)
+                    .foregroundColor(.white)
+
+                Spacer()
+
+                Text("\(videoFile.metadata.gpsPoints.count) points")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+
+            Divider()
+
+            // Map view
+            GPSMapView(gpsPoints: videoFile.metadata.gpsPoints)
+                .frame(height: 300)
+                .cornerRadius(8)
+        }
+        .padding()
+        .background(Color.white.opacity(0.1))
+        .cornerRadius(8)
+    }
+
+    // MARK: - Acceleration Graph Card
+
+    private func accelerationGraphCard(for videoFile: VideoFile) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: "waveform.path.ecg")
+                    .foregroundColor(.blue)
+                Text("G-Sensor Data")
+                    .font(.headline)
+                    .foregroundColor(.white)
+
+                Spacer()
+
+                Text("\(videoFile.metadata.accelerationData.count) points")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+
+            Divider()
+
+            // Graph view
+            AccelerationGraphView(accelerationData: videoFile.metadata.accelerationData)
+                .frame(height: 200)
+                .cornerRadius(8)
+        }
+        .padding()
+        .background(Color.white.opacity(0.1))
+        .cornerRadius(8)
+    }
+
     // MARK: - Actions
 
     private func refreshFileList() {
@@ -310,6 +381,191 @@ struct InfoRow: View {
                 .foregroundColor(.white)
                 .font(.body)
         }
+    }
+}
+
+// MARK: - GPS Map View
+
+struct GPSMapView: NSViewRepresentable {
+    let gpsPoints: [GPSPoint]
+
+    func makeNSView(context: Context) -> MKMapView {
+        let mapView = MKMapView()
+        mapView.mapType = .standard
+        mapView.showsUserLocation = false
+        mapView.isZoomEnabled = true
+        mapView.isScrollEnabled = true
+        return mapView
+    }
+
+    func updateNSView(_ mapView: MKMapView, context: Context) {
+        // Remove existing overlays
+        mapView.removeOverlays(mapView.overlays)
+
+        guard !gpsPoints.isEmpty else { return }
+
+        // Create coordinates array
+        let coordinates = gpsPoints.map { CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude) }
+
+        // Add polyline
+        let polyline = MKPolyline(coordinates: coordinates, count: coordinates.count)
+        mapView.addOverlay(polyline)
+        mapView.delegate = context.coordinator
+
+        // Set region to show all points
+        if let firstPoint = coordinates.first {
+            let region = MKCoordinateRegion(
+                center: firstPoint,
+                latitudinalMeters: 1000,
+                longitudinalMeters: 1000
+            )
+            mapView.setRegion(region, animated: false)
+        }
+
+        // Add pins for start and end
+        if let start = coordinates.first {
+            let startAnnotation = MKPointAnnotation()
+            startAnnotation.coordinate = start
+            startAnnotation.title = "Start"
+            mapView.addAnnotation(startAnnotation)
+        }
+
+        if let end = coordinates.last, coordinates.count > 1 {
+            let endAnnotation = MKPointAnnotation()
+            endAnnotation.coordinate = end
+            endAnnotation.title = "End"
+            mapView.addAnnotation(endAnnotation)
+        }
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator()
+    }
+
+    class Coordinator: NSObject, MKMapViewDelegate {
+        func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
+            if let polyline = overlay as? MKPolyline {
+                let renderer = MKPolylineRenderer(polyline: polyline)
+                renderer.strokeColor = NSColor.systemBlue
+                renderer.lineWidth = 3
+                return renderer
+            }
+            return MKOverlayRenderer(overlay: overlay)
+        }
+    }
+}
+
+// MARK: - Acceleration Graph View
+
+struct AccelerationGraphView: View {
+    let accelerationData: [AccelerationData]
+
+    var body: some View {
+        GeometryReader { geometry in
+            ZStack {
+                // Background
+                Color.black.opacity(0.3)
+
+                // Grid lines
+                gridLines(in: geometry.size)
+
+                // Acceleration curves
+                accelerationCurves(in: geometry.size)
+
+                // Legend
+                legend
+                    .position(x: geometry.size.width - 60, y: 30)
+            }
+        }
+    }
+
+    private func gridLines(in size: CGSize) -> some View {
+        Path { path in
+            // Horizontal lines
+            for i in 0...4 {
+                let y = size.height * CGFloat(i) / 4
+                path.move(to: CGPoint(x: 0, y: y))
+                path.addLine(to: CGPoint(x: size.width, y: y))
+            }
+
+            // Vertical lines
+            for i in 0...4 {
+                let x = size.width * CGFloat(i) / 4
+                path.move(to: CGPoint(x: x, y: 0))
+                path.addLine(to: CGPoint(x: x, y: size.height))
+            }
+        }
+        .stroke(Color.white.opacity(0.1), lineWidth: 1)
+    }
+
+    private func accelerationCurves(in size: CGSize) -> some View {
+        ZStack {
+            // X axis (red)
+            accelerationPath(for: \.x, in: size, color: .red)
+
+            // Y axis (green)
+            accelerationPath(for: \.y, in: size, color: .green)
+
+            // Z axis (blue)
+            accelerationPath(for: \.z, in: size, color: .blue)
+        }
+    }
+
+    private func accelerationPath(for keyPath: KeyPath<AccelerationData, Double>, in size: CGSize, color: Color) -> some View {
+        Path { path in
+            guard !accelerationData.isEmpty else { return }
+
+            let maxValue: Double = 2.0 // ±2G range
+            let points = accelerationData.enumerated().map { index, data in
+                let x = size.width * CGFloat(index) / CGFloat(max(1, accelerationData.count - 1))
+                let value = data[keyPath: keyPath]
+                let normalizedValue = (value + maxValue) / (2 * maxValue) // Normalize to 0-1
+                let y = size.height * (1 - CGFloat(normalizedValue))
+                return CGPoint(x: x, y: y)
+            }
+
+            if let first = points.first {
+                path.move(to: first)
+                for point in points.dropFirst() {
+                    path.addLine(to: point)
+                }
+            }
+        }
+        .stroke(color, lineWidth: 2)
+    }
+
+    private var legend: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 4) {
+                Circle()
+                    .fill(Color.red)
+                    .frame(width: 8, height: 8)
+                Text("X")
+                    .font(.caption2)
+                    .foregroundColor(.white)
+            }
+
+            HStack(spacing: 4) {
+                Circle()
+                    .fill(Color.green)
+                    .frame(width: 8, height: 8)
+                Text("Y")
+                    .font(.caption2)
+                    .foregroundColor(.white)
+            }
+
+            HStack(spacing: 4) {
+                Circle()
+                    .fill(Color.blue)
+                    .frame(width: 8, height: 8)
+                Text("Z")
+                    .font(.caption2)
+                    .foregroundColor(.white)
+            }
+        }
+        .padding(8)
+        .background(Color.black.opacity(0.6))
+        .cornerRadius(6)
     }
 }
 
