@@ -93,64 +93,170 @@ struct ContentView: View {
     // MARK: - File Info View
 
     private func fileInfoView(for videoFile: VideoFile) -> some View {
-        VStack(spacing: 20) {
-            Image(systemName: "video.fill")
-                .font(.system(size: 64))
-                .foregroundColor(.white)
+        ScrollView {
+            VStack(spacing: 24) {
+                // Video thumbnail placeholder
+                videoThumbnail(for: videoFile)
 
-            Text(videoFile.baseFilename)
-                .font(.title)
-                .fontWeight(.bold)
-                .foregroundColor(.white)
+                // File information
+                fileInformationCard(for: videoFile)
 
-            VStack(spacing: 8) {
-                HStack {
-                    Text("Event Type:")
-                        .foregroundColor(.secondary)
-                    Text(videoFile.eventType.displayName)
-                        .foregroundColor(.white)
-                }
+                // Channel information
+                channelsCard(for: videoFile)
 
-                HStack {
-                    Text("Duration:")
-                        .foregroundColor(.secondary)
-                    Text(videoFile.durationString)
-                        .foregroundColor(.white)
-                }
-
-                HStack {
-                    Text("Channels:")
-                        .foregroundColor(.secondary)
-                    Text("\(videoFile.channelCount)")
-                        .foregroundColor(.white)
-                }
-
-                if videoFile.hasGPSData {
-                    HStack {
-                        Image(systemName: "location.fill")
-                            .foregroundColor(.green)
-                        Text("GPS Data Available")
-                            .foregroundColor(.green)
-                    }
-                }
-
-                if videoFile.hasAccelerationData {
-                    HStack {
-                        Image(systemName: "waveform.path.ecg")
-                            .foregroundColor(.blue)
-                        Text("G-Sensor Data Available")
-                            .foregroundColor(.blue)
-                    }
+                // Metadata information
+                if videoFile.hasGPSData || videoFile.hasAccelerationData {
+                    metadataCard(for: videoFile)
                 }
             }
-            .font(.body)
+            .padding()
+        }
+    }
 
-            Text("Video playback will be implemented in later phase")
-                .font(.caption)
-                .foregroundColor(.secondary)
-                .padding(.top)
+    private func videoThumbnail(for videoFile: VideoFile) -> some View {
+        ZStack {
+            Rectangle()
+                .fill(Color.gray.opacity(0.3))
+                .aspectRatio(16/9, contentMode: .fit)
+
+            VStack(spacing: 12) {
+                Image(systemName: "play.circle.fill")
+                    .font(.system(size: 64))
+                    .foregroundColor(.white.opacity(0.8))
+
+                Text("Video Player")
+                    .font(.title3)
+                    .fontWeight(.medium)
+                    .foregroundColor(.white)
+
+                Text("Implementation pending")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+        }
+        .cornerRadius(12)
+        .shadow(radius: 4)
+    }
+
+    private func fileInformationCard(for videoFile: VideoFile) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("File Information")
+                .font(.headline)
+                .foregroundColor(.white)
+
+            Divider()
+
+            InfoRow(label: "Filename", value: videoFile.baseFilename)
+            InfoRow(label: "Event Type", value: videoFile.eventType.displayName)
+            InfoRow(label: "Timestamp", value: videoFile.timestampString)
+            InfoRow(label: "Duration", value: videoFile.durationString)
+            InfoRow(label: "File Size", value: videoFile.totalFileSizeString)
+            InfoRow(label: "Favorite", value: videoFile.isFavorite ? "Yes" : "No")
+
+            if let notes = videoFile.notes {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Notes:")
+                        .foregroundColor(.secondary)
+                        .font(.caption)
+                    Text(notes)
+                        .foregroundColor(.white)
+                        .font(.body)
+                }
+            }
         }
         .padding()
+        .background(Color.white.opacity(0.1))
+        .cornerRadius(8)
+    }
+
+    private func channelsCard(for videoFile: VideoFile) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Camera Channels (\(videoFile.channelCount))")
+                .font(.headline)
+                .foregroundColor(.white)
+
+            Divider()
+
+            ForEach(videoFile.channels, id: \.id) { channel in
+                HStack {
+                    Image(systemName: "video.fill")
+                        .foregroundColor(channel.isEnabled ? .green : .gray)
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(channel.position.displayName)
+                            .font(.body)
+                            .fontWeight(.medium)
+                            .foregroundColor(.white)
+
+                        Text("\(channel.width)x\(channel.height) @ \(Int(channel.frameRate))fps")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+
+                    Spacer()
+
+                    Text(channel.codec ?? "Unknown")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                .padding(.vertical, 4)
+            }
+        }
+        .padding()
+        .background(Color.white.opacity(0.1))
+        .cornerRadius(8)
+    }
+
+    private func metadataCard(for videoFile: VideoFile) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Metadata")
+                .font(.headline)
+                .foregroundColor(.white)
+
+            Divider()
+
+            if videoFile.hasGPSData {
+                HStack {
+                    Image(systemName: "location.fill")
+                        .foregroundColor(.green)
+                    Text("GPS Data")
+                        .foregroundColor(.white)
+                    Spacer()
+                    Text("\(videoFile.metadata.gpsPoints.count) points")
+                        .foregroundColor(.secondary)
+                        .font(.caption)
+                }
+            }
+
+            if videoFile.hasAccelerationData {
+                HStack {
+                    Image(systemName: "waveform.path.ecg")
+                        .foregroundColor(.blue)
+                    Text("G-Sensor Data")
+                        .foregroundColor(.white)
+                    Spacer()
+                    Text("\(videoFile.metadata.accelerationData.count) points")
+                        .foregroundColor(.secondary)
+                        .font(.caption)
+                }
+            }
+
+            if videoFile.hasImpactEvents {
+                HStack {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundColor(.orange)
+                    Text("Impact Events")
+                        .foregroundColor(.white)
+                    Spacer()
+                    Text("\(videoFile.impactEventCount)")
+                        .foregroundColor(.secondary)
+                        .font(.caption)
+                }
+            }
+        }
+        .padding()
+        .background(Color.white.opacity(0.1))
+        .cornerRadius(8)
     }
 
     // MARK: - Empty State
@@ -185,6 +291,25 @@ struct ContentView: View {
         // TODO: Implement actual file scanning
         // For now, just reload samples
         videoFiles = VideoFile.allSamples
+    }
+}
+
+// MARK: - Helper Views
+
+struct InfoRow: View {
+    let label: String
+    let value: String
+
+    var body: some View {
+        HStack {
+            Text(label + ":")
+                .foregroundColor(.secondary)
+                .font(.caption)
+            Spacer()
+            Text(value)
+                .foregroundColor(.white)
+                .font(.body)
+        }
     }
 }
 
