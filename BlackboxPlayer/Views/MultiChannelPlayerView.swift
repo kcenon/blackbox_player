@@ -30,6 +30,27 @@ struct MultiChannelPlayerView: View {
     /// Mouse hover state
     @State private var isHovering = false
 
+    /// Renderer reference (for screenshot capture)
+    @State private var renderer: MultiChannelRenderer?
+
+    /// Video transformation service
+    @ObservedObject private var transformationService = VideoTransformationService.shared
+
+    /// Show transformation controls
+    @State private var showTransformControls = false
+
+    /// Fullscreen mode state
+    @State private var isFullscreen = false
+
+    /// Auto-hide timer for controls
+    @State private var controlsTimer: Timer?
+
+    /// Available displays for fullscreen
+    @State private var availableDisplays: [NSScreen] = []
+
+    /// Selected display for fullscreen
+    @State private var selectedDisplay: NSScreen?
+
     // MARK: - Body
 
     var body: some View {
@@ -38,7 +59,8 @@ struct MultiChannelPlayerView: View {
             MetalVideoView(
                 syncController: syncController,
                 layoutMode: layoutMode,
-                focusedPosition: focusedPosition
+                focusedPosition: focusedPosition,
+                onRendererCreated: { renderer = $0 }
             )
 
             // GPS Map overlay
@@ -62,12 +84,42 @@ struct MultiChannelPlayerView: View {
         }
         .onAppear {
             loadVideoFile()
+            detectAvailableDisplays()
         }
         .onDisappear {
             syncController.stop()
+            controlsTimer?.invalidate()
         }
         .onHover { hovering in
             isHovering = hovering
+            if hovering {
+                // Show controls when mouse enters
+                showControls = true
+                resetControlsTimer()
+            }
+        }
+        .gesture(
+            // Track mouse movement to show controls
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in
+                    showControls = true
+                    resetControlsTimer()
+                }
+        )
+        .onReceive(NotificationCenter.default.publisher(for: NSWindow.willEnterFullScreenNotification)) { _ in
+            isFullscreen = true
+            infoLog("[MultiChannelPlayerView] Entering fullscreen mode")
+            resetControlsTimer()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSWindow.willExitFullScreenNotification)) { _ in
+            isFullscreen = false
+            showControls = true
+            controlsTimer?.invalidate()
+            infoLog("[MultiChannelPlayerView] Exiting fullscreen mode")
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didChangeScreenParametersNotification)) { _ in
+            detectAvailableDisplays()
+            infoLog("[MultiChannelPlayerView] Screen configuration changed")
         }
     }
 
@@ -75,11 +127,33 @@ struct MultiChannelPlayerView: View {
 
     private var controlsOverlay: some View {
         VStack {
-            // Top bar: Layout controls
-            HStack {
-                layoutControls
-                Spacer()
-                channelIndicators
+            // Top bar: Layout and transformation controls
+            VStack(spacing: 8) {
+                HStack {
+                    layoutControls
+                    Spacer()
+                    // Transformation toggle button
+                    Button(action: { showTransformControls.toggle() }) {
+                        Image(systemName: showTransformControls ? "slider.horizontal.3" : "slider.horizontal.3")
+                            .font(.system(size: 18))
+                            .foregroundColor(showTransformControls ? .white : .white.opacity(0.6))
+                            .frame(width: 32, height: 32)
+                            .background(showTransformControls ? Color.accentColor : Color.clear)
+                            .cornerRadius(6)
+                    }
+                    .buttonStyle(.plain)
+                    .help("Video Transformations")
+
+                    Spacer()
+                        .frame(width: 12)
+
+                    channelIndicators
+                }
+
+                // Transformation controls (shown when toggled)
+                if showTransformControls {
+                    transformationControls
+                }
             }
             .padding()
             .background(
@@ -158,6 +232,130 @@ struct MultiChannelPlayerView: View {
                 .help(channel.position.displayName)
             }
         }
+    }
+
+    // MARK: - Transformation Controls
+
+    private var transformationControls: some View {
+        VStack(spacing: 12) {
+            // First row: Brightness and Zoom
+            HStack(spacing: 20) {
+                // Brightness control
+                HStack(spacing: 8) {
+                    Image(systemName: "sun.min")
+                        .foregroundColor(.white.opacity(0.8))
+                        .frame(width: 20)
+
+                    Slider(
+                        value: Binding(
+                            get: { transformationService.transformations.brightness },
+                            set: { transformationService.setBrightness($0) }
+                        ),
+                        in: -1.0...1.0
+                    )
+                    .frame(width: 120)
+
+                    Image(systemName: "sun.max")
+                        .foregroundColor(.white.opacity(0.8))
+                        .frame(width: 20)
+
+                    Text(String(format: "%.2f", transformationService.transformations.brightness))
+                        .font(.system(size: 12, design: .monospaced))
+                        .foregroundColor(.white.opacity(0.8))
+                        .frame(width: 40)
+                }
+
+                // Zoom control
+                HStack(spacing: 8) {
+                    Image(systemName: "minus.magnifyingglass")
+                        .foregroundColor(.white.opacity(0.8))
+                        .frame(width: 20)
+
+                    Slider(
+                        value: Binding(
+                            get: { transformationService.transformations.zoomLevel },
+                            set: { transformationService.setZoomLevel($0) }
+                        ),
+                        in: 1.0...5.0
+                    )
+                    .frame(width: 120)
+
+                    Image(systemName: "plus.magnifyingglass")
+                        .foregroundColor(.white.opacity(0.8))
+                        .frame(width: 20)
+
+                    Text(String(format: "%.1fx", transformationService.transformations.zoomLevel))
+                        .font(.system(size: 12, design: .monospaced))
+                        .foregroundColor(.white.opacity(0.8))
+                        .frame(width: 40)
+                }
+            }
+
+            // Second row: Flip controls and Reset
+            HStack(spacing: 12) {
+                // Flip Horizontal
+                Button(action: { transformationService.toggleFlipHorizontal() }) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "arrow.left.and.right")
+                            .font(.system(size: 14))
+                        Text("Flip H")
+                            .font(.system(size: 12, weight: .medium))
+                    }
+                    .foregroundColor(.white)
+                    .frame(width: 80, height: 28)
+                    .background(
+                        transformationService.transformations.flipHorizontal
+                            ? Color.accentColor
+                            : Color.white.opacity(0.2)
+                    )
+                    .cornerRadius(6)
+                }
+                .buttonStyle(.plain)
+                .help("Flip Horizontal")
+
+                // Flip Vertical
+                Button(action: { transformationService.toggleFlipVertical() }) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "arrow.up.and.down")
+                            .font(.system(size: 14))
+                        Text("Flip V")
+                            .font(.system(size: 12, weight: .medium))
+                    }
+                    .foregroundColor(.white)
+                    .frame(width: 80, height: 28)
+                    .background(
+                        transformationService.transformations.flipVertical
+                            ? Color.accentColor
+                            : Color.white.opacity(0.2)
+                    )
+                    .cornerRadius(6)
+                }
+                .buttonStyle(.plain)
+                .help("Flip Vertical")
+
+                Spacer()
+
+                // Reset button
+                Button(action: { transformationService.resetTransformations() }) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "arrow.counterclockwise")
+                            .font(.system(size: 14))
+                        Text("Reset")
+                            .font(.system(size: 12, weight: .medium))
+                    }
+                    .foregroundColor(.white)
+                    .frame(width: 80, height: 28)
+                    .background(Color.white.opacity(0.2))
+                    .cornerRadius(6)
+                }
+                .buttonStyle(.plain)
+                .help("Reset all transformations")
+            }
+        }
+        .padding(.horizontal)
+        .padding(.vertical, 8)
+        .background(Color.black.opacity(0.3))
+        .cornerRadius(8)
     }
 
     // MARK: - Timeline
@@ -252,7 +450,88 @@ struct MultiChannelPlayerView: View {
             Text("\(syncController.channelCount) channels")
                 .font(.system(size: 12))
                 .foregroundColor(.white.opacity(0.8))
+
+            Spacer()
+                .frame(width: 20)
+
+            // Screenshot button
+            Button(action: captureScreenshot) {
+                Image(systemName: "camera")
+                    .font(.system(size: 20))
+                    .foregroundColor(.white)
+            }
+            .buttonStyle(.plain)
+            .help("Capture Screenshot")
+
+            // Fullscreen toggle button
+            Button(action: toggleFullscreen) {
+                Image(systemName: isFullscreen ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right")
+                    .font(.system(size: 20))
+                    .foregroundColor(.white)
+            }
+            .buttonStyle(.plain)
+            .help(isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen")
         }
+    }
+
+    // MARK: - Fullscreen
+
+    private func toggleFullscreen() {
+        // Get the current window
+        guard let window = NSApplication.shared.keyWindow else {
+            warningLog("[MultiChannelPlayerView] No key window available for fullscreen toggle")
+            return
+        }
+
+        // Toggle fullscreen
+        window.toggleFullScreen(nil)
+        isFullscreen.toggle()
+
+        infoLog("[MultiChannelPlayerView] Fullscreen mode: \(isFullscreen)")
+    }
+
+    // MARK: - Auto-hide Controls
+
+    private func resetControlsTimer() {
+        // Invalidate existing timer
+        controlsTimer?.invalidate()
+
+        // Don't auto-hide if not in fullscreen mode
+        guard isFullscreen else {
+            return
+        }
+
+        // Create new timer to hide controls after 3 seconds of inactivity
+        controlsTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: false) { _ in
+            withAnimation(.easeOut(duration: 0.3)) {
+                showControls = false
+            }
+        }
+    }
+
+    // MARK: - Screenshot
+
+    private func captureScreenshot() {
+        guard let renderer = renderer else {
+            warningLog("[MultiChannelPlayerView] Renderer not available for screenshot")
+            return
+        }
+
+        infoLog("[MultiChannelPlayerView] Capturing screenshot")
+
+        // Generate filename with timestamp
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyyMMdd_HHmmss"
+        let dateString = dateFormatter.string(from: Date())
+        let filename = "Blackbox_\(dateString)"
+
+        // Capture with timestamp overlay
+        renderer.captureAndSave(
+            format: .png,
+            timestamp: Date(),
+            videoTimestamp: syncController.currentTime,
+            defaultFilename: filename
+        )
     }
 
     private var speedControl: some View {
@@ -301,6 +580,22 @@ struct MultiChannelPlayerView: View {
             errorLog("[MultiChannelPlayerView] Failed to load video file: \(error)")
         }
     }
+
+    // MARK: - Display Management
+
+    private func detectAvailableDisplays() {
+        availableDisplays = NSScreen.screens
+        selectedDisplay = NSScreen.main
+
+        let displayCount = availableDisplays.count
+        infoLog("[MultiChannelPlayerView] Detected \(displayCount) display(s)")
+
+        for (index, screen) in availableDisplays.enumerated() {
+            let frame = screen.frame
+            let name = screen.localizedName
+            debugLog("[MultiChannelPlayerView] Display \(index + 1): \(name), frame: \(frame)")
+        }
+    }
 }
 
 // MARK: - Metal Video View
@@ -312,6 +607,7 @@ private struct MetalVideoView: NSViewRepresentable {
     @ObservedObject var syncController: SyncController
     let layoutMode: LayoutMode
     let focusedPosition: CameraPosition
+    let onRendererCreated: (MultiChannelRenderer) -> Void
 
     // MARK: - NSViewRepresentable
 
@@ -334,7 +630,12 @@ private struct MetalVideoView: NSViewRepresentable {
     }
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(syncController: syncController, layoutMode: layoutMode, focusedPosition: focusedPosition)
+        Coordinator(
+            syncController: syncController,
+            layoutMode: layoutMode,
+            focusedPosition: focusedPosition,
+            onRendererCreated: onRendererCreated
+        )
     }
 
     // MARK: - Coordinator
@@ -345,12 +646,21 @@ private struct MetalVideoView: NSViewRepresentable {
         var focusedPosition: CameraPosition
         var renderer: MultiChannelRenderer?
 
-        init(syncController: SyncController, layoutMode: LayoutMode, focusedPosition: CameraPosition) {
+        init(
+            syncController: SyncController,
+            layoutMode: LayoutMode,
+            focusedPosition: CameraPosition,
+            onRendererCreated: @escaping (MultiChannelRenderer) -> Void
+        ) {
             self.syncController = syncController
             self.layoutMode = layoutMode
             self.focusedPosition = focusedPosition
             super.init()
-            self.renderer = MultiChannelRenderer()
+
+            if let renderer = MultiChannelRenderer() {
+                self.renderer = renderer
+                onRendererCreated(renderer)
+            }
         }
 
         func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {
