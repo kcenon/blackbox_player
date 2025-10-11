@@ -33,6 +33,15 @@ class SyncController: ObservableObject {
     /// Video channels
     private var channels: [VideoChannel] = []
 
+    /// GPS service for location data
+    private(set) var gpsService: GPSService = GPSService()
+
+    /// G-Sensor service for acceleration data
+    private(set) var gsensorService: GSensorService = GSensorService()
+
+    /// Lock for thread-safe access to channels array
+    private let channelsLock = NSLock()
+
     /// Total duration (from longest channel)
     private(set) var duration: TimeInterval = 0.0
 
@@ -86,10 +95,16 @@ class SyncController: ObservableObject {
             throw ChannelError.invalidState("No enabled channels found")
         }
 
+        channelsLock.lock()
         self.channels = newChannels
+        channelsLock.unlock()
 
         // Calculate total duration (use longest channel)
         self.duration = videoFile.duration
+
+        // Load GPS and G-Sensor data
+        gpsService.loadGPSData(from: videoFile.metadata, startTime: videoFile.timestamp)
+        gsensorService.loadAccelerationData(from: videoFile.metadata, startTime: videoFile.timestamp)
 
         // Reset playback state
         currentTime = 0.0
@@ -100,10 +115,22 @@ class SyncController: ObservableObject {
     /// Start synchronized playback
     func play() {
         guard playbackState != .playing else { return }
-        guard !channels.isEmpty else { return }
+
+        channelsLock.lock()
+        let isEmpty = channels.isEmpty
+        let channelsCopy = channels
+        channelsLock.unlock()
+
+        guard !isEmpty else {
+            warningLog("[SyncController] Cannot play: no channels loaded")
+            return
+        }
+
+        infoLog("[SyncController] Starting playback with \(channelsCopy.count) channels")
 
         // Start all channels decoding
-        for channel in channels {
+        for channel in channelsCopy {
+            infoLog("[SyncController] Starting decoding for channel: \(channel.channelInfo.position.displayName)")
             channel.startDecoding()
         }
 
@@ -138,11 +165,19 @@ class SyncController: ObservableObject {
     func stop() {
         stopSyncTimer()
 
-        for channel in channels {
+        channelsLock.lock()
+        let channelsCopy = channels
+        channels.removeAll()
+        channelsLock.unlock()
+
+        for channel in channelsCopy {
             channel.stop()
         }
 
-        channels.removeAll()
+        // Clear GPS and G-Sensor data
+        gpsService.clear()
+        gsensorService.clear()
+
         playbackState = .stopped
         currentTime = 0.0
         playbackPosition = 0.0
@@ -161,7 +196,11 @@ class SyncController: ObservableObject {
         }
 
         // Seek all channels
-        for channel in channels {
+        channelsLock.lock()
+        let channelsCopy = channels
+        channelsLock.unlock()
+
+        for channel in channelsCopy {
             do {
                 try channel.seek(to: clampedTime)
             } catch {
@@ -171,6 +210,10 @@ class SyncController: ObservableObject {
 
         currentTime = clampedTime
         playbackPosition = duration > 0 ? clampedTime / duration : 0.0
+
+        // Update GPS and G-Sensor services at new position
+        gpsService.getCurrentLocation(at: clampedTime)
+        gsensorService.getCurrentAcceleration(at: clampedTime)
 
         // Resume if was playing
         if wasPlaying {
@@ -187,9 +230,13 @@ class SyncController: ObservableObject {
     /// Get synchronized frames for all channels at current time
     /// - Returns: Dictionary mapping channel position to frame
     func getSynchronizedFrames() -> [CameraPosition: VideoFrame] {
+        channelsLock.lock()
+        let channelsCopy = channels
+        channelsLock.unlock()
+
         var frames: [CameraPosition: VideoFrame] = [:]
 
-        for channel in channels {
+        for channel in channelsCopy {
             if let frame = channel.getFrame(at: currentTime) {
                 frames[channel.channelInfo.position] = frame
             }
@@ -201,9 +248,13 @@ class SyncController: ObservableObject {
     /// Get buffer status for all channels
     /// - Returns: Dictionary mapping channel position to buffer status
     func getBufferStatus() -> [CameraPosition: (current: Int, max: Int, fillPercentage: Double)] {
+        channelsLock.lock()
+        let channelsCopy = channels
+        channelsLock.unlock()
+
         var status: [CameraPosition: (current: Int, max: Int, fillPercentage: Double)] = [:]
 
-        for channel in channels {
+        for channel in channelsCopy {
             status[channel.channelInfo.position] = channel.getBufferStatus()
         }
 
@@ -212,11 +263,15 @@ class SyncController: ObservableObject {
 
     /// Get channel count
     var channelCount: Int {
+        channelsLock.lock()
+        defer { channelsLock.unlock() }
         return channels.count
     }
 
     /// Check if all channels are ready
     var allChannelsReady: Bool {
+        channelsLock.lock()
+        defer { channelsLock.unlock() }
         return !channels.isEmpty && channels.allSatisfy { $0.state == .ready || $0.state == .decoding }
     }
 
@@ -247,6 +302,10 @@ class SyncController: ObservableObject {
         // Update current time
         currentTime = videoTime
         playbackPosition = duration > 0 ? currentTime / duration : 0.0
+
+        // Update GPS and G-Sensor services
+        gpsService.getCurrentLocation(at: currentTime)
+        gsensorService.getCurrentAcceleration(at: currentTime)
 
         // Check if reached end
         if currentTime >= duration {
