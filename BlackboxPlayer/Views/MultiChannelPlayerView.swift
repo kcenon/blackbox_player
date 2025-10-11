@@ -41,6 +41,19 @@ struct MultiChannelPlayerView: View {
                 focusedPosition: focusedPosition
             )
 
+            // GPS Map overlay
+            MapOverlayView(
+                gpsService: syncController.gpsService,
+                gsensorService: syncController.gsensorService,
+                currentTime: syncController.currentTime
+            )
+
+            // G-Sensor graph overlay
+            GraphOverlayView(
+                gsensorService: syncController.gsensorService,
+                currentTime: syncController.currentTime
+            )
+
             // Controls overlay
             if showControls || isHovering {
                 controlsOverlay
@@ -281,9 +294,11 @@ struct MultiChannelPlayerView: View {
 
     private func loadVideoFile() {
         do {
+            infoLog("[MultiChannelPlayerView] Loading video file: \(videoFile.baseFilename)")
             try syncController.loadVideoFile(videoFile)
+            infoLog("[MultiChannelPlayerView] Video file loaded successfully. Channels: \(syncController.channelCount)")
         } catch {
-            print("Failed to load video file: \(error)")
+            errorLog("[MultiChannelPlayerView] Failed to load video file: \(error)")
         }
     }
 }
@@ -306,6 +321,7 @@ private struct MetalVideoView: NSViewRepresentable {
         mtkView.delegate = context.coordinator
         mtkView.enableSetNeedsDisplay = false
         mtkView.isPaused = false
+        mtkView.preferredFramesPerSecond = 30  // Set target frame rate
         mtkView.framebufferOnly = true
         mtkView.clearColor = MTLClearColor(red: 0, green: 0, blue: 0, alpha: 1)
 
@@ -344,6 +360,7 @@ private struct MetalVideoView: NSViewRepresentable {
         func draw(in view: MTKView) {
             guard let drawable = view.currentDrawable,
                   let renderer = renderer else {
+                debugLog("[MetalVideoView] Draw skipped: drawable or renderer is nil")
                 return
             }
 
@@ -353,6 +370,13 @@ private struct MetalVideoView: NSViewRepresentable {
 
             // Get synchronized frames
             let frames = syncController.getSynchronizedFrames()
+
+            if frames.isEmpty {
+                // No frames available yet, just return (black screen will be shown)
+                return
+            }
+
+            debugLog("[MetalVideoView] Rendering \(frames.count) frames at time \(String(format: "%.2f", syncController.currentTime))")
 
             // Render
             renderer.render(
@@ -366,9 +390,10 @@ private struct MetalVideoView: NSViewRepresentable {
 
 // MARK: - Preview
 
-struct MultiChannelPlayerView_Previews: PreviewProvider {
-    static var previews: some View {
-        MultiChannelPlayerView(videoFile: .sample1)
-            .frame(width: 1280, height: 720)
-    }
-}
+// Preview temporarily disabled - requires sample data
+// struct MultiChannelPlayerView_Previews: PreviewProvider {
+//     static var previews: some View {
+//         MultiChannelPlayerView(videoFile: sampleVideoFile)
+//             .frame(width: 1280, height: 720)
+//     }
+// }
