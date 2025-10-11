@@ -108,10 +108,89 @@ The project is configured to use Homebrew's FFmpeg installation:
 
 These paths are configured in `project.yml` and may need to be updated if FFmpeg is upgraded.
 
+## Build Scripts
+
+This project includes comprehensive build automation scripts in the `scripts/` directory:
+
+### Local Development
+
+**Build Script** (`scripts/build.sh`)
+```bash
+# Debug build (default)
+./scripts/build.sh
+
+# Release build
+./scripts/build.sh Release
+```
+
+Features:
+- Automatic xcodegen project generation
+- Clean build option (Release only)
+- Interactive test execution prompt
+- Colored output and progress indicators
+- Build logs saved to `build/` directory
+
+**Test Script** (`scripts/test.sh`)
+```bash
+# Run tests with coverage
+./scripts/test.sh
+```
+
+Features:
+- Executes all unit tests
+- Generates coverage reports
+- Creates `.xcresult` bundles
+- Saves results to `build/TestResults/`
+
+**Archive Script** (`scripts/archive.sh`)
+```bash
+# Create release archive
+./scripts/archive.sh
+```
+
+Features:
+- Interactive workflow
+- Creates `.xcarchive` for distribution
+- Optional archive export
+- Optional DMG creation
+
+### CI/CD
+
+**CI Build Script** (`scripts/ci-build.sh`)
+```bash
+# Debug build (with tests)
+./scripts/ci-build.sh
+
+# Release build (no tests)
+./scripts/ci-build.sh Release
+```
+
+Features:
+- Non-interactive (no prompts)
+- CI environment detection
+- Code signing disabled for CI
+- GitHub Actions integration
+
+See `scripts/README.md` for detailed documentation.
+
 ## Building from Command Line
 
-### Clean Build
+### Using Build Scripts (Recommended)
 
+```bash
+# Quick Debug build
+./scripts/build.sh
+
+# Release build
+./scripts/build.sh Release
+
+# Run tests
+./scripts/test.sh
+```
+
+### Using xcodebuild Directly
+
+**Clean Build**
 ```bash
 xcodebuild -project BlackboxPlayer.xcodeproj \
            -scheme BlackboxPlayer \
@@ -119,8 +198,7 @@ xcodebuild -project BlackboxPlayer.xcodeproj \
            clean build
 ```
 
-### Run Tests
-
+**Run Tests**
 ```bash
 xcodebuild -project BlackboxPlayer.xcodeproj \
            -scheme BlackboxPlayer \
@@ -128,8 +206,7 @@ xcodebuild -project BlackboxPlayer.xcodeproj \
            test
 ```
 
-### Run SwiftLint
-
+**Run SwiftLint**
 ```bash
 swiftlint lint BlackboxPlayer
 ```
@@ -240,19 +317,57 @@ type(scope): description
 
 ## Current Status
 
-**Phase 0: Preparation** - 9/15 tasks completed (60%)
+**Overall Progress**: 69/156 tasks (44.2%)
 
-✅ Environment setup complete
-✅ Project structure created
-✅ CI/CD pipeline configured
-✅ FFmpeg linked to project
+### Completed Phases
 
-⏳ Pending: EXT4 library integration, sample data collection
+✅ **Phase 0: Preparation** - 11/15 tasks (73%)
+- Environment setup complete
+- Project structure created
+- CI/CD pipeline configured
+- FFmpeg integration complete
+- EXT4 interface ready (mock implementation)
 
-See [IMPLEMENTATION_CHECKLIST.md](IMPLEMENTATION_CHECKLIST.md) for detailed progress.
+✅ **Phase 2: Single Channel Playback** - 18/22 tasks (82%)
+- FFmpeg H.264/MP3 decoder implemented
+- Metal renderer with GPU acceleration
+- Playback controls (play/pause/seek/speed)
+- Timeline scrubber with time display
+
+✅ **Phase 3: Multi-Channel Sync** - 17/21 tasks (81%)
+- Multi-channel architecture with VideoChannel
+- SyncController with ±50ms accuracy
+- 3 layout modes (Grid/Focus/Horizontal)
+- Performance optimized (5 channels @ 30fps)
+
+✅ **Phase 4 Week 2: Image Processing** - 20/38 tasks (53%)
+- Screen capture (PNG/JPEG with timestamp)
+- Video transformations (brightness/flip/zoom)
+- Fullscreen mode with auto-hide controls
+- Multi-display support
+
+### In Progress
+
+⏳ **Phase 4 Week 1: GPS & G-Sensor** (pending)
+- GPS service and map integration
+- G-Sensor chart visualization
+
+### Pending
+
+📋 **Phase 5: Export & Settings** - 0/16 tasks
+- MP4 export pipeline
+- Video repair functionality
+- Settings management
+
+📋 **Phase 6: Localization & Polish** - 0/20 tasks
+- Multi-language support (KR/EN/JP)
+- Dark mode implementation
+- Code signing & notarization
+
+See [IMPLEMENTATION_CHECKLIST_kr.md](IMPLEMENTATION_CHECKLIST_kr.md) for detailed progress.
 
 ---
 
-**Last Updated**: 2025-10-10
+**Last Updated**: 2025-10-12
 **Xcode Version**: 26.0.1
 **macOS Target**: 12.0+
