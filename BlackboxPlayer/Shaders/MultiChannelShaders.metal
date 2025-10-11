@@ -8,6 +8,17 @@
 #include <metal_stdlib>
 using namespace metal;
 
+// MARK: - Transformation Parameters
+
+struct TransformUniforms {
+    float brightness;       // -1.0 to 1.0
+    float flipHorizontal;   // 0.0 or 1.0
+    float flipVertical;     // 0.0 or 1.0
+    float zoomLevel;        // 1.0 = no zoom, 2.0 = 2x zoom
+    float zoomCenterX;      // 0.0 to 1.0
+    float zoomCenterY;      // 0.0 to 1.0
+};
+
 // MARK: - Vertex Shader
 
 struct VertexIn {
@@ -20,10 +31,31 @@ struct VertexOut {
     float2 texCoord;
 };
 
-vertex VertexOut vertex_main(VertexIn in [[stage_in]]) {
+vertex VertexOut vertex_main(
+    VertexIn in [[stage_in]],
+    constant TransformUniforms *uniforms [[buffer(1)]]
+) {
     VertexOut out;
     out.position = float4(in.position, 0.0, 1.0);
-    out.texCoord = in.texCoord;
+
+    // Apply flip transformations
+    float2 texCoord = in.texCoord;
+    if (uniforms->flipHorizontal > 0.5) {
+        texCoord.x = 1.0 - texCoord.x;
+    }
+    if (uniforms->flipVertical > 0.5) {
+        texCoord.y = 1.0 - texCoord.y;
+    }
+
+    // Apply zoom transformation
+    if (uniforms->zoomLevel > 1.0) {
+        float2 center = float2(uniforms->zoomCenterX, uniforms->zoomCenterY);
+        float2 offset = texCoord - center;
+        offset /= uniforms->zoomLevel;
+        texCoord = center + offset;
+    }
+
+    out.texCoord = texCoord;
     return out;
 }
 
@@ -31,7 +63,8 @@ vertex VertexOut vertex_main(VertexIn in [[stage_in]]) {
 
 fragment float4 fragment_main(
     VertexOut in [[stage_in]],
-    texture2d<float> colorTexture [[texture(0)]]
+    texture2d<float> colorTexture [[texture(0)]],
+    constant TransformUniforms *uniforms [[buffer(0)]]
 ) {
     constexpr sampler textureSampler(
         mag_filter::linear,
@@ -41,6 +74,16 @@ fragment float4 fragment_main(
 
     // Sample the texture
     float4 color = colorTexture.sample(textureSampler, in.texCoord);
+
+    // Apply brightness adjustment
+    // brightness = 0.0: no change
+    // brightness > 0.0: increase brightness (add to RGB)
+    // brightness < 0.0: decrease brightness (subtract from RGB)
+    if (abs(uniforms->brightness) > 0.001) {
+        color.rgb += uniforms->brightness;
+        color.rgb = clamp(color.rgb, 0.0, 1.0);
+    }
+
     return color;
 }
 

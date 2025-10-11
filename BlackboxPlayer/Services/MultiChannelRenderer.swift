@@ -39,6 +39,18 @@ class MultiChannelRenderer {
     /// Sampler state for texture sampling
     private var samplerState: MTLSamplerState?
 
+    /// Screen capture service
+    private(set) var captureService: ScreenCaptureService
+
+    /// Last rendered texture (for capture)
+    private var lastRenderedTexture: MTLTexture?
+
+    /// Transformation service
+    private let transformationService = VideoTransformationService.shared
+
+    /// Uniform buffer for transformation parameters
+    private var uniformBuffer: MTLBuffer?
+
     // MARK: - Initialization
 
     init?() {
@@ -72,10 +84,14 @@ class MultiChannelRenderer {
         }
         self.textureCache = textureCache
 
-        // Setup pipeline and vertex buffer
+        // Create capture service
+        self.captureService = ScreenCaptureService(device: device)
+
+        // Setup pipeline, vertex buffer, sampler, and uniform buffer
         setupPipeline()
         setupVertexBuffer()
         setupSampler()
+        setupUniformBuffer()
     }
 
     // MARK: - Setup
@@ -148,6 +164,36 @@ class MultiChannelRenderer {
         samplerState = device.makeSamplerState(descriptor: samplerDescriptor)
     }
 
+    private func setupUniformBuffer() {
+        // Create uniform buffer for transformation parameters
+        // Size matches TransformUniforms struct in Metal shader (6 floats)
+        let uniformSize = MemoryLayout<Float>.size * 6
+        uniformBuffer = device.makeBuffer(length: uniformSize, options: [.storageModeShared])
+
+        if uniformBuffer == nil {
+            errorLog("[MultiChannelRenderer] Failed to create uniform buffer")
+        } else {
+            debugLog("[MultiChannelRenderer] Created uniform buffer with size \(uniformSize) bytes")
+        }
+    }
+
+    private func updateUniformBuffer() {
+        guard let buffer = uniformBuffer else {
+            return
+        }
+
+        let transformations = transformationService.transformations
+
+        // Update uniform buffer with current transformation values
+        let pointer = buffer.contents().assumingMemoryBound(to: Float.self)
+        pointer[0] = transformations.brightness
+        pointer[1] = transformations.flipHorizontal ? 1.0 : 0.0
+        pointer[2] = transformations.flipVertical ? 1.0 : 0.0
+        pointer[3] = transformations.zoomLevel
+        pointer[4] = transformations.zoomCenterX
+        pointer[5] = transformations.zoomCenterY
+    }
+
     // MARK: - Public Methods
 
     /// Render frames to drawable
@@ -181,6 +227,9 @@ class MultiChannelRenderer {
         }
 
         renderEncoder.setRenderPipelineState(pipelineState)
+
+        // Update transformation uniform buffer
+        updateUniformBuffer()
 
         // Create stable, sorted array of positions for thread-safe viewport calculation
         let sortedPositions = frames.keys.sorted { $0.rawValue < $1.rawValue }
@@ -220,6 +269,12 @@ class MultiChannelRenderer {
                 renderEncoder.setVertexBuffer(vertexBuffer, offset: 0, index: 0)
             }
 
+            // Set uniform buffer for transformations (buffer index 0 for both vertex and fragment shaders)
+            if let uniformBuffer = uniformBuffer {
+                renderEncoder.setVertexBuffer(uniformBuffer, offset: 0, index: 1)
+                renderEncoder.setFragmentBuffer(uniformBuffer, offset: 0, index: 0)
+            }
+
             // Set texture
             renderEncoder.setFragmentTexture(texture, index: 0)
 
@@ -234,9 +289,65 @@ class MultiChannelRenderer {
 
         renderEncoder.endEncoding()
 
+        // Store last rendered texture for capture
+        lastRenderedTexture = drawable.texture
+
         // Present drawable
         commandBuffer.present(drawable)
         commandBuffer.commit()
+    }
+
+    /// Capture current frame as image
+    /// - Parameters:
+    ///   - format: Image format (PNG or JPEG)
+    ///   - timestamp: Optional timestamp to overlay
+    ///   - videoTimestamp: Current video playback time
+    /// - Returns: Captured image data, or nil if no frame available
+    func captureCurrentFrame(
+        format: CaptureImageFormat = .png,
+        timestamp: Date? = nil,
+        videoTimestamp: TimeInterval? = nil
+    ) -> Data? {
+        guard let texture = lastRenderedTexture else {
+            errorLog("[MultiChannelRenderer] No rendered texture available for capture")
+            return nil
+        }
+
+        return captureService.captureFrame(
+            from: texture,
+            format: format,
+            timestamp: timestamp,
+            videoTimestamp: videoTimestamp
+        )
+    }
+
+    /// Capture and save current frame with save dialog
+    /// - Parameters:
+    ///   - format: Image format (PNG or JPEG)
+    ///   - timestamp: Optional timestamp to overlay
+    ///   - videoTimestamp: Current video playback time
+    ///   - defaultFilename: Default filename without extension
+    /// - Returns: True if saved successfully
+    @discardableResult
+    func captureAndSave(
+        format: CaptureImageFormat = .png,
+        timestamp: Date? = Date(),
+        videoTimestamp: TimeInterval? = nil,
+        defaultFilename: String = "BlackboxCapture"
+    ) -> Bool {
+        guard let data = captureCurrentFrame(
+            format: format,
+            timestamp: timestamp,
+            videoTimestamp: videoTimestamp
+        ) else {
+            return false
+        }
+
+        return captureService.showSavePanel(
+            data: data,
+            format: format,
+            defaultFilename: defaultFilename
+        )
     }
 
     /// Set layout mode
