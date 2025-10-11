@@ -114,12 +114,19 @@ struct VideoFrame {
         case .rgb24:
             pixelFormatType = kCVPixelFormatType_24RGB
         case .rgba:
-            pixelFormatType = kCVPixelFormatType_32RGBA
+            // Use BGRA for Metal compatibility (our decoder outputs BGRA as "RGBA")
+            pixelFormatType = kCVPixelFormatType_32BGRA
         case .yuv420p:
             pixelFormatType = kCVPixelFormatType_420YpCbCr8Planar
         case .nv12:
             pixelFormatType = kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange
         }
+
+        // Create attributes for Metal compatibility
+        let attributes: [CFString: Any] = [
+            kCVPixelBufferMetalCompatibilityKey: true,
+            kCVPixelBufferIOSurfacePropertiesKey: [:] as CFDictionary
+        ]
 
         var pixelBuffer: CVPixelBuffer?
         let status = CVPixelBufferCreate(
@@ -127,21 +134,31 @@ struct VideoFrame {
             width,
             height,
             pixelFormatType,
-            nil,
+            attributes as CFDictionary,
             &pixelBuffer
         )
 
         guard status == kCVReturnSuccess, let buffer = pixelBuffer else {
+            errorLog("[VideoFrame] Failed to create CVPixelBuffer with status: \(status)")
             return nil
         }
 
         CVPixelBufferLockBaseAddress(buffer, [])
         defer { CVPixelBufferUnlockBaseAddress(buffer, []) }
 
+        // Copy pixel data row by row to handle stride differences
         if let baseAddress = CVPixelBufferGetBaseAddress(buffer) {
+            let destBytesPerRow = CVPixelBufferGetBytesPerRow(buffer)
+            let srcBytesPerRow = lineSize
+            let minBytesPerRow = min(destBytesPerRow, srcBytesPerRow)
+
             data.withUnsafeBytes { dataBytes in
                 if let sourcePtr = dataBytes.baseAddress {
-                    memcpy(baseAddress, sourcePtr, min(data.count, CVPixelBufferGetDataSize(buffer)))
+                    for row in 0..<height {
+                        let destRowPtr = baseAddress.advanced(by: row * destBytesPerRow)
+                        let srcRowPtr = sourcePtr.advanced(by: row * srcBytesPerRow)
+                        memcpy(destRowPtr, srcRowPtr, minBytesPerRow)
+                    }
                 }
             }
         }

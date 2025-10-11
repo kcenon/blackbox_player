@@ -15,17 +15,17 @@ class VideoDecoder {
     /// Path to the video file
     private let filePath: String
 
-    /// FFmpeg format context (opaque pointer)
-    private var formatContext: OpaquePointer?
+    /// FFmpeg format context
+    private var formatContext: UnsafeMutablePointer<AVFormatContext>?
 
     /// Video codec context
-    private var videoCodecContext: OpaquePointer?
+    private var videoCodecContext: UnsafeMutablePointer<AVCodecContext>?
 
     /// Audio codec context
-    private var audioCodecContext: OpaquePointer?
+    private var audioCodecContext: UnsafeMutablePointer<AVCodecContext>?
 
     /// Scaler context for pixel format conversion
-    private var scalerContext: OpaquePointer?
+    private var scalerContext: UnsafeMutablePointer<SwsContext>?
 
     /// Video stream index
     private var videoStreamIndex: Int = -1
@@ -66,10 +66,22 @@ class VideoDecoder {
             throw DecoderError.alreadyInitialized
         }
 
-        // Open input file
-        var formatCtx: OpaquePointer?
-        if avformat_open_input(&formatCtx, filePath, nil, nil) != 0 {
-            throw DecoderError.cannotOpenFile(filePath)
+        // Verify file exists
+        guard FileManager.default.fileExists(atPath: filePath) else {
+            throw DecoderError.cannotOpenFile("File not found: \(filePath)")
+        }
+
+        // Open input file with explicit C string conversion
+        var formatCtx: UnsafeMutablePointer<AVFormatContext>?
+        let openResult = filePath.withCString { cString in
+            return avformat_open_input(&formatCtx, cString, nil, nil)
+        }
+
+        if openResult != 0 {
+            var errorBuffer = [Int8](repeating: 0, count: 256)
+            av_strerror(openResult, &errorBuffer, 256)
+            let errorString = String(cString: errorBuffer)
+            throw DecoderError.cannotOpenFile("Failed to open \(filePath): \(errorString)")
         }
         self.formatContext = formatCtx
 
@@ -85,7 +97,7 @@ class VideoDecoder {
         }
 
         let numStreams = Int(formatCtx.pointee.nb_streams)
-        var streams = formatCtx.pointee.streams
+        let streams = formatCtx.pointee.streams
 
         for i in 0..<numStreams {
             guard let stream = streams?[i] else { continue }
@@ -125,11 +137,12 @@ class VideoDecoder {
         guard let packet = av_packet_alloc() else {
             throw DecoderError.cannotAllocatePacket
         }
-        defer { av_packet_free(&(UnsafeMutablePointer(mutating: packet))) }
+        var packetPtr: UnsafeMutablePointer<AVPacket>? = packet
+        defer { av_packet_free(&packetPtr) }
 
         // Read frame from file
         let readResult = av_read_frame(formatCtx, packet)
-        if readResult == AVERROR_EOF {
+        if readResult == -541478725 {  // AVERROR_EOF
             return nil  // End of file
         } else if readResult < 0 {
             throw DecoderError.readFrameError(readResult)
@@ -188,7 +201,7 @@ class VideoDecoder {
     func getDuration() -> TimeInterval? {
         guard let formatCtx = formatContext else { return nil }
         let duration = formatCtx.pointee.duration
-        if duration == AV_NOPTS_VALUE {
+        if duration == Int64(bitPattern: 0x8000000000000001) {  // AV_NOPTS_VALUE
             return nil
         }
         return Double(duration) / Double(AV_TIME_BASE)
@@ -197,7 +210,9 @@ class VideoDecoder {
     // MARK: - Private Methods
 
     private func initializeVideoStream(stream: UnsafeMutablePointer<AVStream>) throws {
-        let codecPar = stream.pointee.codecpar
+        guard let codecPar = stream.pointee.codecpar else {
+            throw DecoderError.codecNotFound("video")
+        }
 
         // Find decoder
         guard let codec = avcodec_find_decoder(codecPar.pointee.codec_id) else {
@@ -211,13 +226,15 @@ class VideoDecoder {
 
         // Copy codec parameters
         if avcodec_parameters_to_context(codecCtx, codecPar) < 0 {
-            avcodec_free_context(&(UnsafeMutablePointer(mutating: codecCtx)))
+            var ctx: UnsafeMutablePointer<AVCodecContext>? = codecCtx
+            avcodec_free_context(&ctx)
             throw DecoderError.cannotCopyCodecParameters
         }
 
         // Open codec
         if avcodec_open2(codecCtx, codec, nil) < 0 {
-            avcodec_free_context(&(UnsafeMutablePointer(mutating: codecCtx)))
+            var ctx: UnsafeMutablePointer<AVCodecContext>? = codecCtx
+            avcodec_free_context(&ctx)
             throw DecoderError.cannotOpenCodec("video")
         }
 
@@ -240,7 +257,9 @@ class VideoDecoder {
     }
 
     private func initializeAudioStream(stream: UnsafeMutablePointer<AVStream>) throws {
-        let codecPar = stream.pointee.codecpar
+        guard let codecPar = stream.pointee.codecpar else {
+            throw DecoderError.codecNotFound("audio")
+        }
 
         // Find decoder
         guard let codec = avcodec_find_decoder(codecPar.pointee.codec_id) else {
@@ -254,13 +273,15 @@ class VideoDecoder {
 
         // Copy codec parameters
         if avcodec_parameters_to_context(codecCtx, codecPar) < 0 {
-            avcodec_free_context(&(UnsafeMutablePointer(mutating: codecCtx)))
+            var ctx: UnsafeMutablePointer<AVCodecContext>? = codecCtx
+            avcodec_free_context(&ctx)
             throw DecoderError.cannotCopyCodecParameters
         }
 
         // Open codec
         if avcodec_open2(codecCtx, codec, nil) < 0 {
-            avcodec_free_context(&(UnsafeMutablePointer(mutating: codecCtx)))
+            var ctx: UnsafeMutablePointer<AVCodecContext>? = codecCtx
+            avcodec_free_context(&ctx)
             throw DecoderError.cannotOpenCodec("audio")
         }
 
@@ -286,7 +307,7 @@ class VideoDecoder {
         }
 
         // Send packet to decoder
-        var sendResult = avcodec_send_packet(codecCtx, packet)
+        let sendResult = avcodec_send_packet(codecCtx, packet)
         if sendResult < 0 {
             throw DecoderError.sendPacketError(sendResult)
         }
@@ -295,11 +316,12 @@ class VideoDecoder {
         guard let frame = av_frame_alloc() else {
             throw DecoderError.cannotAllocateFrame
         }
-        defer { av_frame_free(&(UnsafeMutablePointer(mutating: frame))) }
+        var framePtr: UnsafeMutablePointer<AVFrame>? = frame
+        defer { av_frame_free(&framePtr) }
 
         // Receive frame from decoder
         let receiveResult = avcodec_receive_frame(codecCtx, frame)
-        if receiveResult == AVERROR_EOF || receiveResult == Int32(bitPattern: UInt32(AVERROR(EAGAIN))) {
+        if receiveResult == -541478725 || receiveResult == -11 || receiveResult == -35 {  // AVERROR_EOF or AVERROR(EAGAIN) (macOS: -35, Linux: -11)
             return nil  // Need more packets
         } else if receiveResult < 0 {
             throw DecoderError.receiveFrameError(receiveResult)
@@ -329,11 +351,12 @@ class VideoDecoder {
         guard let frame = av_frame_alloc() else {
             throw DecoderError.cannotAllocateFrame
         }
-        defer { av_frame_free(&(UnsafeMutablePointer(mutating: frame))) }
+        var framePtr: UnsafeMutablePointer<AVFrame>? = frame
+        defer { av_frame_free(&framePtr) }
 
         // Receive frame from decoder
         let receiveResult = avcodec_receive_frame(codecCtx, frame)
-        if receiveResult == AVERROR_EOF || receiveResult == Int32(bitPattern: UInt32(AVERROR(EAGAIN))) {
+        if receiveResult == -541478725 || receiveResult == -11 || receiveResult == -35 {  // AVERROR_EOF or AVERROR(EAGAIN) (macOS: -35, Linux: -11)
             return nil  // Need more packets
         } else if receiveResult < 0 {
             throw DecoderError.receiveFrameError(receiveResult)
@@ -359,8 +382,8 @@ class VideoDecoder {
                 codecCtx.pointee.pix_fmt,
                 Int32(width),
                 Int32(height),
-                AV_PIX_FMT_RGB24,
-                SWS_BILINEAR,
+                AV_PIX_FMT_BGRA,
+                Int32(SWS_BILINEAR.rawValue),
                 nil, nil, nil
             )
         }
@@ -373,9 +396,10 @@ class VideoDecoder {
         guard let rgbFrame = av_frame_alloc() else {
             throw DecoderError.cannotAllocateFrame
         }
-        defer { av_frame_free(&(UnsafeMutablePointer(mutating: rgbFrame))) }
+        var rgbFramePtr: UnsafeMutablePointer<AVFrame>? = rgbFrame
+        defer { av_frame_free(&rgbFramePtr) }
 
-        rgbFrame.pointee.format = AV_PIX_FMT_RGB24.rawValue
+        rgbFrame.pointee.format = AV_PIX_FMT_BGRA.rawValue
         rgbFrame.pointee.width = Int32(width)
         rgbFrame.pointee.height = Int32(height)
 
@@ -384,15 +408,23 @@ class VideoDecoder {
         }
 
         // Convert pixel format
-        sws_scale(
-            swsCtx,
-            frame.pointee.data,
-            frame.pointee.linesize,
-            0,
-            Int32(height),
-            rgbFrame.pointee.data,
-            rgbFrame.pointee.linesize
-        )
+        _ = withUnsafePointer(to: &frame.pointee.data) { srcDataPtr in
+            withUnsafePointer(to: &frame.pointee.linesize) { srcLinesizePtr in
+                withUnsafePointer(to: &rgbFrame.pointee.data) { dstDataPtr in
+                    withUnsafePointer(to: &rgbFrame.pointee.linesize) { dstLinesizePtr in
+                        sws_scale(
+                            swsCtx,
+                            UnsafeRawPointer(srcDataPtr).assumingMemoryBound(to: UnsafePointer<UInt8>?.self),
+                            UnsafeRawPointer(srcLinesizePtr).assumingMemoryBound(to: Int32.self),
+                            0,
+                            Int32(height),
+                            UnsafeMutableRawPointer(mutating: dstDataPtr).assumingMemoryBound(to: UnsafeMutablePointer<UInt8>?.self),
+                            UnsafeMutableRawPointer(mutating: dstLinesizePtr).assumingMemoryBound(to: Int32.self)
+                        )
+                    }
+                }
+            }
+        }
 
         // Copy RGB data
         let lineSize = Int(rgbFrame.pointee.linesize.0)
@@ -404,13 +436,13 @@ class VideoDecoder {
         let timeBase = videoInfo.timeBase
         let timestamp = Double(pts) * Double(timeBase.num) / Double(timeBase.den)
 
-        let isKeyFrame = frame.pointee.key_frame == 1
+        let isKeyFrame = (frame.pointee.flags & Int32(AV_FRAME_FLAG_KEY)) != 0
 
         return VideoFrame(
             timestamp: timestamp,
             width: width,
             height: height,
-            pixelFormat: .rgb24,
+            pixelFormat: .rgba,
             data: data,
             lineSize: lineSize,
             frameNumber: frameNumber,
@@ -448,7 +480,7 @@ class VideoDecoder {
 
         if format.isInterleaved {
             // Interleaved: copy directly
-            data.withUnsafeMutableBytes { destBytes in
+            data.withUnsafeMutableBytes { (destBytes: UnsafeMutableRawBufferPointer) in
                 if let destPtr = destBytes.baseAddress {
                     memcpy(destPtr, frame.pointee.data.0, dataSize)
                 }
@@ -456,11 +488,15 @@ class VideoDecoder {
         } else {
             // Planar: copy each channel
             let bytesPerChannel = sampleCount * bytesPerSample
-            data.withUnsafeMutableBytes { destBytes in
+            let dataPointers = [frame.pointee.data.0, frame.pointee.data.1, frame.pointee.data.2, frame.pointee.data.3,
+                                frame.pointee.data.4, frame.pointee.data.5, frame.pointee.data.6, frame.pointee.data.7]
+            data.withUnsafeMutableBytes { (destBytes: UnsafeMutableRawBufferPointer) in
                 if let destPtr = destBytes.baseAddress {
                     for ch in 0..<channels {
-                        let offset = ch * bytesPerChannel
-                        memcpy(destPtr + offset, frame.pointee.data[ch], bytesPerChannel)
+                        if let srcPtr = dataPointers[ch] {
+                            let offset = ch * bytesPerChannel
+                            memcpy(destPtr + offset, srcPtr, bytesPerChannel)
+                        }
                     }
                 }
             }
@@ -487,20 +523,20 @@ class VideoDecoder {
             scalerContext = nil
         }
 
-        if let videoCtx = videoCodecContext {
-            var ctx = UnsafeMutablePointer(mutating: videoCtx)
+        if videoCodecContext != nil {
+            var ctx: UnsafeMutablePointer<AVCodecContext>? = videoCodecContext
             avcodec_free_context(&ctx)
             videoCodecContext = nil
         }
 
-        if let audioCtx = audioCodecContext {
-            var ctx = UnsafeMutablePointer(mutating: audioCtx)
+        if audioCodecContext != nil {
+            var ctx: UnsafeMutablePointer<AVCodecContext>? = audioCodecContext
             avcodec_free_context(&ctx)
             audioCodecContext = nil
         }
 
-        if let formatCtx = formatContext {
-            var ctx = UnsafeMutablePointer(mutating: formatCtx)
+        if formatContext != nil {
+            var ctx: UnsafeMutablePointer<AVFormatContext>? = formatContext
             avformat_close_input(&ctx)
             formatContext = nil
         }

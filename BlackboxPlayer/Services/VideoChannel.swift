@@ -142,6 +142,10 @@ class VideoChannel {
             abs(frame1.timestamp - time) < abs(frame2.timestamp - time)
         }
 
+        // Remove frames older than current time minus 1 second (keep recent history for seeking)
+        let cleanupThreshold = time - 1.0
+        frameBuffer.removeAll { $0.timestamp < cleanupThreshold }
+
         return closestFrame
     }
 
@@ -167,6 +171,10 @@ class VideoChannel {
     // MARK: - Private Methods
 
     private func decodingLoop() {
+        infoLog("[VideoChannel:\(channelInfo.position.displayName)] Decoding loop started")
+        var frameCount = 0
+        var lastLogTime = Date()
+
         while isDecoding {
             autoreleasepool {
                 // Check buffer size
@@ -175,30 +183,42 @@ class VideoChannel {
                 bufferLock.unlock()
 
                 // If buffer is full, wait
-                if bufferSize >= maxBufferSize {
+                guard bufferSize < maxBufferSize else {
+                    // Log buffer full status every 2 seconds
+                    if Date().timeIntervalSince(lastLogTime) > 2.0 {
+                        debugLog("[VideoChannel:\(channelInfo.position.displayName)] Buffer full (\(bufferSize)/\(maxBufferSize)), waiting...")
+                        lastLogTime = Date()
+                    }
                     Thread.sleep(forTimeInterval: 0.01) // 10ms
-                    return
+                    return  // Exit autoreleasepool, continue while loop
                 }
 
                 // Decode next frame
                 do {
-                    guard let decoder = decoder else { return }
+                    guard let decoder = decoder else {
+                        isDecoding = false
+                        return
+                    }
 
                     if let result = try decoder.decodeNextFrame() {
                         if let videoFrame = result.video {
                             addFrameToBuffer(videoFrame)
+                            frameCount += 1
                         }
                         // Skip audio frames in multi-channel (audio from master channel only)
-                    } else {
-                        // End of file
-                        isDecoding = false
-                        state = .completed
                     }
+                    // If result is nil, decoder needs more packets (EAGAIN) - continue loop
                 } catch {
-                    print("Channel \(channelInfo.position.displayName) decode error: \(error)")
+                    errorLog("Channel \(channelInfo.position.displayName) decode error: \(error)")
                     if case DecoderError.endOfFile = error {
                         isDecoding = false
                         state = .completed
+                        infoLog("Channel \(channelInfo.position.displayName) completed after \(frameCount) frames")
+                    } else if case DecoderError.readFrameError(let code) = error, code == -541478725 {
+                        // AVERROR_EOF from av_read_frame
+                        isDecoding = false
+                        state = .completed
+                        infoLog("Channel \(channelInfo.position.displayName) completed (EOF) after \(frameCount) frames")
                     } else {
                         state = .error(error.localizedDescription)
                         isDecoding = false
@@ -206,6 +226,7 @@ class VideoChannel {
                 }
             }
         }
+        infoLog("[VideoChannel:\(channelInfo.position.displayName)] Decoding loop ended, total frames: \(frameCount)")
     }
 
     private func addFrameToBuffer(_ frame: VideoFrame) {
@@ -221,6 +242,11 @@ class VideoChannel {
         // Remove old frames if buffer exceeds max size
         if frameBuffer.count > maxBufferSize {
             frameBuffer.removeFirst(frameBuffer.count - maxBufferSize)
+        }
+
+        // Log first few frames
+        if frameBuffer.count <= 3 {
+            debugLog("[VideoChannel:\(channelInfo.position.displayName)] Buffered frame #\(frame.frameNumber) at \(String(format: "%.2f", frame.timestamp))s, buffer size: \(frameBuffer.count)")
         }
 
         // Update current frame
