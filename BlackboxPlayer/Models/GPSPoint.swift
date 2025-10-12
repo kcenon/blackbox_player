@@ -1,9 +1,8 @@
-//
-//  GPSPoint.swift
-//  BlackboxPlayer
-//
-//  Model for GPS location data point
-//
+/// @file GPSPoint.swift
+/// @brief 블랙박스 GPS 위치 데이터 모델
+/// @author BlackboxPlayer Development Team
+/// @details 블랙박스 비디오에 임베드된 GPS 위치 데이터를 표현하는 구조체입니다.
+///          위도, 경도, 고도, 속도, 방향 등의 정보를 포함하며, CoreLocation과의 호환성을 제공합니다.
 
 /*
  ┌──────────────────────────────────────────────────────────────────────────┐
@@ -186,7 +185,11 @@ import CoreLocation
  print("총 이동 거리: \(totalDistance)m")
  ```
  */
-/// GPS location data point from dashcam recording
+/// @struct GPSPoint
+/// @brief 블랙박스 GPS 위치 데이터 포인트
+/// @details 블랙박스 녹화 중 수집된 GPS 위치 데이터를 표현하는 구조체입니다.
+///          값 타입(struct)으로 불변성과 스레드 안전성을 보장하며,
+///          Codable, Equatable, Hashable 프로토콜을 준수합니다.
 struct GPSPoint: Codable, Equatable, Hashable {
     /*
      【타임스탬프 (Timestamp)】
@@ -220,7 +223,8 @@ struct GPSPoint: Codable, Equatable, Hashable {
      - 시간 기반 필터링 (특정 시간대 경로만 표시)
      - 속도 계산 (거리 / 시간 차이)
      */
-    /// Timestamp of this GPS reading
+    /// @var timestamp
+    /// @brief GPS 측정 시각
     let timestamp: Date
 
     /*
@@ -257,7 +261,8 @@ struct GPSPoint: Codable, Equatable, Hashable {
      - 범위 검증 필수 (isValid 속성 사용)
      - Double 타입으로 충분한 정밀도 (약 1mm)
      */
-    /// Latitude in degrees (-90 to 90)
+    /// @var latitude
+    /// @brief 위도 (-90° ~ +90°)
     let latitude: Double
 
     /*
@@ -294,7 +299,8 @@ struct GPSPoint: Codable, Equatable, Hashable {
      print("서울-부산 거리: \(distance / 1000)km")  // 약 325km
      ```
      */
-    /// Longitude in degrees (-180 to 180)
+    /// @var longitude
+    /// @brief 경도 (-180° ~ +180°)
     let longitude: Double
 
     /*
@@ -337,7 +343,8 @@ struct GPSPoint: Codable, Equatable, Hashable {
      }
      ```
      */
-    /// Altitude in meters (optional)
+    /// @var altitude
+    /// @brief 고도 (미터, 옵셔널)
     let altitude: Double?
 
     /*
@@ -388,7 +395,8 @@ struct GPSPoint: Codable, Equatable, Hashable {
      print("평균 속도: \(Int(avgSpeed)) km/h")
      ```
      */
-    /// Speed in kilometers per hour (optional)
+    /// @var speed
+    /// @brief 속도 (km/h, 옵셔널)
     let speed: Double?
 
     /*
@@ -446,7 +454,8 @@ struct GPSPoint: Codable, Equatable, Hashable {
      - course: heading과 동일한 의미
      - bearing: 두 지점 사이의 방향 (계산으로 구함)
      */
-    /// Heading/bearing in degrees (0-360, where 0 is North) (optional)
+    /// @var heading
+    /// @brief 방향/진행각 (0° ~ 360°, 북쪽이 0°, 옵셔널)
     let heading: Double?
 
     /*
@@ -504,7 +513,8 @@ struct GPSPoint: Codable, Equatable, Hashable {
      - CLLocation.horizontalAccuracy와 동일
      - -1은 유효하지 않은 값을 의미
      */
-    /// Horizontal accuracy in meters (optional)
+    /// @var horizontalAccuracy
+    /// @brief 수평 정확도 (미터, 옵셔널)
     let horizontalAccuracy: Double?
 
     /*
@@ -559,7 +569,8 @@ struct GPSPoint: Codable, Equatable, Hashable {
      - GPGGA 문장에 포함
      - 예: $GPGGA,...,08,...  → 8개 위성 사용
      */
-    /// Number of satellites used for this reading (optional)
+    /// @var satelliteCount
+    /// @brief 사용된 위성 개수 (옵셔널)
     let satelliteCount: Int?
 
     // MARK: - Initialization
@@ -628,6 +639,15 @@ struct GPSPoint: Codable, Equatable, Hashable {
      - 모든 속성을 매개변수로 받음
      - 기본값 지정 가능
      */
+    /// @brief GPSPoint 인스턴스 초기화
+    /// @param timestamp GPS 측정 시각
+    /// @param latitude 위도 (-90 ~ 90)
+    /// @param longitude 경도 (-180 ~ 180)
+    /// @param altitude 고도 (미터, 기본값: nil)
+    /// @param speed 속도 (km/h, 기본값: nil)
+    /// @param heading 방향 (0-360도, 기본값: nil)
+    /// @param horizontalAccuracy 수평 정확도 (미터, 기본값: nil)
+    /// @param satelliteCount 위성 개수 (기본값: nil)
     init(
         timestamp: Date,
         latitude: Double,
@@ -688,7 +708,8 @@ struct GPSPoint: Codable, Equatable, Hashable {
      }
      ```
      */
-    /// Convert to CLLocationCoordinate2D for MapKit
+    /// @brief MapKit용 CLLocationCoordinate2D 좌표로 변환
+    /// @return CLLocationCoordinate2D 좌표 객체
     var coordinate: CLLocationCoordinate2D {
         return CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
     }
@@ -744,7 +765,8 @@ struct GPSPoint: Codable, Equatable, Hashable {
      - 90 km/h ÷ 3.6 = 25 m/s
      - 36 km/h ÷ 3.6 = 10 m/s
      */
-    /// Convert to CLLocation for full location information
+    /// @brief 전체 위치 정보를 포함한 CLLocation 객체로 변환
+    /// @return CLLocation 위치 객체
     var clLocation: CLLocation {
         return CLLocation(
             coordinate: coordinate,  // CLLocationCoordinate2D
@@ -802,9 +824,9 @@ struct GPSPoint: Codable, Equatable, Hashable {
      반환값:
      - GPSPoint: 변환된 GPS 포인트
      */
-    /// Create GPSPoint from CLLocation
-    /// - Parameter location: CoreLocation CLLocation object
-    /// - Returns: GPSPoint instance
+    /// @brief CLLocation으로부터 GPSPoint 생성
+    /// @param location CoreLocation의 CLLocation 객체
+    /// @return GPSPoint 인스턴스
     static func from(_ location: CLLocation) -> GPSPoint {
         return GPSPoint(
             timestamp: location.timestamp,  // 측정 시각
@@ -869,7 +891,8 @@ struct GPSPoint: Codable, Equatable, Hashable {
      - 초기화되지 않은 값 (0, 0)
      - 계산 오류 (NaN, Infinity)
      */
-    /// Check if this GPS point has valid coordinates
+    /// @brief 좌표 유효성 검증
+    /// @return 좌표가 유효 범위 내에 있으면 true
     var isValid: Bool {
         return latitude >= -90 && latitude <= 90 &&  // 위도 범위 확인
                longitude >= -180 && longitude <= 180  // 경도 범위 확인
@@ -937,7 +960,8 @@ struct GPSPoint: Codable, Equatable, Hashable {
      - 하나라도 있으면 그 기준으로 판단
      - 둘 다 nil이면 true 반환 (보수적 접근)
      */
-    /// Check if GPS signal is strong (based on accuracy and satellite count)
+    /// @brief GPS 신호 강도 확인
+    /// @return 정확도와 위성 개수 기반으로 신호가 강하면 true
     var hasStrongSignal: Bool {
         // 정확도 확인 (50m 이하여야 함)
         if let accuracy = horizontalAccuracy, accuracy > 50 {
@@ -1019,9 +1043,9 @@ struct GPSPoint: Codable, Equatable, Hashable {
      반환값:
      - Double: 거리 (미터 단위)
      */
-    /// Calculate distance to another GPS point in meters
-    /// - Parameter other: Another GPS point
-    /// - Returns: Distance in meters
+    /// @brief 다른 GPS 포인트까지의 거리 계산
+    /// @param other 목적지 GPS 포인트
+    /// @return 거리 (미터)
     func distance(to other: GPSPoint) -> Double {
         let location1 = clLocation  // CLLocation으로 변환
         let location2 = other.clLocation  // CLLocation으로 변환
@@ -1115,9 +1139,9 @@ struct GPSPoint: Codable, Equatable, Hashable {
      - (bearing + 360) % 360
      - 음수를 양수 범위(0~360)로 변환
      */
-    /// Calculate bearing to another GPS point in degrees (0-360)
-    /// - Parameter other: Another GPS point
-    /// - Returns: Bearing in degrees
+    /// @brief 다른 GPS 포인트를 향한 방위각 계산
+    /// @param other 목적지 GPS 포인트
+    /// @return 방위각 (0-360도)
     func bearing(to other: GPSPoint) -> Double {
         // 위도/경도를 라디안으로 변환
         let lat1 = latitude * .pi / 180  // 현재 위도 (라디안)
@@ -1192,7 +1216,8 @@ struct GPSPoint: Codable, Equatable, Hashable {
      - 십진법: 37.5665° (계산 편리)
      - DMS: 37°33'59.4\"N (읽기 편리)
      */
-    /// Format latitude/longitude as DMS (Degrees, Minutes, Seconds)
+    /// @brief 위도/경도를 도·분·초(DMS) 형식으로 변환
+    /// @return DMS 형식 문자열
     var dmsString: String {
         // 방향 결정
         let latDirection = latitude >= 0 ? "N" : "S"  // 북위/남위
@@ -1241,7 +1266,8 @@ struct GPSPoint: Codable, Equatable, Hashable {
      - "%6f": 소수점 6자리
      - 예: 37.566500 (소수점 6자리)
      */
-    /// Format as decimal degrees string
+    /// @brief 십진법 좌표 문자열로 변환
+    /// @return 십진법 형식 문자열 (소수점 6자리)
     var decimalString: String {
         return String(format: "%.6f, %.6f", latitude, longitude)
     }
@@ -1280,7 +1306,8 @@ struct GPSPoint: Codable, Equatable, Hashable {
      }
      ```
      */
-    /// Format speed with unit
+    /// @brief 속도를 단위 포함 문자열로 변환
+    /// @return 속도 문자열 (예: "45.0 km/h"), 없으면 nil
     var speedString: String? {
         guard let speed = speed else { return nil }  // 속도 없으면 nil
         return String(format: "%.1f km/h", speed)  // "45.0 km/h" 형식
@@ -1327,6 +1354,9 @@ struct GPSPoint: Codable, Equatable, Hashable {
      - 외부에서는 dmsString 속성 사용
      - 캡슐화: 구현 변경 가능
      */
+    /// @brief 십진법 좌표를 DMS 형식으로 변환 (내부 헬퍼)
+    /// @param decimal 십진법 좌표값
+    /// @return DMS 형식 문자열
     private static func toDMS(_ decimal: Double) -> String {
         let degrees = Int(decimal)  // 도 (정수 부분)
         let minutesDecimal = (decimal - Double(degrees)) * 60  // 분의 십진법

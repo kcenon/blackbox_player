@@ -1,9 +1,9 @@
-//
-//  EventType.swift
-//  BlackboxPlayer
-//
-//  Enum for dashcam recording event types
-//
+/// @file EventType.swift
+/// @brief 블랙박스 녹화 이벤트 유형 열거형
+/// @author BlackboxPlayer Development Team
+/// @details 블랙박스 녹화 이벤트 유형을 분류하는 열거형입니다.
+///          일반 녹화, 충격 이벤트, 주차 모드, 수동 녹화, 비상 녹화 등을 구분하며,
+///          파일 경로로부터 자동으로 이벤트 유형을 감지하는 기능을 제공합니다.
 
 /*
  ┌──────────────────────────────────────────────────────────────────────────┐
@@ -176,7 +176,10 @@ import Foundation
  let videos = allVideos.filter { $0.eventType == .impact }
  ```
  */
-/// Event type classification for dashcam recordings
+/// @enum EventType
+/// @brief 블랙박스 녹화 이벤트 유형 분류
+/// @details 블랙박스 녹화 이벤트를 normal, impact, parking, manual, emergency, unknown으로 분류합니다.
+///          String raw value를 사용하며, Codable, CaseIterable, Comparable 프로토콜을 준수합니다.
 enum EventType: String, Codable, CaseIterable {
     /*
      【normal - 일반 녹화】
@@ -429,7 +432,8 @@ enum EventType: String, Codable, CaseIterable {
      }
      ```
      */
-    /// Human-readable display name for the event type
+    /// @brief 사람이 읽기 쉬운 이벤트 유형 이름
+    /// @return 이벤트 유형의 영문 표시 이름
     var displayName: String {
         switch self {
         case .normal:
@@ -510,7 +514,8 @@ enum EventType: String, Codable, CaseIterable {
      - Purple: 특별/비상
      - Gray: 중립/알 수 없음
      */
-    /// Color associated with the event type for UI display
+    /// @brief 이벤트 유형에 해당하는 색상 코드
+    /// @return Hex 색상 코드 (#RRGGBB)
     var colorHex: String {
         switch self {
         case .normal:
@@ -588,7 +593,8 @@ enum EventType: String, Codable, CaseIterable {
      // [.normal, .impact, .emergency]  // 오름차순
      ```
      */
-    /// Priority for sorting (higher priority first)
+    /// @brief 이벤트 유형의 우선순위
+    /// @return 우선순위 값 (0-5, 높을수록 중요)
     var priority: Int {
         switch self {
         case .emergency:
@@ -685,9 +691,9 @@ enum EventType: String, Codable, CaseIterable {
      - 추후 수동 분류 필요
      - 사용자 정의 디렉토리 대응
      */
-    /// Detect event type from file path
-    /// - Parameter path: File path to analyze
-    /// - Returns: Detected event type
+    /// @brief 파일 경로에서 이벤트 유형 자동 감지
+    /// @param path 분석할 파일 경로
+    /// @return 감지된 이벤트 유형
     static func detect(from path: String) -> EventType {
         // 대소문자 무시하고 비교
         let lowercasedPath = path.lowercased()
@@ -797,6 +803,10 @@ extension EventType: Comparable {
      EventType.emergency < EventType.normal  // false (5 < 1은 false)
      ```
      */
+    /// @brief 우선순위 기반 비교 연산자
+    /// @param lhs 왼쪽 EventType
+    /// @param rhs 오른쪽 EventType
+    /// @return lhs의 우선순위가 rhs보다 낮으면 true
     static func < (lhs: EventType, rhs: EventType) -> Bool {
         return lhs.priority < rhs.priority  // 우선순위 숫자로 비교
     }

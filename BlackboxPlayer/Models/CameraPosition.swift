@@ -1,9 +1,8 @@
-//
-//  CameraPosition.swift
-//  BlackboxPlayer
-//
-//  Enum for camera position/channel identification
-//
+/// @file CameraPosition.swift
+/// @brief 블랙박스 카메라 위치/채널 식별 열거형
+/// @author BlackboxPlayer Development Team
+///
+/// Enum for camera position/channel identification
 
 /*
  ┌──────────────────────────────────────────────────────────────────────────┐
@@ -180,6 +179,9 @@ import Foundation
  let sorted = positions.sorted()  // [.front, .rear, .interior]
  ```
  */
+/// @enum CameraPosition
+/// @brief 멀티 카메라 블랙박스 시스템의 카메라 위치/채널
+///
 /// Camera position/channel in a multi-camera dashcam system
 enum CameraPosition: String, Codable, CaseIterable {
     /*
@@ -209,6 +211,8 @@ enum CameraPosition: String, Codable, CaseIterable {
      - 차선 이탈
      - 보행자 사고
      */
+    /// @brief 전방 카메라 (주 카메라)
+    ///
     /// Front-facing camera (main camera)
     case front = "F"
 
@@ -239,6 +243,8 @@ enum CameraPosition: String, Codable, CaseIterable {
      - 역주행 차량
      - 후진 사고
      */
+    /// @brief 후방 카메라
+    ///
     /// Rear-facing camera
     case rear = "R"
 
@@ -269,6 +275,8 @@ enum CameraPosition: String, Codable, CaseIterable {
      - 사각지대 감시
      - 옆차와의 충돌
      */
+    /// @brief 좌측 카메라
+    ///
     /// Left side camera
     case left = "L"
 
@@ -304,6 +312,8 @@ enum CameraPosition: String, Codable, CaseIterable {
      - "Right"의 첫 두 글자 사용
      - 충돌 방지 위한 고유 코드
      */
+    /// @brief 우측 카메라
+    ///
     /// Right side camera
     case right = "Ri"
 
@@ -340,6 +350,8 @@ enum CameraPosition: String, Codable, CaseIterable {
      - 일부 국가에서는 동의 필요
      - 실내 녹화 경고 표시
      */
+    /// @brief 실내 카메라 (차량 내부)
+    ///
     /// Interior camera (cabin view)
     case interior = "I"
 
@@ -373,6 +385,8 @@ enum CameraPosition: String, Codable, CaseIterable {
      }
      ```
      */
+    /// @brief 알 수 없는 위치
+    ///
     /// Unknown or unrecognized position
     case unknown = "U"
 
@@ -411,6 +425,9 @@ enum CameraPosition: String, Codable, CaseIterable {
      - 공간 제약이 있는 UI에 적합
      - 아이콘과 함께 표시
      */
+    /// @brief 사람이 읽을 수 있는 표시 이름
+    /// @return 카메라 위치의 영문 이름
+    ///
     /// Human-readable display name
     var displayName: String {
         switch self {
@@ -466,6 +483,9 @@ enum CameraPosition: String, Codable, CaseIterable {
      - 파일명 생성
      - 로그 출력
      */
+    /// @brief UI 표시용 짧은 이름
+    /// @return 카메라 코드 (F, R, L, Ri, I, U)
+    ///
     /// Short name for UI display
     var shortName: String {
         return rawValue  // F, R, L, Ri, I, U
@@ -506,6 +526,9 @@ enum CameraPosition: String, Codable, CaseIterable {
      - displayName: "Front" (중간)
      - fullName: "Front Camera" (가장 길고 명확)
      */
+    /// @brief 전체 설명 이름
+    /// @return "Camera" 포함된 전체 이름
+    ///
     /// Full descriptive name
     var fullName: String {
         switch self {
@@ -576,6 +599,9 @@ enum CameraPosition: String, Codable, CaseIterable {
      - 배열 접근 방지
      - 에러 체크 용이
      */
+    /// @brief 배열 인덱싱을 위한 채널 인덱스 (0-based)
+    /// @return 0-4 (유효), -1 (unknown)
+    ///
     /// Channel index (0-based) for array indexing
     var channelIndex: Int {
         switch self {
@@ -643,6 +669,9 @@ enum CameraPosition: String, Codable, CaseIterable {
      - Interior (5): 프라이버시, 선택적
      - Unknown (99): 분류 필요
      */
+    /// @brief 표시 순서 우선순위
+    /// @return 1-99 (1: 최우선, 99: 최하위)
+    ///
     /// Priority for display ordering
     var displayPriority: Int {
         switch self {
@@ -731,6 +760,10 @@ enum CameraPosition: String, Codable, CaseIterable {
      - 모든 패턴 매칭 실패 시 .unknown
      - 사용자에게 수동 선택 요청
      */
+    /// @brief 파일명에서 카메라 위치 자동 감지
+    /// @param filename 분석할 파일명 (예: "2025_01_10_09_00_00_F.mp4")
+    /// @return 감지된 카메라 위치
+    ///
     /// Detect camera position from filename
     /// - Parameter filename: Filename to analyze (e.g., "2025_01_10_09_00_00_F.mp4")
     /// - Returns: Detected camera position
@@ -828,6 +861,10 @@ enum CameraPosition: String, Codable, CaseIterable {
      - 범위 초과 인덱스 (5, 6, ...) 처리
      - 안전한 nil 반환
      */
+    /// @brief 채널 인덱스로부터 CameraPosition 생성
+    /// @param index 채널 인덱스 (0-4)
+    /// @return 찾은 Position 또는 nil
+    ///
     /// Create camera position from channel index
     /// - Parameter index: Channel index (0-4)
     /// - Returns: Camera position or nil if invalid

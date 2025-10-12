@@ -1,9 +1,8 @@
-//
-//  ChannelInfo.swift
-//  BlackboxPlayer
-//
-//  Model for video channel/camera information
-//
+/// @file ChannelInfo.swift
+/// @brief 블랙박스 비디오 채널/카메라 정보 모델
+/// @author BlackboxPlayer Development Team
+///
+/// Model for video channel/camera information
 
 import Foundation
 
@@ -228,6 +227,9 @@ import Foundation
  ═══════════════════════════════════════════════════════════════════════════════
  */
 
+/// @struct ChannelInfo
+/// @brief 비디오 채널/카메라 정보
+///
 /// Information about a video channel/camera in a multi-camera system
 ///
 /// 멀티 카메라 시스템에서 개별 비디오 채널(카메라)의 정보를 나타내는 구조체입니다.
@@ -261,6 +263,9 @@ import Foundation
 /// print(channel.bitrateString ?? "N/A")  // "8.0 Mbps"
 /// ```
 struct ChannelInfo: Codable, Equatable, Identifiable, Hashable {
+    /// @var id
+    /// @brief 채널 고유 식별자 (UUID)
+    ///
     /// Unique identifier for this channel
     ///
     /// 채널의 고유 식별자입니다.
@@ -285,6 +290,9 @@ struct ChannelInfo: Codable, Equatable, Identifiable, Hashable {
     /// ```
     let id: UUID
 
+    /// @var position
+    /// @brief 카메라 위치/종류
+    ///
     /// Camera position/type
     ///
     /// 카메라의 위치/종류입니다.
@@ -313,6 +321,9 @@ struct ChannelInfo: Codable, Equatable, Identifiable, Hashable {
     /// ```
     let position: CameraPosition
 
+    /// @var filePath
+    /// @brief 비디오 파일 경로
+    ///
     /// File path to the video file for this channel
     ///
     /// 채널의 비디오 파일 경로입니다.
@@ -333,6 +344,9 @@ struct ChannelInfo: Codable, Equatable, Identifiable, Hashable {
     /// - Position: F(전방), R(후방), L(좌측), Ri(우측), I(실내)
     let filePath: String
 
+    /// @var width
+    /// @brief 비디오 가로 해상도 (픽셀)
+    ///
     /// Video resolution width in pixels
     ///
     /// 비디오 해상도의 가로 픽셀 수입니다.
@@ -350,6 +364,9 @@ struct ChannelInfo: Codable, Equatable, Identifiable, Hashable {
     /// - 더 많은 픽셀 = 더 선명한 영상
     let width: Int
 
+    /// @var height
+    /// @brief 비디오 세로 해상도 (픽셀)
+    ///
     /// Video resolution height in pixels
     ///
     /// 비디오 해상도의 세로 픽셀 수입니다.
@@ -367,6 +384,9 @@ struct ChannelInfo: Codable, Equatable, Identifiable, Hashable {
     /// - 모든 현대 블랙박스는 p 방식 사용
     let height: Int
 
+    /// @var frameRate
+    /// @brief 프레임 레이트 (fps)
+    ///
     /// Frame rate in frames per second
     ///
     /// 초당 프레임 수입니다. (fps: frames per second)
@@ -392,6 +412,9 @@ struct ChannelInfo: Codable, Equatable, Identifiable, Hashable {
     /// - PAL 표준 (유럽): 25.0 fps
     let frameRate: Double
 
+    /// @var bitrate
+    /// @brief 비디오 비트레이트 (bps, 옵셔널)
+    ///
     /// Video bitrate in bits per second (optional)
     ///
     /// 비디오 비트레이트입니다. (단위: bps, bits per second)
@@ -423,6 +446,9 @@ struct ChannelInfo: Codable, Equatable, Identifiable, Hashable {
     /// - 파싱 실패 시 nil
     let bitrate: Int?
 
+    /// @var codec
+    /// @brief 비디오 코덱 (옵셔널)
+    ///
     /// Video codec (e.g., "h264", "h265")
     ///
     /// 비디오 코덱입니다.
@@ -465,6 +491,9 @@ struct ChannelInfo: Codable, Equatable, Identifiable, Hashable {
     /// - 알 수 없는 코덱 형식
     let codec: String?
 
+    /// @var audioCodec
+    /// @brief 오디오 코덱 (옵셔널)
+    ///
     /// Audio codec (e.g., "mp3", "aac") (optional)
     ///
     /// 오디오 코덱입니다.
@@ -493,6 +522,9 @@ struct ChannelInfo: Codable, Equatable, Identifiable, Hashable {
     /// - 코덱 정보 파싱 실패
     let audioCodec: String?
 
+    /// @var isEnabled
+    /// @brief 채널 활성화 여부
+    ///
     /// Channel is enabled/active
     ///
     /// 채널이 활성화되어 있는지 여부입니다.
@@ -519,6 +551,9 @@ struct ChannelInfo: Codable, Equatable, Identifiable, Hashable {
     /// ```
     let isEnabled: Bool
 
+    /// @var fileSize
+    /// @brief 파일 크기 (bytes)
+    ///
     /// File size in bytes
     ///
     /// 파일 크기입니다. (단위: bytes)
@@ -545,6 +580,9 @@ struct ChannelInfo: Codable, Equatable, Identifiable, Hashable {
     ///   - = 3,774,873,600 bytes (약 3.6 GB)
     let fileSize: UInt64
 
+    /// @var duration
+    /// @brief 비디오 길이 (초)
+    ///
     /// Duration of video in seconds
     ///
     /// 비디오 길이입니다. (단위: 초)
@@ -606,6 +644,9 @@ struct ChannelInfo: Codable, Equatable, Identifiable, Hashable {
 
     // MARK: - Computed Properties
 
+    /// @brief 해상도 문자열 (예: "1920x1080")
+    /// @return "가로x세로" 형식
+    ///
     /// Resolution as a formatted string (e.g., "1920x1080")
     ///
     /// 해상도를 "가로x세로" 형식의 문자열로 반환합니다.
@@ -626,6 +667,9 @@ struct ChannelInfo: Codable, Equatable, Identifiable, Hashable {
         return "\(width)x\(height)"
     }
 
+    /// @brief 일반적인 해상도 이름 (예: "Full HD", "4K")
+    /// @return 해상도 등급 이름
+    ///
     /// Common resolution name (e.g., "Full HD", "4K")
     ///
     /// 일반적인 해상도 이름을 반환합니다.
@@ -670,6 +714,9 @@ struct ChannelInfo: Codable, Equatable, Identifiable, Hashable {
         }
     }
 
+    /// @brief 화면 비율 (소수)
+    /// @return 가로/세로 비율
+    ///
     /// Aspect ratio as a decimal
     ///
     /// 화면 비율을 소수로 반환합니다.
@@ -713,6 +760,9 @@ struct ChannelInfo: Codable, Equatable, Identifiable, Hashable {
         return Double(width) / Double(height)
     }
 
+    /// @brief 화면 비율 문자열 (예: "16:9")
+    /// @return 비율 문자열
+    ///
     /// Aspect ratio as a formatted string (e.g., "16:9")
     ///
     /// 화면 비율을 읽기 쉬운 문자열로 반환합니다.
@@ -772,6 +822,9 @@ struct ChannelInfo: Codable, Equatable, Identifiable, Hashable {
         }
     }
 
+    /// @brief 프레임 레이트 문자열
+    /// @return "XX fps" 또는 "XX.XX fps" 형식
+    ///
     /// Frame rate as formatted string
     ///
     /// 프레임 레이트를 문자열로 반환합니다.
@@ -816,6 +869,9 @@ struct ChannelInfo: Codable, Equatable, Identifiable, Hashable {
         }
     }
 
+    /// @brief 비트레이트 문자열
+    /// @return "XX.X Mbps" 또는 "XXX Kbps" 형식 (옵셔널)
+    ///
     /// Bitrate as human-readable string
     ///
     /// 비트레이트를 읽기 쉬운 문자열로 반환합니다.
@@ -874,6 +930,9 @@ struct ChannelInfo: Codable, Equatable, Identifiable, Hashable {
         }
     }
 
+    /// @brief 파일 크기 문자열
+    /// @return "XXX MB" 또는 "X.X GB" 형식
+    ///
     /// File size as human-readable string
     ///
     /// 파일 크기를 읽기 쉬운 문자열로 반환합니다.
@@ -925,6 +984,9 @@ struct ChannelInfo: Codable, Equatable, Identifiable, Hashable {
         return formatter.string(fromByteCount: Int64(fileSize))
     }
 
+    /// @brief 파일 경로에서 파일명 추출
+    /// @return 파일명 (경로 제외)
+    ///
     /// Filename extracted from path
     ///
     /// 파일 경로에서 파일명만 추출합니다.
@@ -964,6 +1026,9 @@ struct ChannelInfo: Codable, Equatable, Identifiable, Hashable {
         return (filePath as NSString).lastPathComponent
     }
 
+    /// @brief 고해상도 채널 확인 (>= 1080p)
+    /// @return 1080p 이상이면 true
+    ///
     /// Check if this is a high-resolution channel (>= 1080p)
     ///
     /// 고해상도 채널인지 확인합니다. (1080p 이상)
@@ -1006,6 +1071,9 @@ struct ChannelInfo: Codable, Equatable, Identifiable, Hashable {
         return height >= 1080
     }
 
+    /// @brief 오디오 유무 확인
+    /// @return 오디오가 있으면 true
+    ///
     /// Check if audio is available
     ///
     /// 오디오가 있는지 확인합니다.
@@ -1046,6 +1114,9 @@ struct ChannelInfo: Codable, Equatable, Identifiable, Hashable {
 
     // MARK: - Validation
 
+    /// @brief 필수 속성 유효성 검증
+    /// @return 모든 필수 속성이 유효하면 true
+    ///
     /// Validate that all required properties are valid
     ///
     /// 필수 속성이 모두 유효한지 검증합니다.

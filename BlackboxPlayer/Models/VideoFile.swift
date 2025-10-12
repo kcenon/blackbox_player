@@ -1,9 +1,8 @@
-//
-//  VideoFile.swift
-//  BlackboxPlayer
-//
-//  Model for dashcam video file (potentially multi-channel)
-//
+/// @file VideoFile.swift
+/// @brief 블랙박스 비디오 파일 모델 (멀티 채널 지원)
+/// @author BlackboxPlayer Development Team
+///
+/// Model for dashcam video file (potentially multi-channel)
 
 import Foundation
 
@@ -180,6 +179,9 @@ import Foundation
  ═══════════════════════════════════════════════════════════════════════════════
  */
 
+/// @struct VideoFile
+/// @brief 블랙박스 비디오 파일 (멀티 채널, 메타데이터 포함)
+///
 /// Dashcam video file with metadata and channel information
 ///
 /// 블랙박스 비디오 파일의 완전한 정보를 나타내는 구조체입니다.
@@ -226,6 +228,9 @@ import Foundation
 /// let favoriteFile = videoFile.withFavorite(true)
 /// ```
 struct VideoFile: Codable, Equatable, Identifiable, Hashable {
+    /// @var id
+    /// @brief 파일 고유 식별자 (UUID)
+    ///
     /// Unique identifier
     ///
     /// 파일의 고유 식별자입니다.
@@ -244,6 +249,9 @@ struct VideoFile: Codable, Equatable, Identifiable, Hashable {
     /// ```
     let id: UUID
 
+    /// @var timestamp
+    /// @brief 녹화 시작 시간
+    ///
     /// Recording start timestamp
     ///
     /// 녹화 시작 시간입니다.
@@ -277,6 +285,9 @@ struct VideoFile: Codable, Equatable, Identifiable, Hashable {
     /// ```
     let timestamp: Date
 
+    /// @var eventType
+    /// @brief 이벤트 종류 (normal, impact, parking 등)
+    ///
     /// Event type (normal, impact, parking, etc.)
     ///
     /// 이벤트 종류입니다.
@@ -313,6 +324,9 @@ struct VideoFile: Codable, Equatable, Identifiable, Hashable {
     /// ```
     let eventType: EventType
 
+    /// @var duration
+    /// @brief 비디오 길이 (초)
+    ///
     /// Video duration in seconds
     ///
     /// 비디오 길이입니다. (단위: 초)
@@ -347,6 +361,9 @@ struct VideoFile: Codable, Equatable, Identifiable, Hashable {
     /// ```
     let duration: TimeInterval
 
+    /// @var channels
+    /// @brief 모든 비디오 채널 배열 (1~5채널)
+    ///
     /// All video channels (front, rear, left, right, interior)
     ///
     /// 모든 비디오 채널 배열입니다.
@@ -388,6 +405,9 @@ struct VideoFile: Codable, Equatable, Identifiable, Hashable {
     /// ```
     let channels: [ChannelInfo]
 
+    /// @var metadata
+    /// @brief GPS 및 G-센서 메타데이터
+    ///
     /// Associated metadata (GPS, G-Sensor)
     ///
     /// GPS 및 G-센서 메타데이터입니다.
@@ -430,6 +450,9 @@ struct VideoFile: Codable, Equatable, Identifiable, Hashable {
     /// ```
     let metadata: VideoMetadata
 
+    /// @var basePath
+    /// @brief 기본 파일 경로 (채널 접미사 제외)
+    ///
     /// Base file path (without channel suffix)
     ///
     /// 기본 파일 경로입니다. (채널 접미사 제외)
@@ -473,6 +496,9 @@ struct VideoFile: Codable, Equatable, Identifiable, Hashable {
     /// ```
     let basePath: String
 
+    /// @var isFavorite
+    /// @brief 즐겨찾기 표시 여부
+    ///
     /// Whether this file is marked as favorite
     ///
     /// 즐겨찾기 표시 여부입니다.
@@ -518,6 +544,9 @@ struct VideoFile: Codable, Equatable, Identifiable, Hashable {
     /// ```
     let isFavorite: Bool
 
+    /// @var notes
+    /// @brief 사용자 메모/코멘트 (옵셔널)
+    ///
     /// User-added notes/comments
     ///
     /// 사용자가 추가한 메모/코멘트입니다.
@@ -564,6 +593,9 @@ struct VideoFile: Codable, Equatable, Identifiable, Hashable {
     /// ```
     let notes: String?
 
+    /// @var isCorrupted
+    /// @brief 파일 손상 여부
+    ///
     /// File is corrupted or damaged
     ///
     /// 파일이 손상되었는지 여부입니다.
@@ -635,6 +667,10 @@ struct VideoFile: Codable, Equatable, Identifiable, Hashable {
 
     // MARK: - Channel Access
 
+    /// @brief 특정 위치의 채널 검색
+    /// @param position 카메라 위치
+    /// @return 채널 정보 또는 nil
+    ///
     /// Get channel by position
     /// - Parameter position: Camera position
     /// - Returns: Channel info or nil
@@ -670,6 +706,9 @@ struct VideoFile: Codable, Equatable, Identifiable, Hashable {
         return channels.first { $0.position == position }
     }
 
+    /// @brief 전방 카메라 채널
+    /// @return 전방 채널 또는 nil
+    ///
     /// Front camera channel
     ///
     /// 전방 카메라 채널입니다.
@@ -689,6 +728,9 @@ struct VideoFile: Codable, Equatable, Identifiable, Hashable {
         return channel(for: .front)
     }
 
+    /// @brief 후방 카메라 채널
+    /// @return 후방 채널 또는 nil
+    ///
     /// Rear camera channel
     ///
     /// 후방 카메라 채널입니다.
@@ -708,6 +750,10 @@ struct VideoFile: Codable, Equatable, Identifiable, Hashable {
         return channel(for: .rear)
     }
 
+    /// @brief 특정 채널 존재 여부 확인
+    /// @param position 카메라 위치
+    /// @return 채널이 있으면 true
+    ///
     /// Check if specific channel exists
     /// - Parameter position: Camera position
     /// - Returns: True if channel exists
@@ -736,6 +782,9 @@ struct VideoFile: Codable, Equatable, Identifiable, Hashable {
         return channel(for: position) != nil
     }
 
+    /// @brief 사용 가능한 채널 개수
+    /// @return 채널 개수 (1~5)
+    ///
     /// Number of available channels
     ///
     /// 사용 가능한 채널 개수입니다.
@@ -767,6 +816,9 @@ struct VideoFile: Codable, Equatable, Identifiable, Hashable {
         return channels.count
     }
 
+    /// @brief 활성화된 채널 배열
+    /// @return 활성화된 채널만 포함
+    ///
     /// Array of enabled channels only
     ///
     /// 활성화된 채널만 포함하는 배열입니다.
@@ -788,6 +840,9 @@ struct VideoFile: Codable, Equatable, Identifiable, Hashable {
         return channels.filter { $0.isEnabled }
     }
 
+    /// @brief 멀티 채널 녹화 확인
+    /// @return 2채널 이상이면 true
+    ///
     /// Check if this is a multi-channel recording
     ///
     /// 멀티 채널 녹화인지 확인합니다.
@@ -822,6 +877,9 @@ struct VideoFile: Codable, Equatable, Identifiable, Hashable {
 
     // MARK: - File Properties
 
+    /// @brief 모든 채널 파일의 총 크기
+    /// @return 총 파일 크기 (bytes)
+    ///
     /// Total size of all channel files
     ///
     /// 모든 채널 파일의 총 크기입니다. (단위: bytes)
@@ -867,6 +925,9 @@ struct VideoFile: Codable, Equatable, Identifiable, Hashable {
         return channels.reduce(0) { $0 + $1.fileSize }
     }
 
+    /// @brief 총 파일 크기 문자열
+    /// @return "XXX MB" 또는 "X.X GB" 형식
+    ///
     /// Total file size as human-readable string
     ///
     /// 총 파일 크기를 읽기 쉬운 문자열로 반환합니다.
@@ -894,6 +955,9 @@ struct VideoFile: Codable, Equatable, Identifiable, Hashable {
         return formatter.string(fromByteCount: Int64(totalFileSize))
     }
 
+    /// @brief 기본 파일명 (basePath에서 추출)
+    /// @return 파일명 (YYYY_MM_DD_HH_MM_SS)
+    ///
     /// Base filename (extracted from basePath)
     ///
     /// 기본 파일명입니다. (basePath에서 추출)
@@ -920,6 +984,9 @@ struct VideoFile: Codable, Equatable, Identifiable, Hashable {
         return (basePath as NSString).lastPathComponent
     }
 
+    /// @brief 길이 문자열 (HH:MM:SS)
+    /// @return "H:MM:SS" 또는 "M:SS" 형식
+    ///
     /// Duration as formatted string (HH:MM:SS)
     ///
     /// 길이를 HH:MM:SS 형식의 문자열로 반환합니다.
@@ -968,6 +1035,9 @@ struct VideoFile: Codable, Equatable, Identifiable, Hashable {
         }
     }
 
+    /// @brief 타임스탬프 문자열 (날짜+시간)
+    /// @return 날짜와 시간 포맷된 문자열
+    ///
     /// Timestamp as formatted string
     ///
     /// 타임스탬프를 날짜+시간 형식의 문자열로 반환합니다.
@@ -993,6 +1063,9 @@ struct VideoFile: Codable, Equatable, Identifiable, Hashable {
         return formatter.string(from: timestamp)
     }
 
+    /// @brief 날짜 문자열 (날짜만)
+    /// @return 날짜 포맷된 문자열
+    ///
     /// Short timestamp (date only)
     ///
     /// 날짜만 포함하는 짧은 타임스탬프입니다.
@@ -1016,6 +1089,9 @@ struct VideoFile: Codable, Equatable, Identifiable, Hashable {
         return formatter.string(from: timestamp)
     }
 
+    /// @brief 시간 문자열 (시간만)
+    /// @return 시간 포맷된 문자열
+    ///
     /// Short timestamp (time only)
     ///
     /// 시간만 포함하는 짧은 타임스탬프입니다.
@@ -1043,6 +1119,9 @@ struct VideoFile: Codable, Equatable, Identifiable, Hashable {
 
     // MARK: - Metadata Access
 
+    /// @brief GPS 데이터 유무 확인
+    /// @return GPS 데이터가 있으면 true
+    ///
     /// Check if video has GPS data
     ///
     /// GPS 데이터가 있는지 확인합니다.
@@ -1061,6 +1140,9 @@ struct VideoFile: Codable, Equatable, Identifiable, Hashable {
         return metadata.hasGPSData
     }
 
+    /// @brief G-센서 데이터 유무 확인
+    /// @return G-센서 데이터가 있으면 true
+    ///
     /// Check if video has G-Sensor data
     ///
     /// G-센서 데이터가 있는지 확인합니다.
@@ -1078,6 +1160,9 @@ struct VideoFile: Codable, Equatable, Identifiable, Hashable {
         return metadata.hasAccelerationData
     }
 
+    /// @brief 충격 이벤트 존재 여부 확인
+    /// @return 충격 이벤트가 있으면 true
+    ///
     /// Check if video contains impact events
     ///
     /// 충격 이벤트가 있는지 확인합니다.
@@ -1097,6 +1182,9 @@ struct VideoFile: Codable, Equatable, Identifiable, Hashable {
         return metadata.hasImpactEvents
     }
 
+    /// @brief 감지된 충격 이벤트 개수
+    /// @return 충격 이벤트 개수
+    ///
     /// Number of impact events detected
     ///
     /// 감지된 충격 이벤트 개수입니다.
@@ -1117,6 +1205,9 @@ struct VideoFile: Codable, Equatable, Identifiable, Hashable {
 
     // MARK: - Validation
 
+    /// @brief 비디오 파일 유효성 검증
+    /// @return 최소 1개 채널이 있고 모든 채널이 유효하면 true
+    ///
     /// Check if video file is valid (has at least one channel)
     ///
     /// 비디오 파일이 유효한지 확인합니다.
@@ -1151,6 +1242,9 @@ struct VideoFile: Codable, Equatable, Identifiable, Hashable {
         return !channels.isEmpty && channels.allSatisfy { $0.isValid }
     }
 
+    /// @brief 비디오 재생 가능 여부 확인
+    /// @return 유효하고 손상되지 않았으면 true
+    ///
     /// Check if video is playable (valid and not corrupted)
     ///
     /// 비디오가 재생 가능한지 확인합니다.
@@ -1185,6 +1279,10 @@ struct VideoFile: Codable, Equatable, Identifiable, Hashable {
 
     // MARK: - Mutations (return new instance)
 
+    /// @brief 즐겨찾기 상태 변경 (불변 업데이트)
+    /// @param isFavorite 새 즐겨찾기 상태
+    /// @return 새 VideoFile 인스턴스
+    ///
     /// Create a copy with updated favorite status
     /// - Parameter isFavorite: New favorite status
     /// - Returns: New VideoFile instance
@@ -1246,6 +1344,10 @@ struct VideoFile: Codable, Equatable, Identifiable, Hashable {
         )
     }
 
+    /// @brief 메모 변경 (불변 업데이트)
+    /// @param notes 새 메모 텍스트
+    /// @return 새 VideoFile 인스턴스
+    ///
     /// Create a copy with updated notes
     /// - Parameter notes: New notes text
     /// - Returns: New VideoFile instance
@@ -1285,6 +1387,11 @@ struct VideoFile: Codable, Equatable, Identifiable, Hashable {
         )
     }
 
+    /// @brief 채널 활성화 상태 변경 (불변 업데이트)
+    /// @param position 카메라 위치
+    /// @param enabled 새 활성화 상태
+    /// @return 새 VideoFile 인스턴스
+    ///
     /// Create a copy with enabled/disabled channel
     /// - Parameters:
     ///   - position: Camera position

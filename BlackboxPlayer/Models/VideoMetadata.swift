@@ -1,9 +1,8 @@
-//
-//  VideoMetadata.swift
-//  BlackboxPlayer
-//
-//  Model for video file metadata (GPS and G-Sensor data)
-//
+/// @file VideoMetadata.swift
+/// @brief 블랙박스 비디오 메타데이터 모델 (GPS 및 G-센서)
+/// @author BlackboxPlayer Development Team
+///
+/// Model for video file metadata (GPS and G-Sensor data)
 
 import Foundation
 
@@ -193,6 +192,9 @@ import Foundation
  ═══════════════════════════════════════════════════════════════════════════════
  */
 
+/// @struct VideoMetadata
+/// @brief 블랙박스 영상 메타데이터 컨테이너
+///
 /// Metadata associated with a dashcam video file
 ///
 /// 블랙박스 영상 파일에 포함된 메타데이터를 나타내는 구조체입니다.
@@ -233,6 +235,9 @@ import Foundation
 /// print("충격 횟수: \(metadata.impactEvents.count)회")
 /// ```
 struct VideoMetadata: Codable, Equatable, Hashable {
+    /// @var gpsPoints
+    /// @brief GPS 시계열 데이터 배열
+    ///
     /// GPS data points throughout the recording
     ///
     /// 녹화 중 기록된 GPS 위치 정보 배열입니다.
@@ -256,6 +261,9 @@ struct VideoMetadata: Codable, Equatable, Hashable {
     /// ```
     let gpsPoints: [GPSPoint]
 
+    /// @var accelerationData
+    /// @brief G-센서 시계열 데이터 배열
+    ///
     /// G-Sensor acceleration data throughout the recording
     ///
     /// 녹화 중 기록된 G-센서 가속도 데이터 배열입니다.
@@ -278,6 +286,9 @@ struct VideoMetadata: Codable, Equatable, Hashable {
     /// ```
     let accelerationData: [AccelerationData]
 
+    /// @var deviceInfo
+    /// @brief 블랙박스 장치 정보 (옵셔널)
+    ///
     /// Device/dashcam information (optional)
     ///
     /// 블랙박스 장치 정보입니다.
@@ -318,6 +329,9 @@ struct VideoMetadata: Codable, Equatable, Hashable {
 
     // MARK: - GPS Methods
 
+    /// @brief GPS 데이터 유무 확인
+    /// @return GPS 데이터가 있으면 true
+    ///
     /// Check if GPS data is available
     ///
     /// GPS 데이터가 있는지 확인합니다.
@@ -346,6 +360,10 @@ struct VideoMetadata: Codable, Equatable, Hashable {
         return !gpsPoints.isEmpty
     }
 
+    /// @brief 특정 시점의 GPS 포인트 검색
+    /// @param timeOffset 영상 시작부터의 시간 오프셋 (초)
+    /// @return 가장 가까운 GPS 포인트 또는 nil
+    ///
     /// Get GPS point at specific time offset
     /// - Parameter timeOffset: Time offset in seconds from start of video
     /// - Returns: Closest GPS point or nil
@@ -424,6 +442,9 @@ struct VideoMetadata: Codable, Equatable, Hashable {
         })
     }
 
+    /// @brief 총 주행 거리 계산
+    /// @return 총 주행 거리 (미터)
+    ///
     /// Calculate total distance traveled
     ///
     /// GPS 데이터를 기반으로 총 주행 거리를 계산합니다.
@@ -499,6 +520,9 @@ struct VideoMetadata: Codable, Equatable, Hashable {
         return total
     }
 
+    /// @brief 평균 속도 계산
+    /// @return 평균 속도 (km/h) 또는 nil
+    ///
     /// Calculate average speed from GPS data
     ///
     /// GPS 데이터를 기반으로 평균 속도를 계산합니다.
@@ -581,6 +605,9 @@ struct VideoMetadata: Codable, Equatable, Hashable {
         return speeds.reduce(0, +) / Double(speeds.count)
     }
 
+    /// @brief 최고 속도 계산
+    /// @return 최고 속도 (km/h) 또는 nil
+    ///
     /// Calculate maximum speed from GPS data
     ///
     /// GPS 데이터에서 최고 속도를 찾습니다.
@@ -646,6 +673,9 @@ struct VideoMetadata: Codable, Equatable, Hashable {
         return gpsPoints.compactMap { $0.speed }.max()
     }
 
+    /// @brief 지도 표시용 주행 경로 좌표 배열
+    /// @return 유효한 GPS 좌표 배열
+    ///
     /// Get route as array of coordinates for map display
     ///
     /// 지도에 표시할 주행 경로를 반환합니다.
@@ -720,6 +750,9 @@ struct VideoMetadata: Codable, Equatable, Hashable {
 
     // MARK: - Acceleration Methods
 
+    /// @brief G-센서 데이터 유무 확인
+    /// @return G-센서 데이터가 있으면 true
+    ///
     /// Check if G-Sensor data is available
     ///
     /// G-센서 가속도 데이터가 있는지 확인합니다.
@@ -743,6 +776,10 @@ struct VideoMetadata: Codable, Equatable, Hashable {
         return !accelerationData.isEmpty
     }
 
+    /// @brief 특정 시점의 가속도 데이터 검색
+    /// @param timeOffset 영상 시작부터의 시간 오프셋 (초)
+    /// @return 가장 가까운 가속도 데이터 또는 nil
+    ///
     /// Get acceleration data at specific time offset
     /// - Parameter timeOffset: Time offset in seconds from start of video
     /// - Returns: Closest acceleration data or nil
@@ -829,6 +866,9 @@ struct VideoMetadata: Codable, Equatable, Hashable {
         })
     }
 
+    /// @brief 유의미한 가속도 이벤트 검색 (> 1.5G)
+    /// @return 유의미한 가속도 이벤트 배열
+    ///
     /// Find all significant acceleration events
     ///
     /// 유의미한 가속도 이벤트를 모두 찾습니다.
@@ -900,6 +940,9 @@ struct VideoMetadata: Codable, Equatable, Hashable {
         return accelerationData.filter { $0.isSignificant }
     }
 
+    /// @brief 충격 이벤트 검색 (> 2.5G)
+    /// @return 충격 이벤트 배열
+    ///
     /// Find all impact events
     ///
     /// 충격 이벤트를 모두 찾습니다.
@@ -958,6 +1001,9 @@ struct VideoMetadata: Codable, Equatable, Hashable {
         return accelerationData.filter { $0.isImpact }
     }
 
+    /// @brief 최대 G-Force 계산
+    /// @return 최대 G-Force 또는 nil
+    ///
     /// Calculate maximum G-force experienced
     ///
     /// 경험한 최대 G-Force를 계산합니다.
@@ -1026,6 +1072,9 @@ struct VideoMetadata: Codable, Equatable, Hashable {
         return accelerationData.map { $0.magnitude }.max()
     }
 
+    /// @brief 충격 이벤트 존재 여부 확인
+    /// @return 충격 이벤트가 있으면 true
+    ///
     /// Check if video contains impact events
     ///
     /// 영상에 충격 이벤트가 있는지 확인합니다.
@@ -1063,6 +1112,9 @@ struct VideoMetadata: Codable, Equatable, Hashable {
 
     // MARK: - Combined Analysis
 
+    /// @brief 메타데이터 분석 및 요약 정보 생성
+    /// @return MetadataSummary 구조체
+    ///
     /// Analyze metadata and provide summary
     ///
     /// 메타데이터를 분석하여 요약 정보를 생성합니다.
@@ -1159,6 +1211,9 @@ struct VideoMetadata: Codable, Equatable, Hashable {
  ───────────────────────────────────────────────────────────────────────────────
  */
 
+/// @struct DeviceInfo
+/// @brief 블랙박스 장치 정보
+///
 /// Device/dashcam information
 ///
 /// 블랙박스 장치의 하드웨어와 펌웨어 정보를 나타냅니다.
@@ -1268,6 +1323,9 @@ struct DeviceInfo: Codable, Equatable, Hashable {
  ───────────────────────────────────────────────────────────────────────────────
  */
 
+/// @struct MetadataSummary
+/// @brief 메타데이터 요약 정보
+///
 /// Metadata summary for quick overview
 ///
 /// 메타데이터의 주요 통계를 요약한 구조체입니다.

@@ -1,9 +1,8 @@
-//
-//  AccelerationData.swift
-//  BlackboxPlayer
-//
-//  Model for G-Sensor (accelerometer) data
-//
+/// @file AccelerationData.swift
+/// @brief 블랙박스 G-센서(가속도계) 데이터 모델
+/// @author BlackboxPlayer Development Team
+///
+/// Model for G-Sensor (accelerometer) data
 
 /*
  ┌──────────────────────────────────────────────────────────────────────────┐
@@ -197,6 +196,9 @@ import Foundation
  }
  ```
  */
+/// @struct AccelerationData
+/// @brief 블랙박스 G-센서 가속도 데이터 포인트
+///
 /// G-Sensor acceleration data point from dashcam recording
 struct AccelerationData: Codable, Equatable, Hashable {
     /*
@@ -213,6 +215,9 @@ struct AccelerationData: Codable, Equatable, Hashable {
      - 시간 기반 차트 그리기
      - GPS 데이터와 시간 동기화
      */
+    /// @var timestamp
+    /// @brief GPS 측정 시각
+    ///
     /// Timestamp of this reading
     let timestamp: Date
 
@@ -244,6 +249,9 @@ struct AccelerationData: Codable, Equatable, Hashable {
      }
      ```
      */
+    /// @var x
+    /// @brief X축 가속도 (좌우 방향, G-force)
+    ///
     /// X-axis acceleration in G-force (lateral/side-to-side)
     /// Positive: right, Negative: left
     let x: Double
@@ -281,6 +289,9 @@ struct AccelerationData: Codable, Equatable, Hashable {
      - 블랙박스마다 Y축 방향 정의가 다를 수 있음
      - 일부는 양/음 부호가 반대
      */
+    /// @var y
+    /// @brief Y축 가속도 (전후 방향, G-force)
+    ///
     /// Y-axis acceleration in G-force (longitudinal/forward-backward)
     /// Positive: forward, Negative: backward
     let y: Double
@@ -325,6 +336,9 @@ struct AccelerationData: Codable, Equatable, Hashable {
      - 지구 중력 = 1G = 9.8 m/s²
      - 정지 상태에서도 Z축은 1G 측정
      */
+    /// @var z
+    /// @brief Z축 가속도 (상하 방향, G-force)
+    ///
     /// Z-axis acceleration in G-force (vertical/up-down)
     /// Positive: up, Negative: down
     let z: Double
@@ -435,6 +449,9 @@ struct AccelerationData: Codable, Equatable, Hashable {
      - 충격 강도 판단에 유용
      - 단일 임계값으로 판단 가능
      */
+    /// @brief 총 가속도 크기 계산 (벡터 크기)
+    /// @return 3축 가속도의 벡터 크기 (G 단위)
+    ///
     /// Total acceleration magnitude (vector length)
     var magnitude: Double {
         return sqrt(x * x + y * y + z * z)  // √(x² + y² + z²)
@@ -485,6 +502,9 @@ struct AccelerationData: Codable, Equatable, Hashable {
      let drivingScore = 100 - (lateral * 10)
      ```
      */
+    /// @brief 수평면 가속도 크기 (X-Y 평면)
+    /// @return X-Y 평면의 가속도 크기 (G 단위)
+    ///
     /// Lateral acceleration magnitude (X-Y plane)
     var lateralMagnitude: Double {
         return sqrt(x * x + y * y)  // √(x² + y²)
@@ -519,6 +539,9 @@ struct AccelerationData: Codable, Equatable, Hashable {
      - 급한 조작: 1.2-1.5G
      - 비정상 상황: > 1.5G
      */
+    /// @brief 유의미한 가속도 확인 (> 1.5G)
+    /// @return 1.5G 초과 시 true
+    ///
     /// Check if this reading indicates significant acceleration
     /// Threshold: > 1.5 G-force
     var isSignificant: Bool {
@@ -564,6 +587,9 @@ struct AccelerationData: Codable, Equatable, Hashable {
      - 중간 충돌: 3.5-5.0G (충격)
      - 심각한 충돌: > 5.0G (심각한 충격)
      */
+    /// @brief 충격 이벤트 확인 (> 2.5G)
+    /// @return 2.5G 초과 시 true
+    ///
     /// Check if this reading indicates an impact/collision
     /// Threshold: > 2.5 G-force
     var isImpact: Bool {
@@ -609,6 +635,9 @@ struct AccelerationData: Codable, Equatable, Hashable {
      - >10G: 매우 심각한 충돌
      - >20G: 치명적 충돌 (순간적)
      */
+    /// @brief 심각한 충격 확인 (> 4.0G)
+    /// @return 4.0G 초과 시 true
+    ///
     /// Check if this reading indicates a severe impact
     /// Threshold: > 4.0 G-force
     var isSevereImpact: Bool {
@@ -668,6 +697,9 @@ struct AccelerationData: Codable, Equatable, Hashable {
      - High: Orange (#FF9800)
      - Severe: Red (#F44336)
      */
+    /// @brief 충격 강도 분류 (5단계)
+    /// @return ImpactSeverity 열거형 (none, low, moderate, high, severe)
+    ///
     /// Classify the impact severity
     var impactSeverity: ImpactSeverity {
         let mag = magnitude  // 총 가속도 크기
@@ -740,6 +772,9 @@ struct AccelerationData: Codable, Equatable, Hashable {
      y < 0 → backward (제동/전방 충격)
      ```
      */
+    /// @brief 주요 충격 방향 판단
+    /// @return ImpactDirection 열거형 (forward, backward, left, right, up, down)
+    ///
     /// Determine primary impact direction
     var primaryDirection: ImpactDirection {
         let absX = abs(x)  // X축 절댓값
@@ -790,6 +825,9 @@ struct AccelerationData: Codable, Equatable, Hashable {
      - %.2f: 소수점 2자리
      - G: G-force 단위 표시
      */
+    /// @brief 가속도를 문자열로 포맷
+    /// @return "X: XXX.XXG, Y: XXX.XXG, Z: XXX.XXG" 형식
+    ///
     /// Format acceleration as string with G-force units
     var formattedString: String {
         return String(format: "X: %.2fG, Y: %.2fG, Z: %.2fG", x, y, z)
@@ -825,6 +863,9 @@ struct AccelerationData: Codable, Equatable, Hashable {
      print("최대 가속도: \(String(format: "%.2f G", maxG))")
      ```
      */
+    /// @brief 총 가속도 크기를 문자열로 포맷
+    /// @return "XXX.XX G" 형식
+    ///
     /// Format magnitude as string
     var magnitudeString: String {
         return String(format: "%.2f G", magnitude)
@@ -849,6 +890,9 @@ struct AccelerationData: Codable, Equatable, Hashable {
  - high: 높음 (2.5-4.0G)
  - severe: 심각 (> 4.0G)
  */
+/// @enum ImpactSeverity
+/// @brief 충격 강도 분류 (5단계)
+///
 /// Impact severity classification
 enum ImpactSeverity: String, Codable {
     case none = "none"          // 정상 주행
@@ -940,6 +984,9 @@ enum ImpactSeverity: String, Codable {
  - up: 상방 (Z+)
  - down: 하방 (Z-)
  */
+/// @enum ImpactDirection
+/// @brief 충격 방향 (6방향)
+///
 /// Impact direction
 enum ImpactDirection: String, Codable {
     case forward = "forward"    // 전방 가속 / 후방 충격
