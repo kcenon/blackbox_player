@@ -1,9 +1,7 @@
-//
-//  FileManagerService.swift
-//  BlackboxPlayer
-//
-//  Service for managing video files (favorites, notes, deletion)
-//
+/// @file FileManagerService.swift
+/// @brief Service for managing video files (favorites, notes, deletion)
+/// @author BlackboxPlayer Development Team
+/// @details Service for managing video file metadata and operations
 
 /*
  ┌──────────────────────────────────────────────────────────────────────────┐
@@ -208,7 +206,9 @@ import Foundation
  - FileManager: 파일 시스템 연산 (삭제/이동/복사)
  - NSLock: 멀티스레드 환경에서 캐시 보호
  */
-/// Service for managing video file metadata and operations
+/// @class FileManagerService
+/// @brief Service for managing video file metadata and operations
+/// @details 비디오 파일의 메타데이터와 파일 시스템 연산을 관리하는 서비스입니다.
 class FileManagerService {
     // MARK: - Properties
 
@@ -230,6 +230,8 @@ class FileManagerService {
      - 자동 동기화 (변경 사항 즉시 디스크에 저장)
      - 스레드 안전 (여러 스레드에서 동시 접근 가능)
      */
+    /// @var userDefaults
+    /// @brief UserDefaults instance for persistent storage
     private let userDefaults: UserDefaults
 
     /*
@@ -256,7 +258,11 @@ class FileManagerService {
      - 키 변경 시 한 곳만 수정
      - 코드 자동 완성 지원
      */
+    /// @var favoritesKey
+    /// @brief UserDefaults key for favorites storage
     private let favoritesKey = "com.blackboxplayer.favorites"
+    /// @var notesKey
+    /// @brief UserDefaults key for notes storage
     private let notesKey = "com.blackboxplayer.notes"
 
     /*
@@ -287,7 +293,8 @@ class FileManagerService {
      - 캐시 미스 시: 0.1초 (디스크 I/O + 파싱)
      - 100배 속도 차이!
      */
-    /// File information cache
+    /// @var fileCache
+    /// @brief File information cache
     private var fileCache: [String: CachedFileInfo] = [:]
 
     /*
@@ -326,6 +333,8 @@ class FileManagerService {
      }
      ```
      */
+    /// @var cacheLock
+    /// @brief Lock for thread-safe cache access
     private let cacheLock = NSLock()
 
     /*
@@ -346,8 +355,11 @@ class FileManagerService {
      - Double의 별칭 (typealias TimeInterval = Double)
      - 초 단위로 표현 (300 = 300초 = 5분)
      */
-    /// Cache configuration
+    /// @var maxCacheAge
+    /// @brief Maximum cache age in seconds (5 minutes)
     private let maxCacheAge: TimeInterval = 300 // 5 minutes
+    /// @var maxCacheSize
+    /// @brief Maximum number of cached files
     private let maxCacheSize: Int = 1000 // Maximum cached files
 
     // MARK: - Initialization
@@ -380,6 +392,8 @@ class FileManagerService {
      - 테스트 시 Mock UserDefaults 사용 가능
      - 유연한 설정 (앱 그룹 UserDefaults 등)
      */
+    /// @brief Initialize FileManagerService
+    /// @param userDefaults UserDefaults instance for storage (default: .standard)
     init(userDefaults: UserDefaults = .standard) {
         self.userDefaults = userDefaults
     }
@@ -417,9 +431,9 @@ class FileManagerService {
      }
      ```
      */
-    /// Check if video file is marked as favorite
-    /// - Parameter videoFile: VideoFile to check
-    /// - Returns: true if favorited
+    /// @brief Check if video file is marked as favorite
+    /// @param videoFile VideoFile to check
+    /// @return true if favorited
     func isFavorite(_ videoFile: VideoFile) -> Bool {
         let favorites = loadFavorites()  // UserDefaults에서 Set<String> 불러오기
         return favorites.contains(videoFile.id.uuidString)  // O(1) 시간 복잡도
@@ -460,10 +474,9 @@ class FileManagerService {
      - UserDefaults에 저장되므로 앱 종료 후에도 유지
      - 자동 동기화 (변경 즉시 디스크에 기록)
      */
-    /// Set favorite status for video file
-    /// - Parameters:
-    ///   - videoFile: VideoFile to update
-    ///   - isFavorite: New favorite status
+    /// @brief Set favorite status for video file
+    /// @param videoFile VideoFile to update
+    /// @param isFavorite New favorite status
     func setFavorite(_ videoFile: VideoFile, isFavorite: Bool) {
         var favorites = loadFavorites()  // 현재 즐겨찾기 Set 불러오기
 
@@ -507,8 +520,8 @@ class FileManagerService {
      - contains() 연산이 빠름 (O(1))
      - 순서가 중요하지 않음
      */
-    /// Get all favorited video file IDs
-    /// - Returns: Set of video file UUIDs
+    /// @brief Get all favorited video file IDs
+    /// @return Set of video file UUIDs
     func getAllFavorites() -> Set<String> {
         return loadFavorites()  // UserDefaults에서 Set 불러오기
     }
@@ -541,7 +554,7 @@ class FileManagerService {
      - 사용자에게 확인 받는 것이 좋음
      - 앱 재설치나 데이터 초기화 기능에 유용
      */
-    /// Clear all favorites
+    /// @brief Clear all favorites
     func clearAllFavorites() {
         userDefaults.removeObject(forKey: favoritesKey)  // UserDefaults에서 키 제거
     }
@@ -580,9 +593,9 @@ class FileManagerService {
      let displayNote = service.getNote(for: videoFile) ?? "메모 없음"
      ```
      */
-    /// Get note for video file
-    /// - Parameter videoFile: VideoFile to get note for
-    /// - Returns: Note text or nil if no note
+    /// @brief Get note for video file
+    /// @param videoFile VideoFile to get note for
+    /// @return Note text or nil if no note
     func getNote(for videoFile: VideoFile) -> String? {
         let notes = loadNotes()  // UserDefaults에서 Dictionary 불러오기
         return notes[videoFile.id.uuidString]  // Dictionary 조회 (없으면 nil)
@@ -624,10 +637,9 @@ class FileManagerService {
      service.setNote(for: videoFile, note: userInput.isEmpty ? nil : userInput)
      ```
      */
-    /// Set note for video file
-    /// - Parameters:
-    ///   - videoFile: VideoFile to set note for
-    ///   - note: Note text or nil to remove
+    /// @brief Set note for video file
+    /// @param videoFile VideoFile to set note for
+    /// @param note Note text or nil to remove
     func setNote(for videoFile: VideoFile, note: String?) {
         var notes = loadNotes()  // 현재 메모 Dictionary 불러오기
 
@@ -671,8 +683,8 @@ class FileManagerService {
      - 메모 검색 기능
      - 통계 표시 (메모가 있는 파일 개수)
      */
-    /// Get all notes
-    /// - Returns: Dictionary of video file UUID to note
+    /// @brief Get all notes
+    /// @return Dictionary of video file UUID to note
     func getAllNotes() -> [String: String] {
         return loadNotes()  // UserDefaults에서 Dictionary 불러오기
     }
@@ -705,7 +717,7 @@ class FileManagerService {
      - 사용자에게 확인 받는 것이 좋음
      - 앱 재설치나 데이터 초기화 기능에 유용
      */
-    /// Clear all notes
+    /// @brief Clear all notes
     func clearAllNotes() {
         userDefaults.removeObject(forKey: notesKey)  // UserDefaults에서 키 제거
     }
@@ -753,9 +765,9 @@ class FileManagerService {
      - 파일이 없으면 에러 발생
      - 디렉토리인 경우 내용물도 모두 삭제
      */
-    /// Delete video file and all its channels
-    /// - Parameter videoFile: VideoFile to delete
-    /// - Throws: Error if deletion fails
+    /// @brief Delete video file and all its channels
+    /// @param videoFile VideoFile to delete
+    /// @throws Error if deletion fails
     func deleteVideoFile(_ videoFile: VideoFile) throws {
         let fileManager = FileManager.default  // 파일 시스템 연산을 위한 FileManager
 
@@ -820,12 +832,11 @@ class FileManagerService {
      - createDirectory(withIntermediateDirectories: true)
      - 중간 디렉토리도 자동 생성 (/a/b/c 생성 시 /a, /a/b도 생성)
      */
-    /// Move video file to different directory
-    /// - Parameters:
-    ///   - videoFile: VideoFile to move
-    ///   - destinationURL: Destination directory URL
-    /// - Returns: Updated VideoFile with new paths
-    /// - Throws: Error if move fails
+    /// @brief Move video file to different directory
+    /// @param videoFile VideoFile to move
+    /// @param destinationURL Destination directory URL
+    /// @return Updated VideoFile with new paths
+    /// @throws Error if move fails
     func moveVideoFile(_ videoFile: VideoFile, to destinationURL: URL) throws -> VideoFile {
         let fileManager = FileManager.default  // 파일 시스템 연산을 위한 FileManager
 
@@ -935,11 +946,10 @@ class FileManagerService {
      }
      ```
      */
-    /// Export video file to external location
-    /// - Parameters:
-    ///   - videoFile: VideoFile to export
-    ///   - destinationURL: Export destination URL
-    /// - Throws: Error if export fails
+    /// @brief Export video file to external location
+    /// @param videoFile VideoFile to export
+    /// @param destinationURL Export destination URL
+    /// @throws Error if export fails
     func exportVideoFile(_ videoFile: VideoFile, to destinationURL: URL) throws {
         let fileManager = FileManager.default  // 파일 시스템 연산을 위한 FileManager
 
@@ -1005,9 +1015,9 @@ class FileManagerService {
      - 최대 18 엑사바이트 (18,000,000 테라바이트) 표현 가능
      - 파일 크기 표현에 적합
      */
-    /// Get total size of all video files
-    /// - Parameter videoFiles: Array of video files
-    /// - Returns: Total size in bytes
+    /// @brief Get total size of all video files
+    /// @param videoFiles Array of video files
+    /// @return Total size in bytes
     func getTotalSize(of videoFiles: [VideoFile]) -> UInt64 {
         return videoFiles.reduce(0) { total, file in
             total + file.totalFileSize  // 각 파일의 크기를 누적 합산
@@ -1059,9 +1069,9 @@ class FileManagerService {
      - 시스템 예약 공간 제외
      - macOS: 일반적으로 전체 용량의 80-90%
      */
-    /// Get available disk space at path
-    /// - Parameter path: Path to check
-    /// - Returns: Available space in bytes or nil if cannot determine
+    /// @brief Get available disk space at path
+    /// @param path Path to check
+    /// @return Available space in bytes or nil if cannot determine
     func getAvailableDiskSpace(at path: String) -> UInt64? {
         do {
             let url = URL(fileURLWithPath: path)  // 경로를 URL로 변환
@@ -1120,10 +1130,9 @@ class FileManagerService {
      service.setFavorite(for: selectedFiles, isFavorite: false)
      ```
      */
-    /// Apply favorite status to multiple files
-    /// - Parameters:
-    ///   - videoFiles: Array of video files
-    ///   - isFavorite: Favorite status to apply
+    /// @brief Apply favorite status to multiple files
+    /// @param videoFiles Array of video files
+    /// @param isFavorite Favorite status to apply
     func setFavorite(for videoFiles: [VideoFile], isFavorite: Bool) {
         var favorites = loadFavorites()  // 현재 즐겨찾기 Set 불러오기
 
@@ -1199,9 +1208,9 @@ class FileManagerService {
      }
      ```
      */
-    /// Delete multiple video files
-    /// - Parameter videoFiles: Array of video files to delete
-    /// - Returns: Array of errors (empty if all successful)
+    /// @brief Delete multiple video files
+    /// @param videoFiles Array of video files to delete
+    /// @return Array of errors (empty if all successful)
     func deleteVideoFiles(_ videoFiles: [VideoFile]) -> [Error] {
         var errors: [Error] = []  // 발생한 에러를 저장할 배열
 
@@ -1390,9 +1399,9 @@ class FileManagerService {
      - 여러 스레드에서 동시 호출 가능
      - defer로 unlock() 보장 (return 시에도)
      */
-    /// Get cached file information
-    /// - Parameter filePath: Path to file
-    /// - Returns: Cached file info or nil if not cached or expired
+    /// @brief Get cached file information
+    /// @param filePath Path to file
+    /// @return Cached file info or nil if not cached or expired
     func getCachedFileInfo(for filePath: String) -> VideoFile? {
         cacheLock.lock()  // 캐시 잠금 (다른 스레드 대기)
         defer { cacheLock.unlock() }  // 함수 종료 시 자동으로 잠금 해제
@@ -1466,10 +1475,9 @@ class FileManagerService {
      - 캐시 제거: O(n log n) (정렬 비용, n=1000)
      - 제거 빈도: 대략 801번 추가마다 1번
      */
-    /// Cache file information
-    /// - Parameters:
-    ///   - videoFile: VideoFile to cache
-    ///   - filePath: File path to use as cache key
+    /// @brief Cache file information
+    /// @param videoFile VideoFile to cache
+    /// @param filePath File path to use as cache key
     func cacheFileInfo(_ videoFile: VideoFile, for filePath: String) {
         cacheLock.lock()  // 캐시 잠금 (다른 스레드 대기)
         defer { cacheLock.unlock() }  // 함수 종료 시 자동으로 잠금 해제
@@ -1525,8 +1533,8 @@ class FileManagerService {
      - 부정확한 캐시는 버그 원인
      - 명시적으로 무효화하여 다음 번 읽기 시 최신 정보 로드
      */
-    /// Invalidate cache for specific file
-    /// - Parameter filePath: File path to invalidate
+    /// @brief Invalidate cache for specific file
+    /// @param filePath File path to invalidate
     func invalidateCache(for filePath: String) {
         cacheLock.lock()  // 캐시 잠금
         defer { cacheLock.unlock() }  // 함수 종료 시 자동 해제
@@ -1558,7 +1566,7 @@ class FileManagerService {
      - 메모리 즉시 해제됨
      - ARC(Automatic Reference Counting)에 의해 자동 관리
      */
-    /// Clear entire file cache
+    /// @brief Clear entire file cache
     func clearCache() {
         cacheLock.lock()  // 캐시 잠금
         defer { cacheLock.unlock() }  // 함수 종료 시 자동 해제
@@ -1613,8 +1621,8 @@ class FileManagerService {
      - 빈 배열이면 nil 반환
      - 가장 오래된 캐시 = 나이가 가장 큰 캐시
      */
-    /// Get cache statistics
-    /// - Returns: Tuple of (cached files count, oldest cache age)
+    /// @brief Get cache statistics
+    /// @return Tuple of (cached files count, oldest cache age)
     func getCacheStats() -> (count: Int, oldestAge: TimeInterval?) {
         cacheLock.lock()  // 캐시 잠금
         defer { cacheLock.unlock() }  // 함수 종료 시 자동 해제
@@ -1675,7 +1683,7 @@ class FileManagerService {
      - cleanupExpiredCache()는 명시적 정리 (수동)
      - 주기적으로 호출하여 메모리 낭비 방지
      */
-    /// Cleanup expired cache entries
+    /// @brief Cleanup expired cache entries
     func cleanupExpiredCache() {
         cacheLock.lock()  // 캐시 잠금
         defer { cacheLock.unlock() }  // 함수 종료 시 자동 해제
@@ -1768,9 +1776,9 @@ extension VideoFile {
      - 생성 후 이 메서드로 메타데이터 주입
      - 관심사 분리: 파일 스캔 ≠ 메타데이터 관리
      */
-    /// Create updated VideoFile with favorite status
-    /// - Parameter service: FileManagerService to use
-    /// - Returns: Updated VideoFile
+    /// @brief Create updated VideoFile with favorite status
+    /// @param service FileManagerService to use
+    /// @return Updated VideoFile
     func withUpdatedMetadata(from service: FileManagerService) -> VideoFile {
         // service에서 즐겨찾기와 메모 조회
         let isFavorite = service.isFavorite(self)
@@ -1843,8 +1851,13 @@ extension VideoFile {
  }
  ```
  */
-/// Cached file information with timestamp
+/// @struct CachedFileInfo
+/// @brief Cached file information with timestamp
 private struct CachedFileInfo {
-    let videoFile: VideoFile  // 캐시할 VideoFile 객체
-    let cachedAt: Date  // 캐시된 시간 (만료 확인용)
+    /// @var videoFile
+    /// @brief Cached VideoFile object
+    let videoFile: VideoFile
+    /// @var cachedAt
+    /// @brief Timestamp when cached (for expiration check)
+    let cachedAt: Date
 }

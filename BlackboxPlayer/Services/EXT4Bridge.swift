@@ -305,8 +305,9 @@ import Foundation
  ─────────────────────────────────────────────────────────────────────────
  */
 
-/// Bridge class for integrating C/C++ EXT4 library
-/// This class wraps the C library and conforms to EXT4FileSystemProtocol
+/// @class EXT4Bridge
+/// @brief Bridge class for integrating C/C++ EXT4 library
+/// @details This class wraps the C library and conforms to EXT4FileSystemProtocol
 ///
 /// **Integration Instructions:**
 /// When the C/C++ EXT4 library is available, follow these steps:
@@ -392,11 +393,17 @@ class EXT4Bridge: EXT4FileSystemProtocol {
      ─────────────────────────────────────────────────────────────────────
      */
 
+    /// @var _isMounted
+    /// @brief 마운트 상태 플래그
     private var _isMounted: Bool = false
+
+    /// @var mountPoint
+    /// @brief 마운트 지점 경로
     private var mountPoint: String?
 
-    /// C 라이브러리 장치 핸들
-    /// (ext4_blockdev* 또는 ext4_file*를 OpaquePointer로 래핑)
+    /// @var deviceHandle
+    /// @brief C 라이브러리 장치 핸들
+    /// @details ext4_blockdev* 또는 ext4_file*를 OpaquePointer로 래핑
     private var deviceHandle: OpaquePointer?  // Will hold C library handle
 
     /*

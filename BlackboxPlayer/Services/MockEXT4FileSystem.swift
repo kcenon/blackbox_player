@@ -274,8 +274,9 @@ import Foundation
  ─────────────────────────────────────────────────────────────────────────
  */
 
-/// Mock EXT4 file system implementation for testing
-/// Uses in-memory storage to simulate EXT4 operations
+/// @class MockEXT4FileSystem
+/// @brief Mock EXT4 file system implementation for testing
+/// @details Uses in-memory storage to simulate EXT4 operations
 class MockEXT4FileSystem: EXT4FileSystemProtocol {
 
     // MARK: - Properties
@@ -345,13 +346,20 @@ class MockEXT4FileSystem: EXT4FileSystemProtocol {
      ─────────────────────────────────────────────────────────────────────
      */
 
+    /// @var _isMounted
+    /// @brief 마운트 상태 플래그
     private var _isMounted: Bool = false
+
+    /// @var currentDevicePath
+    /// @brief 현재 마운트된 장치 경로
     private var currentDevicePath: String?
 
-    /// 파일 내용 저장소 (경로 → 데이터)
+    /// @var fileSystem
+    /// @brief 파일 내용 저장소 (경로 → 데이터)
     private var fileSystem: [String: Data] = [:]
 
-    /// 파일 메타데이터 캐시 (경로 → 정보)
+    /// @var fileInfoCache
+    /// @brief 파일 메타데이터 캐시 (경로 → 정보)
     private var fileInfoCache: [String: EXT4FileInfo] = [:]
 
     /*
@@ -1396,7 +1404,8 @@ class MockEXT4FileSystem: EXT4FileSystemProtocol {
      ═════════════════════════════════════════════════════════════════════
      */
 
-    /// Reset the mock filesystem to initial state
+    /// @brief Reset the mock filesystem to initial state
+    /// @details 언마운트, 모든 데이터 삭제, 샘플 파일 재생성
     func reset() {
         // Step 1: 언마운트
         _isMounted = false
@@ -1479,7 +1488,10 @@ class MockEXT4FileSystem: EXT4FileSystemProtocol {
      ═════════════════════════════════════════════════════════════════════
      */
 
-    /// Add a custom test file
+    /// @brief Add a custom test file
+    /// @param path 파일 경로
+    /// @param data 파일 내용
+    /// @details 마운트 여부와 무관하게 추가 가능, 공간 확인 안 함, 즉시 사용 가능
     func addTestFile(path: String, data: Data) {
         // Step 1: 파일 내용 추가
         fileSystem[path] = data

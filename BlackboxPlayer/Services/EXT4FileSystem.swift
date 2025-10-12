@@ -1,9 +1,7 @@
-//
-//  EXT4FileSystem.swift
-//  BlackboxPlayer
-//
-//  Protocol-based EXT4 file system interface for easy C library integration
-//
+/// @file EXT4FileSystem.swift
+/// @brief Protocol-based EXT4 file system interface for easy C library integration
+/// @author BlackboxPlayer Development Team
+/// @details EXT4 파일시스템 인터페이스와 오류 타입 정의
 
 /*
  ═══════════════════════════════════════════════════════════════════════════
@@ -119,18 +117,17 @@ import Foundation
  ───────────────────────────────────────────────────────────────────────────
  */
 
-/// EXT4 파일시스템 작업 중 발생할 수 있는 오류
-///
-/// 각 오류는 발생 원인과 복구 방법에 대한 정보를 포함합니다.
+/// @enum EXT4Error
+/// @brief EXT4 파일시스템 작업 중 발생할 수 있는 오류
+/// @details 각 오류는 발생 원인과 복구 방법에 대한 정보를 포함합니다.
 enum EXT4Error: Error, Equatable {
 
     // ──────────────────────────────────────
     // 디바이스 관련 오류
     // ──────────────────────────────────────
 
-    /// SD 카드나 외장 저장장치를 찾을 수 없음
-    ///
-    /// 발생 시나리오:
+    /// @brief SD 카드나 외장 저장장치를 찾을 수 없음
+    /// @details 발생 시나리오:
     /// - SD 카드가 컴퓨터에 연결되지 않음
     /// - 디바이스 경로가 존재하지 않음 (예: /dev/disk2s1)
     /// - USB 케이블 연결 불량
@@ -141,31 +138,27 @@ enum EXT4Error: Error, Equatable {
     /// 3. USB 허브 사용 시 직접 연결 시도
     case deviceNotFound
 
-    /// EXT4 파일시스템 마운트 실패
-    ///
-    /// 발생 시나리오:
+    /// @brief EXT4 파일시스템 마운트 실패
+    /// @param reason C 라이브러리의 에러 메시지
+    /// @details 발생 시나리오:
     /// - 파일시스템이 손상됨
     /// - 권한이 부족함 (root 권한 필요)
     /// - 이미 다른 프로세스가 마운트함
-    ///
-    /// reason 파라미터: C 라이브러리의 에러 메시지
     case mountFailed(reason: String)
 
-    /// 언마운트 실패
-    ///
-    /// 발생 시나리오:
+    /// @brief 언마운트 실패
+    /// @param reason 실패 원인 메시지
+    /// @details 발생 시나리오:
     /// - 파일이 아직 열려 있음
     /// - 디렉토리가 작업 디렉토리로 사용 중
     case unmountFailed(reason: String)
 
-    /// 이미 마운트된 상태에서 재마운트 시도
-    ///
-    /// 방지 방법: mount() 호출 전 isMounted 확인
+    /// @brief 이미 마운트된 상태에서 재마운트 시도
+    /// @details 방지 방법: mount() 호출 전 isMounted 확인
     case alreadyMounted
 
-    /// 마운트되지 않은 상태에서 파일 작업 시도
-    ///
-    /// 발생 시나리오:
+    /// @brief 마운트되지 않은 상태에서 파일 작업 시도
+    /// @details 발생 시나리오:
     /// - mount() 호출하지 않고 readFile() 호출
     /// - unmount() 후 파일 접근 시도
     case notMounted
@@ -174,65 +167,55 @@ enum EXT4Error: Error, Equatable {
     // 파일/디렉토리 오류
     // ──────────────────────────────────────
 
-    /// 잘못된 경로 형식
-    ///
-    /// 예시:
+    /// @brief 잘못된 경로 형식
+    /// @details 예시:
     /// - 빈 문자열
     /// - null 문자 포함
     /// - 경로 길이 초과 (보통 4096바이트)
     case invalidPath
 
-    /// 파일이나 디렉토리가 존재하지 않음
-    ///
-    /// path: 찾을 수 없는 파일의 경로
-    ///
-    /// 디버깅 팁:
+    /// @brief 파일이나 디렉토리가 존재하지 않음
+    /// @param path 찾을 수 없는 파일의 경로
+    /// @details 디버깅 팁:
     /// 1. listFiles()로 상위 디렉토리 내용 확인
     /// 2. 대소문자 구분 확인 (EXT4는 대소문자 구분)
     /// 3. 경로 구분자 확인 (/)
     case fileNotFound(path: String)
 
-    /// 파일 읽기 실패
-    ///
-    /// path: 읽으려던 파일 경로
-    /// reason: 실패 원인 (예: "I/O error", "Permission denied")
-    ///
-    /// 발생 시나리오:
+    /// @brief 파일 읽기 실패
+    /// @param path 읽으려던 파일 경로
+    /// @param reason 실패 원인 (예: "I/O error", "Permission denied")
+    /// @details 발생 시나리오:
     /// - 디스크 읽기 오류 (불량 섹터)
     /// - 파일 권한 부족
     /// - 파일이 삭제됨 (TOCTOU 문제)
     case readFailed(path: String, reason: String)
 
-    /// 파일 쓰기 실패
-    ///
-    /// path: 쓰려던 파일 경로
-    /// reason: 실패 원인
-    ///
-    /// 참고: 블랙박스 플레이어는 읽기 전용이므로 거의 발생하지 않음
+    /// @brief 파일 쓰기 실패
+    /// @param path 쓰려던 파일 경로
+    /// @param reason 실패 원인
+    /// @details 참고: 블랙박스 플레이어는 읽기 전용이므로 거의 발생하지 않음
     case writeFailed(path: String, reason: String)
 
     // ──────────────────────────────────────
     // 권한 및 공간 오류
     // ──────────────────────────────────────
 
-    /// 권한 거부
-    ///
-    /// macOS에서 EXT4 마운트는 보통 root 권한 필요:
+    /// @brief 권한 거부
+    /// @details macOS에서 EXT4 마운트는 보통 root 권한 필요:
     /// sudo ./BlackboxPlayer
     case permissionDenied
 
-    /// 디스크 공간 부족
-    ///
-    /// 쓰기 작업에서만 발생 (블랙박스 플레이어는 읽기 전용)
+    /// @brief 디스크 공간 부족
+    /// @details 쓰기 작업에서만 발생 (블랙박스 플레이어는 읽기 전용)
     case insufficientSpace
 
     // ──────────────────────────────────────
     // 파일시스템 오류
     // ──────────────────────────────────────
 
-    /// 파일시스템이 손상됨
-    ///
-    /// 발생 시나리오:
+    /// @brief 파일시스템이 손상됨
+    /// @details 발생 시나리오:
     /// - Superblock magic number 불일치
     /// - inode 테이블 손상
     /// - 블록 그룹 descriptor 오류
@@ -242,18 +225,15 @@ enum EXT4Error: Error, Equatable {
     /// sudo e2fsck -f /dev/sdX
     case corruptedFileSystem
 
-    /// 지원하지 않는 작업
-    ///
-    /// 예시:
+    /// @brief 지원하지 않는 작업
+    /// @details 예시:
     /// - EXT4 기능이 너무 새로움 (라이브러리 버전 낮음)
     /// - 특수 파일 타입 (소켓, 파이프 등)
     case unsupportedOperation
 
-    /// 알 수 없는 오류
-    ///
-    /// code: C 라이브러리의 errno 값
-    ///
-    /// 디버깅:
+    /// @brief 알 수 없는 오류
+    /// @param code C 라이브러리의 errno 값
+    /// @details 디버깅:
     /// 1. errno 코드를 man 페이지에서 검색
     /// 2. strerror(code)로 메시지 확인
     case unknownError(code: Int32)
@@ -278,7 +258,8 @@ enum EXT4Error: Error, Equatable {
      ───────────────────────────────────────────────────────────────────────
      */
 
-    /// 사용자에게 표시할 오류 메시지
+    /// @brief 사용자에게 표시할 오류 메시지
+    /// @return 지역화된 오류 메시지 문자열
     var localizedDescription: String {
         switch self {
         case .deviceNotFound:
@@ -361,14 +342,14 @@ enum EXT4Error: Error, Equatable {
  ───────────────────────────────────────────────────────────────────────────
  */
 
-/// EXT4 파일시스템의 파일/디렉토리 정보
-///
-/// inode의 중요 필드를 Swift 구조체로 표현합니다.
+/// @struct EXT4FileInfo
+/// @brief EXT4 파일시스템의 파일/디렉토리 정보
+/// @details inode의 중요 필드를 Swift 구조체로 표현합니다.
 struct EXT4FileInfo: Equatable, Codable {
 
-    /// 파일의 전체 경로 (마운트 포인트 기준 상대 경로)
-    ///
-    /// 예시:
+    /// @var path
+    /// @brief 파일의 전체 경로 (마운트 포인트 기준 상대 경로)
+    /// @details 예시:
     /// - "DCIM/Video/Video001.mp4"
     /// - "GPS/20240115.nmea"
     /// - "EventLog/event001.dat"
@@ -376,18 +357,18 @@ struct EXT4FileInfo: Equatable, Codable {
     /// 참고: 앞에 슬래시(/)를 포함하지 않습니다
     let path: String
 
-    /// 파일 이름 (경로 제외)
-    ///
-    /// path가 "DCIM/Video/Video001.mp4"이면
+    /// @var name
+    /// @brief 파일 이름 (경로 제외)
+    /// @details path가 "DCIM/Video/Video001.mp4"이면
     /// name은 "Video001.mp4"
     ///
     /// 구현 예시:
     /// name = (path as NSString).lastPathComponent
     let name: String
 
-    /// 파일 크기 (바이트 단위)
-    ///
-    /// UInt64 사용 이유:
+    /// @var size
+    /// @brief 파일 크기 (바이트 단위)
+    /// @details UInt64 사용 이유:
     /// - EXT4는 최대 16TB 파일 지원
     /// - Int는 음수 값이 불필요하므로 UInt 사용
     /// - 64비트로 충분히 큰 파일 표현 가능
@@ -397,27 +378,27 @@ struct EXT4FileInfo: Equatable, Codable {
     /// print(String(format: "%.2f MB", mb))
     let size: UInt64
 
-    /// 디렉토리 여부
-    ///
-    /// true: 디렉토리 (listFiles 가능)
+    /// @var isDirectory
+    /// @brief 디렉토리 여부
+    /// @details true: 디렉토리 (listFiles 가능)
     /// false: 일반 파일 (readFile 가능)
     ///
     /// inode의 S_IFDIR 비트로 판별:
     /// isDirectory = (inode.i_mode & S_IFDIR) != 0
     let isDirectory: Bool
 
-    /// 파일 생성 시각
-    ///
-    /// EXT4의 i_crtime (creation time) 필드
+    /// @var creationDate
+    /// @brief 파일 생성 시각
+    /// @details EXT4의 i_crtime (creation time) 필드
     ///
     /// Optional인 이유:
     /// - 오래된 EXT4는 생성 시각을 저장하지 않음
     /// - 생성 시각 지원은 EXT4의 확장 기능
     let creationDate: Date?
 
-    /// 파일 수정 시각
-    ///
-    /// EXT4의 i_mtime (modification time) 필드
+    /// @var modificationDate
+    /// @brief 파일 수정 시각
+    /// @details EXT4의 i_mtime (modification time) 필드
     ///
     /// 블랙박스에서 중요:
     /// - 녹화 시각 파악
@@ -431,9 +412,9 @@ struct EXT4FileInfo: Equatable, Codable {
     /// // "2024-01-15 14:30:25"
     let modificationDate: Date?
 
-    /// 파일 권한 (UNIX 스타일)
-    ///
-    /// 【권한 비트 구조】
+    /// @var permissions
+    /// @brief 파일 권한 (UNIX 스타일)
+    /// @details 【권한 비트 구조】
     /// 8진수로 표현: 0oXXX
     ///
     /// ┌─────────────────────────────────────┐
@@ -461,18 +442,15 @@ struct EXT4FileInfo: Equatable, Codable {
     /// let canExecute = (permissions & 0o100) != 0 // Owner 실행 권한
     let permissions: UInt16
 
-    /// 초기화 메서드
-    ///
-    /// 대부분의 파라미터는 C 라이브러리에서 읽은 inode 정보를 변환하여 전달합니다.
-    ///
-    /// - Parameters:
-    ///   - path: 파일 경로
-    ///   - name: 파일 이름
-    ///   - size: 파일 크기 (바이트)
-    ///   - isDirectory: 디렉토리 여부
-    ///   - creationDate: 생성 시각 (Optional)
-    ///   - modificationDate: 수정 시각 (Optional)
-    ///   - permissions: UNIX 권한 (기본값: 0o644)
+    /// @brief 초기화 메서드
+    /// @param path 파일 경로
+    /// @param name 파일 이름
+    /// @param size 파일 크기 (바이트)
+    /// @param isDirectory 디렉토리 여부
+    /// @param creationDate 생성 시각 (Optional)
+    /// @param modificationDate 수정 시각 (Optional)
+    /// @param permissions UNIX 권한 (기본값: 0o644)
+    /// @details 대부분의 파라미터는 C 라이브러리에서 읽은 inode 정보를 변환하여 전달합니다.
     init(
         path: String,
         name: String,
@@ -535,14 +513,14 @@ struct EXT4FileInfo: Equatable, Codable {
  ───────────────────────────────────────────────────────────────────────────
  */
 
-/// EXT4 저장 장치의 정보
-///
-/// Superblock에서 읽어온 파일시스템 메타데이터를 표현합니다.
+/// @struct EXT4DeviceInfo
+/// @brief EXT4 저장 장치의 정보
+/// @details Superblock에서 읽어온 파일시스템 메타데이터를 표현합니다.
 struct EXT4DeviceInfo: Equatable {
 
-    /// 디바이스 경로
-    ///
-    /// macOS 예시:
+    /// @var devicePath
+    /// @brief 디바이스 경로
+    /// @details macOS 예시:
     /// - "/dev/disk2s1" : SD 카드의 첫 번째 파티션
     /// - "/dev/disk3s1" : USB 드라이브
     ///
@@ -557,9 +535,9 @@ struct EXT4DeviceInfo: Equatable {
     /// ```
     let devicePath: String
 
-    /// 볼륨 이름 (선택적)
-    ///
-    /// Superblock의 s_volume_name 필드 (최대 16바이트)
+    /// @var volumeName
+    /// @brief 볼륨 이름 (선택적)
+    /// @details Superblock의 s_volume_name 필드 (최대 16바이트)
     ///
     /// 예시:
     /// - "BlackboxSD"
@@ -569,27 +547,27 @@ struct EXT4DeviceInfo: Equatable {
     /// nil인 경우: 볼륨 이름이 설정되지 않음
     let volumeName: String?
 
-    /// 총 용량 (바이트)
-    ///
-    /// 계산: s_blocks_count × s_log_block_size
+    /// @var totalSize
+    /// @brief 총 용량 (바이트)
+    /// @details 계산: s_blocks_count × s_log_block_size
     ///
     /// 예시:
     /// let gb = Double(totalSize) / 1_000_000_000
     /// print("\(gb) GB")  // "7.45 GB"
     let totalSize: UInt64
 
-    /// 사용 가능한 여유 공간 (바이트)
-    ///
-    /// 계산: s_free_blocks_count × s_log_block_size
+    /// @var freeSpace
+    /// @brief 사용 가능한 여유 공간 (바이트)
+    /// @details 계산: s_free_blocks_count × s_log_block_size
     ///
     /// 주의: Root 예약 공간 제외
     /// EXT4는 기본적으로 총 용량의 5%를 root 사용자를 위해 예약합니다.
     /// 따라서 일반 사용자는 freeSpace가 0이 아니어도 쓰기에 실패할 수 있습니다.
     let freeSpace: UInt64
 
-    /// 블록 크기 (바이트)
-    ///
-    /// 일반적인 값:
+    /// @var blockSize
+    /// @brief 블록 크기 (바이트)
+    /// @details 일반적인 값:
     /// - 1024 (1 KB) : 작은 파일이 많을 때
     /// - 2048 (2 KB)
     /// - 4096 (4 KB) : 기본값, 대부분의 시스템
@@ -603,9 +581,9 @@ struct EXT4DeviceInfo: Equatable {
     /// blockSize = 4096일 때, 100바이트 파일도 4096바이트 차지
     let blockSize: UInt32
 
-    /// 마운트 상태
-    ///
-    /// true: 현재 마운트됨 (파일 접근 가능)
+    /// @var isMounted
+    /// @brief 마운트 상태
+    /// @details true: 현재 마운트됨 (파일 접근 가능)
     /// false: 언마운트됨 (파일 접근 불가)
     ///
     /// 마운트 상태 확인:
@@ -634,9 +612,9 @@ struct EXT4DeviceInfo: Equatable {
      ───────────────────────────────────────────────────────────────────────
      */
 
-    /// 사용 중인 공간 (바이트)
-    ///
-    /// 계산: 총 용량 - 여유 공간
+    /// @brief 사용 중인 공간 (바이트)
+    /// @return 사용 중인 공간 (바이트)
+    /// @details 계산: 총 용량 - 여유 공간
     ///
     /// 오버플로우 방지:
     /// totalSize가 freeSpace보다 작으면 0 반환 (비정상적 상황)
@@ -648,9 +626,9 @@ struct EXT4DeviceInfo: Equatable {
         return totalSize > freeSpace ? totalSize - freeSpace : 0
     }
 
-    /// 사용률 (퍼센트)
-    ///
-    /// 계산: (사용 공간 / 총 용량) × 100
+    /// @brief 사용률 (퍼센트)
+    /// @return 사용률 (0.0 ~ 100.0)
+    /// @details 계산: (사용 공간 / 총 용량) × 100
     ///
     /// 반환 범위: 0.0 ~ 100.0
     ///
@@ -729,9 +707,9 @@ struct EXT4DeviceInfo: Equatable {
  ───────────────────────────────────────────────────────────────────────────
  */
 
-/// EXT4 파일시스템 작업을 정의하는 프로토콜
-///
-/// 이 추상화를 통해 C/C++ 라이브러리를 쉽게 통합할 수 있습니다.
+/// @protocol EXT4FileSystemProtocol
+/// @brief EXT4 파일시스템 작업을 정의하는 프로토콜
+/// @details 이 추상화를 통해 C/C++ 라이브러리를 쉽게 통합할 수 있습니다.
 protocol EXT4FileSystemProtocol {
 
     // MARK: - Device Management
@@ -755,15 +733,13 @@ protocol EXT4FileSystemProtocol {
      ───────────────────────────────────────────────────────────────────────
      */
 
-    /// EXT4 디바이스를 마운트
-    ///
-    /// 마운트 후 파일 작업이 가능해집니다.
-    ///
-    /// - Parameter devicePath: 디바이스 경로 (예: "/dev/disk2s1")
-    /// - Throws: EXT4Error
+    /// @brief EXT4 디바이스를 마운트
+    /// @param devicePath 디바이스 경로 (예: "/dev/disk2s1")
+    /// @throws EXT4Error
     ///   - .deviceNotFound: 디바이스가 존재하지 않음
     ///   - .mountFailed: 마운트 실패 (손상된 파일시스템, 권한 부족 등)
     ///   - .alreadyMounted: 이미 마운트됨
+    /// @details 마운트 후 파일 작업이 가능해집니다.
     ///
     /// 사용 예시:
     /// ```swift
@@ -782,13 +758,11 @@ protocol EXT4FileSystemProtocol {
     /// - 마운트는 무거운 작업이므로 앱 시작 시 1회만 실행
     func mount(devicePath: String) throws
 
-    /// 현재 마운트된 디바이스를 언마운트
-    ///
-    /// 파일 핸들이 모두 닫혀야 성공합니다.
-    ///
-    /// - Throws: EXT4Error
+    /// @brief 현재 마운트된 디바이스를 언마운트
+    /// @throws EXT4Error
     ///   - .notMounted: 마운트되지 않은 상태
     ///   - .unmountFailed: 언마운트 실패 (파일이 열려 있음 등)
+    /// @details 파일 핸들이 모두 닫혀야 성공합니다.
     ///
     /// 사용 예시:
     /// ```swift
@@ -806,12 +780,10 @@ protocol EXT4FileSystemProtocol {
     /// - 백그라운드 작업이 진행 중이면 실패할 수 있음
     func unmount() throws
 
-    /// 디바이스가 현재 마운트되어 있는지 확인
-    ///
-    /// true: 마운트됨 (파일 작업 가능)
-    /// false: 언마운트됨 (mount() 호출 필요)
-    ///
-    /// 사용 예시:
+    /// @var isMounted
+    /// @brief 디바이스가 현재 마운트되어 있는지 확인
+    /// @return true: 마운트됨 (파일 작업 가능), false: 언마운트됨 (mount() 호출 필요)
+    /// @details 사용 예시:
     /// ```swift
     /// if !fs.isMounted {
     ///     try fs.mount(devicePath: "/dev/disk2s1")
@@ -820,12 +792,10 @@ protocol EXT4FileSystemProtocol {
     /// ```
     var isMounted: Bool { get }
 
-    /// 마운트된 디바이스의 정보를 조회
-    ///
-    /// Superblock에서 읽은 메타데이터를 반환합니다.
-    ///
-    /// - Returns: EXT4DeviceInfo 구조체
-    /// - Throws: EXT4Error.notMounted: 마운트되지 않은 상태
+    /// @brief 마운트된 디바이스의 정보를 조회
+    /// @return EXT4DeviceInfo 구조체
+    /// @throws EXT4Error.notMounted 마운트되지 않은 상태
+    /// @details Superblock에서 읽은 메타데이터를 반환합니다.
     ///
     /// 사용 예시:
     /// ```swift
@@ -868,16 +838,14 @@ protocol EXT4FileSystemProtocol {
      ───────────────────────────────────────────────────────────────────────
      */
 
-    /// 디렉토리의 파일 목록 조회
-    ///
-    /// 지정된 디렉토리의 모든 파일/하위 디렉토리를 반환합니다.
-    ///
-    /// - Parameter path: 디렉토리 경로 (마운트 포인트 기준 상대 경로)
-    /// - Returns: EXT4FileInfo 배열
-    /// - Throws: EXT4Error
+    /// @brief 디렉토리의 파일 목록 조회
+    /// @param path 디렉토리 경로 (마운트 포인트 기준 상대 경로)
+    /// @return EXT4FileInfo 배열
+    /// @throws EXT4Error
     ///   - .notMounted: 마운트되지 않음
     ///   - .fileNotFound: 디렉토리가 존재하지 않음
     ///   - .readFailed: 읽기 실패
+    /// @details 지정된 디렉토리의 모든 파일/하위 디렉토리를 반환합니다.
     ///
     /// 사용 예시:
     /// ```swift
@@ -911,16 +879,14 @@ protocol EXT4FileSystemProtocol {
     /// ```
     func listFiles(at path: String) throws -> [EXT4FileInfo]
 
-    /// 파일 내용 읽기
-    ///
-    /// 전체 파일을 메모리로 읽어 Data로 반환합니다.
-    ///
-    /// - Parameter path: 파일 경로 (마운트 포인트 기준 상대 경로)
-    /// - Returns: 파일의 내용 (Data)
-    /// - Throws: EXT4Error
+    /// @brief 파일 내용 읽기
+    /// @param path 파일 경로 (마운트 포인트 기준 상대 경로)
+    /// @return 파일의 내용 (Data)
+    /// @throws EXT4Error
     ///   - .notMounted: 마운트되지 않음
     ///   - .fileNotFound: 파일이 존재하지 않음
     ///   - .readFailed: 읽기 실패 (I/O 오류, 권한 부족 등)
+    /// @details 전체 파일을 메모리로 읽어 Data로 반환합니다.
     ///
     /// 사용 예시:
     /// ```swift
@@ -947,18 +913,15 @@ protocol EXT4FileSystemProtocol {
     /// }
     func readFile(at path: String) throws -> Data
 
-    /// 파일에 데이터 쓰기
-    ///
-    /// 지정된 경로에 데이터를 씁니다. 파일이 존재하면 덮어씁니다.
-    ///
-    /// - Parameters:
-    ///   - data: 쓸 데이터
-    ///   - path: 파일 경로 (마운트 포인트 기준 상대 경로)
-    /// - Throws: EXT4Error
+    /// @brief 파일에 데이터 쓰기
+    /// @param data 쓸 데이터
+    /// @param path 파일 경로 (마운트 포인트 기준 상대 경로)
+    /// @throws EXT4Error
     ///   - .notMounted: 마운트되지 않음
     ///   - .writeFailed: 쓰기 실패
     ///   - .insufficientSpace: 공간 부족
     ///   - .permissionDenied: 권한 부족
+    /// @details 지정된 경로에 데이터를 씁니다. 파일이 존재하면 덮어씁니다.
     ///
     /// 사용 예시:
     /// ```swift
@@ -970,10 +933,9 @@ protocol EXT4FileSystemProtocol {
     /// 참고: 블랙박스 플레이어는 읽기 전용이므로 거의 사용되지 않습니다.
     func writeFile(data: Data, to path: String) throws
 
-    /// 파일/디렉토리 존재 여부 확인
-    ///
-    /// - Parameter path: 확인할 경로
-    /// - Returns: 존재하면 true, 없으면 false
+    /// @brief 파일/디렉토리 존재 여부 확인
+    /// @param path 확인할 경로
+    /// @return 존재하면 true, 없으면 false
     ///
     /// 사용 예시:
     /// ```swift
@@ -989,15 +951,13 @@ protocol EXT4FileSystemProtocol {
     /// 마운트되지 않은 상태에서는 false 반환
     func fileExists(at path: String) -> Bool
 
-    /// 파일 정보 조회
-    ///
-    /// 파일의 메타데이터(크기, 날짜, 권한 등)를 반환합니다.
-    ///
-    /// - Parameter path: 파일 경로
-    /// - Returns: EXT4FileInfo 구조체
-    /// - Throws: EXT4Error
+    /// @brief 파일 정보 조회
+    /// @param path 파일 경로
+    /// @return EXT4FileInfo 구조체
+    /// @throws EXT4Error
     ///   - .notMounted: 마운트되지 않음
     ///   - .fileNotFound: 파일이 존재하지 않음
+    /// @details 파일의 메타데이터(크기, 날짜, 권한 등)를 반환합니다.
     ///
     /// 사용 예시:
     /// ```swift
@@ -1019,26 +979,22 @@ protocol EXT4FileSystemProtocol {
     /// ```
     func getFileInfo(at path: String) throws -> EXT4FileInfo
 
-    /// 파일 삭제
-    ///
-    /// - Parameter path: 삭제할 파일 경로
-    /// - Throws: EXT4Error
+    /// @brief 파일 삭제
+    /// @param path 삭제할 파일 경로
+    /// @throws EXT4Error
     ///   - .notMounted: 마운트되지 않음
     ///   - .fileNotFound: 파일이 존재하지 않음
     ///   - .permissionDenied: 권한 부족
-    ///
-    /// 참고: 블랙박스 플레이어는 읽기 전용이므로 거의 사용되지 않습니다.
+    /// @details 참고: 블랙박스 플레이어는 읽기 전용이므로 거의 사용되지 않습니다.
     func deleteFile(at path: String) throws
 
-    /// 디렉토리 생성
-    ///
-    /// - Parameter path: 생성할 디렉토리 경로
-    /// - Throws: EXT4Error
+    /// @brief 디렉토리 생성
+    /// @param path 생성할 디렉토리 경로
+    /// @throws EXT4Error
     ///   - .notMounted: 마운트되지 않음
     ///   - .writeFailed: 생성 실패
     ///   - .permissionDenied: 권한 부족
-    ///
-    /// 참고: 블랙박스 플레이어는 읽기 전용이므로 거의 사용되지 않습니다.
+    /// @details 참고: 블랙박스 플레이어는 읽기 전용이므로 거의 사용되지 않습니다.
     func createDirectory(at path: String) throws
 
     // MARK: - Async Operations (for future use)
@@ -1081,13 +1037,11 @@ protocol EXT4FileSystemProtocol {
      ───────────────────────────────────────────────────────────────────────
      */
 
-    /// 비동기로 파일 읽기
-    ///
-    /// 큰 파일을 읽을 때 UI 스레드를 블로킹하지 않습니다.
-    ///
-    /// - Parameter path: 파일 경로
-    /// - Returns: 파일 내용 (Data)
-    /// - Throws: EXT4Error
+    /// @brief 비동기로 파일 읽기
+    /// @param path 파일 경로
+    /// @return 파일 내용 (Data)
+    /// @throws EXT4Error
+    /// @details 큰 파일을 읽을 때 UI 스레드를 블로킹하지 않습니다.
     ///
     /// 사용 예시:
     /// ```swift
@@ -1190,18 +1144,16 @@ extension EXT4FileSystemProtocol {
      ───────────────────────────────────────────────────────────────────────
      */
 
-    /// 비동기 파일 읽기의 기본 구현
-    ///
-    /// 동기 readFile()을 백그라운드 스레드에서 실행하여 비동기로 변환합니다.
+    /// @brief 비동기 파일 읽기의 기본 구현
+    /// @param path 파일 경로
+    /// @return 파일 데이터
+    /// @throws EXT4Error
+    /// @details 동기 readFile()을 백그라운드 스레드에서 실행하여 비동기로 변환합니다.
     ///
     /// 동작 방식:
     /// 1. withCheckedThrowingContinuation으로 continuation 생성
     /// 2. DispatchQueue.global()에서 readFile() 호출
     /// 3. 성공/실패 결과를 continuation으로 반환
-    ///
-    /// - Parameter path: 파일 경로
-    /// - Returns: 파일 데이터
-    /// - Throws: EXT4Error
     ///
     /// 참고:
     /// - 구현체에서 더 효율적인 비동기 I/O가 있다면 override 가능
@@ -1256,13 +1208,11 @@ extension EXT4FileSystemProtocol {
      ───────────────────────────────────────────────────────────────────────
      */
 
-    /// 경로를 정규화 (앞뒤 슬래시 제거)
-    ///
-    /// EXT4 작업에서 사용하는 경로는 마운트 포인트 기준 상대 경로입니다.
+    /// @brief 경로를 정규화 (앞뒤 슬래시 제거)
+    /// @param path 원본 경로
+    /// @return 정규화된 경로
+    /// @details EXT4 작업에서 사용하는 경로는 마운트 포인트 기준 상대 경로입니다.
     /// 앞에 슬래시를 붙이지 않고 사용합니다.
-    ///
-    /// - Parameter path: 원본 경로
-    /// - Returns: 정규화된 경로
     ///
     /// 변환 예시:
     /// ```swift

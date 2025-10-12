@@ -1,9 +1,8 @@
-//
-//  FileScanner.swift
-//  BlackboxPlayer
-//
-//  Service for scanning and discovering dashcam video files
-//
+/// @file FileScanner.swift
+/// @brief Service for scanning and discovering dashcam video files
+/// @author BlackboxPlayer Development Team
+/// @details 블랙박스 SD 카드의 디렉토리를 재귀적으로 스캔하여 비디오 파일을 발견하고,
+/// 멀티채널 그룹으로 조직화하는 서비스입니다.
 
 /*
  ═══════════════════════════════════════════════════════════════════════════
@@ -137,7 +136,8 @@ import Foundation
  ───────────────────────────────────────────────────────────────────────────
  */
 
-/// 디렉토리를 스캔하여 블랙박스 비디오 파일을 발견하고 조직화하는 서비스
+/// @class FileScanner
+/// @brief 디렉토리를 스캔하여 블랙박스 비디오 파일을 발견하고 조직화하는 서비스
 ///
 /// FileManager의 재귀적 enumerator를 사용하여 모든 하위 디렉토리를 탐색하고,
 /// 정규식으로 파일명을 파싱하여 메타데이터를 추출합니다.
@@ -172,7 +172,8 @@ class FileScanner {
      ───────────────────────────────────────────────────────────────────────
      */
 
-    /// 지원하는 비디오 파일 확장자
+    /// @var videoExtensions
+    /// @brief 지원하는 비디오 파일 확장자
     ///
     /// Set으로 저장하여 O(1) 시간에 포함 여부 확인 가능합니다.
     /// 모든 확장자는 소문자로 저장되어 대소문자 구분 없이 매칭됩니다.
@@ -234,7 +235,8 @@ class FileScanner {
      ───────────────────────────────────────────────────────────────────────
      */
 
-    /// BlackVue 형식 파일명 패턴 (YYYYMMDD_HHMMSS_X.mp4)
+    /// @var filenamePattern
+    /// @brief BlackVue 형식 파일명 패턴 (YYYYMMDD_HHMMSS_X.mp4)
     ///
     /// 정규식 패턴:
     /// - `(\d{8})`: 날짜 (YYYYMMDD)
@@ -248,7 +250,8 @@ class FileScanner {
     /// - "video.mp4" → ✗ (패턴 불일치)
     private let filenamePattern = #"^(\d{8})_(\d{6})_([FRLIi]+)\.(\w+)$"#
 
-    /// 컴파일된 정규식 객체
+    /// @var filenameRegex
+    /// @brief 컴파일된 정규식 객체
     ///
     /// init()에서 한 번 컴파일하여 재사용함으로써 성능 향상.
     /// 컴파일 실패 시 nil (패턴 오류).
@@ -282,7 +285,7 @@ class FileScanner {
      ───────────────────────────────────────────────────────────────────────
      */
 
-    /// FileScanner 초기화
+    /// @brief FileScanner 초기화
     ///
     /// 정규식 패턴을 컴파일하여 성능을 최적화합니다.
     /// 컴파일 실패 시 filenameRegex는 nil이 되며, 모든 파일이 스킵됩니다.
@@ -344,14 +347,14 @@ class FileScanner {
      ───────────────────────────────────────────────────────────────────────
      */
 
-    /// 디렉토리를 스캔하여 블랙박스 비디오 파일 발견
+    /// @brief 디렉토리를 스캔하여 블랙박스 비디오 파일 발견
     ///
     /// FileManager.enumerator를 사용하여 재귀적으로 모든 하위 디렉토리를 탐색하고,
     /// 비디오 파일을 파싱하여 멀티채널 그룹으로 조직화합니다.
     ///
-    /// - Parameter directoryURL: 스캔할 디렉토리의 URL
-    /// - Returns: VideoFileGroup 배열 (최신순 정렬)
-    /// - Throws: FileScannerError
+    /// @param directoryURL 스캔할 디렉토리의 URL
+    /// @return VideoFileGroup 배열 (최신순 정렬)
+    /// @throws FileScannerError
     ///   - .directoryNotFound: 디렉토리가 존재하지 않음
     ///   - .cannotEnumerateDirectory: 디렉토리 열기 실패
     ///
@@ -494,13 +497,13 @@ class FileScanner {
      ───────────────────────────────────────────────────────────────────────
      */
 
-    /// 디렉토리의 비디오 파일 개수를 빠르게 계산
+    /// @brief 디렉토리의 비디오 파일 개수를 빠르게 계산
     ///
     /// 파일명 파싱 없이 확장자만 확인하여 빠른 카운트를 수행합니다.
     /// scanDirectory()보다 약 2배 빠르며 메모리를 거의 사용하지 않습니다.
     ///
-    /// - Parameter directoryURL: 스캔할 디렉토리의 URL
-    /// - Returns: 비디오 파일 개수, 오류 발생 시 0
+    /// @param directoryURL 스캔할 디렉토리의 URL
+    /// @return 비디오 파일 개수, 오류 발생 시 0
     ///
     /// 사용 예시:
     /// ```swift
@@ -621,12 +624,12 @@ class FileScanner {
      ───────────────────────────────────────────────────────────────────────
      */
 
-    /// 비디오 파일 URL에서 메타데이터 파싱
+    /// @brief 비디오 파일 URL에서 메타데이터 파싱
     ///
     /// 파일명을 정규식으로 분석하여 날짜, 시간, 카메라 위치 등을 추출합니다.
     ///
-    /// - Parameter fileURL: 비디오 파일의 URL
-    /// - Returns: VideoFileInfo, 파싱 실패 시 nil
+    /// @param fileURL 비디오 파일의 URL
+    /// @return VideoFileInfo, 파싱 실패 시 nil
     ///
     /// 파싱 과정:
     /// 1. 파일명 추출 (lastPathComponent)
@@ -784,12 +787,12 @@ class FileScanner {
      ───────────────────────────────────────────────────────────────────────
      */
 
-    /// 개별 비디오 파일을 멀티채널 그룹으로 통합
+    /// @brief 개별 비디오 파일을 멀티채널 그룹으로 통합
     ///
     /// 같은 시각(baseFilename)과 이벤트 타입의 파일들을 하나의 그룹으로 묶습니다.
     ///
-    /// - Parameter files: VideoFileInfo 배열
-    /// - Returns: VideoFileGroup 배열 (최신순 정렬)
+    /// @param files VideoFileInfo 배열
+    /// @return VideoFileGroup 배열 (최신순 정렬)
     ///
     /// 그룹화 과정:
     /// 1. baseFilename + eventType을 키로 Dictionary 생성
@@ -877,12 +880,14 @@ class FileScanner {
  ───────────────────────────────────────────────────────────────────────────
  */
 
-/// 개별 비디오 파일의 정보
+/// @struct VideoFileInfo
+/// @brief 개별 비디오 파일의 정보
 ///
 /// 파일명을 파싱하여 추출한 메타데이터를 담는 경량 구조체입니다.
 /// 그룹화 전의 개별 파일 단위 정보를 표현합니다.
 struct VideoFileInfo {
-    /// 파일의 URL
+    /// @var url
+    /// @brief 파일의 URL
     ///
     /// 파일을 열거나 메타데이터를 읽을 때 사용:
     /// ```swift
@@ -890,7 +895,8 @@ struct VideoFileInfo {
     /// ```
     let url: URL
 
-    /// 녹화 시작 시각
+    /// @var timestamp
+    /// @brief 녹화 시작 시각
     ///
     /// 파일명에서 추출한 날짜/시간:
     /// "20240115_143025_F.mp4" → Date(2024-01-15 14:30:25 +0900)
@@ -901,7 +907,8 @@ struct VideoFileInfo {
     /// - UI 표시 ("2024-01-15 14:30")
     let timestamp: Date
 
-    /// 카메라 위치
+    /// @var position
+    /// @brief 카메라 위치
     ///
     /// 파일명의 위치 코드에서 추출:
     /// - "F" → .front (전방)
@@ -914,7 +921,8 @@ struct VideoFileInfo {
     /// - UI에서 채널 선택
     let position: CameraPosition
 
-    /// 이벤트 타입
+    /// @var eventType
+    /// @brief 이벤트 타입
     ///
     /// 파일 경로에서 감지:
     /// - "/Normal/" 포함 → .normal (일반 녹화)
@@ -926,7 +934,8 @@ struct VideoFileInfo {
     /// - UI 아이콘 표시 (⚠️ 이벤트)
     let eventType: EventType
 
-    /// 파일 크기 (바이트)
+    /// @var fileSize
+    /// @brief 파일 크기 (바이트)
     ///
     /// FileManager.attributesOfItem에서 조회:
     /// ```swift
@@ -940,7 +949,8 @@ struct VideoFileInfo {
     /// - 대용량 파일 경고
     let fileSize: UInt64
 
-    /// 기본 파일명 (카메라 위치 코드 제외)
+    /// @var baseFilename
+    /// @brief 기본 파일명 (카메라 위치 코드 제외)
     ///
     /// "20240115_143025_F.mp4" → "20240115_143025"
     ///
@@ -1011,11 +1021,13 @@ struct VideoFileInfo {
  ───────────────────────────────────────────────────────────────────────────
  */
 
-/// 같은 시각에 녹화된 멀티채널 비디오 파일의 그룹
+/// @struct VideoFileGroup
+/// @brief 같은 시각에 녹화된 멀티채널 비디오 파일의 그룹
 ///
 /// 전방/후방 카메라가 동시에 녹화한 파일들을 하나의 그룹으로 표현합니다.
 struct VideoFileGroup {
-    /// 그룹에 속한 비디오 파일들
+    /// @var files
+    /// @brief 그룹에 속한 비디오 파일들
     ///
     /// 정렬 순서: displayPriority (Front → Rear → Left → Interior)
     ///
@@ -1044,7 +1056,8 @@ struct VideoFileGroup {
      ───────────────────────────────────────────────────────────────────────
      */
 
-    /// 녹화 시작 시각
+    /// @var timestamp
+    /// @brief 녹화 시작 시각
     ///
     /// 그룹의 첫 번째 파일 시각을 반환합니다.
     /// 모든 파일은 같은 시각이므로 첫 번째 파일만 확인.
@@ -1054,7 +1067,8 @@ struct VideoFileGroup {
         return files.first?.timestamp ?? Date()
     }
 
-    /// 이벤트 타입
+    /// @var eventType
+    /// @brief 이벤트 타입
     ///
     /// 그룹의 첫 번째 파일 이벤트 타입을 반환합니다.
     /// 모든 파일은 같은 이벤트 타입이므로 첫 번째 파일만 확인.
@@ -1064,7 +1078,8 @@ struct VideoFileGroup {
         return files.first?.eventType ?? .unknown
     }
 
-    /// 기본 파일명
+    /// @var baseFilename
+    /// @brief 기본 파일명
     ///
     /// 그룹의 첫 번째 파일 baseFilename을 반환합니다.
     /// 예: "20240115_143025"
@@ -1072,7 +1087,8 @@ struct VideoFileGroup {
         return files.first?.baseFilename ?? ""
     }
 
-    /// 기본 경로 (디렉토리 경로)
+    /// @var basePath
+    /// @brief 기본 경로 (디렉토리 경로)
     ///
     /// 그룹의 첫 번째 파일이 위치한 디렉토리 경로를 반환합니다.
     ///
@@ -1088,7 +1104,8 @@ struct VideoFileGroup {
         return firstFile.url.deletingLastPathComponent().path
     }
 
-    /// 채널 수
+    /// @var channelCount
+    /// @brief 채널 수
     ///
     /// 그룹에 포함된 비디오 파일 개수를 반환합니다.
     ///
@@ -1104,7 +1121,8 @@ struct VideoFileGroup {
         return files.count
     }
 
-    /// 전체 파일 크기 (바이트)
+    /// @var totalFileSize
+    /// @brief 전체 파일 크기 (바이트)
     ///
     /// 그룹의 모든 파일 크기를 합산합니다.
     ///
@@ -1139,10 +1157,10 @@ struct VideoFileGroup {
      ───────────────────────────────────────────────────────────────────────
      */
 
-    /// 특정 카메라 위치의 파일 URL 조회
+    /// @brief 특정 카메라 위치의 파일 URL 조회
     ///
-    /// - Parameter position: 조회할 카메라 위치
-    /// - Returns: 해당 위치의 파일 URL, 없으면 nil
+    /// @param position 조회할 카메라 위치
+    /// @return 해당 위치의 파일 URL, 없으면 nil
     ///
     /// 사용 예시:
     /// ```swift
@@ -1170,10 +1188,10 @@ struct VideoFileGroup {
         return files.first { $0.position == position }?.url
     }
 
-    /// 특정 카메라 위치의 채널 존재 여부 확인
+    /// @brief 특정 카메라 위치의 채널 존재 여부 확인
     ///
-    /// - Parameter position: 확인할 카메라 위치
-    /// - Returns: 해당 위치의 파일이 있으면 true
+    /// @param position 확인할 카메라 위치
+    /// @return 해당 위치의 파일이 있으면 true
     ///
     /// 사용 예시:
     /// ```swift
@@ -1239,9 +1257,10 @@ struct VideoFileGroup {
  ───────────────────────────────────────────────────────────────────────────
  */
 
-/// 파일 스캔 중 발생할 수 있는 오류
+/// @enum FileScannerError
+/// @brief 파일 스캔 중 발생할 수 있는 오류
 enum FileScannerError: Error {
-    /// 디렉토리가 존재하지 않음
+    /// @brief 디렉토리가 존재하지 않음
     ///
     /// 발생 시나리오:
     /// - SD 카드가 마운트되지 않음
@@ -1254,7 +1273,7 @@ enum FileScannerError: Error {
     /// 3. 다른 경로 시도
     case directoryNotFound(String)
 
-    /// 디렉토리 열기 실패
+    /// @brief 디렉토리 열기 실패
     ///
     /// 발생 시나리오:
     /// - 읽기 권한 부족
@@ -1267,7 +1286,7 @@ enum FileScannerError: Error {
     /// 3. SD 카드 교체
     case cannotEnumerateDirectory(String)
 
-    /// 잘못된 경로
+    /// @brief 잘못된 경로
     ///
     /// 향후 확장을 위한 예약 오류.
     /// 현재는 사용되지 않음.
@@ -1275,7 +1294,7 @@ enum FileScannerError: Error {
 }
 
 extension FileScannerError: LocalizedError {
-    /// 사용자에게 표시할 오류 메시지
+    /// @brief 사용자에게 표시할 오류 메시지
     var errorDescription: String? {
         switch self {
         case .directoryNotFound(let path):
