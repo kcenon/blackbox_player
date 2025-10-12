@@ -1,0 +1,195 @@
+# Doxyfile 1.9.1
+# BlackboxPlayer 테스트 문서화 설정
+
+#---------------------------------------------------------------------------
+# 프로젝트 설정
+#---------------------------------------------------------------------------
+
+PROJECT_NAME           = "BlackboxPlayer"
+PROJECT_NUMBER         = 1.0
+PROJECT_BRIEF          = "멀티 채널 블랙박스 플레이어 - 소스 코드 및 테스트 문서"
+PROJECT_LOGO           =
+
+OUTPUT_DIRECTORY       = ./docs
+CREATE_SUBDIRS         = NO
+
+#---------------------------------------------------------------------------
+# 입력 설정
+#---------------------------------------------------------------------------
+
+INPUT                  = ./BlackboxPlayer
+FILE_PATTERNS          = *.swift
+RECURSIVE              = YES
+EXCLUDE                =
+EXCLUDE_PATTERNS       = */build/* \
+                         */DerivedData/*
+
+#---------------------------------------------------------------------------
+# 언어 및 인코딩
+#---------------------------------------------------------------------------
+
+OUTPUT_LANGUAGE        = Korean
+INPUT_ENCODING         = UTF-8
+DOXYFILE_ENCODING      = UTF-8
+
+#---------------------------------------------------------------------------
+# 추출 설정
+#---------------------------------------------------------------------------
+
+EXTRACT_ALL            = YES
+EXTRACT_PRIVATE        = YES
+EXTRACT_STATIC         = YES
+EXTRACT_LOCAL_CLASSES  = YES
+EXTRACT_ANON_NSPACES   = YES
+
+#---------------------------------------------------------------------------
+# 문서화 설정
+#---------------------------------------------------------------------------
+
+JAVADOC_AUTOBRIEF      = YES
+MULTILINE_CPP_IS_BRIEF = NO
+BRIEF_MEMBER_DESC      = YES
+REPEAT_BRIEF           = YES
+ALWAYS_DETAILED_SEC    = NO
+
+#---------------------------------------------------------------------------
+# 경고 및 진행 상황
+#---------------------------------------------------------------------------
+
+QUIET                  = NO
+WARNINGS               = YES
+WARN_IF_UNDOCUMENTED   = YES
+WARN_IF_DOC_ERROR      = YES
+WARN_NO_PARAMDOC       = NO
+
+#---------------------------------------------------------------------------
+# 소스 코드 설정
+#---------------------------------------------------------------------------
+
+SOURCE_BROWSER         = YES
+INLINE_SOURCES         = NO
+STRIP_CODE_COMMENTS    = NO
+REFERENCED_BY_RELATION = YES
+REFERENCES_RELATION    = YES
+
+#---------------------------------------------------------------------------
+# HTML 출력 설정
+#---------------------------------------------------------------------------
+
+GENERATE_HTML          = YES
+HTML_OUTPUT            = html
+HTML_FILE_EXTENSION    = .html
+HTML_HEADER            =
+HTML_FOOTER            =
+HTML_STYLESHEET        =
+HTML_EXTRA_STYLESHEET  =
+HTML_COLORSTYLE_HUE    = 220
+HTML_COLORSTYLE_SAT    = 100
+HTML_COLORSTYLE_GAMMA  = 80
+HTML_TIMESTAMP         = YES
+HTML_DYNAMIC_SECTIONS  = YES
+HTML_INDEX_NUM_ENTRIES = 100
+
+GENERATE_TREEVIEW      = YES
+TREEVIEW_WIDTH         = 250
+
+#---------------------------------------------------------------------------
+# LaTeX 출력 설정
+#---------------------------------------------------------------------------
+
+GENERATE_LATEX         = NO
+LATEX_OUTPUT           = latex
+LATEX_CMD_NAME         = latex
+MAKEINDEX_CMD_NAME     = makeindex
+COMPACT_LATEX          = NO
+PAPER_TYPE             = a4
+EXTRA_PACKAGES         = kotex
+LATEX_HEADER           =
+LATEX_FOOTER           =
+LATEX_EXTRA_STYLESHEET =
+PDF_HYPERLINKS         = YES
+USE_PDFLATEX           = YES
+LATEX_BATCHMODE        = NO
+LATEX_HIDE_INDICES     = NO
+
+#---------------------------------------------------------------------------
+# 다이어그램 설정
+#---------------------------------------------------------------------------
+
+HAVE_DOT               = NO
+CLASS_DIAGRAMS         = YES
+HIDE_UNDOC_RELATIONS   = YES
+CLASS_GRAPH            = YES
+COLLABORATION_GRAPH    = YES
+GROUP_GRAPHS           = YES
+UML_LOOK               = NO
+TEMPLATE_RELATIONS     = YES
+INCLUDE_GRAPH          = YES
+INCLUDED_BY_GRAPH      = YES
+CALL_GRAPH             = NO
+CALLER_GRAPH           = NO
+GRAPHICAL_HIERARCHY    = YES
+DIRECTORY_GRAPH        = YES
+DOT_IMAGE_FORMAT       = png
+INTERACTIVE_SVG        = NO
+
+#---------------------------------------------------------------------------
+# 검색 설정
+#---------------------------------------------------------------------------
+
+SEARCHENGINE           = YES
+SERVER_BASED_SEARCH    = NO
+
+#---------------------------------------------------------------------------
+# Swift 관련 설정
+#---------------------------------------------------------------------------
+
+# Swift는 Doxygen에서 기본 지원하지 않으므로
+# 파일 확장자와 주석 스타일을 명시
+EXTENSION_MAPPING      = swift=C++
+OPTIMIZE_OUTPUT_FOR_C  = NO
+OPTIMIZE_OUTPUT_JAVA   = NO
+
+# Swift의 /// 주석과 /** */ 주석 인식
+JAVADOC_BANNER         = NO
+
+#---------------------------------------------------------------------------
+# 기타 설정
+#---------------------------------------------------------------------------
+
+GENERATE_TODOLIST      = YES
+GENERATE_TESTLIST      = YES
+GENERATE_BUGLIST       = YES
+GENERATE_DEPRECATEDLIST= YES
+
+SHOW_FILES             = YES
+SHOW_NAMESPACES        = YES
+
+SORT_MEMBER_DOCS       = YES
+SORT_BRIEF_DOCS        = NO
+SORT_MEMBERS_CTORS_1ST = NO
+SORT_GROUP_NAMES       = NO
+
+MAX_INITIALIZER_LINES  = 30
+SHOW_USED_FILES        = YES
+SHOW_DIRECTORIES       = YES
+
+FILE_VERSION_FILTER    =
+
+LAYOUT_FILE            =
+
+CITE_BIB_FILES         =
+
+#---------------------------------------------------------------------------
+# 그룹화 설정
+#---------------------------------------------------------------------------
+
+DISTRIBUTE_GROUP_DOC   = NO
+SUBGROUPING            = YES
+
+INLINE_GROUPED_CLASSES = NO
+INLINE_SIMPLE_STRUCTS  = NO
+
+TYPEDEF_HIDES_STRUCT   = NO
+
+LOOKUP_CACHE_SIZE      = 0
