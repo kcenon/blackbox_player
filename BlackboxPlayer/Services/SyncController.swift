@@ -1,17 +1,16 @@
-//
-//  SyncController.swift
-//  BlackboxPlayer
-//
-//  Synchronization controller for multi-channel playback
-//
+/// @file SyncController.swift
+/// @brief 멀티 채널 동기화 재생 컨트롤러
+/// @author BlackboxPlayer Development Team
+/// @details 여러 비디오 채널을 동기화하여 재생하는 컨트롤러입니다.
+///          마스터 클록을 기준으로 모든 채널을 동기화하고, 드리프트 보정 및 버퍼 관리를 수행합니다.
 
 import Foundation
 import Combine
 import QuartzCore
 
-/**
- # SyncController
- 여러 비디오 채널을 동기화하여 재생하는 컨트롤러입니다.
+/// @class SyncController
+/// @brief 멀티 채널 동기화 재생 컨트롤러 클래스
+/// @details 여러 비디오 채널을 동기화하여 재생하는 컨트롤러입니다.
 
  ## 동기화(Synchronization)란?
  - 여러 개의 영상(전방, 후방, 좌측, 우측 카메라)을 같은 시간에 재생하는 것
@@ -105,7 +104,8 @@ class SyncController: ObservableObject {
      - Combine의 Publisher로 동작
      */
 
-    /// **재생 상태 (Playback State)**
+    /// @var playbackState
+    /// @brief 재생 상태 (Playback State)
     ///
     /// PlaybackState 종류:
     /// - .stopped: 정지됨 (영상 로드 안 됨 또는 재생 종료)
@@ -131,7 +131,8 @@ class SyncController: ObservableObject {
     /// - controller.playbackState = .playing // 불가능
     @Published private(set) var playbackState: PlaybackState = .stopped
 
-    /// **현재 재생 시간 (Current Playback Time)**
+    /// @var currentTime
+    /// @brief 현재 재생 시간 (Current Playback Time)
     ///
     /// TimeInterval = Double (초 단위)
     ///

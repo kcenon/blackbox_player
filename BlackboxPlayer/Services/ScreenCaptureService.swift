@@ -1,10 +1,7 @@
-//
-//  ScreenCaptureService.swift
-//  BlackboxPlayer
-//
-//  Service for capturing current video frame and saving as image
-//
-
+/// @file ScreenCaptureService.swift
+/// @brief Service for capturing current video frame and saving as image
+/// @author BlackboxPlayer Development Team
+/// @details
 /**
  # ScreenCaptureService - 화면 캡처 서비스
 
@@ -136,11 +133,13 @@ import MetalKit
  - 품질 90-95%로 충분
  ```
  */
+/// @enum CaptureImageFormat
+/// @brief 캡처 이미지 저장 포맷 정의
 enum CaptureImageFormat: String {
-    /// PNG 포맷 (무손실)
+    /// @brief PNG 포맷 (무손실)
     case png = "png"
 
-    /// JPEG 포맷 (손실)
+    /// @brief JPEG 포맷 (손실)
     case jpeg = "jpg"
 
     /**
@@ -149,6 +148,9 @@ enum CaptureImageFormat: String {
      - PNG → "PNG"
      - JPEG → "JPEG"
      */
+    /// @var displayName
+    /// @brief 사용자에게 표시할 포맷 이름
+    /// @return PNG 또는 JPEG 문자열
     var displayName: String {
         switch self {
         case .png: return "PNG"
@@ -173,6 +175,9 @@ enum CaptureImageFormat: String {
      - 파일 타입 검증
      - 시스템과 파일 형식 정보 공유
      */
+    /// @var utType
+    /// @brief Uniform Type Identifier (UTI)
+    /// @return public.png 또는 public.jpeg
     var utType: String {
         switch self {
         case .png: return "public.png"
@@ -195,6 +200,8 @@ enum CaptureImageFormat: String {
  4. 파일 저장 다이얼로그 표시
  5. 저장 완료 알림
  */
+/// @class ScreenCaptureService
+/// @brief GPU 메모리의 Metal 텍스처를 CPU 메모리의 이미지 파일로 변환하여 저장하는 서비스
 class ScreenCaptureService {
 
     // MARK: - Properties
@@ -214,6 +221,8 @@ class ScreenCaptureService {
      - texture = "회사 내부 문서"
      - ID 카드가 있어야 문서 접근 가능
      */
+    /// @var device
+    /// @brief Metal device (GPU 접근용)
     private let device: MTLDevice
 
     /**
@@ -240,6 +249,8 @@ class ScreenCaptureService {
      - 고품질 필요: 0.95 ~ 1.0
      - 파일 크기 중요: 0.7 ~ 0.85
      */
+    /// @var jpegQuality
+    /// @brief JPEG 압축 품질 (0.0 ~ 1.0, 기본값 0.95)
     var jpegQuality: CGFloat = 0.95
 
     // MARK: - Initialization
@@ -255,6 +266,8 @@ class ScreenCaptureService {
      let captureService = ScreenCaptureService(device: metalDevice)
      ```
      */
+    /// @brief 서비스 초기화
+    /// @param device Metal device (GPU 접근용)
     init(device: MTLDevice) {
         self.device = device
     }
@@ -316,6 +329,12 @@ class ScreenCaptureService {
      - 메모리 부족
      - 포맷 변환 실패
      */
+    /// @brief Metal 텍스처에서 프레임 캡처
+    /// @param texture 캡처할 Metal 텍스처 (현재 화면)
+    /// @param format 저장할 이미지 포맷 (PNG 또는 JPEG)
+    /// @param timestamp 오버레이할 시각 (nil이면 오버레이 안 함)
+    /// @param videoTimestamp 영상 재생 시간 (초 단위)
+    /// @return 이미지 데이터 (Data), 실패 시 nil
     func captureFrame(
         from texture: MTLTexture,
         format: CaptureImageFormat,
@@ -425,6 +444,11 @@ class ScreenCaptureService {
      }
      ```
      */
+    /// @brief 저장 다이얼로그 표시 및 파일 저장
+    /// @param data 저장할 이미지 데이터
+    /// @param format 이미지 포맷 (확장자 결정)
+    /// @param defaultFilename 기본 파일명 (확장자 제외)
+    /// @return 저장 성공 여부 (true/false)
     @discardableResult
     func showSavePanel(
         data: Data,
@@ -549,6 +573,9 @@ class ScreenCaptureService {
      - Parameter texture: 변환할 Metal 텍스처
      - Returns: CGImage, 실패 시 nil
      */
+    /// @brief Metal 텍스처를 CGImage로 변환
+    /// @param texture 변환할 Metal 텍스처
+    /// @return CGImage, 실패 시 nil
     private func createCGImage(from texture: MTLTexture) -> CGImage? {
         // ===== 텍스처 정보 가져오기 =====
         let width = texture.width        // 예: 1920
@@ -673,6 +700,11 @@ class ScreenCaptureService {
 
      - Returns: 타임스탬프가 추가된 이미지
      */
+    /// @brief 이미지에 타임스탬프 오버레이 추가
+    /// @param image 원본 이미지
+    /// @param timestamp 캡처 시각
+    /// @param videoTimestamp 영상 재생 시간 (초)
+    /// @return 타임스탬프가 추가된 이미지
     private func addTimestampOverlay(
         to image: NSImage,
         timestamp: Date,
@@ -862,6 +894,10 @@ class ScreenCaptureService {
 
      - Returns: 이미지 데이터, 실패 시 nil
      */
+    /// @brief NSImage를 PNG/JPEG 데이터로 변환
+    /// @param image 변환할 이미지
+    /// @param format 목표 포맷 (PNG 또는 JPEG)
+    /// @return 이미지 데이터, 실패 시 nil
     private func convertToData(image: NSImage, format: CaptureImageFormat) -> Data? {
         // ===== 1단계: NSImage → TIFF Data =====
         // TIFF (Tagged Image File Format):
@@ -922,6 +958,10 @@ class ScreenCaptureService {
        - message: 알림 메시지
        - isError: 에러 알림 여부 (true = 경고 스타일)
      */
+    /// @brief 사용자 알림 표시
+    /// @param title 알림 제목
+    /// @param message 알림 메시지
+    /// @param isError 에러 알림 여부 (true = 경고 스타일)
     private func showNotification(title: String, message: String, isError: Bool = false) {
         // ===== 메인 스레드에서 실행 =====
         // UI 작업은 반드시 메인 스레드에서!
