@@ -1,9 +1,9 @@
-//
-//  MetadataExtractor.swift
-//  BlackboxPlayer
-//
-//  Service for extracting GPS and acceleration metadata from video files
-//
+/// @file MetadataExtractor.swift
+/// @brief Service for extracting GPS and acceleration metadata from video files
+/// @author BlackboxPlayer Development Team
+/// @details
+/// 이 파일은 블랙박스 비디오 파일(MP4)에서 GPS 위치 정보와 G-센서 가속도 데이터를 추출합니다.
+/// FFmpeg을 사용하여 MP4 컨테이너 내의 데이터 스트림과 메타데이터 딕셔너리를 파싱합니다.
 
 /*
  ═══════════════════════════════════════════════════════════════════════════
@@ -155,10 +155,22 @@ import Foundation
  ───────────────────────────────────────────────────────────────────────────
  */
 
-/// 블랙박스 비디오 파일에서 메타데이터(GPS, G-센서)를 추출하는 서비스
+/// @class MetadataExtractor
+/// @brief 블랙박스 비디오 파일에서 메타데이터(GPS, G-센서)를 추출하는 서비스
 ///
+/// @details
 /// FFmpeg을 사용하여 MP4 컨테이너 내의 데이터 스트림과 메타데이터 딕셔너리를
 /// 파싱하고, GPSParser와 AccelerationParser를 통해 구조화된 데이터로 변환합니다.
+///
+/// ## 현재 상태:
+/// FFmpeg 통합이 아직 완료되지 않아, 대부분의 메서드는 주석 처리되어 있습니다.
+/// extractMetadata 메서드는 현재 빈 VideoMetadata를 반환합니다.
+///
+/// ## 향후 계획:
+/// - FFmpeg C API 연동 완료
+/// - GPS 데이터 스트림 추출
+/// - G-센서 데이터 스트림 추출
+/// - 디바이스 정보 추출
 class MetadataExtractor {
     // MARK: - Properties
 
@@ -187,14 +199,16 @@ class MetadataExtractor {
      ───────────────────────────────────────────────────────────────────────
      */
 
-    /// GPS NMEA 데이터 파서
-    ///
+    /// @var gpsParser
+    /// @brief GPS NMEA 데이터 파서
+    /// @details
     /// NMEA 0183 형식의 GPS 문자열을 GPSPoint 배열로 변환합니다.
     /// 예: "$GPGGA,123456.00,3723.1234,N,12658.5678,E,..."
     private let gpsParser: GPSParser
 
-    /// 가속도 데이터 파서
-    ///
+    /// @var accelerationParser
+    /// @brief 가속도 데이터 파서
+    /// @details
     /// Binary 또는 CSV 형식의 G-센서 데이터를 AccelerationData 배열로 변환합니다.
     /// 지원 형식:
     /// - Binary: Float32 or Int16 (3축 × N 샘플)
@@ -232,8 +246,9 @@ class MetadataExtractor {
      ───────────────────────────────────────────────────────────────────────
      */
 
-    /// MetadataExtractor 초기화
+    /// @brief MetadataExtractor 초기화
     ///
+    /// @details
     /// GPSParser와 AccelerationParser를 생성하여 메타데이터 추출을 준비합니다.
     init() {
         self.gpsParser = GPSParser()
@@ -286,12 +301,13 @@ class MetadataExtractor {
      ───────────────────────────────────────────────────────────────────────
      */
 
-    /// 비디오 파일에서 메타데이터 추출
+    /// @brief 비디오 파일에서 메타데이터 추출
     ///
+    /// @param filePath 비디오 파일의 절대 경로
+    /// @return 추출된 VideoMetadata, 실패 시 nil
+    ///
+    /// @details
     /// MP4 파일을 분석하여 GPS 위치, G-센서 데이터, 디바이스 정보를 추출합니다.
-    ///
-    /// - Parameter filePath: 비디오 파일의 절대 경로
-    /// - Returns: 추출된 VideoMetadata, 실패 시 nil
     ///
     /// 추출 과정:
     /// 1. 파일명에서 녹화 시작 시각 추출 (Base date)
@@ -439,13 +455,14 @@ class MetadataExtractor {
      */
 
     /*
-    /// 파일명에서 녹화 시작 시각 추출
+    /// @brief 파일명에서 녹화 시작 시각 추출
     ///
+    /// @param filePath 비디오 파일 경로
+    /// @return 녹화 시작 시각, 추출 실패 시 nil
+    ///
+    /// @details
     /// 블랙박스 파일명은 보통 "YYYYMMDD_HHMMSS" 패턴을 포함합니다.
     /// 예: "20240115_143025_F.mp4" → 2024-01-15 14:30:25
-    ///
-    /// - Parameter filePath: 비디오 파일 경로
-    /// - Returns: 녹화 시작 시각, 추출 실패 시 nil
     ///
     /// 지원 형식:
     /// - "20240115_143025_F.mp4" (BlackVue)
@@ -458,7 +475,7 @@ class MetadataExtractor {
     /// 3. DateFormatter로 Date 변환
     /// 4. 타임존 적용 (Asia/Seoul)
     ///
-    /// 실패 시 Fallback:
+    /// Fallback:
     /// - 파일 생성 시각 사용
     /// - 파일 수정 시각 사용
     /// - 현재 시각 (최후의 수단)
@@ -556,15 +573,15 @@ class MetadataExtractor {
      */
 
     /*
-    /// MP4 파일에서 GPS 데이터 추출
+    /// @brief MP4 파일에서 GPS 데이터 추출
     ///
+    /// @param formatContext FFmpeg의 AVFormatContext (열린 MP4 파일)
+    /// @param baseDate 녹화 시작 시각 (상대 시각을 절대 시각으로 변환)
+    /// @return GPS 포인트 배열, 없으면 빈 배열
+    ///
+    /// @details
     /// 데이터 스트림, 서브타이틀 스트림, 메타데이터 딕셔너리를 순차적으로 검색하여
     /// GPS 정보를 찾고 파싱합니다.
-    ///
-    /// - Parameters:
-    ///   - formatContext: FFmpeg의 AVFormatContext (열린 MP4 파일)
-    ///   - baseDate: 녹화 시작 시각 (상대 시각을 절대 시각으로 변환)
-    /// - Returns: GPS 포인트 배열, 없으면 빈 배열
     ///
     /// 검색 위치:
     /// 1. AVMEDIA_TYPE_DATA 스트림
@@ -681,14 +698,14 @@ class MetadataExtractor {
      */
 
     /*
-    /// MP4 파일에서 가속도 데이터 추출
+    /// @brief MP4 파일에서 가속도 데이터 추출
     ///
+    /// @param formatContext FFmpeg의 AVFormatContext
+    /// @param baseDate 녹화 시작 시각
+    /// @return 가속도 데이터 배열, 없으면 빈 배열
+    ///
+    /// @details
     /// 데이터 스트림과 메타데이터 딕셔너리를 검색하여 G-센서 정보를 찾고 파싱합니다.
-    ///
-    /// - Parameters:
-    ///   - formatContext: FFmpeg의 AVFormatContext
-    ///   - baseDate: 녹화 시작 시각
-    /// - Returns: 가속도 데이터 배열, 없으면 빈 배열
     ///
     /// 검색 위치:
     /// 1. AVMEDIA_TYPE_DATA 스트림
@@ -810,12 +827,13 @@ class MetadataExtractor {
      */
 
     /*
-    /// MP4 파일에서 디바이스 정보 추출
+    /// @brief MP4 파일에서 디바이스 정보 추출
     ///
+    /// @param formatContext FFmpeg의 AVFormatContext
+    /// @return DeviceInfo, 메타데이터가 없으면 nil
+    ///
+    /// @details
     /// 포맷 레벨 메타데이터 딕셔너리에서 제조사, 모델, 펌웨어 등을 조회합니다.
-    ///
-    /// - Parameter formatContext: FFmpeg의 AVFormatContext
-    /// - Returns: DeviceInfo, 메타데이터가 없으면 nil
     ///
     /// 추출 필드:
     /// - manufacturer: 제조사 ("make" 또는 "manufacturer" 키)
@@ -901,14 +919,14 @@ class MetadataExtractor {
      */
 
     /*
-    /// 특정 스트림의 모든 패킷 읽기
+    /// @brief 특정 스트림의 모든 패킷 읽기
     ///
+    /// @param formatContext FFmpeg의 AVFormatContext
+    /// @param streamIndex 읽을 스트림의 인덱스 (0, 1, 2, ...)
+    /// @return 모든 패킷을 결합한 Data, 패킷이 없으면 nil
+    ///
+    /// @details
     /// FFmpeg의 av_read_frame()으로 패킷을 순차적으로 읽어 Data로 누적합니다.
-    ///
-    /// - Parameters:
-    ///   - formatContext: FFmpeg의 AVFormatContext
-    ///   - streamIndex: 읽을 스트림의 인덱스 (0, 1, 2, ...)
-    /// - Returns: 모든 패킷을 결합한 Data, 패킷이 없으면 nil
     ///
     /// 동작 과정:
     /// 1. av_packet_alloc(): 패킷 구조체 할당
@@ -1026,14 +1044,14 @@ class MetadataExtractor {
      */
 
     /*
-    /// 메타데이터 딕셔너리에서 Data 추출
+    /// @brief 메타데이터 딕셔너리에서 Data 추출
     ///
+    /// @param dict AVDictionary (FFmpeg 메타데이터 딕셔너리)
+    /// @param key 조회할 키 (예: "gps", "accelerometer")
+    /// @return 값의 Data 표현, 키가 없으면 nil
+    ///
+    /// @details
     /// FFmpeg의 AVDictionary에서 지정된 키의 값을 읽어 Data로 변환합니다.
-    ///
-    /// - Parameters:
-    ///   - dict: AVDictionary (FFmpeg 메타데이터 딕셔너리)
-    ///   - key: 조회할 키 (예: "gps", "accelerometer")
-    /// - Returns: 값의 Data 표현, 키가 없으면 nil
     ///
     /// 동작 과정:
     /// 1. av_dict_get()으로 키 검색
@@ -1104,14 +1122,14 @@ class MetadataExtractor {
      */
 
     /*
-    /// 메타데이터 딕셔너리에서 String 추출
+    /// @brief 메타데이터 딕셔너리에서 String 추출
     ///
+    /// @param dict AVDictionary
+    /// @param key 조회할 키 (예: "manufacturer", "model")
+    /// @return 값의 문자열, 키가 없으면 nil
+    ///
+    /// @details
     /// FFmpeg의 AVDictionary에서 지정된 키의 값을 String으로 반환합니다.
-    ///
-    /// - Parameters:
-    ///   - dict: AVDictionary
-    ///   - key: 조회할 키 (예: "manufacturer", "model")
-    /// - Returns: 값의 문자열, 키가 없으면 nil
     ///
     /// 동작 과정:
     /// 1. av_dict_get()으로 키 검색
@@ -1197,11 +1215,13 @@ class MetadataExtractor {
  ───────────────────────────────────────────────────────────────────────────
  */
 
-/// 메타데이터 추출 중 발생할 수 있는 오류
+/// @enum MetadataExtractionError
+/// @brief 메타데이터 추출 중 발생할 수 있는 오류
 enum MetadataExtractionError: Error {
 
-    /// 파일을 열 수 없음
-    ///
+    /// @case cannotOpenFile
+    /// @brief 파일을 열 수 없음
+    /// @details
     /// 발생 시나리오:
     /// - 파일이 존재하지 않음
     /// - 파일 권한 부족 (읽기 권한 없음)
@@ -1215,8 +1235,9 @@ enum MetadataExtractionError: Error {
     /// 4. 파일 복구 도구 사용
     case cannotOpenFile(String)
 
-    /// 메타데이터를 찾을 수 없음
-    ///
+    /// @case noMetadataFound
+    /// @brief 메타데이터를 찾을 수 없음
+    /// @details
     /// 발생 시나리오:
     /// - GPS 미장착 블랙박스 모델
     /// - 위성 신호 수신 실패 (터널, 실내 주차장)
@@ -1228,8 +1249,9 @@ enum MetadataExtractionError: Error {
     /// - GPS/가속도 오버레이만 표시되지 않음
     case noMetadataFound
 
-    /// 메타데이터 형식이 잘못됨
-    ///
+    /// @case invalidMetadataFormat
+    /// @brief 메타데이터 형식이 잘못됨
+    /// @details
     /// 발생 시나리오:
     /// - 파싱 실패 (잘못된 NMEA 형식)
     /// - 손상된 Binary 데이터
@@ -1279,7 +1301,8 @@ enum MetadataExtractionError: Error {
  */
 
 extension MetadataExtractionError: LocalizedError {
-    /// 사용자에게 표시할 오류 설명
+    /// @var errorDescription
+    /// @brief 사용자에게 표시할 오류 설명
     var errorDescription: String? {
         switch self {
         case .cannotOpenFile(let path):
