@@ -169,6 +169,7 @@ Comprehensive documentation is available in the `docs/` directory:
 | **[03_architecture.md](docs/03_architecture.md)** | System architecture, design patterns, and module structure |
 | **[04_project_plan.md](docs/04_project_plan.md)** | Phase-by-phase development plan with timelines |
 | **[05_technical_challenges.md](docs/05_technical_challenges.md)** | Major technical challenges and detailed solutions |
+| **[TESTING.md](docs/TESTING.md)** | Comprehensive testing guide with test suite documentation |
 
 ---
 
@@ -313,6 +314,47 @@ xcode-select --install
    - Press `Cmd+R` or click the Run button
    - Select a target device (My Mac)
 
+### Running Tests
+
+The project includes comprehensive unit and integration tests to ensure functionality and performance.
+
+**Run all tests:**
+```bash
+# Using build scripts (recommended)
+./scripts/test.sh
+
+# Using Xcode
+# Press Cmd+U or select Product > Test
+
+# Using xcodebuild
+xcodebuild test -project BlackboxPlayer.xcodeproj -scheme BlackboxPlayer
+```
+
+**Test Suite Coverage:**
+
+| Test Suite | Coverage | Description |
+|------------|----------|-------------|
+| **GPSSensorIntegrationTests** | GPS/G-Sensor Pipeline | End-to-end tests for GPS and G-sensor visualization pipeline |
+| **SyncControllerTests** | Multi-Channel Sync | Tests for video synchronization across channels |
+| **VideoDecoderTests** | Video Decoding | FFmpeg H.264/MP3 decoding validation |
+| **VideoChannelTests** | Channel Management | Individual video channel functionality |
+| **DataModelsTests** | Data Models | VideoFile, VideoMetadata, GPSPoint, AccelerationData |
+| **EXT4FileSystemTests** | File System Access | EXT4 SD card reading and file enumeration |
+| **MultiChannelRendererTests** | Metal Rendering | GPU-accelerated multi-channel rendering |
+
+**GPS/G-Sensor Integration Tests** (`GPSSensorIntegrationTests.swift`):
+- **Data Parsing**: GPS/G-sensor binary data parsing validation
+- **Service Integration**: GPSService and GSensorService data loading
+- **Synchronization**: Video-GPS and Video-G-sensor time synchronization
+- **Real-time Updates**: Sensor data updates during playback
+- **Performance**: Large dataset search performance (10,000+ GPS points)
+- **Interpolation**: Linear interpolation between GPS points
+
+Test data pipeline:
+```
+VideoFile → VideoMetadata → GPSService/GSensorService → SyncController → UI
+```
+
 ### Testing with Sample Data
 
 1. Obtain sample dashcam SD card or use provided test data
@@ -373,9 +415,14 @@ blackbox_player/
 │       ├── EXT4Wrapper.mm
 │       └── ext4/               # Vendor library
 ├── Tests/
-│   ├── UnitTests/
-│   ├── IntegrationTests/
-│   └── UITests/
+│   ├── BlackboxPlayerTests.swift
+│   ├── DataModelsTests.swift
+│   ├── EXT4FileSystemTests.swift
+│   ├── MultiChannelRendererTests.swift
+│   ├── SyncControllerTests.swift
+│   ├── VideoChannelTests.swift
+│   ├── VideoDecoderTests.swift
+│   └── GPSSensorIntegrationTests.swift  # GPS/G-sensor visualization pipeline tests
 └── scripts/
     ├── build.sh
     ├── sign.sh

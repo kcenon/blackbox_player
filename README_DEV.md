@@ -173,6 +173,123 @@ Features:
 
 See `scripts/README.md` for detailed documentation.
 
+## Testing
+
+### Running Tests
+
+The project includes comprehensive unit and integration tests covering all major components.
+
+**Run all tests:**
+```bash
+# Using test script (recommended)
+./scripts/test.sh
+
+# Using build script with tests
+./scripts/build.sh  # Will prompt to run tests after build
+
+# Using xcodebuild
+xcodebuild test -project BlackboxPlayer.xcodeproj -scheme BlackboxPlayer
+```
+
+**Run specific test classes:**
+```bash
+# Run only GPS/G-sensor integration tests
+xcodebuild test -project BlackboxPlayer.xcodeproj \
+           -scheme BlackboxPlayer \
+           -only-testing:BlackboxPlayerTests/GPSSensorIntegrationTests
+```
+
+### Test Suite Overview
+
+The test suite is organized into functional categories:
+
+| Test File | Focus Area | Test Count | Description |
+|-----------|------------|------------|-------------|
+| **GPSSensorIntegrationTests.swift** | GPS/G-Sensor Integration | 9 tests | End-to-end GPS and G-sensor visualization pipeline testing |
+| **SyncControllerTests.swift** | Multi-Channel Sync | Multiple | Frame-accurate synchronization across 5 video channels |
+| **VideoDecoderTests.swift** | Video Decoding | Multiple | FFmpeg H.264/MP3 decoding and frame extraction |
+| **VideoChannelTests.swift** | Channel Management | Multiple | Individual video channel lifecycle and state management |
+| **DataModelsTests.swift** | Data Models | Multiple | VideoFile, VideoMetadata, GPSPoint, AccelerationData |
+| **EXT4FileSystemTests.swift** | File System | Multiple | EXT4 SD card access and file enumeration |
+| **MultiChannelRendererTests.swift** | Metal Rendering | Multiple | GPU-accelerated multi-texture rendering |
+
+### GPS/G-Sensor Integration Tests
+
+The `GPSSensorIntegrationTests.swift` file provides comprehensive coverage of the GPS and G-sensor data processing pipeline:
+
+**Test Categories:**
+
+1. **Data Parsing Tests**
+   - `testVideoMetadataGPSData()` - GPS point storage and retrieval
+   - `testVideoMetadataAccelerationData()` - Acceleration data storage and retrieval
+   - `testImpactEventDetection()` - Impact event detection from acceleration data
+
+2. **Service Integration Tests**
+   - `testGPSServiceIntegration()` - GPSService data loading from VideoMetadata
+   - `testGPSInterpolation()` - Linear interpolation between GPS points
+
+3. **Synchronization Tests**
+   - `testVideoGPSSynchronization()` - Video playback time to GPS data synchronization
+   - `testVideoGSensorSynchronization()` - Video playback time to G-sensor data synchronization
+   - `testRealtimeSensorDataUpdate()` - Real-time sensor data updates during playback
+
+4. **Performance Tests**
+   - `testGPSDataSearchPerformance()` - Binary search performance with 10,000+ GPS points
+
+**Data Pipeline Flow:**
+```
+VideoFile (with metadata)
+    ↓
+VideoMetadata
+    ├─→ GPS Points Array → GPSService → getCurrentLocation(at:)
+    └─→ Acceleration Array → GSensorService → getCurrentAcceleration(at:)
+                ↓
+         SyncController (30fps)
+                ↓
+    ┌───────────┴──────────┐
+    ↓                      ↓
+MapOverlay            GSensorChart
+(GPS route)           (XYZ graph)
+```
+
+**Adding New Sensor Tests:**
+
+When adding new GPS or G-sensor functionality, follow this pattern:
+
+```swift
+func testNewSensorFeature() {
+    // Given: Create sample data
+    let baseDate = Date()
+    let gpsPoints = createSampleGPSPoints(baseDate: baseDate, count: 10)
+    let metadata = VideoMetadata(gpsPoints: gpsPoints, accelerationData: [])
+
+    // When: Load data and perform operation
+    gpsService.loadGPSData(from: metadata, startTime: baseDate)
+    let result = gpsService.performNewFeature()
+
+    // Then: Assert expected behavior
+    XCTAssertNotNil(result, "Expected result")
+}
+```
+
+### Test Coverage Goals
+
+- **Minimum Coverage**: 80% code coverage across all modules
+- **Critical Paths**: 100% coverage for synchronization, decoding, and data parsing
+- **Performance Tests**: All data-intensive operations must have performance benchmarks
+
+### Generating Coverage Reports
+
+```bash
+# Run tests with coverage
+./scripts/test.sh
+
+# View coverage in Xcode
+# After running tests: Product > Show Build Folder in Finder
+# Navigate to: Logs/Test/*.xcresult
+# Open with: xcodebuild -resultBundlePath <path> -json
+```
+
 ## Building from Command Line
 
 ### Using Build Scripts (Recommended)
@@ -311,6 +428,7 @@ type(scope): description
 ## Resources
 
 - [Project Documentation](docs/)
+- [Testing Guide](docs/TESTING.md)
 - [Implementation Checklist](IMPLEMENTATION_CHECKLIST.md)
 - [Technical Challenges](docs/05_technical_challenges.md)
 - [Architecture](docs/03_architecture.md)
@@ -348,9 +466,10 @@ type(scope): description
 
 ### In Progress
 
-⏳ **Phase 4 Week 1: GPS & G-Sensor** (pending)
+⏳ **Phase 4 Week 1: GPS & G-Sensor** (in progress)
 - GPS service and map integration
 - G-Sensor chart visualization
+- ✅ GPS/G-sensor integration tests completed (GPSSensorIntegrationTests.swift)
 
 ### Pending
 
