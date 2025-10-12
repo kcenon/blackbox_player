@@ -1,3 +1,9 @@
+/// @file GPSParser.swift
+/// @brief NMEA 0183 GPS 데이터 파서
+/// @author BlackboxPlayer Development Team
+/// @details
+/// 블랙박스 비디오 파일에 포함된 NMEA 0183 형식의 GPS 데이터를 파싱하여 Swift 객체(GPSPoint)로 변환합니다.
+
 /*
  ═══════════════════════════════════════════════════════════════════════════
  GPSParser.swift
@@ -271,7 +277,18 @@ import Foundation
  ─────────────────────────────────────────────────────────────────────────
  */
 
-/// Parser for NMEA 0183 GPS sentences
+/// @class GPSParser
+/// @brief NMEA 0183 GPS 문장 파서
+/// @details
+/// 블랙박스 비디오 파일에 포함된 NMEA 0183 형식의 GPS 데이터를 파싱하여 GPSPoint 배열로 변환합니다.
+///
+/// ### 주요 기능:
+/// 1. 전체 NMEA 데이터 파싱 (parseNMEA)
+/// 2. 단일 NMEA 문장 파싱 (parseSentence)
+/// 3. GPRMC 문장 파싱 (위치, 속도, 방향)
+/// 4. GPGGA 문장 파싱 (고도, 위성 개수, 정확도)
+/// 5. 좌표 형식 변환 (DDMM.MMMM → 십진수 도)
+/// 6. 시간 변환 (HHMMSS + DDMMYY → Date)
 class GPSParser {
     // MARK: - Properties
 
@@ -306,7 +323,28 @@ class GPSParser {
      ─────────────────────────────────────────────────────────────────────
      */
 
-    /// Base date for relative timestamps (set when parsing starts)
+    /// @var baseDate
+    /// @brief 기준 날짜
+    /// @details
+    /// NMEA 문장의 시간(HHMMSS)은 날짜 정보가 없거나 불완전하므로,
+    /// 파일명에서 추출한 날짜를 기준으로 완전한 타임스탬프를 생성합니다.
+    ///
+    /// ### 용도:
+    /// - parseNMEA(data:baseDate:) 호출 시 설정
+    /// - parseDateTime(time:date:)에서 날짜 결합에 사용
+    ///
+    /// ### 예시:
+    /// ```
+    /// 파일명: 20240115_143025_F.mp4
+    ///         └──┬──┘
+    ///            기준 날짜 = 2024년 1월 15일
+    ///
+    /// NMEA: $GPRMC,143025,A,...
+    ///               └─┬─┘
+    ///                 14:30:25
+    ///
+    /// 최종 타임스탬프: 2024-01-15 14:30:25 UTC
+    /// ```
     private var baseDate: Date?
 
     // MARK: - Public Methods
@@ -427,11 +465,28 @@ class GPSParser {
      ═════════════════════════════════════════════════════════════════════
      */
 
-    /// Parse NMEA sentences and convert to GPSPoint array
-    /// - Parameters:
-    ///   - data: Raw NMEA data
-    ///   - baseDate: Base date for timestamps (from video file)
-    /// - Returns: Array of GPSPoint objects
+    /// @brief NMEA 데이터 전체 파싱
+    /// @param data UTF-8 인코딩된 NMEA 텍스트 데이터
+    /// @param baseDate 비디오 파일의 날짜 (파일명에서 추출)
+    /// @return 타임스탬프 순서로 정렬된 GPSPoint 배열
+    /// @details
+    /// MP4 파일에서 추출한 NMEA 데이터 전체를 파싱하여 GPSPoint 배열을 생성합니다.
+    ///
+    /// ### 처리 과정:
+    /// ```
+    /// Step 1: 텍스트를 줄 단위로 분리
+    /// Step 2: 각 줄을 파싱
+    ///   - GPRMC: GPSPoint 생성 및 배열에 추가
+    ///   - GPGGA: 마지막 GPSPoint 업데이트 (고도, 위성 개수, 정확도 추가)
+    /// Step 3: 병합 결과 반환
+    /// ```
+    ///
+    /// ### 오류 처리:
+    /// - 빈 문장: 건너뛰기
+    /// - $ 없는 문장: 건너뛰기
+    /// - 상태 V (무효): 건너뛰기
+    /// - 좌표 파싱 실패: 건너뛰기
+    /// - UTF-8 디코딩 실패: 빈 배열 반환
     func parseNMEA(data: Data, baseDate: Date) -> [GPSPoint] {
         // 기준 날짜 저장
         // (시간 파싱 시 parseDateTime()에서 사용)
@@ -551,9 +606,20 @@ class GPSParser {
      ═════════════════════════════════════════════════════════════════════
      */
 
-    /// Parse single NMEA sentence
-    /// - Parameter sentence: NMEA sentence string
-    /// - Returns: GPSPoint or nil if parsing fails
+    /// @brief 단일 NMEA 문장 파싱
+    /// @param sentence NMEA 문장 문자열
+    /// @return GPSPoint 또는 nil (파싱 실패 시)
+    /// @details
+    /// 단일 NMEA 문장을 즉시 파싱합니다.
+    ///
+    /// ### 사용 사례:
+    /// 1. 실시간 GPS 스트리밍: GPS 모듈에서 한 줄씩 수신될 때
+    /// 2. 디버깅: 특정 문장의 파싱 결과를 테스트
+    ///
+    /// ### 제한사항:
+    /// - GPRMC만 지원 (GPGGA는 RMC와 병합되어야 하므로 미지원)
+    /// - 고도, 위성 개수 정보 없음
+    /// - baseDate가 설정되어 있어야 함
     func parseSentence(_ sentence: String) -> GPSPoint? {
         // GPRMC 또는 GNRMC만 지원
         if sentence.hasPrefix("$GPRMC") || sentence.hasPrefix("$GNRMC") {
@@ -666,6 +732,38 @@ class GPSParser {
      ═════════════════════════════════════════════════════════════════════
      */
 
+    /// @brief GPRMC 문장 파싱
+    /// @param sentence GPRMC 문장 문자열
+    /// @return NMEARecord 또는 nil (파싱 실패 시)
+    /// @details
+    /// $GPRMC (Recommended Minimum Specific GPS/TRANSIT Data) 문장을 파싱합니다.
+    ///
+    /// ### GPRMC 문장 구조:
+    /// ```
+    /// $GPRMC,123519,A,4807.038,N,01131.000,E,022.4,084.4,230394,003.1,W*6A
+    ///
+    /// 필드:
+    /// [0]  $GPRMC        - 문장 타입
+    /// [1]  123519        - UTC 시간 (HHMMSS)
+    /// [2]  A             - 상태 (A=유효, V=무효)
+    /// [3]  4807.038      - 위도 (DDMM.MMMM)
+    /// [4]  N             - 위도 방향 (N=북, S=남)
+    /// [5]  01131.000     - 경도 (DDDMM.MMMM)
+    /// [6]  E             - 경도 방향 (E=동, W=서)
+    /// [7]  022.4         - 속도 (knots)
+    /// [8]  084.4         - 진행 방향 (도, 0-359)
+    /// [9]  230394        - UTC 날짜 (DDMMYY)
+    /// [10] 003.1         - 자기 편차 (도)
+    /// [11] W             - 자기 편차 방향 (E/W)
+    /// [12] *6A           - 체크섬
+    /// ```
+    ///
+    /// ### 파싱 실패 조건:
+    /// 1. 필드 개수 < 10
+    /// 2. 상태가 V (무효)
+    /// 3. 시간 파싱 실패
+    /// 4. 위도 파싱 실패
+    /// 5. 경도 파싱 실패
     private func parseGPRMC(_ sentence: String) -> NMEARecord? {
         // $GPRMC,123519,A,4807.038,N,01131.000,E,022.4,084.4,230394,003.1,W*6A
         // Fields: [0]Type, [1]Time, [2]Status, [3]Lat, [4]LatDir, [5]Lon, [6]LonDir,
@@ -852,6 +950,44 @@ class GPSParser {
      ═════════════════════════════════════════════════════════════════════
      */
 
+    /// @brief GPGGA 문장 파싱
+    /// @param sentence GPGGA 문장 문자열
+    /// @return NMEARecord 또는 nil (파싱 실패 시)
+    /// @details
+    /// $GPGGA (Global Positioning System Fix Data) 문장을 파싱합니다.
+    ///
+    /// ### GPGGA 문장 구조:
+    /// ```
+    /// $GPGGA,123519,4807.038,N,01131.000,E,1,08,0.9,545.4,M,46.9,M,,*47
+    ///
+    /// 필드:
+    /// [0]  $GPGGA        - 문장 타입
+    /// [1]  123519        - UTC 시간 (HHMMSS)
+    /// [2]  4807.038      - 위도 (DDMM.MMMM)
+    /// [3]  N             - 위도 방향
+    /// [4]  01131.000     - 경도 (DDDMM.MMMM)
+    /// [5]  E             - 경도 방향
+    /// [6]  1             - GPS 품질 (0=무효, 1=GPS, 2=DGPS)
+    /// [7]  08            - 사용 중인 위성 개수
+    /// [8]  0.9           - HDOP (수평 정밀도 저하)
+    /// [9]  545.4         - 고도 (해발)
+    /// [10] M             - 고도 단위 (미터)
+    /// [11] 46.9          - 지오이드 높이
+    /// [12] M             - 지오이드 높이 단위
+    /// [13] (empty)       - DGPS 마지막 업데이트 시간
+    /// [14] *47           - 체크섬
+    /// ```
+    ///
+    /// ### GPS 품질 지표:
+    /// ```
+    /// 0: 무효 (GPS 신호 없음)
+    /// 1: GPS 단독 측위
+    /// 2: DGPS (Differential GPS) - 더 정확
+    /// 3: PPS (Precise Positioning Service)
+    /// 4: RTK (Real Time Kinematic) - cm 단위 정확도
+    /// 5: Float RTK
+    /// 6: Dead Reckoning (추측 항법)
+    /// ```
     private func parseGPGGA(_ sentence: String) -> NMEARecord? {
         // $GPGGA,123519,4807.038,N,01131.000,E,1,08,0.9,545.4,M,46.9,M,,*47
         // Fields: [0]Type, [1]Time, [2]Lat, [3]LatDir, [4]Lon, [5]LonDir,
@@ -1034,6 +1170,41 @@ class GPSParser {
      ═════════════════════════════════════════════════════════════════════
      */
 
+    /// @brief NMEA 좌표를 십진수 도로 변환
+    /// @param value NMEA 좌표 문자열 (예: "4807.038" 또는 "01131.000")
+    /// @param direction 방향 문자열 (N/S/E/W)
+    /// @return 십진수 도 (Decimal Degrees) 또는 nil (파싱 실패 시)
+    /// @details
+    /// NMEA 형식의 좌표를 십진수 도(Decimal Degrees)로 변환합니다.
+    ///
+    /// ### NMEA 좌표 형식:
+    /// ```
+    /// 위도: DDMM.MMMM (2자리 도 + 분)
+    /// 경도: DDDMM.MMMM (3자리 도 + 분)
+    /// ```
+    ///
+    /// ### 변환 과정:
+    /// ```
+    /// 예: "4807.038" + "N"
+    ///
+    /// Step 1: 도와 분 분리
+    ///   Degrees: "48" = 48
+    ///   Minutes: "07.038" = 7.038
+    ///
+    /// Step 2: 십진수 도 변환
+    ///   7.038 minutes ÷ 60 = 0.1173°
+    ///   48° + 0.1173° = 48.1173°
+    ///
+    /// Step 3: 방향 적용
+    ///   "N" (북위) → 양수
+    ///   최종: +48.1173°
+    /// ```
+    ///
+    /// ### 방향 코드:
+    /// ```
+    /// 위도: N (북위, 0° ~ +90°), S (남위, 0° ~ -90°)
+    /// 경도: E (동경, 0° ~ +180°), W (서경, 0° ~ -180°)
+    /// ```
     private func parseCoordinate(_ value: String, direction: String) -> Double? {
         // 빈 값 체크
         guard !value.isEmpty, !direction.isEmpty else { return nil }
@@ -1206,6 +1377,43 @@ class GPSParser {
      ═════════════════════════════════════════════════════════════════════
      */
 
+    /// @brief NMEA 시간과 날짜를 Date 객체로 변환
+    /// @param time NMEA 시간 문자열 (HHMMSS 또는 HHMMSS.sss)
+    /// @param date NMEA 날짜 문자열 (DDMMYY, 선택적)
+    /// @return Date 객체 또는 nil (파싱 실패 시)
+    /// @details
+    /// NMEA 시간과 날짜를 Swift Date 객체로 변환합니다.
+    ///
+    /// ### 입력 형식:
+    /// ```
+    /// time: HHMMSS 또는 HHMMSS.sss
+    ///       └┬┘└┬┘└┬┘
+    ///        시 분 초
+    ///
+    /// date: DDMMYY (선택적)
+    ///       └┬┘└┬┘└┬┘
+    ///        일 월 년(2자리)
+    /// ```
+    ///
+    /// ### 변환 과정:
+    /// ```
+    /// 예: time = "143025", date = "150124", baseDate = 2024-01-15
+    ///
+    /// Step 1: 시간 파싱
+    ///   "143025" → 14:30:25
+    ///
+    /// Step 2: 날짜 파싱 (있으면)
+    ///   "150124" → 2024-01-15
+    ///
+    /// Step 3: Date 객체 생성
+    ///   2024-01-15 14:30:25 UTC
+    /// ```
+    ///
+    /// ### baseDate 사용:
+    /// NMEA 날짜가 없거나 부정확할 때 baseDate를 사용합니다.
+    ///
+    /// ### UTC 시간대:
+    /// GPS는 항상 UTC (협정세계시) 사용합니다.
     private func parseDateTime(time: String, date: String?) -> Date? {
         // baseDate가 설정되어 있어야 함
         guard let baseDate = baseDate else { return nil }
@@ -1289,6 +1497,20 @@ class GPSParser {
      ─────────────────────────────────────────────────────────────────────
      */
 
+    /// @brief NMEARecord를 GPSPoint로 변환
+    /// @param record NMEARecord 구조체
+    /// @return GPSPoint 객체 또는 nil
+    /// @details
+    /// NMEARecord를 GPSPoint로 변환합니다.
+    ///
+    /// ### HDOP → horizontalAccuracy 변환:
+    /// ```
+    /// horizontalAccuracy ≈ HDOP × 10 meters
+    ///
+    /// 예:
+    /// - HDOP 0.9 → accuracy ≈ 9m
+    /// - HDOP 2.5 → accuracy ≈ 25m
+    /// ```
     private func createGPSPoint(from record: NMEARecord) -> GPSPoint? {
         return GPSPoint(
             timestamp: record.timestamp,
@@ -1346,15 +1568,56 @@ class GPSParser {
  ─────────────────────────────────────────────────────────────────────────
  */
 
-/// Temporary storage for NMEA record data
+/// @struct NMEARecord
+/// @brief NMEA 파싱 결과 임시 저장 구조체
+/// @details
+/// GPRMC와 GPGGA 파싱 결과를 임시 저장하는 내부 구조체입니다.
+///
+/// ### 필드:
+/// - timestamp: 타임스탬프 (GPRMC/GPGGA 공통)
+/// - latitude: 위도 (GPRMC/GPGGA 공통)
+/// - longitude: 경도 (GPRMC/GPGGA 공통)
+/// - altitude: 고도 (GPGGA만)
+/// - speed: 속도 (GPRMC만)
+/// - heading: 진행 방향 (GPRMC만)
+/// - hdop: 정확도 지표 (GPGGA만)
+/// - satelliteCount: 위성 개수 (GPGGA만)
+///
+/// ### 왜 GPSPoint를 직접 사용하지 않나요?
+/// 1. 유연성: GPRMC와 GPGGA의 필드가 다르므로 모든 필드를 Optional로 처리
+/// 2. 병합: 두 문장을 병합하여 GPSPoint 생성
+/// 3. 내부 구현: 외부에 노출되지 않음 (private)
 private struct NMEARecord {
+    /// @var timestamp
+    /// @brief 타임스탬프
     let timestamp: Date
+
+    /// @var latitude
+    /// @brief 위도 (십진수 도)
     let latitude: Double
+
+    /// @var longitude
+    /// @brief 경도 (십진수 도)
     let longitude: Double
+
+    /// @var altitude
+    /// @brief 고도 (미터, GPGGA에서만 제공)
     let altitude: Double?
+
+    /// @var speed
+    /// @brief 속도 (km/h, GPRMC에서만 제공)
     let speed: Double?
+
+    /// @var heading
+    /// @brief 진행 방향 (도, GPRMC에서만 제공)
     let heading: Double?
+
+    /// @var hdop
+    /// @brief 수평 정밀도 저하 지표 (GPGGA에서만 제공)
     let hdop: Double?
+
+    /// @var satelliteCount
+    /// @brief 위성 개수 (GPGGA에서만 제공)
     let satelliteCount: Int?
 }
 
@@ -1407,11 +1670,32 @@ private struct NMEARecord {
  ─────────────────────────────────────────────────────────────────────────
  */
 
+/// @enum GPSParserError
+/// @brief GPS 파서 에러 타입
+/// @details
+/// GPS 파싱 중 발생할 수 있는 오류를 정의합니다.
+///
+/// ### 오류 타입:
+/// 1. invalidFormat: NMEA 문장 형식이 잘못됨
+/// 2. invalidChecksum: 체크섬 불일치 (현재 미구현)
+/// 3. invalidCoordinate: 좌표 파싱 실패
+/// 4. invalidTimestamp: 시간/날짜 파싱 실패
 enum GPSParserError: Error {
-    case invalidFormat    // 형식 오류
-    case invalidChecksum  // 체크섬 오류
-    case invalidCoordinate  // 좌표 오류
-    case invalidTimestamp  // 시간 오류
+    /// @brief 형식 오류
+    /// @details NMEA 문장 형식이 잘못되었거나 필드 개수가 부족합니다.
+    case invalidFormat
+
+    /// @brief 체크섬 오류
+    /// @details 체크섬이 불일치합니다 (현재 미구현).
+    case invalidChecksum
+
+    /// @brief 좌표 오류
+    /// @details 좌표 파싱에 실패했거나 범위를 초과했습니다.
+    case invalidCoordinate
+
+    /// @brief 타임스탬프 오류
+    /// @details 시간/날짜 파싱에 실패했습니다.
+    case invalidTimestamp
 }
 
 /*
