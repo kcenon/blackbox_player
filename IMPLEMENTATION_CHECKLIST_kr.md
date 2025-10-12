@@ -5,20 +5,19 @@
 이 문서는 macOS 블랙박스 플레이어 프로젝트 구현을 위한 상세한 체크리스트를 제공합니다. 작업을 완료할 때마다 체크하여 진행 상황을 추적하세요.
 
 **타임라인**: 12-16주 (3-4개월)
-**최종 업데이트**: 2025-10-12
 
 ---
 
 ## 진행 상황 개요
 
 ```
-단계 0: 준비                [█████████░] 11/15 작업  (1주차) ✓ EXT4 인터페이스 준비 완료
-단계 1: 파일 시스템 및 데이터 [█░░░░░░░░] 3/24 작업   (2-4주차) ✓ 프로토콜 계층 완료
-단계 2: 단일 채널 재생       [████████░] 18/22 작업  (5-7주차) ✓ 비디오 재생 완료
-단계 3: 다채널 동기화        [████████░] 17/21 작업  (8-10주차) ✓ 멀티 채널 렌더링 완료
-단계 4: 추가 기능           [█████░░░░░] 20/38 작업  (11-12주차) ✓ Phase 4 Week 2 완료
-단계 5: 내보내기 및 설정     [ ] 0/16 작업   (13-14주차)
-단계 6: 현지화 및 마무리     [ ] 0/20 작업   (15-16주차)
+단계 0: 준비                [█████████░] 11/15 작업  ✓ EXT4 인터페이스 준비 완료
+단계 1: 파일 시스템 및 데이터 [█░░░░░░░░] 3/24 작업   ✓ 프로토콜 계층 완료
+단계 2: 단일 채널 재생       [████████░] 18/22 작업  ✓ 비디오 재생 완료
+단계 3: 다채널 동기화        [████████░] 17/21 작업  ✓ 멀티 채널 렌더링 완료
+단계 4: 추가 기능           [█████░░░░░] 20/38 작업  ✓ Phase 4 Week 2 완료
+단계 5: 내보내기 및 설정     [ ] 0/16 작업  
+단계 6: 현지화 및 마무리     [ ] 0/20 작업  
 ─────────────────────────────────────────────────────
 전체 진행률                 [████░░░░░░] 69/156 작업 (44.2%)
 
@@ -27,7 +26,7 @@
 
 ---
 
-## 단계 0: 준비 (1주차)
+## 단계 0: 준비
 
 **목표**: 개발 환경 설정 및 기술적 실현 가능성 검증
 
@@ -112,11 +111,11 @@
 
 ---
 
-## 단계 1: 파일 시스템 및 데이터 계층 (2-4주차)
+## 단계 1: 파일 시스템 및 데이터 계층
 
 **목표**: EXT4 파일 시스템 액세스 및 메타데이터 파싱 구현
 
-### 1주차: EXT4 통합
+### EXT4 통합
 
 #### EXT4 프로토콜 계층 (준비 작업 - 완료 ✓)
 
@@ -150,7 +149,7 @@
 - [ ] 장치 연결/연결 해제 알림 추가
 - [ ] 여러 연결된 SD 카드 처리
 
-### 2주차: 메타데이터 파싱
+### 메타데이터 파싱
 
 #### 메타데이터 파서 구현
 
@@ -175,7 +174,7 @@
 - [ ] `CameraPosition` enum 정의
 - [ ] 모든 모델에 대한 테스트 픽스처 생성
 
-### 3주차: 파일 관리자 서비스
+### 파일 관리자 서비스
 
 #### 서비스 구현
 
@@ -207,87 +206,87 @@
 
 ---
 
-## 단계 2: 단일 채널 영상 재생 (5-7주차)
+## 단계 2: 단일 채널 영상 재생
 
 **목표**: 부드러운 단일 영상 재생 구현
 
-### 1주차: 영상 디코더
+### 영상 디코더
 
 #### FFmpeg 통합
 
-- [x] `VideoDecoder` 클래스 생성 ✅ 2025-10-11
-- [x] `initialize()` 메서드 구현 ✅ 2025-10-11
-- [x] H.264 디코딩 구현 ✅ 2025-10-11
-- [x] MP3 음성 디코딩 구현 ✅ 2025-10-11
-- [x] 다양한 영상 해상도 처리 ✅ 2025-10-11
-- [x] 프레임 버퍼링 구현 (VideoChannel) ✅ 2025-10-11
-- [x] 오류 복구 로직 추가 (EAGAIN, EOF 처리) ✅ 2025-10-11
-- [x] Swift/C 상호 운용성 수정 (String.withCString) ✅ 2025-10-11
+- [x] `VideoDecoder` 클래스 생성
+- [x] `initialize()` 메서드 구현
+- [x] H.264 디코딩 구현
+- [x] MP3 음성 디코딩 구현
+- [x] 다양한 영상 해상도 처리
+- [x] 프레임 버퍼링 구현 (VideoChannel)
+- [x] 오류 복구 로직 추가 (EAGAIN, EOF 처리)
+- [x] Swift/C 상호 운용성 수정 (String.withCString)
 - [ ] 단위 테스트 작성
 
 #### 음성/영상 동기화
 
-- [x] 마스터 클록 구현 (CACurrentMediaTime) ✅ 2025-10-11
-- [x] A/V 드리프트 감지 구현 ✅ 2025-10-11
-- [x] A/V 드리프트 수정 구현 ✅ 2025-10-11
-- [x] 가변 프레임 레이트 처리 ✅ 2025-10-11
+- [x] 마스터 클록 구현 (CACurrentMediaTime)
+- [x] A/V 드리프트 감지 구현
+- [x] A/V 드리프트 수정 구현
+- [x] 가변 프레임 레이트 처리
 - [ ] 다양한 영상 샘플로 테스트
 
-### 2주차: Metal 렌더러
+### Metal 렌더러
 
 #### Metal 설정
 
-- [x] `MultiChannelRenderer` 클래스 생성 ✅ 2025-10-11
-- [x] Metal 장치 및 커맨드 큐 초기화 ✅ 2025-10-11
-- [x] 렌더 파이프라인 디스크립터 생성 ✅ 2025-10-11
-- [x] 버텍스 셰이더 구현 (Shaders.metal) ✅ 2025-10-11
-- [x] 프래그먼트 셰이더 구현 (Shaders.metal) ✅ 2025-10-11
-- [x] CVPixelBuffer에서 텍스처 생성 (IOSurface backing) ✅ 2025-10-11
-- [x] 렌더 루프 구현 (30fps 목표) ✅ 2025-10-11
-- [x] 윈도우 크기 조정 처리 ✅ 2025-10-11
+- [x] `MultiChannelRenderer` 클래스 생성
+- [x] Metal 장치 및 커맨드 큐 초기화
+- [x] 렌더 파이프라인 디스크립터 생성
+- [x] 버텍스 셰이더 구현 (Shaders.metal)
+- [x] 프래그먼트 셰이더 구현 (Shaders.metal)
+- [x] CVPixelBuffer에서 텍스처 생성 (IOSurface backing)
+- [x] 렌더 루프 구현 (30fps 목표)
+- [x] 윈도우 크기 조정 처리
 - [ ] 성능 최적화
 - [ ] Metal 디버거로 프로파일링
 
 #### 영상 플레이어 뷰
 
-- [x] `MultiChannelPlayerView` 생성 (SwiftUI + MTKView) ✅ 2025-10-11
-- [x] 영상 프레임 표시 ✅ 2025-10-11
-- [x] 종횡비 처리 (viewport 계산) ✅ 2025-10-11
-- [x] 로딩 인디케이터 추가 (BufferingView) ✅ 2025-10-11
-- [x] 오류 표시 추가 (DebugLogView) ✅ 2025-10-11
+- [x] `MultiChannelPlayerView` 생성 (SwiftUI + MTKView)
+- [x] 영상 프레임 표시
+- [x] 종횡비 처리 (viewport 계산)
+- [x] 로딩 인디케이터 추가 (BufferingView)
+- [x] 오류 표시 추가 (DebugLogView)
 
-### 3주차: 재생 제어
+### 재생 제어
 
 #### 제어 UI 구현
 
-- [x] `PlayerControlsView` 생성 (MultiChannelPlayerView 내부) ✅ 2025-10-11
-- [x] 재생/일시정지 버튼 구현 ✅ 2025-10-11
-- [x] 정지 버튼 구현 (Pause로 대체) ✅ 2025-10-11
+- [x] `PlayerControlsView` 생성 (MultiChannelPlayerView 내부)
+- [x] 재생/일시정지 버튼 구현
+- [x] 정지 버튼 구현 (Pause로 대체)
 - [ ] 이전/다음 파일 버튼 구현
-- [x] 타임라인 스크러버 생성 ✅ 2025-10-11
-- [x] 현재 시간 / 총 길이 표시 ✅ 2025-10-11
-- [x] 속도 제어 피커 구현 (0.25x ~ 2.0x) ✅ 2025-10-11
+- [x] 타임라인 스크러버 생성
+- [x] 현재 시간 / 총 길이 표시
+- [x] 속도 제어 피커 구현 (0.25x ~ 2.0x)
 - [ ] 볼륨 슬라이더 구현
 - [ ] 전체 화면 버튼 추가
 
 #### 키보드 단축키
 
 - [ ] Space 구현: 재생/일시정지
-- [x] 좌/우 구현: ±10초 탐색 (seekBySeconds) ✅ 2025-10-11
+- [x] 좌/우 구현: ±10초 탐색 (seekBySeconds)
 - [ ] 위/아래 구현: 볼륨 조절
 - [ ] F 구현: 전체 화면 토글
 - [ ] ESC 구현: 전체 화면 종료
 
 #### 플레이어 뷰 모델
 
-- [x] `SyncController` 생성 (ObservableObject) ✅ 2025-10-11
-- [x] `play()` 메서드 구현 ✅ 2025-10-11
-- [x] `pause()` 메서드 구현 ✅ 2025-10-11
-- [x] `stop()` 메서드 구현 ✅ 2025-10-11
-- [x] `seekToTime(_:)` 메서드 구현 ✅ 2025-10-11
-- [x] `playbackSpeed` 속성 구현 ✅ 2025-10-11
+- [x] `SyncController` 생성 (ObservableObject)
+- [x] `play()` 메서드 구현
+- [x] `pause()` 메서드 구현
+- [x] `stop()` 메서드 구현
+- [x] `seekToTime(_:)` 메서드 구현
+- [x] `playbackSpeed` 속성 구현
 - [ ] `setVolume(_:)` 메서드 구현
-- [x] UI 바인딩을 위한 @Published 속성 추가 ✅ 2025-10-11
+- [x] UI 바인딩을 위한 @Published 속성 추가
 - [ ] 모의 객체로 단위 테스트 작성
 
 **성공 기준**:
@@ -299,83 +298,83 @@
 
 ---
 
-## 단계 3: 다채널 동기화 (8-10주차)
+## 단계 3: 다채널 동기화
 
 **목표**: 프레임 완벽 정확도로 5개 채널 동기화
 
-### 1주차: 다채널 아키텍처
+### 다채널 아키텍처
 
 #### 채널 관리
 
-- [x] `VideoChannel` 클래스 생성 ✅ 2025-10-11
-- [x] 독립적인 디코더 인스턴스 구현 ✅ 2025-10-11
-- [x] 각 채널에 대한 프레임 버퍼 생성 (순환 버퍼, 30 프레임) ✅ 2025-10-11
-- [x] 백그라운드 디코딩 큐 설정 (DispatchQueue) ✅ 2025-10-11
-- [x] 채널 상태 관리 구현 (ChannelState enum) ✅ 2025-10-11
-- [x] 채널 오류 처리 추가 (ChannelError) ✅ 2025-10-11
+- [x] `VideoChannel` 클래스 생성
+- [x] 독립적인 디코더 인스턴스 구현
+- [x] 각 채널에 대한 프레임 버퍼 생성 (순환 버퍼, 30 프레임)
+- [x] 백그라운드 디코딩 큐 설정 (DispatchQueue)
+- [x] 채널 상태 관리 구현 (ChannelState enum)
+- [x] 채널 오류 처리 추가 (ChannelError)
 - [ ] 단위 테스트 작성
 
 #### 동기화 컨트롤러
 
-- [x] `SyncController` 클래스 생성 ✅ 2025-10-11
-- [x] 마스터 클록 구현 (CACurrentMediaTime) ✅ 2025-10-11
-- [x] `play()` 메서드 구현 (모든 채널 동기화) ✅ 2025-10-11
-- [x] `pause()` 메서드 구현 ✅ 2025-10-11
-- [x] `seekToTime(_:)` 메서드 구현 ✅ 2025-10-11
-- [x] 드리프트 모니터링 구현 (updateSync, 30fps) ✅ 2025-10-11
-- [x] 드리프트 임계값 설정 (50ms) ✅ 2025-10-11
-- [x] 가변 프레임 레이트 처리 ✅ 2025-10-11
+- [x] `SyncController` 클래스 생성
+- [x] 마스터 클록 구현 (CACurrentMediaTime)
+- [x] `play()` 메서드 구현 (모든 채널 동기화)
+- [x] `pause()` 메서드 구현
+- [x] `seekToTime(_:)` 메서드 구현
+- [x] 드리프트 모니터링 구현 (updateSync, 30fps)
+- [x] 드리프트 임계값 설정 (50ms)
+- [x] 가변 프레임 레이트 처리
 - [ ] 동기화 테스트 작성
 
-### 2주차: 다중 텍스처 렌더링
+### 다중 텍스처 렌더링
 
 #### Metal 다채널 렌더러
 
-- [x] `MultiChannelRenderer` 클래스 생성 ✅ 2025-10-11
-- [x] 단일 패스 다중-텍스처 렌더링 구현 ✅ 2025-10-11
-- [x] 그리드 레이아웃 계산기 생성 (자동 행/열 계산) ✅ 2025-10-11
-- [x] 포커스 레이아웃 생성 (75% + 25% 썸네일) ✅ 2025-10-11
-- [x] 수평 레이아웃 생성 (균등 분할) ✅ 2025-10-11
-- [x] 누락된 채널 우아하게 처리 (guard 문) ✅ 2025-10-11
-- [x] MTLSamplerState 구성 (linear filtering) ✅ 2025-10-11
+- [x] `MultiChannelRenderer` 클래스 생성
+- [x] 단일 패스 다중-텍스처 렌더링 구현
+- [x] 그리드 레이아웃 계산기 생성 (자동 행/열 계산)
+- [x] 포커스 레이아웃 생성 (75% + 25% 썸네일)
+- [x] 수평 레이아웃 생성 (균등 분할)
+- [x] 누락된 채널 우아하게 처리 (guard 문)
+- [x] MTLSamplerState 구성 (linear filtering)
 - [ ] Metal 디버거로 프로파일링
 
 #### 레이아웃 관리자
 
-- [x] `LayoutMode` enum 생성 ✅ 2025-10-11
-- [x] `calculateViewports` 메서드 구현 ✅ 2025-10-11
-- [x] `calculateGridViewports` 구현 ✅ 2025-10-11
-- [x] `calculateFocusViewports` 구현 ✅ 2025-10-11
-- [x] `calculateHorizontalViewports` 구현 ✅ 2025-10-11
-- [x] 윈도우 크기 조정 처리 (drawableSize 전달) ✅ 2025-10-11
-- [x] 레이아웃 전환 UI 추가 (layoutControls) ✅ 2025-10-11
+- [x] `LayoutMode` enum 생성
+- [x] `calculateViewports` 메서드 구현
+- [x] `calculateGridViewports` 구현
+- [x] `calculateFocusViewports` 구현
+- [x] `calculateHorizontalViewports` 구현
+- [x] 윈도우 크기 조정 처리 (drawableSize 전달)
+- [x] 레이아웃 전환 UI 추가 (layoutControls)
 - [ ] 레이아웃 기본 설정 유지
 
-### 3주차: 성능 최적화
+### 성능 최적화
 
 #### 메모리 최적화
 
-- [x] 프레임 버퍼 제한 구현 (채널당 30 프레임) ✅ 2025-10-11
-- [x] 오래된 프레임 자동 해제 (1초 이전 프레임 삭제) ✅ 2025-10-11
-- [x] 타이트 루프에 autoreleasepool 사용 ✅ 2025-10-11
+- [x] 프레임 버퍼 제한 구현 (채널당 30 프레임)
+- [x] 오래된 프레임 자동 해제 (1초 이전 프레임 삭제)
+- [x] 타이트 루프에 autoreleasepool 사용
 - [ ] MemoryMonitor로 메모리 사용량 모니터링
-- [x] 버퍼 상태 추적 (getBufferStatus) ✅ 2025-10-11
+- [x] 버퍼 상태 추적 (getBufferStatus)
 - [ ] Instruments(Allocations)로 테스트
 
 #### 스레딩 최적화
 
-- [x] 전용 디코드 큐 생성 (채널별 DispatchQueue) ✅ 2025-10-11
-- [x] 메인 스레드에서 렌더링 보장 (MTKView delegate) ✅ 2025-10-11
-- [x] NSLock으로 스레드 안전성 보장 ✅ 2025-10-11
-- [x] 스레드 우선순위 설정 (.userInitiated QoS) ✅ 2025-10-11
+- [x] 전용 디코드 큐 생성 (채널별 DispatchQueue)
+- [x] 메인 스레드에서 렌더링 보장 (MTKView delegate)
+- [x] NSLock으로 스레드 안전성 보장
+- [x] 스레드 우선순위 설정 (.userInitiated QoS)
 - [ ] Instruments(Time Profiler)로 프로파일링
 - [ ] 컨텍스트 전환 감소
 
 #### GPU 최적화
 
-- [x] 공유 Metal 리소스 사용 (단일 device, commandQueue) ✅ 2025-10-11
-- [x] CVMetalTextureCache 활용 ✅ 2025-10-11
-- [x] 단일 렌더 패스에 다중 드로우 콜 ✅ 2025-10-11
+- [x] 공유 Metal 리소스 사용 (단일 device, commandQueue)
+- [x] CVMetalTextureCache 활용
+- [x] 단일 렌더 패스에 다중 드로우 콜
 - [ ] Metal System Trace로 프로파일링
 - [ ] 셰이더 성능 최적화
 
@@ -389,11 +388,11 @@
 
 ---
 
-## 단계 4: 추가 기능 (11-12주차)
+## 단계 4: 추가 기능
 
 **목표**: GPS 매핑, G-센서 시각화 및 이미지 처리 구현
 
-### 1주차: GPS 및 G-센서
+### GPS 및 G-센서
 
 #### GPS 통합
 
@@ -420,36 +419,36 @@
 - [ ] 현재 값 표시
 - [ ] 단위 테스트 작성
 
-### 2주차: 이미지 처리
+### 이미지 처리
 
 #### 화면 캡처
 
-- [x] `captureCurrentFrame()` 메서드 구현 ✅ 2025-10-12
-- [x] 파일 저장 대화상자 생성 ✅ 2025-10-12
-- [x] PNG 포맷 지원 ✅ 2025-10-12
-- [x] JPEG 포맷 지원 ✅ 2025-10-12
-- [x] 선택적 타임스탬프 오버레이 추가 ✅ 2025-10-12
-- [x] 전체 해상도로 저장 ✅ 2025-10-12
-- [x] 성공/오류 알림 추가 ✅ 2025-10-12
+- [x] `captureCurrentFrame()` 메서드 구현
+- [x] 파일 저장 대화상자 생성
+- [x] PNG 포맷 지원
+- [x] JPEG 포맷 지원
+- [x] 선택적 타임스탬프 오버레이 추가
+- [x] 전체 해상도로 저장
+- [x] 성공/오류 알림 추가
 
 #### 영상 변환
 
-- [x] `VideoTransformations` 클래스 생성 ✅ 2025-10-12
-- [x] 밝기 조정 구현 (Metal 셰이더) ✅ 2025-10-12
-- [x] 수평 반전 구현 ✅ 2025-10-12
-- [x] 수직 반전 구현 ✅ 2025-10-12
-- [x] 디지털 줌 구현 ✅ 2025-10-12
-- [x] 변환을 위한 Metal 셰이더 업데이트 ✅ 2025-10-12
-- [x] 변환 제어 UI 추가 ✅ 2025-10-12
-- [x] 변환 설정 유지 ✅ 2025-10-12
+- [x] `VideoTransformations` 클래스 생성
+- [x] 밝기 조정 구현 (Metal 셰이더)
+- [x] 수평 반전 구현
+- [x] 수직 반전 구현
+- [x] 디지털 줌 구현
+- [x] 변환을 위한 Metal 셰이더 업데이트
+- [x] 변환 제어 UI 추가
+- [x] 변환 설정 유지
 
 #### 전체 화면 모드
 
-- [x] 전체 화면 진입/종료 구현 ✅ 2025-10-12
-- [x] 전체 화면에서 제어 자동 숨기기 ✅ 2025-10-12
-- [x] 마우스 이동 시 제어 표시 ✅ 2025-10-12
-- [x] 여러 디스플레이 지원 ✅ 2025-10-12
-- [x] 디스플레이 배열 변경 처리 ✅ 2025-10-12
+- [x] 전체 화면 진입/종료 구현
+- [x] 전체 화면에서 제어 자동 숨기기
+- [x] 마우스 이동 시 제어 표시
+- [x] 여러 디스플레이 지원
+- [x] 디스플레이 배열 변경 처리
 
 **성공 기준**:
 - ✅ GPS 위치가 실시간으로 업데이트
@@ -460,11 +459,11 @@
 
 ---
 
-## 단계 5: 내보내기 및 설정 (13-14주차)
+## 단계 5: 내보내기 및 설정
 
 **목표**: MP4 내보내기 및 블랙박스 구성 구현
 
-### 1주차: MP4 내보내기
+### MP4 내보내기
 
 #### 내보내기 서비스
 
@@ -493,7 +492,7 @@
 - [ ] 가능한 경우 음성 유지
 - [ ] 영상 품질 유지
 
-### 2주차: 설정 관리
+### 설정 관리
 
 #### 설정 서비스
 
@@ -525,11 +524,11 @@
 
 ---
 
-## 단계 6: 현지화 및 마무리 (15-16주차)
+## 단계 6: 현지화 및 마무리
 
 **목표**: 프로덕션 준비 완료된 애플리케이션
 
-### 1주차: 현지화
+### 현지화
 
 #### 문자열 추출
 
@@ -555,7 +554,7 @@
 - [ ] 플레이스홀더 텍스트 현지화
 - [ ] 알림 메시지 현지화
 
-### 2주차: 마무리 및 패키징
+### 마무리 및 패키징
 
 #### UI 마무리
 
@@ -697,143 +696,8 @@
 
 ---
 
-**최종 업데이트**: 2025-10-12
 **프로젝트**: macOS용 블랙박스 플레이어
 **총 작업**: 156개
 
 ---
 
-## 최근 구현 내역 (2025-10-12)
-
-### Phase 4 Week 2: 화면 캡처 및 비디오 변환 완료
-
-#### 핵심 기능 구현
-1. **ScreenCaptureService**: Metal 텍스처 캡처 및 이미지 저장
-   - Metal texture → CGImage → NSImage 변환 파이프라인
-   - PNG/JPEG 포맷 지원 (JPEG 품질 조절 가능)
-   - 타임스탬프 오버레이 (날짜/시간 + 비디오 타임스탬프)
-   - NSSavePanel을 통한 파일 저장 대화상자
-   - 성공/오류 알림 표시
-
-2. **VideoTransformations**: 실시간 비디오 변환 시스템
-   - 밝기 조정 (-1.0 ~ 1.0, Metal fragment shader)
-   - 수평/수직 반전 (Metal vertex shader)
-   - 디지털 줌 (1.0x ~ 5.0x, Metal vertex shader)
-   - UserDefaults를 통한 설정 영속화
-   - ObservableObject 패턴으로 실시간 UI 업데이트
-
-3. **Metal 셰이더 변환 파이프라인**
-   - TransformUniforms 구조체 정의 (6개 float 파라미터)
-   - Vertex shader: 텍스처 좌표 변환 (flip, zoom)
-   - Fragment shader: 픽셀 색상 조정 (brightness)
-   - Uniform buffer를 통한 CPU→GPU 데이터 전송
-
-4. **전체 화면 모드**
-   - NSWindow.toggleFullScreen을 통한 전체 화면 전환
-   - NotificationCenter를 통한 전체 화면 상태 추적
-   - 전체 화면 토글 버튼 추가
-
-5. **제어 자동 숨기기/표시**
-   - Timer를 사용한 3초 자동 숨기기
-   - 마우스 이동 감지 (DragGesture + onHover)
-   - 전체 화면 모드에서만 자동 숨기기 활성화
-   - 애니메이션 효과 (.opacity transition)
-
-6. **다중 디스플레이 지원**
-   - NSScreen.screens를 통한 디스플레이 감지
-   - didChangeScreenParametersNotification 수신
-   - 디스플레이 배열 변경 시 자동 업데이트
-
-#### 해결된 기술적 문제
-1. **Metal 셰이더 중복 기호 오류**
-   - 원인: Shaders.metal과 MultiChannelShaders.metal이 동일 함수명 정의
-   - 해결: 레거시 Shaders.metal 제거
-
-2. **ObservableObject 준수 오류**
-   - 원인: VideoTransformationService에서 @Published 사용 시 프로토콜 미구현
-   - 해결: ObservableObject 프로토콜 준수, Combine 프레임워크 import
-
-3. **Buffer 인덱스 충돌**
-   - 원인: Vertex attributes와 uniform buffer가 buffer(0) 공유
-   - 해결: Vertex shader uniform buffer를 buffer(1)로 변경
-
-#### 변환 제어 UI
-- 토글 가능한 변환 패널 추가
-- 밝기/줌 슬라이더 (실시간 값 표시)
-- 수평/수직 반전 토글 버튼
-- 리셋 버튼 (모든 변환 초기화)
-- 상단 바에 통합된 깔끔한 디자인
-
----
-
-## 최근 구현 내역 (2025-10-11)
-
-### Phase 2 & 3: 비디오 재생 및 멀티 채널 동기화 완료
-
-#### 핵심 기능 구현
-1. **VideoDecoder**: FFmpeg 기반 H.264/MP3 디코딩
-   - Swift/C 상호 운용성 수정 (String.withCString)
-   - macOS EAGAIN 에러 코드 처리 (-35 vs -11)
-   - EOF 감지 및 에러 복구 로직
-
-2. **VideoChannel**: 채널별 독립 디코딩 및 버퍼 관리
-   - 백그라운드 디코딩 큐 (DispatchQueue)
-   - 순환 버퍼 (30 프레임)
-   - 오래된 프레임 자동 삭제 (1초 이전)
-   - 채널 상태 관리 (ChannelState enum)
-
-3. **SyncController**: 멀티 채널 동기화 컨트롤러
-   - 마스터 클록 (CACurrentMediaTime)
-   - 드리프트 모니터링 및 수정 (±50ms)
-   - NSLock 기반 스레드 안전성
-   - 재생 속도 제어 (0.25x ~ 2.0x)
-
-4. **MultiChannelRenderer**: Metal 기반 GPU 렌더링
-   - IOSurface backing을 사용한 Metal 호환 CVPixelBuffer
-   - 3가지 레이아웃 모드 (Grid/Focus/Horizontal)
-   - CVMetalTextureCache 최적화
-   - MTLSamplerState 구성
-
-5. **MultiChannelPlayerView**: SwiftUI + Metal 통합
-   - MTKView delegate 패턴
-   - 재생 제어 UI (Play/Pause/Seek/Speed)
-   - 타임라인 스크러버
-   - 레이아웃 전환 UI
-
-6. **디버그 시스템**: 통합 로그 관리
-   - LogManager (스레드 안전)
-   - DebugLogView (실시간 로그 표시)
-   - 로그 복사 기능
-   - 로그 레벨 색상 구분
-
-#### 해결된 기술적 문제
-1. **Metal 텍스처 생성 실패 (-6660 에러)**
-   - 원인: CVPixelBuffer에 IOSurface backing 없음
-   - 해결: kCVPixelBufferMetalCompatibilityKey 및 kCVPixelBufferIOSurfacePropertiesKey 추가
-
-2. **버퍼 가득 참으로 인한 재생 멈춤**
-   - 원인: getFrame()이 프레임을 제거하지 않아 버퍼 정체
-   - 해결: 1초 이전 프레임 자동 삭제 로직 추가
-
-3. **Dictionary.Keys 스레드 경쟁 조건**
-   - 원인: Metal 렌더 스레드와 UI 스레드 간 동시 접근
-   - 해결: NSLock 및 sorted array 복사본 사용
-
-4. **VideoDecoder 크래시**
-   - 원인: filePath.cString(using:) 메모리 조기 해제
-   - 해결: filePath.withCString 사용
-
-#### 현재 상태
-- ✅ 비디오 로딩 및 디코딩 완료
-- ✅ Metal 렌더링 작동
-- ✅ 멀티 채널 동기화 구현
-- ✅ 재생 제어 UI 완료
-- ⏳ 버퍼 관리 최적화 진행 중
-- ⏳ 최종 성능 검증 대기 중
-
-#### 다음 단계
-1. 비디오 재생 안정성 최종 검증
-2. 멀티 채널 동기화 정밀도 테스트
-3. Metal 성능 프로파일링 (Instruments)
-4. 파일 시스템 통합 (EXT4)
-5. GPS/G-센서 데이터 시각화
