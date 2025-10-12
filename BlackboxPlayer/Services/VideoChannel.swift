@@ -1,72 +1,70 @@
-//
-//  VideoChannel.swift
-//  BlackboxPlayer
-//
-//  Video channel for multi-channel synchronized playback
-//
+/// @file VideoChannel.swift
+/// @brief Video channel for multi-channel synchronized playback
+/// @author BlackboxPlayer Development Team
+/// @details
+/// 멀티 채널 동기화 재생을 위한 독립적인 비디오 채널 클래스입니다.
+///
+/// ## 채널(Channel)이란?
+/// - 블랙박스에는 보통 여러 개의 카메라가 있습니다 (전방, 후방, 좌측, 우측, 실내)
+/// - 각 카메라의 영상을 독립적으로 디코딩하고 관리하는 단위가 "채널"입니다
+/// - 예: 4채널 블랙박스 = 전방 채널 + 후방 채널 + 좌측 채널 + 우측 채널
+///
+/// ## 주요 기능:
+/// 1. **독립적인 디코딩**: 각 채널이 자신의 VideoDecoder를 가짐
+/// 2. **프레임 버퍼링**: 디코딩된 프레임을 버퍼에 저장하여 부드러운 재생 보장
+/// 3. **동기화 지원**: 다른 채널들과 시간을 맞춰 재생할 수 있도록 지원
+/// 4. **백그라운드 디코딩**: 별도의 스레드에서 디코딩하여 UI가 멈추지 않음
+///
+/// ## 버퍼(Buffer)란?
+/// - 미리 디코딩해둔 프레임들을 저장하는 임시 저장소
+/// - 마치 유튜브가 동영상을 미리 다운로드해두는 것과 같은 원리
+/// - 네트워크나 디코딩 속도가 느려도 끊김 없이 재생 가능
+///
+/// ## 동기화(Synchronization)란?
+/// - 여러 채널의 영상을 같은 시점에서 재생하는 것
+/// - 예: 0.5초 시점의 전방 영상과 0.5초 시점의 후방 영상을 동시에 표시
+/// - GPS나 G-센서 데이터도 같은 시점의 것을 표시
+///
+/// ## 사용 예제:
+/// ```swift
+/// // 1. 채널 생성
+/// let channelInfo = ChannelInfo(
+///     position: .front,
+///     filePath: "/path/to/front_camera.mp4",
+///     displayName: "전방 카메라"
+/// )
+/// let channel = VideoChannel(channelInfo: channelInfo)
+///
+/// // 2. 초기화
+/// try channel.initialize()
+///
+/// // 3. 디코딩 시작
+/// channel.startDecoding()
+///
+/// // 4. 특정 시점의 프레임 가져오기
+/// if let frame = channel.getFrame(at: 5.0) {
+///     print("5초 시점의 프레임: \(frame.frameNumber)")
+/// }
+///
+/// // 5. 버퍼 상태 확인
+/// let status = channel.getBufferStatus()
+/// print("버퍼: \(status.current)/\(status.max) (\(status.fillPercentage * 100)%)")
+///
+/// // 6. 정리
+/// channel.stop()
+/// ```
+///
+/// ## 스레드 안전성(Thread Safety):
+/// - 여러 스레드에서 동시에 접근해도 안전하도록 설계됨
+/// - NSLock을 사용하여 프레임 버퍼 보호
+/// - 백그라운드 스레드에서 디코딩, 메인 스레드에서 UI 업데이트
 
 import Foundation
 import Combine
 
-/**
- # VideoChannel
- 멀티 채널 동기화 재생을 위한 독립적인 비디오 채널 클래스입니다.
-
- ## 채널(Channel)이란?
- - 블랙박스에는 보통 여러 개의 카메라가 있습니다 (전방, 후방, 좌측, 우측, 실내)
- - 각 카메라의 영상을 독립적으로 디코딩하고 관리하는 단위가 "채널"입니다
- - 예: 4채널 블랙박스 = 전방 채널 + 후방 채널 + 좌측 채널 + 우측 채널
-
- ## 주요 기능:
- 1. **독립적인 디코딩**: 각 채널이 자신의 VideoDecoder를 가짐
- 2. **프레임 버퍼링**: 디코딩된 프레임을 버퍼에 저장하여 부드러운 재생 보장
- 3. **동기화 지원**: 다른 채널들과 시간을 맞춰 재생할 수 있도록 지원
- 4. **백그라운드 디코딩**: 별도의 스레드에서 디코딩하여 UI가 멈추지 않음
-
- ## 버퍼(Buffer)란?
- - 미리 디코딩해둔 프레임들을 저장하는 임시 저장소
- - 마치 유튜브가 동영상을 미리 다운로드해두는 것과 같은 원리
- - 네트워크나 디코딩 속도가 느려도 끊김 없이 재생 가능
-
- ## 동기화(Synchronization)란?
- - 여러 채널의 영상을 같은 시점에서 재생하는 것
- - 예: 0.5초 시점의 전방 영상과 0.5초 시점의 후방 영상을 동시에 표시
- - GPS나 G-센서 데이터도 같은 시점의 것을 표시
-
- ## 사용 예제:
- ```swift
- // 1. 채널 생성
- let channelInfo = ChannelInfo(
-     position: .front,
-     filePath: "/path/to/front_camera.mp4",
-     displayName: "전방 카메라"
- )
- let channel = VideoChannel(channelInfo: channelInfo)
-
- // 2. 초기화
- try channel.initialize()
-
- // 3. 디코딩 시작
- channel.startDecoding()
-
- // 4. 특정 시점의 프레임 가져오기
- if let frame = channel.getFrame(at: 5.0) {
-     print("5초 시점의 프레임: \(frame.frameNumber)")
- }
-
- // 5. 버퍼 상태 확인
- let status = channel.getBufferStatus()
- print("버퍼: \(status.current)/\(status.max) (\(status.fillPercentage * 100)%)")
-
- // 6. 정리
- channel.stop()
- ```
-
- ## 스레드 안전성(Thread Safety):
- - 여러 스레드에서 동시에 접근해도 안전하도록 설계됨
- - NSLock을 사용하여 프레임 버퍼 보호
- - 백그라운드 스레드에서 디코딩, 메인 스레드에서 UI 업데이트
- */
+/// @class VideoChannel
+/// @brief 멀티 채널 동기화 재생을 위한 독립적인 비디오 채널
+/// @details 각 비디오 채널을 독립적으로 디코딩하고 버퍼링하며, 다른 채널들과 동기화하여 재생합니다.
 class VideoChannel {
     // MARK: - Properties (속성)
 
@@ -77,8 +75,9 @@ class VideoChannel {
      - Xcode의 파일 구조 메뉴에서 빠르게 찾을 수 있음
      */
 
-    /// **채널 식별자 (Channel Identifier)**
-    ///
+    /// @var channelID
+    /// @brief 채널 식별자 (Channel Identifier)
+    /// @details
     /// UUID란?
     /// - Universally Unique Identifier (범용 고유 식별자)
     /// - 전 세계에서 유일한 ID 값 (중복될 확률이 거의 0)
@@ -89,8 +88,9 @@ class VideoChannel {
     /// - 파일 경로나 이름은 변경될 수 있지만 UUID는 고유함
     let channelID: UUID
 
-    /// **채널 정보 (Channel Information)**
-    ///
+    /// @var channelInfo
+    /// @brief 채널 정보 (Channel Information)
+    /// @details
     /// ChannelInfo 구조체 내용:
     /// - position: 카메라 위치 (전방, 후방, 좌측, 우측, 실내)
     /// - filePath: 비디오 파일 경로 (예: "/videos/front_20250112.mp4")
@@ -102,8 +102,9 @@ class VideoChannel {
     /// - channelInfo는 let이므로 채널 생성 후 변경 불가
     let channelInfo: ChannelInfo
 
-    /// **채널 상태 (Channel State)**
-    ///
+    /// @var state
+    /// @brief 채널 상태 (Channel State)
+    /// @details
     /// @Published란?
     /// - Combine 프레임워크의 프로퍼티 래퍼
     /// - 값이 변경되면 자동으로 구독자들에게 알림
@@ -130,8 +131,9 @@ class VideoChannel {
     /// - .error: 오류 (디코딩 중 에러 발생)
     @Published private(set) var state: ChannelState = .idle
 
-    /// **현재 프레임 (Current Frame)**
-    ///
+    /// @var currentFrame
+    /// @brief 현재 프레임 (Current Frame)
+    /// @details
     /// VideoFrame이란?
     /// - 디코딩된 한 장의 영상 프레임
     /// - 내용: 픽셀 데이터, 타임스탬프, 프레임 번호, 크기 등
@@ -151,8 +153,9 @@ class VideoChannel {
     /// ```
     @Published private(set) var currentFrame: VideoFrame?
 
-    /// **비디오 디코더 (Video Decoder)**
-    ///
+    /// @var decoder
+    /// @brief 비디오 디코더 (Video Decoder)
+    /// @details
     /// private란?
     /// - 이 클래스 내부에서만 접근 가능
     /// - 외부에서 channel.decoder로 접근 불가
@@ -164,8 +167,9 @@ class VideoChannel {
     /// - stop() 호출 시 다시 nil로 설정 (메모리 해제)
     private var decoder: VideoDecoder?
 
-    /// **프레임 버퍼 (Frame Buffer)**
-    ///
+    /// @var frameBuffer
+    /// @brief 프레임 버퍼 (Frame Buffer)
+    /// @details
     /// 배열(Array)이란?
     /// - 여러 개의 값을 순서대로 저장하는 컬렉션
     /// - [VideoFrame]: VideoFrame 타입의 배열
@@ -187,8 +191,9 @@ class VideoChannel {
     /// ```
     private var frameBuffer: [VideoFrame] = []
 
-    /// **최대 버퍼 크기 (Maximum Buffer Size)**
-    ///
+    /// @var maxBufferSize
+    /// @brief 최대 버퍼 크기 (Maximum Buffer Size)
+    /// @details
     /// 30개 = 약 1초분의 프레임 (30fps 기준)
     ///
     /// 왜 30개인가?
@@ -201,8 +206,9 @@ class VideoChannel {
     /// - 120프레임 ≈ 240MB (충분히 감당 가능)
     private let maxBufferSize = 30
 
-    /// **디코딩 큐 (Decoding Queue)**
-    ///
+    /// @var decodingQueue
+    /// @brief 디코딩 큐 (Decoding Queue)
+    /// @details
     /// DispatchQueue란?
     /// - Swift의 멀티스레딩(다중 작업) 시스템
     /// - 작업을 백그라운드에서 실행할 수 있게 해줌
@@ -223,8 +229,9 @@ class VideoChannel {
     /// - userInitiated: 사용자가 시작한 작업, 높은 우선순위
     private let decodingQueue: DispatchQueue
 
-    /// **버퍼 잠금 (Buffer Lock)**
-    ///
+    /// @var bufferLock
+    /// @brief 버퍼 잠금 (Buffer Lock)
+    /// @details
     /// NSLock이란?
     /// - 여러 스레드가 동시에 같은 데이터에 접근하는 것을 막는 도구
     /// - 마치 화장실 문 잠그는 것과 같은 원리
@@ -257,8 +264,9 @@ class VideoChannel {
     /// ```
     private let bufferLock = NSLock()
 
-    /// **디코딩 중 여부 (Is Decoding)**
-    ///
+    /// @var isDecoding
+    /// @brief 디코딩 중 여부 (Is Decoding)
+    /// @details
     /// Bool (Boolean): true 또는 false
     ///
     /// 역할:
@@ -278,8 +286,9 @@ class VideoChannel {
     /// - isDecoding: 내부 제어용 플래그 (private)
     private var isDecoding = false
 
-    /// **목표 프레임 시간 (Target Frame Time)**
-    ///
+    /// @var targetFrameTime
+    /// @brief 목표 프레임 시간 (Target Frame Time)
+    /// @details
     /// TimeInterval = Double (초 단위 시간)
     ///
     /// 역할:
@@ -298,34 +307,34 @@ class VideoChannel {
 
     // MARK: - Initialization (초기화)
 
-    /**
-     채널을 생성합니다.
-
-     이니셜라이저(Initializer)란?
-     - 클래스의 인스턴스를 생성할 때 호출되는 특별한 함수
-     - init으로 시작
-     - 모든 속성(property)을 초기화해야 함
-
-     파라미터:
-     - channelID: 채널 고유 식별자 (기본값: 새 UUID 자동 생성)
-     - channelInfo: 채널 정보 (카메라 위치, 파일 경로 등)
-
-     기본값(Default Value):
-     - channelID: UUID = UUID()
-     - "= UUID()"가 기본값
-     - 호출 시 생략 가능: VideoChannel(channelInfo: info)
-     - 명시 가능: VideoChannel(channelID: myUUID, channelInfo: info)
-
-     사용 예:
-     ```swift
-     // 방법 1: channelID 자동 생성
-     let channel1 = VideoChannel(channelInfo: frontInfo)
-
-     // 방법 2: 특정 channelID 사용
-     let id = UUID()
-     let channel2 = VideoChannel(channelID: id, channelInfo: rearInfo)
-     ```
-     */
+    /// @brief 채널을 생성합니다
+    /// @param channelID 채널 고유 식별자 (기본값: 새 UUID 자동 생성)
+    /// @param channelInfo 채널 정보 (카메라 위치, 파일 경로 등)
+    /// @details
+    /// 이니셜라이저(Initializer)란?
+    /// - 클래스의 인스턴스를 생성할 때 호출되는 특별한 함수
+    /// - init으로 시작
+    /// - 모든 속성(property)을 초기화해야 함
+    ///
+    /// 파라미터:
+    /// - channelID: 채널 고유 식별자 (기본값: 새 UUID 자동 생성)
+    /// - channelInfo: 채널 정보 (카메라 위치, 파일 경로 등)
+    ///
+    /// 기본값(Default Value):
+    /// - channelID: UUID = UUID()
+    /// - "= UUID()"가 기본값
+    /// - 호출 시 생략 가능: VideoChannel(channelInfo: info)
+    /// - 명시 가능: VideoChannel(channelID: myUUID, channelInfo: info)
+    ///
+    /// 사용 예:
+    /// ```swift
+    /// // 방법 1: channelID 자동 생성
+    /// let channel1 = VideoChannel(channelInfo: frontInfo)
+    ///
+    /// // 방법 2: 특정 channelID 사용
+    /// let id = UUID()
+    /// let channel2 = VideoChannel(channelID: id, channelInfo: rearInfo)
+    /// ```
     init(channelID: UUID = UUID(), channelInfo: ChannelInfo) {
         // self란?
         // - 현재 클래스의 인스턴스 자신을 가리킴
@@ -360,35 +369,33 @@ class VideoChannel {
         // - targetFrameTime = 0.0
     }
 
-    /**
-     deinit (디이니셜라이저)
-
-     deinit이란?
-     - 인스턴스가 메모리에서 해제될 때 자동으로 호출
-     - 정리 작업(cleanup)을 수행
-     - init의 반대 개념
-
-     ARC (Automatic Reference Counting):
-     - Swift의 메모리 관리 시스템
-     - 인스턴스를 참조하는 곳이 없으면 자동으로 메모리 해제
-
-     예:
-     ```swift
-     var channel: VideoChannel? = VideoChannel(channelInfo: info)
-     // 메모리에 VideoChannel 인스턴스 생성, 참조 카운트 = 1
-
-     channel = nil
-     // 참조 카운트 = 0
-     // -> deinit 자동 호출
-     // -> stop() 실행하여 디코딩 중단, 리소스 해제
-     // -> 메모리에서 제거
-     ```
-
-     왜 stop()을 호출하나?
-     - 디코딩 스레드가 실행 중일 수 있음
-     - 디코더가 파일을 열어둔 상태일 수 있음
-     - 메모리 해제 전에 깔끔하게 정리
-     */
+    /// @brief 디이니셜라이저 (deinit)
+    /// @details
+    /// deinit이란?
+    /// - 인스턴스가 메모리에서 해제될 때 자동으로 호출
+    /// - 정리 작업(cleanup)을 수행
+    /// - init의 반대 개념
+    ///
+    /// ARC (Automatic Reference Counting):
+    /// - Swift의 메모리 관리 시스템
+    /// - 인스턴스를 참조하는 곳이 없으면 자동으로 메모리 해제
+    ///
+    /// 예:
+    /// ```swift
+    /// var channel: VideoChannel? = VideoChannel(channelInfo: info)
+    /// // 메모리에 VideoChannel 인스턴스 생성, 참조 카운트 = 1
+    ///
+    /// channel = nil
+    /// // 참조 카운트 = 0
+    /// // -> deinit 자동 호출
+    /// // -> stop() 실행하여 디코딩 중단, 리소스 해제
+    /// // -> 메모리에서 제거
+    /// ```
+    ///
+    /// 왜 stop()을 호출하나?
+    /// - 디코딩 스레드가 실행 중일 수 있음
+    /// - 디코더가 파일을 열어둔 상태일 수 있음
+    /// - 메모리 해제 전에 깔끔하게 정리
     deinit {
         stop()
     }
@@ -404,39 +411,36 @@ class VideoChannel {
      Private 메서드: decodingLoop, addFrameToBuffer
      */
 
-    /**
-     채널과 디코더를 초기화합니다.
-
-     초기화 과정:
-     1. 상태 확인 (이미 초기화되었는지)
-     2. VideoDecoder 생성
-     3. 디코더 초기화 (FFmpeg으로 파일 열기)
-     4. 상태를 .ready로 변경
-
-     throws란?
-     - 이 함수가 에러를 던질(throw) 수 있음을 의미
-     - 호출 시 try 키워드 필요
-     - do-catch로 에러 처리 필요
-
-     사용 예:
-     ```swift
-     do {
-         try channel.initialize()
-         print("초기화 성공!")
-         channel.startDecoding()
-     } catch {
-         print("초기화 실패: \(error)")
-     }
-     ```
-
-     발생 가능한 에러:
-     - ChannelError.invalidState: 이미 초기화된 상태
-     - DecoderError.cannotOpenFile: 파일을 열 수 없음
-     - DecoderError.noVideoStream: 비디오 스트림 없음
-     - DecoderError.codecNotFound: 코덱을 찾을 수 없음
-
-     - Throws: ChannelError 또는 DecoderError
-     */
+    /// @brief 채널과 디코더를 초기화합니다
+    /// @throws ChannelError 또는 DecoderError
+    /// @details
+    /// 초기화 과정:
+    /// 1. 상태 확인 (이미 초기화되었는지)
+    /// 2. VideoDecoder 생성
+    /// 3. 디코더 초기화 (FFmpeg으로 파일 열기)
+    /// 4. 상태를 .ready로 변경
+    ///
+    /// throws란?
+    /// - 이 함수가 에러를 던질(throw) 수 있음을 의미
+    /// - 호출 시 try 키워드 필요
+    /// - do-catch로 에러 처리 필요
+    ///
+    /// 사용 예:
+    /// ```swift
+    /// do {
+    ///     try channel.initialize()
+    ///     print("초기화 성공!")
+    ///     channel.startDecoding()
+    /// } catch {
+    ///     print("초기화 실패: \(error)")
+    /// }
+    /// ```
+    ///
+    /// 발생 가능한 에러:
+    /// - ChannelError.invalidState: 이미 초기화된 상태
+    /// - DecoderError.cannotOpenFile: 파일을 열 수 없음
+    /// - DecoderError.noVideoStream: 비디오 스트림 없음
+    /// - DecoderError.codecNotFound: 코덱을 찾을 수 없음
     func initialize() throws {
         // 1. 상태 확인
         // guard-else: 조건이 false면 else 블록 실행 후 함수 종료
@@ -470,50 +474,48 @@ class VideoChannel {
         // 이제 startDecoding() 호출 가능
     }
 
-    /**
-     백그라운드에서 프레임 디코딩을 시작합니다.
-
-     백그라운드(Background)란?
-     - 사용자가 보지 못하는 뒤에서 실행되는 작업
-     - UI를 방해하지 않음
-
-     동작 방식:
-     1. 상태 확인 (.ready 상태여야 함)
-     2. isDecoding 플래그를 true로 설정
-     3. 별도 스레드에서 decodingLoop() 실행
-     4. 즉시 return (함수는 바로 끝나지만 디코딩은 계속 진행)
-
-     비동기(Asynchronous) 작업:
-     - 이 함수는 즉시 반환됨
-     - 디코딩은 백그라운드에서 계속 진행
-     - 완료를 기다리지 않음
-
-     ```
-     startDecoding() 호출
-         ↓
-     함수 즉시 종료 (0.001초)
-         ↓
-     호출자는 다음 코드 실행
-
-     동시에:
-     백그라운드 스레드에서
-     decodingLoop() 실행 (수 초~수 분)
-     ```
-
-     사용 예:
-     ```swift
-     try channel.initialize()  // 1. 먼저 초기화
-     channel.startDecoding()   // 2. 디코딩 시작 (즉시 반환)
-     print("디코딩 시작!")     // 3. 바로 실행됨 (디코딩 완료 대기 안 함)
-
-     // 백그라운드에서 계속 프레임 디코딩 중...
-     ```
-
-     주의사항:
-     - initialize()를 먼저 호출해야 함
-     - .ready 상태가 아니면 무시됨
-     - 이미 디코딩 중이면 무시됨 (중복 시작 방지)
-     */
+    /// @brief 백그라운드에서 프레임 디코딩을 시작합니다
+    /// @details
+    /// 백그라운드(Background)란?
+    /// - 사용자가 보지 못하는 뒤에서 실행되는 작업
+    /// - UI를 방해하지 않음
+    ///
+    /// 동작 방식:
+    /// 1. 상태 확인 (.ready 상태여야 함)
+    /// 2. isDecoding 플래그를 true로 설정
+    /// 3. 별도 스레드에서 decodingLoop() 실행
+    /// 4. 즉시 return (함수는 바로 끝나지만 디코딩은 계속 진행)
+    ///
+    /// 비동기(Asynchronous) 작업:
+    /// - 이 함수는 즉시 반환됨
+    /// - 디코딩은 백그라운드에서 계속 진행
+    /// - 완료를 기다리지 않음
+    ///
+    /// ```
+    /// startDecoding() 호출
+    ///     ↓
+    /// 함수 즉시 종료 (0.001초)
+    ///     ↓
+    /// 호출자는 다음 코드 실행
+    ///
+    /// 동시에:
+    /// 백그라운드 스레드에서
+    /// decodingLoop() 실행 (수 초~수 분)
+    /// ```
+    ///
+    /// 사용 예:
+    /// ```swift
+    /// try channel.initialize()  // 1. 먼저 초기화
+    /// channel.startDecoding()   // 2. 디코딩 시작 (즉시 반환)
+    /// print("디코딩 시작!")     // 3. 바로 실행됨 (디코딩 완료 대기 안 함)
+    ///
+    /// // 백그라운드에서 계속 프레임 디코딩 중...
+    /// ```
+    ///
+    /// 주의사항:
+    /// - initialize()를 먼저 호출해야 함
+    /// - .ready 상태가 아니면 무시됨
+    /// - 이미 디코딩 중이면 무시됨 (중복 시작 방지)
     func startDecoding() {
         // 1. 상태 확인
         // guard: 여러 조건을 동시에 확인
@@ -562,37 +564,35 @@ class VideoChannel {
         // decodingLoop()는 백그라운드에서 계속 실행 중
     }
 
-    /**
-     디코딩을 중단하고 리소스를 정리합니다.
-
-     정리(Cleanup) 작업:
-     1. 디코딩 루프 중단 (isDecoding = false)
-     2. 상태를 .idle로 초기화
-     3. 프레임 버퍼 비우기
-     4. 디코더 해제 (메모리 반환)
-     5. 현재 프레임 제거
-
-     리소스(Resource)란?
-     - 메모리, 파일 핸들, 스레드 등 시스템 자원
-     - 사용 후 반드시 해제해야 함
-     - 해제하지 않으면 메모리 누수
-
-     사용 시점:
-     - 영상 재생 종료 시
-     - 다른 영상으로 전환 시
-     - 앱 종료 시
-     - deinit에서 자동 호출
-
-     사용 예:
-     ```swift
-     channel.startDecoding()  // 디코딩 시작
-     // ... 재생 중 ...
-     channel.stop()           // 정리
-
-     // 리소스가 모두 해제됨
-     // 다시 initialize() + startDecoding() 가능
-     ```
-     */
+    /// @brief 디코딩을 중단하고 리소스를 정리합니다
+    /// @details
+    /// 정리(Cleanup) 작업:
+    /// 1. 디코딩 루프 중단 (isDecoding = false)
+    /// 2. 상태를 .idle로 초기화
+    /// 3. 프레임 버퍼 비우기
+    /// 4. 디코더 해제 (메모리 반환)
+    /// 5. 현재 프레임 제거
+    ///
+    /// 리소스(Resource)란?
+    /// - 메모리, 파일 핸들, 스레드 등 시스템 자원
+    /// - 사용 후 반드시 해제해야 함
+    /// - 해제하지 않으면 메모리 누수
+    ///
+    /// 사용 시점:
+    /// - 영상 재생 종료 시
+    /// - 다른 영상으로 전환 시
+    /// - 앱 종료 시
+    /// - deinit에서 자동 호출
+    ///
+    /// 사용 예:
+    /// ```swift
+    /// channel.startDecoding()  // 디코딩 시작
+    /// // ... 재생 중 ...
+    /// channel.stop()           // 정리
+    ///
+    /// // 리소스가 모두 해제됨
+    /// // 다시 initialize() + startDecoding() 가능
+    /// ```
     func stop() {
         // 1. 디코딩 중단 플래그
         isDecoding = false
@@ -633,51 +633,46 @@ class VideoChannel {
         // 다시 initialize() 호출 가능
     }
 
-    /**
-     특정 시간 위치로 이동합니다.
-
-     시크(Seek)란?
-     - 영상의 특정 위치로 점프하는 것
-     - 유튜브에서 진행 바를 드래그하는 것과 같음
-     - 예: 10분짜리 영상의 5분 지점으로 이동
-
-     시크 과정:
-     1. 디코딩 일시 중단
-     2. 버퍼의 모든 프레임 제거 (이전 시간대의 프레임들)
-     3. 디코더에게 새 위치로 이동 요청
-     4. 목표 시간 업데이트
-     5. 디코딩 재개
-
-     왜 버퍼를 비우나?
-     - 버퍼에 있는 프레임들은 이전 시간대의 것
-     - 예: 5초 지점에서 20초로 시크
-     - 버퍼에 5초~6초 프레임들이 있음
-     - 20초 지점에서는 필요 없음
-     - 버퍼를 비우고 20초부터 다시 디코딩
-
-     파라미터:
-     - time: 이동할 시간 위치 (초 단위)
-
-     사용 예:
-     ```swift
-     // 10초 지점으로 이동
-     try channel.seek(to: 10.0)
-
-     // 처음으로 이동
-     try channel.seek(to: 0.0)
-
-     // 5분 30초로 이동
-     try channel.seek(to: 330.0)  // 5*60 + 30 = 330
-     ```
-
-     주의사항:
-     - initialize()를 먼저 호출해야 함
-     - 디코더가 없으면 에러 발생
-     - 음수 시간은 0으로 처리됨
-     - 영상 길이를 넘는 시간은 끝으로 이동
-
-     - Throws: ChannelError 또는 DecoderError
-     */
+    /// @brief 특정 시간 위치로 이동합니다
+    /// @param time 이동할 시간 위치 (초 단위)
+    /// @throws ChannelError 또는 DecoderError
+    /// @details
+    /// 시크(Seek)란?
+    /// - 영상의 특정 위치로 점프하는 것
+    /// - 유튜브에서 진행 바를 드래그하는 것과 같음
+    /// - 예: 10분짜리 영상의 5분 지점으로 이동
+    ///
+    /// 시크 과정:
+    /// 1. 디코딩 일시 중단
+    /// 2. 버퍼의 모든 프레임 제거 (이전 시간대의 프레임들)
+    /// 3. 디코더에게 새 위치로 이동 요청
+    /// 4. 목표 시간 업데이트
+    /// 5. 디코딩 재개
+    ///
+    /// 왜 버퍼를 비우나?
+    /// - 버퍼에 있는 프레임들은 이전 시간대의 것
+    /// - 예: 5초 지점에서 20초로 시크
+    /// - 버퍼에 5초~6초 프레임들이 있음
+    /// - 20초 지점에서는 필요 없음
+    /// - 버퍼를 비우고 20초부터 다시 디코딩
+    ///
+    /// 사용 예:
+    /// ```swift
+    /// // 10초 지점으로 이동
+    /// try channel.seek(to: 10.0)
+    ///
+    /// // 처음으로 이동
+    /// try channel.seek(to: 0.0)
+    ///
+    /// // 5분 30초로 이동
+    /// try channel.seek(to: 330.0)  // 5*60 + 30 = 330
+    /// ```
+    ///
+    /// 주의사항:
+    /// - initialize()를 먼저 호출해야 함
+    /// - 디코더가 없으면 에러 발생
+    /// - 음수 시간은 0으로 처리됨
+    /// - 영상 길이를 넘는 시간은 끝으로 이동
     func seek(to time: TimeInterval) throws {
         // 1. 디코더 존재 확인
         // guard let: Optional 바인딩
@@ -731,58 +726,50 @@ class VideoChannel {
         // getFrame(at: time)으로 새 위치의 프레임 얻을 수 있음
     }
 
-    /**
-     목표 시간에 가장 가까운 프레임을 반환합니다.
-
-     프레임 찾기 알고리즘:
-     1. 버퍼에서 모든 프레임 검색
-     2. 각 프레임의 타임스탬프와 목표 시간의 차이 계산
-     3. 차이가 가장 작은 프레임 선택
-     4. 오래된 프레임들 정리
-
-     예시:
-     ```
-     버퍼: [4.97초, 5.03초, 5.07초] 프레임
-     목표: 5.0초
-
-     차이 계산:
-     - 4.97초: |4.97 - 5.0| = 0.03
-     - 5.03초: |5.03 - 5.0| = 0.03
-     - 5.07초: |5.07 - 5.0| = 0.07
-
-     결과: 4.97초 또는 5.03초 프레임 (둘 다 0.03초 차이)
-     ```
-
-     버퍼 정리:
-     - 현재 시간 - 1초 이전의 프레임 제거
-     - 예: 현재 5초 → 4초 이전 프레임 제거
-     - 이유: 메모리 절약, 뒤로 시크 시 1초까지는 즉시 가능
-
-     파라미터:
-     - time: 원하는 시간 위치 (초 단위)
-
-     반환값:
-     - VideoFrame?: 프레임을 찾으면 VideoFrame, 없으면 nil
-
-     사용 예:
-     ```swift
-     // 5초 시점의 프레임 가져오기
-     if let frame = channel.getFrame(at: 5.0) {
-         print("프레임 번호: \(frame.frameNumber)")
-         print("정확한 시간: \(frame.timestamp)초")
-         // 프레임 데이터로 화면에 그리기
-     } else {
-         print("프레임 없음 (버퍼 비어있음)")
-     }
-     ```
-
-     nil을 반환하는 경우:
-     - 버퍼가 비어있음 (아직 디코딩 안 됨)
-     - 요청한 시간대의 프레임이 아직 디코딩 안 됨
-     - 너무 빠르게 시크해서 버퍼가 비워짐
-
-     - Returns: 목표 시간에 가장 가까운 VideoFrame, 없으면 nil
-     */
+    /// @brief 목표 시간에 가장 가까운 프레임을 반환합니다
+    /// @param time 원하는 시간 위치 (초 단위)
+    /// @return 목표 시간에 가장 가까운 VideoFrame, 없으면 nil
+    /// @details
+    /// 프레임 찾기 알고리즘:
+    /// 1. 버퍼에서 모든 프레임 검색
+    /// 2. 각 프레임의 타임스탬프와 목표 시간의 차이 계산
+    /// 3. 차이가 가장 작은 프레임 선택
+    /// 4. 오래된 프레임들 정리
+    ///
+    /// 예시:
+    /// ```
+    /// 버퍼: [4.97초, 5.03초, 5.07초] 프레임
+    /// 목표: 5.0초
+    ///
+    /// 차이 계산:
+    /// - 4.97초: |4.97 - 5.0| = 0.03
+    /// - 5.03초: |5.03 - 5.0| = 0.03
+    /// - 5.07초: |5.07 - 5.0| = 0.07
+    ///
+    /// 결과: 4.97초 또는 5.03초 프레임 (둘 다 0.03초 차이)
+    /// ```
+    ///
+    /// 버퍼 정리:
+    /// - 현재 시간 - 1초 이전의 프레임 제거
+    /// - 예: 현재 5초 → 4초 이전 프레임 제거
+    /// - 이유: 메모리 절약, 뒤로 시크 시 1초까지는 즉시 가능
+    ///
+    /// 사용 예:
+    /// ```swift
+    /// // 5초 시점의 프레임 가져오기
+    /// if let frame = channel.getFrame(at: 5.0) {
+    ///     print("프레임 번호: \(frame.frameNumber)")
+    ///     print("정확한 시간: \(frame.timestamp)초")
+    ///     // 프레임 데이터로 화면에 그리기
+    /// } else {
+    ///     print("프레임 없음 (버퍼 비어있음)")
+    /// }
+    /// ```
+    ///
+    /// nil을 반환하는 경우:
+    /// - 버퍼가 비어있음 (아직 디코딩 안 됨)
+    /// - 요청한 시간대의 프레임이 아직 디코딩 안 됨
+    /// - 너무 빠르게 시크해서 버퍼가 비워짐
     func getFrame(at time: TimeInterval) -> VideoFrame? {
         // 1. 버퍼 잠금
         bufferLock.lock()
@@ -845,43 +832,40 @@ class VideoChannel {
         // defer에 의해 자동으로 bufferLock.unlock() 실행됨
     }
 
-    /**
-     현재 버퍼 상태를 반환합니다.
-
-     버퍼 상태 정보:
-     - current: 현재 버퍼에 있는 프레임 수
-     - max: 최대 버퍼 크기 (30)
-     - fillPercentage: 채워진 비율 (0.0 ~ 1.0)
-
-     Tuple(튜플)이란?
-     - 여러 값을 하나로 묶은 것
-     - (Int, Int, Double) 형태
-     - 이름을 붙일 수 있음: (current: Int, max: Int, fillPercentage: Double)
-
-     사용 예:
-     ```swift
-     let status = channel.getBufferStatus()
-     print("버퍼: \(status.current)/\(status.max)")
-     print("채움율: \(status.fillPercentage * 100)%")
-
-     // 버퍼가 거의 비었는지 확인
-     if status.fillPercentage < 0.2 {
-     print("버퍼가 부족합니다!")
-     }
-
-     // 버퍼가 거의 찼는지 확인
-     if status.fillPercentage > 0.9 {
-         print("버퍼가 거의 찼습니다")
-     }
-     ```
-
-     활용:
-     - UI에 버퍼 상태 표시 (로딩 바)
-     - 버퍼가 낮으면 "로딩 중" 표시
-     - 디버깅: 버퍼가 제대로 채워지는지 확인
-
-     - Returns: (현재 크기, 최대 크기, 채움 비율)
-     */
+    /// @brief 현재 버퍼 상태를 반환합니다
+    /// @return (현재 크기, 최대 크기, 채움 비율)
+    /// @details
+    /// 버퍼 상태 정보:
+    /// - current: 현재 버퍼에 있는 프레임 수
+    /// - max: 최대 버퍼 크기 (30)
+    /// - fillPercentage: 채워진 비율 (0.0 ~ 1.0)
+    ///
+    /// Tuple(튜플)이란?
+    /// - 여러 값을 하나로 묶은 것
+    /// - (Int, Int, Double) 형태
+    /// - 이름을 붙일 수 있음: (current: Int, max: Int, fillPercentage: Double)
+    ///
+    /// 사용 예:
+    /// ```swift
+    /// let status = channel.getBufferStatus()
+    /// print("버퍼: \(status.current)/\(status.max)")
+    /// print("채움율: \(status.fillPercentage * 100)%")
+    ///
+    /// // 버퍼가 거의 비었는지 확인
+    /// if status.fillPercentage < 0.2 {
+    /// print("버퍼가 부족합니다!")
+    /// }
+    ///
+    /// // 버퍼가 거의 찼는지 확인
+    /// if status.fillPercentage > 0.9 {
+    ///     print("버퍼가 거의 찼습니다")
+    /// }
+    /// ```
+    ///
+    /// 활용:
+    /// - UI에 버퍼 상태 표시 (로딩 바)
+    /// - 버퍼가 낮으면 "로딩 중" 표시
+    /// - 디버깅: 버퍼가 제대로 채워지는지 확인
     func getBufferStatus() -> (current: Int, max: Int, fillPercentage: Double) {
         // 1. 버퍼 잠금 (스레드 안전)
         bufferLock.lock()
@@ -912,34 +896,32 @@ class VideoChannel {
         // defer에 의해 자동으로 unlock 실행
     }
 
-    /**
-     프레임 버퍼를 비웁니다.
-
-     버퍼 플러시(Flush)란?
-     - 버퍼의 모든 내용을 제거하는 것
-     - 마치 물탱크의 물을 다 빼는 것
-     - 메모리를 즉시 반환
-
-     사용 시점:
-     - 시크 시 (seek 함수에서 자동 호출)
-     - 메모리 절약이 필요할 때
-     - 새로운 영상으로 전환할 때
-
-     주의:
-     - 버퍼를 비우면 프레임이 없어짐
-     - getFrame()이 nil 반환
-     - 디코딩이 다시 채울 때까지 대기 필요
-
-     사용 예:
-     ```swift
-     // 메모리 절약을 위해 버퍼 비우기
-     channel.flushBuffer()
-
-     // 버퍼 확인
-     let status = channel.getBufferStatus()
-     print(status.current)  // 0
-     ```
-     */
+    /// @brief 프레임 버퍼를 비웁니다
+    /// @details
+    /// 버퍼 플러시(Flush)란?
+    /// - 버퍼의 모든 내용을 제거하는 것
+    /// - 마치 물탱크의 물을 다 빼는 것
+    /// - 메모리를 즉시 반환
+    ///
+    /// 사용 시점:
+    /// - 시크 시 (seek 함수에서 자동 호출)
+    /// - 메모리 절약이 필요할 때
+    /// - 새로운 영상으로 전환할 때
+    ///
+    /// 주의:
+    /// - 버퍼를 비우면 프레임이 없어짐
+    /// - getFrame()이 nil 반환
+    /// - 디코딩이 다시 채울 때까지 대기 필요
+    ///
+    /// 사용 예:
+    /// ```swift
+    /// // 메모리 절약을 위해 버퍼 비우기
+    /// channel.flushBuffer()
+    ///
+    /// // 버퍼 확인
+    /// let status = channel.getBufferStatus()
+    /// print(status.current)  // 0
+    /// ```
     func flushBuffer() {
         // 스레드 안전하게 버퍼 비우기
         bufferLock.lock()
@@ -964,46 +946,44 @@ class VideoChannel {
      - addFrameToBuffer(): 프레임을 버퍼에 추가
      */
 
-    /**
-     디코딩 루프 (백그라운드 스레드에서 실행)
-
-     무한 루프(Infinite Loop)란?
-     - while isDecoding { ... } 형태
-     - isDecoding이 true인 동안 계속 반복
-     - isDecoding이 false가 되면 루프 종료
-
-     루프 동작:
-     ```
-     시작
-       ↓
-     ┌──────────────────┐
-     │ isDecoding?      │ ← while 조건 확인
-     └──────────────────┘
-       ↓ true         ↓ false
-     ┌──────────────┐  종료
-     │ 버퍼 확인     │
-     │ 프레임 디코딩 │
-     │ 버퍼에 추가   │
-     └──────────────┘
-       ↓
-     (다시 위로)
-     ```
-
-     autoreleasepool이란?
-     - 루프 안에서 생성된 임시 객체를 즉시 해제
-     - 메모리 사용량 최소화
-     - 루프가 오래 실행되어도 메모리 누적 안 됨
-
-     로깅(Logging):
-     - infoLog, debugLog, errorLog 사용
-     - 디버깅과 모니터링을 위한 로그 출력
-     - 프레임 수, 버퍼 상태 등 기록
-
-     에러 처리:
-     - endOfFile: 파일 끝 도달, 정상 종료
-     - readFrameError: 디코딩 에러 발생
-     - 기타 에러: 에러 상태로 전환
-     */
+    /// @brief 디코딩 루프 (백그라운드 스레드에서 실행)
+    /// @details
+    /// 무한 루프(Infinite Loop)란?
+    /// - while isDecoding { ... } 형태
+    /// - isDecoding이 true인 동안 계속 반복
+    /// - isDecoding이 false가 되면 루프 종료
+    ///
+    /// 루프 동작:
+    /// ```
+    /// 시작
+    ///   ↓
+    /// ┌──────────────────┐
+    /// │ isDecoding?      │ ← while 조건 확인
+    /// └──────────────────┘
+    ///   ↓ true         ↓ false
+    /// ┌──────────────┐  종료
+    /// │ 버퍼 확인     │
+    /// │ 프레임 디코딩 │
+    /// │ 버퍼에 추가   │
+    /// └──────────────┘
+    ///   ↓
+    /// (다시 위로)
+    /// ```
+    ///
+    /// autoreleasepool이란?
+    /// - 루프 안에서 생성된 임시 객체를 즉시 해제
+    /// - 메모리 사용량 최소화
+    /// - 루프가 오래 실행되어도 메모리 누적 안 됨
+    ///
+    /// 로깅(Logging):
+    /// - infoLog, debugLog, errorLog 사용
+    /// - 디버깅과 모니터링을 위한 로그 출력
+    /// - 프레임 수, 버퍼 상태 등 기록
+    ///
+    /// 에러 처리:
+    /// - endOfFile: 파일 끝 도달, 정상 종료
+    /// - readFrameError: 디코딩 에러 발생
+    /// - 기타 에러: 에러 상태로 전환
     private func decodingLoop() {
         // 시작 로그
         infoLog("[VideoChannel:\(channelInfo.position.displayName)] Decoding loop started")
@@ -1126,27 +1106,23 @@ class VideoChannel {
         // 예: "[VideoChannel:전방 카메라] Decoding loop ended, total frames: 450"
     }
 
-    /**
-     프레임을 버퍼에 추가합니다.
-
-     추가 과정:
-     1. 버퍼 잠금 (스레드 안전)
-     2. 버퍼에 프레임 추가
-     3. 타임스탬프 순서로 정렬
-     4. 버퍼 크기 제한 (오래된 프레임 제거)
-     5. 처음 몇 프레임 로그 출력
-     6. 현재 프레임 업데이트 (메인 스레드)
-
-     정렬(Sorting)이 필요한 이유:
-     - 디코딩 순서와 표시 순서가 다를 수 있음
-     - H.264는 B-프레임(양방향 예측 프레임)이 있음
-     - 디코딩: I, P, B, P, B 순서
-     - 표시: I, B, B, P, P 순서
-     - 타임스탬프로 정렬하여 올바른 순서 유지
-
-     파라미터:
-     - frame: 추가할 VideoFrame
-     */
+    /// @brief 프레임을 버퍼에 추가합니다
+    /// @param frame 추가할 VideoFrame
+    /// @details
+    /// 추가 과정:
+    /// 1. 버퍼 잠금 (스레드 안전)
+    /// 2. 버퍼에 프레임 추가
+    /// 3. 타임스탬프 순서로 정렬
+    /// 4. 버퍼 크기 제한 (오래된 프레임 제거)
+    /// 5. 처음 몇 프레임 로그 출력
+    /// 6. 현재 프레임 업데이트 (메인 스레드)
+    ///
+    /// 정렬(Sorting)이 필요한 이유:
+    /// - 디코딩 순서와 표시 순서가 다를 수 있음
+    /// - H.264는 B-프레임(양방향 예측 프레임)이 있음
+    /// - 디코딩: I, P, B, P, B 순서
+    /// - 표시: I, B, B, P, P 순서
+    /// - 타임스탬프로 정렬하여 올바른 순서 유지
     private func addFrameToBuffer(_ frame: VideoFrame) {
         // 1. 버퍼 잠금
         bufferLock.lock()
@@ -1212,54 +1188,54 @@ class VideoChannel {
 
 // MARK: - Supporting Types (지원 타입)
 
-/**
- 채널 상태를 나타내는 열거형
-
- enum(열거형)이란?
- - 관련된 값들을 하나로 묶은 타입
- - 정해진 값들 중 하나만 가질 수 있음
- - switch 문으로 모든 경우를 처리 가능
-
- Equatable이란?
- - ==, != 연산자로 비교 가능
- - state1 == state2 가능
-
- 연관 값(Associated Value):
- - case error(String)처럼 추가 정보를 담을 수 있음
- - 예: .error("File not found")
-
- 상태 전이(State Transition):
- ```
- .idle (유휴)
-   ↓ initialize()
- .ready (준비)
-   ↓ startDecoding()
- .decoding (디코딩 중)
-   ↓ 파일 끝
- .completed (완료)
-
- 언제든지:
-   → .error (에러)
-   → .idle (stop())
- ```
- */
+/// @enum ChannelState
+/// @brief 채널 상태를 나타내는 열거형
+/// @details
+/// enum(열거형)이란?
+/// - 관련된 값들을 하나로 묶은 타입
+/// - 정해진 값들 중 하나만 가질 수 있음
+/// - switch 문으로 모든 경우를 처리 가능
+///
+/// Equatable이란?
+/// - ==, != 연산자로 비교 가능
+/// - state1 == state2 가능
+///
+/// 연관 값(Associated Value):
+/// - case error(String)처럼 추가 정보를 담을 수 있음
+/// - 예: .error("File not found")
+///
+/// 상태 전이(State Transition):
+/// ```
+/// .idle (유휴)
+///   ↓ initialize()
+/// .ready (준비)
+///   ↓ startDecoding()
+/// .decoding (디코딩 중)
+///   ↓ 파일 끝
+/// .completed (완료)
+///
+/// 언제든지:
+///   → .error (에러)
+///   → .idle (stop())
+/// ```
 enum ChannelState: Equatable {
-    /// 유휴 상태 (초기 상태, 아무것도 안 함)
+    /// @brief 유휴 상태 (초기 상태, 아무것도 안 함)
     case idle
 
-    /// 준비 완료 (디코더 초기화됨, 디코딩 시작 가능)
+    /// @brief 준비 완료 (디코더 초기화됨, 디코딩 시작 가능)
     case ready
 
-    /// 디코딩 중 (백그라운드에서 프레임 디코딩 중)
+    /// @brief 디코딩 중 (백그라운드에서 프레임 디코딩 중)
     case decoding
 
-    /// 완료 (파일 끝까지 디코딩 완료)
+    /// @brief 완료 (파일 끝까지 디코딩 완료)
     case completed
 
-    /// 에러 (에러 메시지 포함)
+    /// @brief 에러 (에러 메시지 포함)
     case error(String)
 
-    /// UI에 표시할 상태 이름
+    /// @brief UI에 표시할 상태 이름
+    /// @return 상태를 나타내는 문자열
     var displayName: String {
         // computed property (계산 속성)
         // 값을 저장하지 않고 계산하여 반환
@@ -1284,24 +1260,21 @@ enum ChannelState: Equatable {
     }
 }
 
-/**
- 채널 관련 에러를 나타내는 열거형
-
- LocalizedError란?
- - Swift의 표준 에러 프로토콜
- - errorDescription으로 사용자 친화적인 메시지 제공
- - Error 프로토콜보다 더 많은 정보 제공
-
- 에러 종류:
- */
+/// @enum ChannelError
+/// @brief 채널 관련 에러를 나타내는 열거형
+/// @details
+/// LocalizedError란?
+/// - Swift의 표준 에러 프로토콜
+/// - errorDescription으로 사용자 친화적인 메시지 제공
+/// - Error 프로토콜보다 더 많은 정보 제공
 enum ChannelError: LocalizedError {
-    /// 초기화되지 않음 (initialize() 먼저 호출 필요)
+    /// @brief 초기화되지 않음 (initialize() 먼저 호출 필요)
     case notInitialized
 
-    /// 잘못된 상태 (예: 이미 초기화됨)
+    /// @brief 잘못된 상태 (예: 이미 초기화됨)
     case invalidState(String)
 
-    /// 에러 설명 (사용자에게 표시할 메시지)
+    /// @brief 에러 설명 (사용자에게 표시할 메시지)
     var errorDescription: String? {
         switch self {
         case .notInitialized:
@@ -1324,22 +1297,24 @@ enum ChannelError: LocalizedError {
 
 // MARK: - Equatable (동등성 비교)
 
-/**
- VideoChannel을 비교 가능하게 만듦
-
- extension이란?
- - 기존 타입에 새 기능 추가
- - 클래스 정의를 수정하지 않고 확장
-
- Equatable 프로토콜:
- - ==, != 연산자 사용 가능
- - 배열에서 contains(), firstIndex(of:) 사용 가능
-
- 채널 비교:
- - channelID가 같으면 같은 채널
- - 다른 속성(state, currentFrame)은 무시
- */
+/// @brief VideoChannel을 비교 가능하게 만듦
+/// @details
+/// extension이란?
+/// - 기존 타입에 새 기능 추가
+/// - 클래스 정의를 수정하지 않고 확장
+///
+/// Equatable 프로토콜:
+/// - ==, != 연산자 사용 가능
+/// - 배열에서 contains(), firstIndex(of:) 사용 가능
+///
+/// 채널 비교:
+/// - channelID가 같으면 같은 채널
+/// - 다른 속성(state, currentFrame)은 무시
 extension VideoChannel: Equatable {
+    /// @brief 두 VideoChannel이 같은지 비교
+    /// @param lhs 왼쪽 피연산자
+    /// @param rhs 오른쪽 피연산자
+    /// @return channelID가 같으면 true
     static func == (lhs: VideoChannel, rhs: VideoChannel) -> Bool {
         // static func: 타입 메서드 (인스턴스 아닌 타입에 속함)
         // ==: 연산자 오버로딩
@@ -1370,37 +1345,37 @@ extension VideoChannel: Equatable {
 
 // MARK: - Identifiable (식별 가능)
 
-/**
- VideoChannel을 SwiftUI에서 식별 가능하게 만듦
-
- Identifiable 프로토콜:
- - SwiftUI의 List, ForEach에서 사용
- - id 속성 필요 (고유 식별자)
- - 각 항목을 구분하는 데 사용
-
- ForEach 사용 예:
- ```swift
- ForEach(channels) { channel in
-     // channel.id를 자동으로 사용하여 각 항목 구분
-     Text(channel.channelInfo.displayName)
- }
- ```
-
- id가 없으면:
- ```swift
- ForEach(channels, id: \.channelID) { channel in
-     // id를 명시해야 함
- }
- ```
-
- id가 있으면:
- ```swift
- ForEach(channels) { channel in
-     // id 자동 사용
- }
- ```
- */
+/// @brief VideoChannel을 SwiftUI에서 식별 가능하게 만듦
+/// @details
+/// Identifiable 프로토콜:
+/// - SwiftUI의 List, ForEach에서 사용
+/// - id 속성 필요 (고유 식별자)
+/// - 각 항목을 구분하는 데 사용
+///
+/// ForEach 사용 예:
+/// ```swift
+/// ForEach(channels) { channel in
+///     // channel.id를 자동으로 사용하여 각 항목 구분
+///     Text(channel.channelInfo.displayName)
+/// }
+/// ```
+///
+/// id가 없으면:
+/// ```swift
+/// ForEach(channels, id: \.channelID) { channel in
+///     // id를 명시해야 함
+/// }
+/// ```
+///
+/// id가 있으면:
+/// ```swift
+/// ForEach(channels) { channel in
+///     // id 자동 사용
+/// }
+/// ```
 extension VideoChannel: Identifiable {
+    /// @brief 고유 식별자
+    /// @return channelID
     var id: UUID {
         // computed property
         // channelID를 id로 반환

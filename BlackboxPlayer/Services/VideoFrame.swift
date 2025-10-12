@@ -1,28 +1,30 @@
-//
-//  VideoFrame.swift
-//  BlackboxPlayer
-//
-//  디코딩된 비디오 프레임 데이터 모델
-//
-//  [이 파일의 역할]
-//  FFmpeg에서 디코딩한 원시 비디오 프레임(픽셀 데이터)를 담는 구조체입니다.
-//  H.264 등 압축된 비디오를 디코딩하면 RGB 또는 YUV 형태의 원시 픽셀 데이터가 생성되는데,
-//  이를 프레임 단위로 관리합니다.
-//
-//  [비디오 프레임이란?]
-//  동영상의 한 장의 이미지입니다:
-//  - 영화: 24 fps (1초에 24장)
-//  - TV/비디오: 30 fps (1초에 30장)
-//  - 블랙박스: 일반적으로 30 fps
-//
-//  [데이터 흐름]
-//  1. VideoDecoder가 FFmpeg로 H.264 디코딩 → 원시 픽셀 데이터 생성
-//  2. VideoFrame 구조체에 픽셀 데이터 + 메타정보 저장
-//  3. MultiChannelRenderer가 VideoFrame을 CVPixelBuffer로 변환
-//  4. Metal GPU가 화면에 렌더링
-//
-//  H.264 파일 (압축) → FFmpeg 디코딩 → VideoFrame (원시 픽셀) → CVPixelBuffer → Metal → 🖥️ 화면
-//
+/// @file VideoFrame.swift
+/// @brief 디코딩된 비디오 프레임 데이터 모델
+/// @author BlackboxPlayer Development Team
+/// @details
+/// FFmpeg에서 디코딩한 원시 비디오 프레임(픽셀 데이터)를 담는 구조체입니다.
+/// H.264 등 압축된 비디오를 디코딩하면 RGB 또는 YUV 형태의 원시 픽셀 데이터가 생성되는데,
+/// 이를 프레임 단위로 관리합니다.
+///
+/// [이 파일의 역할]
+/// FFmpeg에서 디코딩한 원시 비디오 프레임(픽셀 데이터)를 담는 구조체입니다.
+/// H.264 등 압축된 비디오를 디코딩하면 RGB 또는 YUV 형태의 원시 픽셀 데이터가 생성되는데,
+/// 이를 프레임 단위로 관리합니다.
+///
+/// [비디오 프레임이란?]
+/// 동영상의 한 장의 이미지입니다:
+/// - 영화: 24 fps (1초에 24장)
+/// - TV/비디오: 30 fps (1초에 30장)
+/// - 블랙박스: 일반적으로 30 fps
+///
+/// [데이터 흐름]
+/// 1. VideoDecoder가 FFmpeg로 H.264 디코딩 → 원시 픽셀 데이터 생성
+/// 2. VideoFrame 구조체에 픽셀 데이터 + 메타정보 저장
+/// 3. MultiChannelRenderer가 VideoFrame을 CVPixelBuffer로 변환
+/// 4. Metal GPU가 화면에 렌더링
+///
+/// H.264 파일 (압축) → FFmpeg 디코딩 → VideoFrame (원시 픽셀) → CVPixelBuffer → Metal → 🖥️ 화면
+///
 
 import Foundation
 import CoreGraphics
@@ -30,8 +32,10 @@ import CoreVideo
 
 // MARK: - VideoFrame 구조체
 
-/// 디코딩된 비디오 프레임 (원시 픽셀 데이터)
+/// @struct VideoFrame
+/// @brief 디코딩된 비디오 프레임 (원시 픽셀 데이터)
 ///
+/// @details
 /// FFmpeg에서 디코딩한 원시 비디오 데이터를 Swift에서 다루기 쉽게 포장한 구조체입니다.
 ///
 /// ## 사용 예시
@@ -70,8 +74,10 @@ import CoreVideo
 struct VideoFrame {
     // MARK: - Properties
 
-    /// 프레젠테이션 타임스탬프 (초 단위)
+    /// @var timestamp
+    /// @brief 프레젠테이션 타임스탬프 (초 단위)
     ///
+    /// @details
     /// 이 비디오 프레임이 재생되어야 하는 시간입니다.
     /// 오디오 프레임과 동기화하는 데 사용됩니다.
     ///
@@ -81,8 +87,10 @@ struct VideoFrame {
     /// - timestamp = 1.000초 (1초 지점)
     let timestamp: TimeInterval
 
-    /// 프레임 너비 (픽셀 단위)
+    /// @var width
+    /// @brief 프레임 너비 (픽셀 단위)
     ///
+    /// @details
     /// **일반적인 해상도**:
     /// - 640 × 480: VGA (구형)
     /// - 1280 × 720: HD (720p)
@@ -90,11 +98,14 @@ struct VideoFrame {
     /// - 3840 × 2160: 4K UHD
     let width: Int
 
-    /// 프레임 높이 (픽셀 단위)
+    /// @var height
+    /// @brief 프레임 높이 (픽셀 단위)
     let height: Int
 
-    /// 픽셀 포맷 (RGB, RGBA, YUV 등)
+    /// @var pixelFormat
+    /// @brief 픽셀 포맷 (RGB, RGBA, YUV 등)
     ///
+    /// @details
     /// 픽셀 데이터가 메모리에 저장된 형식을 정의합니다.
     ///
     /// **포맷 선택의 영향**:
@@ -105,8 +116,10 @@ struct VideoFrame {
     /// ```
     let pixelFormat: PixelFormat
 
-    /// 원시 픽셀 데이터 (바이트 배열)
+    /// @var data
+    /// @brief 원시 픽셀 데이터 (바이트 배열)
     ///
+    /// @details
     /// 실제 이미지의 색상 정보가 바이너리 형태로 저장된 Data입니다.
     ///
     /// **데이터 구조 예시 (RGBA, 2×2 픽셀)**:
@@ -125,8 +138,10 @@ struct VideoFrame {
     /// FFmpeg에서 디코딩 시 이 Data를 채웁니다.
     let data: Data
 
-    /// 라인 크기 (1행당 바이트 수)
+    /// @var lineSize
+    /// @brief 라인 크기 (1행당 바이트 수)
     ///
+    /// @details
     /// 이미지 한 줄(행)을 저장하는 데 사용되는 바이트 수입니다.
     /// 메모리 정렬(alignment)을 위해 실제 픽셀 데이터보다 클 수 있습니다.
     ///
@@ -145,8 +160,10 @@ struct VideoFrame {
     /// 따라서 1행의 크기를 16의 배수로 맞추기 위해 패딩을 추가합니다.
     let lineSize: Int
 
-    /// 프레임 번호 (0부터 시작)
+    /// @var frameNumber
+    /// @brief 프레임 번호 (0부터 시작)
     ///
+    /// @details
     /// 비디오 시작부터의 순서입니다.
     ///
     /// **예시**:
@@ -155,8 +172,10 @@ struct VideoFrame {
     /// - frameNumber = 900: 30fps 비디오의 30초 지점
     let frameNumber: Int
 
-    /// 키프레임(I-프레임) 여부
+    /// @var isKeyFrame
+    /// @brief 키프레임(I-프레임) 여부
     ///
+    /// @details
     /// **비디오 압축의 프레임 타입**:
     /// ```
     /// I-Frame (Intra-frame, 키프레임):
@@ -191,10 +210,20 @@ struct VideoFrame {
 
     // MARK: - Initialization
 
-    /// VideoFrame 초기화
+    /// @brief VideoFrame 초기화
     ///
+    /// @details
     /// FFmpeg에서 디코딩한 픽셀 데이터로 VideoFrame을 생성합니다.
     /// 일반적으로 VideoDecoder 내부에서 호출됩니다.
+    ///
+    /// @param timestamp 프레젠테이션 타임스탬프 (초 단위)
+    /// @param width 프레임 너비 (픽셀)
+    /// @param height 프레임 높이 (픽셀)
+    /// @param pixelFormat 픽셀 포맷
+    /// @param data 원시 픽셀 데이터
+    /// @param lineSize 1행당 바이트 수
+    /// @param frameNumber 프레임 번호
+    /// @param isKeyFrame 키프레임 여부
     init(
         timestamp: TimeInterval,
         width: Int,
@@ -217,8 +246,11 @@ struct VideoFrame {
 
     // MARK: - Computed Properties
 
-    /// 화면 비율 (가로 ÷ 세로)
+    /// @brief 화면 비율 (가로 ÷ 세로)
     ///
+    /// @return 화면 비율 (Double)
+    ///
+    /// @details
     /// **일반적인 비율**:
     /// ```
     /// 4:3 = 1.333 (구형 TV)
@@ -243,8 +275,11 @@ struct VideoFrame {
         return Double(width) / Double(height)
     }
 
-    /// 픽셀 데이터의 총 바이트 크기
+    /// @brief 픽셀 데이터의 총 바이트 크기
     ///
+    /// @return 데이터 크기 (바이트)
+    ///
+    /// @details
     /// **메모리 사용량 계산**:
     /// ```
     /// 1080p RGBA: 8.3MB per frame
@@ -259,8 +294,11 @@ struct VideoFrame {
 
     // MARK: - Image Conversion
 
-    /// CGImage로 변환 (화면 표시용)
+    /// @brief CGImage로 변환 (화면 표시용)
     ///
+    /// @return CGImage, 변환 실패 시 nil
+    ///
+    /// @details
     /// RGB 또는 RGBA 픽셀 데이터를 macOS의 표준 이미지 형식인 CGImage로 변환합니다.
     /// AppKit (NSImage) 또는 SwiftUI (Image)에서 사용할 수 있습니다.
     ///
@@ -282,8 +320,6 @@ struct VideoFrame {
     ///         .aspectRatio(contentMode: .fit)
     /// }
     /// ```
-    ///
-    /// - Returns: CGImage, 변환 실패 시 nil
     func toCGImage() -> CGImage? {
         // YUV 포맷은 지원하지 않음 (RGB 변환 필요)
         guard pixelFormat == .rgb24 || pixelFormat == .rgba else {
@@ -324,8 +360,11 @@ struct VideoFrame {
         )
     }
 
-    /// CVPixelBuffer로 변환 (Metal GPU 렌더링용)
+    /// @brief CVPixelBuffer로 변환 (Metal GPU 렌더링용)
     ///
+    /// @return CVPixelBuffer, 변환 실패 시 nil
+    ///
+    /// @details
     /// Metal GPU가 직접 사용할 수 있는 CVPixelBuffer 형식으로 변환합니다.
     /// GPU 메모리와 호환되며 제로카피(zero-copy) 렌더링이 가능합니다.
     ///
@@ -354,8 +393,6 @@ struct VideoFrame {
     ///     metalRenderer.render(texture)
     /// }
     /// ```
-    ///
-    /// - Returns: CVPixelBuffer, 변환 실패 시 nil
     func toPixelBuffer() -> CVPixelBuffer? {
         // 1단계: 픽셀 포맷 매핑
         let pixelFormatType: OSType
@@ -423,8 +460,10 @@ struct VideoFrame {
 
 // MARK: - Supporting Types
 
-/// 픽셀 포맷 정의
+/// @enum PixelFormat
+/// @brief 픽셀 포맷 정의
 ///
+/// @details
 /// 픽셀 데이터를 메모리에 저장하는 방식을 정의합니다.
 ///
 /// ## RGB vs YUV 비교
@@ -474,8 +513,9 @@ struct VideoFrame {
 /// 24 samples (50%) ← 절반으로 감소!
 /// ```
 enum PixelFormat: String, Codable {
-    /// RGB 24비트 (알파 없음)
+    /// @brief RGB 24비트 (알파 없음)
     ///
+    /// @details
     /// **구조**: [R G B][R G B][R G B]...
     /// - R: 빨강 (0~255)
     /// - G: 초록 (0~255)
@@ -485,8 +525,9 @@ enum PixelFormat: String, Codable {
     /// 예: 1920×1080 = 6.2MB per frame
     case rgb24 = "rgb24"
 
-    /// RGBA 32비트 (알파 포함)
+    /// @brief RGBA 32비트 (알파 포함)
     ///
+    /// @details
     /// **구조**: [R G B A][R G B A][R G B A]...
     /// - R, G, B: 색상 (0~255)
     /// - A: 투명도 (0=투명, 255=불투명)
@@ -495,8 +536,9 @@ enum PixelFormat: String, Codable {
     /// 예: 1920×1080 = 8.3MB per frame
     case rgba = "rgba"
 
-    /// YUV 4:2:0 Planar (표준 비디오 포맷)
+    /// @brief YUV 4:2:0 Planar (표준 비디오 포맷)
     ///
+    /// @details
     /// **구조**: [Y plane][U plane][V plane]
     /// - Y: 밝기 정보 (full resolution)
     /// - U: 파랑-밝기 차이 (1/4 resolution)
@@ -508,8 +550,9 @@ enum PixelFormat: String, Codable {
     /// **H.264 표준 포맷**
     case yuv420p = "yuv420p"
 
-    /// NV12 Semi-Planar (하드웨어 디코더 사용)
+    /// @brief NV12 Semi-Planar (하드웨어 디코더 사용)
     ///
+    /// @details
     /// **구조**: [Y plane][UV interleaved plane]
     /// - Y: 밝기 정보 (full resolution)
     /// - UV: U와 V가 교차 배치 (UVUVUV...)
@@ -519,8 +562,11 @@ enum PixelFormat: String, Codable {
     /// **특징**: GPU 하드웨어 디코더 선호 포맷
     case nv12 = "nv12"
 
-    /// 픽셀당 바이트 크기
+    /// @brief 픽셀당 바이트 크기
     ///
+    /// @return 바이트 크기
+    ///
+    /// @details
     /// **주의**: YUV는 서브샘플링으로 인해 픽셀별로 다릅니다.
     /// 여기서는 평균값 (1.5) 대신 Luma plane 기준 (1)을 반환합니다.
     var bytesPerPixel: Int {
@@ -537,8 +583,9 @@ enum PixelFormat: String, Codable {
 
 // MARK: - Equatable
 
-/// VideoFrame 동등성 비교
+/// @brief VideoFrame 동등성 비교
 ///
+/// @details
 /// 두 VideoFrame이 "같은" 프레임인지 판단합니다.
 /// 주로 디버깅, 테스트, 중복 제거에 사용됩니다.
 ///
@@ -549,6 +596,10 @@ enum PixelFormat: String, Codable {
 ///
 /// **주의**: `data`는 비교하지 않습니다! (성능상 이유)
 extension VideoFrame: Equatable {
+    /// @brief 두 VideoFrame 비교
+    /// @param lhs 왼쪽 피연산자
+    /// @param rhs 오른쪽 피연산자
+    /// @return 동등하면 true
     static func == (lhs: VideoFrame, rhs: VideoFrame) -> Bool {
         return lhs.timestamp == rhs.timestamp &&
                lhs.frameNumber == rhs.frameNumber &&
@@ -559,8 +610,9 @@ extension VideoFrame: Equatable {
 
 // MARK: - CustomStringConvertible
 
-/// VideoFrame 디버그 문자열 표현
+/// @brief VideoFrame 디버그 문자열 표현
 ///
+/// @details
 /// **출력 예시**:
 /// ```
 /// [K] Frame #0 @ 0.000s (1920x1080 rgba) 8294400 bytes
@@ -572,6 +624,7 @@ extension VideoFrame: Equatable {
 /// [ ] = P/B-Frame
 /// ```
 extension VideoFrame: CustomStringConvertible {
+    /// @brief 디버그 문자열
     var description: String {
         let keyframeStr = isKeyFrame ? "K" : " "  // K = Keyframe
         return String(

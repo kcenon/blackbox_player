@@ -1,9 +1,60 @@
-//
-//  MultiChannelRenderer.swift
-//  BlackboxPlayer
-//
-//  Metal-based multi-channel video renderer
-//
+/// @file MultiChannelRenderer.swift
+/// @brief Metal-based multi-channel video renderer
+/// @author BlackboxPlayer Development Team
+/// @details
+/// Metal을 사용하여 여러 비디오 채널을 GPU에서 렌더링하는 클래스입니다.
+///
+/// ## Metal이란?
+/// - Apple의 저수준 GPU 프로그래밍 API
+/// - CPU가 아닌 GPU(그래픽 카드)에서 고속 연산 수행
+/// - 게임, 비디오 처리, 머신러닝 등에 사용
+/// - OpenGL의 후속 기술, 훨씬 빠르고 효율적
+///
+/// ## GPU vs CPU:
+/// ```
+/// CPU (중앙처리장치):
+/// - 복잡한 논리 연산
+/// - 순차적 처리
+/// - 코어: 8~16개
+/// - 예: 파일 읽기, 디코딩, 제어 로직
+///
+/// GPU (그래픽처리장치):
+/// - 단순한 병렬 연산
+/// - 동시 처리
+/// - 코어: 수천 개
+/// - 예: 영상 렌더링, 픽셀 처리, 이미지 변환
+/// ```
+///
+/// ## 렌더링 파이프라인:
+/// ```
+/// VideoFrame (CPU 메모리)
+///   ↓
+/// CVPixelBuffer (공유 메모리)
+///   ↓
+/// MTLTexture (GPU 메모리)
+///   ↓
+/// Vertex Shader (GPU)
+///   ↓
+/// Fragment Shader (GPU)
+///   ↓
+/// 화면 출력 (Drawable)
+/// ```
+///
+/// ## 주요 기능:
+/// 1. **멀티 채널 렌더링**: 4개 채널을 동시에 GPU에서 처리
+/// 2. **레이아웃 모드**: Grid, Focus, Horizontal 배치
+/// 3. **비디오 변환**: 밝기, 반전, 확대/축소 (GPU 셰이더)
+/// 4. **화면 캡처**: 렌더링된 프레임을 이미지로 저장
+/// 5. **텍스처 캐싱**: CVMetalTextureCache로 성능 최적화
+///
+/// ## Metal 주요 개념:
+/// - **MTLDevice**: GPU 장치
+/// - **MTLCommandQueue**: 명령 큐 (작업 대기열)
+/// - **MTLTexture**: GPU 메모리의 이미지
+/// - **MTLBuffer**: GPU 메모리의 데이터
+/// - **MTLRenderPipelineState**: 렌더링 설정 (셰이더, 포맷 등)
+/// - **MTLCommandBuffer**: 명령 묶음
+/// - **MTLRenderCommandEncoder**: 렌더링 명령 인코더
 
 import Foundation
 import Metal
@@ -11,90 +62,18 @@ import MetalKit
 import CoreVideo
 import AVFoundation
 
-/**
- # MultiChannelRenderer
- Metal을 사용하여 여러 비디오 채널을 GPU에서 렌더링하는 클래스입니다.
-
- ## Metal이란?
- - Apple의 저수준 GPU 프로그래밍 API
- - CPU가 아닌 GPU(그래픽 카드)에서 고속 연산 수행
- - 게임, 비디오 처리, 머신러닝 등에 사용
- - OpenGL의 후속 기술, 훨씬 빠르고 효율적
-
- ## GPU vs CPU:
- ```
- CPU (중앙처리장치):
- - 복잡한 논리 연산
- - 순차적 처리
- - 코어: 8~16개
- - 예: 파일 읽기, 디코딩, 제어 로직
-
- GPU (그래픽처리장치):
- - 단순한 병렬 연산
- - 동시 처리
- - 코어: 수천 개
- - 예: 영상 렌더링, 픽셀 처리, 이미지 변환
- ```
-
- ## 렌더링 파이프라인:
- ```
- VideoFrame (CPU 메모리)
-   ↓
- CVPixelBuffer (공유 메모리)
-   ↓
- MTLTexture (GPU 메모리)
-   ↓
- Vertex Shader (GPU)
-   ↓
- Fragment Shader (GPU)
-   ↓
- 화면 출력 (Drawable)
- ```
-
- ## 주요 기능:
- 1. **멀티 채널 렌더링**: 4개 채널을 동시에 GPU에서 처리
- 2. **레이아웃 모드**: Grid, Focus, Horizontal 배치
- 3. **비디오 변환**: 밝기, 반전, 확대/축소 (GPU 셰이더)
- 4. **화면 캡처**: 렌더링된 프레임을 이미지로 저장
- 5. **텍스처 캐싱**: CVMetalTextureCache로 성능 최적화
-
- ## 사용 예제:
- ```swift
- // 1. 렌더러 생성
- guard let renderer = MultiChannelRenderer() else {
-     print("Metal 지원 안 됨")
-     return
- }
-
- // 2. 레이아웃 설정
- renderer.setLayoutMode(.grid)
-
- // 3. 프레임 렌더링
- let frames = controller.getSynchronizedFrames()
- renderer.render(
-     frames: frames,
-     to: drawable,
-     drawableSize: view.bounds.size
- )
-
- // 4. 화면 캡처
- renderer.captureAndSave(format: .png)
- ```
-
- ## Metal 주요 개념:
- - **MTLDevice**: GPU 장치
- - **MTLCommandQueue**: 명령 큐 (작업 대기열)
- - **MTLTexture**: GPU 메모리의 이미지
- - **MTLBuffer**: GPU 메모리의 데이터
- - **MTLRenderPipelineState**: 렌더링 설정 (셰이더, 포맷 등)
- - **MTLCommandBuffer**: 명령 묶음
- - **MTLRenderCommandEncoder**: 렌더링 명령 인코더
- */
+/// @class MultiChannelRenderer
+/// @brief Metal-based multi-channel video renderer
+///
+/// @details
+/// Metal을 사용하여 여러 비디오 채널을 GPU에서 렌더링하는 클래스입니다.
 class MultiChannelRenderer {
     // MARK: - Properties (속성)
 
-    /// **Metal 장치 (GPU)**
+    /// @var device
+    /// @brief Metal 장치 (GPU)
     ///
+    /// @details
     /// MTLDevice란?
     /// - GPU를 나타내는 객체
     /// - 모든 Metal 리소스의 출발점
@@ -114,8 +93,10 @@ class MultiChannelRenderer {
     /// - 일부 클라우드 인스턴스
     private let device: MTLDevice
 
-    /// **명령 큐 (Command Queue)**
+    /// @var commandQueue
+    /// @brief 명령 큐 (Command Queue)
     ///
+    /// @details
     /// Command Queue란?
     /// - GPU에게 보낼 명령들의 대기열
     /// - 마치 프린터의 인쇄 대기열과 같은 개념
@@ -133,8 +114,10 @@ class MultiChannelRenderer {
     /// - GPU: commandBuffer.commit() 후 실제 실행
     private let commandQueue: MTLCommandQueue
 
-    /// **렌더 파이프라인 상태 (Render Pipeline State)**
+    /// @var pipelineState
+    /// @brief 렌더 파이프라인 상태 (Render Pipeline State)
     ///
+    /// @details
     /// Pipeline State란?
     /// - 렌더링 설정의 묶음
     /// - 어떤 셰이더를 사용할지
@@ -151,8 +134,10 @@ class MultiChannelRenderer {
     /// - setupPipeline()에서 생성
     private var pipelineState: MTLRenderPipelineState?
 
-    /// **텍스처 캐시 (Texture Cache)**
+    /// @var textureCache
+    /// @brief 텍스처 캐시 (Texture Cache)
     ///
+    /// @details
     /// CVMetalTextureCache란?
     /// - CVPixelBuffer를 MTLTexture로 변환하는 캐시
     /// - CPU 메모리와 GPU 메모리 간 효율적 공유
@@ -171,8 +156,10 @@ class MultiChannelRenderer {
     /// CVPixelBuffer → CVMetalTexture → MTLTexture
     private var textureCache: CVMetalTextureCache?
 
-    /// **정점 버퍼 (Vertex Buffer)**
+    /// @var vertexBuffer
+    /// @brief 정점 버퍼 (Vertex Buffer)
     ///
+    /// @details
     /// Vertex Buffer란?
     /// - 정점(꼭짓점) 데이터를 담는 GPU 메모리
     /// - 여기서는 전체 화면을 덮는 사각형 (Quad)
@@ -196,8 +183,10 @@ class MultiChannelRenderer {
     /// - GPU에서 매우 빠름
     private var vertexBuffer: MTLBuffer?
 
-    /// **현재 레이아웃 모드 (Current Layout Mode)**
+    /// @var layoutMode
+    /// @brief 현재 레이아웃 모드 (Current Layout Mode)
     ///
+    /// @details
     /// LayoutMode 종류:
     /// - .grid: 그리드 배치 (2×2, 2×3 등)
     /// - .focus: 하나 크게 + 나머지 작게
@@ -208,8 +197,10 @@ class MultiChannelRenderer {
     /// - setLayoutMode()로만 변경 가능
     private(set) var layoutMode: LayoutMode = .grid
 
-    /// **포커스된 채널 (Focused Channel)**
+    /// @var focusedPosition
+    /// @brief 포커스된 채널 (Focused Channel)
     ///
+    /// @details
     /// Focus 레이아웃에서 크게 표시할 채널:
     /// - .front: 전방 카메라 (기본값)
     /// - .rear: 후방 카메라
@@ -223,8 +214,10 @@ class MultiChannelRenderer {
     /// ```
     private(set) var focusedPosition: CameraPosition = .front
 
-    /// **샘플러 상태 (Sampler State)**
+    /// @var samplerState
+    /// @brief 샘플러 상태 (Sampler State)
     ///
+    /// @details
     /// Sampler란?
     /// - 텍스처에서 픽셀 값을 읽는 방법 설정
     /// - 필터링 모드 (linear, nearest)
@@ -248,8 +241,10 @@ class MultiChannelRenderer {
     /// - addressMode: .clampToEdge (경계 반복 안 함)
     private var samplerState: MTLSamplerState?
 
-    /// **화면 캡처 서비스 (Screen Capture Service)**
+    /// @var captureService
+    /// @brief 화면 캡처 서비스 (Screen Capture Service)
     ///
+    /// @details
     /// 역할:
     /// - 렌더링된 프레임을 이미지로 변환
     /// - PNG/JPEG 포맷 지원
@@ -266,8 +261,10 @@ class MultiChannelRenderer {
     /// ```
     private(set) var captureService: ScreenCaptureService
 
-    /// **마지막 렌더링된 텍스처 (Last Rendered Texture)**
+    /// @var lastRenderedTexture
+    /// @brief 마지막 렌더링된 텍스처 (Last Rendered Texture)
     ///
+    /// @details
     /// 캡처를 위해 저장:
     /// - render() 호출 시 drawable.texture 저장
     /// - captureCurrentFrame()에서 사용
@@ -278,8 +275,10 @@ class MultiChannelRenderer {
     /// - 첫 렌더링 후 값 설정
     private var lastRenderedTexture: MTLTexture?
 
-    /// **변환 서비스 (Transformation Service)**
+    /// @var transformationService
+    /// @brief 변환 서비스 (Transformation Service)
     ///
+    /// @details
     /// VideoTransformationService:
     /// - 밝기 (brightness)
     /// - 좌우 반전 (flipHorizontal)
@@ -291,8 +290,10 @@ class MultiChannelRenderer {
     /// - 설정이 모든 곳에서 공유됨
     private let transformationService = VideoTransformationService.shared
 
-    /// **유니폼 버퍼 (Uniform Buffer)**
+    /// @var uniformBuffer
+    /// @brief 유니폼 버퍼 (Uniform Buffer)
     ///
+    /// @details
     /// Uniform이란?
     /// - 모든 정점/픽셀에 동일하게 적용되는 값
     /// - 예: 밝기, 반전 여부, 확대 배율
@@ -319,37 +320,27 @@ class MultiChannelRenderer {
 
     // MARK: - Initialization (초기화)
 
-    /**
-     렌더러를 초기화합니다.
-
-     Failable Initializer (init?):
-     - 실패 가능한 초기화
-     - nil 반환 가능
-     - guard let으로 사용
-
-     초기화 과정:
-     1. Metal 장치 생성 (GPU)
-     2. Command Queue 생성
-     3. Texture Cache 생성
-     4. Capture Service 생성
-     5. Pipeline 설정
-     6. Vertex Buffer 생성
-     7. Sampler 설정
-     8. Uniform Buffer 생성
-
-     실패 원인:
-     - Metal 미지원 하드웨어
-     - 리소스 생성 실패
-
-     사용 예:
-     ```swift
-     guard let renderer = MultiChannelRenderer() else {
-         print("초기화 실패")
-         return
-     }
-     // 성공
-     ```
-     */
+    /// @brief 렌더러를 초기화합니다.
+    ///
+    /// @details
+    /// Failable Initializer (init?):
+    /// - 실패 가능한 초기화
+    /// - nil 반환 가능
+    /// - guard let으로 사용
+    ///
+    /// 초기화 과정:
+    /// 1. Metal 장치 생성 (GPU)
+    /// 2. Command Queue 생성
+    /// 3. Texture Cache 생성
+    /// 4. Capture Service 생성
+    /// 5. Pipeline 설정
+    /// 6. Vertex Buffer 생성
+    /// 7. Sampler 설정
+    /// 8. Uniform Buffer 생성
+    ///
+    /// 실패 원인:
+    /// - Metal 미지원 하드웨어
+    /// - 리소스 생성 실패
     init?() {
         // 1. Metal 장치 가져오기
         guard let device = MTLCreateSystemDefaultDevice() else {
@@ -410,30 +401,29 @@ class MultiChannelRenderer {
 
     // MARK: - Setup (설정)
 
-    /**
-     렌더 파이프라인을 설정합니다.
-
-     Pipeline이란?
-     - 렌더링 과정의 단계들
-     - 각 단계마다 설정 필요
-
-     Pipeline 단계:
-     ```
-     1. Vertex Shader   (정점 변환)
-        ↓
-     2. Rasterization   (픽셀 생성)
-        ↓
-     3. Fragment Shader (픽셀 색상 계산)
-        ↓
-     4. Output          (화면 출력)
-     ```
-
-     설정 내용:
-     - Vertex Shader 함수
-     - Fragment Shader 함수
-     - 픽셀 포맷 (BGRA8)
-     - 정점 속성 (위치, 텍스처 좌표)
-     */
+    /// @brief 렌더 파이프라인을 설정합니다.
+    ///
+    /// @details
+    /// Pipeline이란?
+    /// - 렌더링 과정의 단계들
+    /// - 각 단계마다 설정 필요
+    ///
+    /// Pipeline 단계:
+    /// ```
+    /// 1. Vertex Shader   (정점 변환)
+    ///    ↓
+    /// 2. Rasterization   (픽셀 생성)
+    ///    ↓
+    /// 3. Fragment Shader (픽셀 색상 계산)
+    ///    ↓
+    /// 4. Output          (화면 출력)
+    /// ```
+    ///
+    /// 설정 내용:
+    /// - Vertex Shader 함수
+    /// - Fragment Shader 함수
+    /// - 픽셀 포맷 (BGRA8)
+    /// - 정점 속성 (위치, 텍스처 좌표)
     private func setupPipeline() {
         // 1. Shader Library 생성
         guard let library = device.makeDefaultLibrary() else {
@@ -524,30 +514,29 @@ class MultiChannelRenderer {
         }
     }
 
-    /**
-     정점 버퍼를 생성합니다.
-
-     Full-Screen Quad:
-     - 화면 전체를 덮는 사각형
-     - 2개의 삼각형으로 구성
-     - Triangle Strip으로 그림
-
-     Vertex 데이터:
-     - Position: NDC (Normalized Device Coordinates)
-       - (-1,-1) = 왼쪽 아래
-       - (1, 1) = 오른쪽 위
-     - TexCoord: 텍스처 좌표
-       - (0, 0) = 왼쪽 위
-       - (1, 1) = 오른쪽 아래
-
-     Triangle Strip:
-     ```
-     3 ──── 4        순서: 1→2→3→4
-     │ ╲    │        삼각형1: 1,2,3
-     │   ╲  │        삼각형2: 2,4,3
-     1 ──── 2
-     ```
-     */
+    /// @brief 정점 버퍼를 생성합니다.
+    ///
+    /// @details
+    /// Full-Screen Quad:
+    /// - 화면 전체를 덮는 사각형
+    /// - 2개의 삼각형으로 구성
+    /// - Triangle Strip으로 그림
+    ///
+    /// Vertex 데이터:
+    /// - Position: NDC (Normalized Device Coordinates)
+    ///   - (-1,-1) = 왼쪽 아래
+    ///   - (1, 1) = 오른쪽 위
+    /// - TexCoord: 텍스처 좌표
+    ///   - (0, 0) = 왼쪽 위
+    ///   - (1, 1) = 오른쪽 아래
+    ///
+    /// Triangle Strip:
+    /// ```
+    /// 3 ──── 4        순서: 1→2→3→4
+    /// │ ╲    │        삼각형1: 1,2,3
+    /// │   ╲  │        삼각형2: 2,4,3
+    /// 1 ──── 2
+    /// ```
     private func setupVertexBuffer() {
         // Full-screen quad vertices (position + texCoord)
         let vertices: [Float] = [
@@ -585,20 +574,19 @@ class MultiChannelRenderer {
         // options: [] = 기본 옵션
     }
 
-    /**
-     샘플러를 설정합니다.
-
-     Sampler란?
-     - 텍스처에서 색상을 읽는 방법
-     - 필터링, 경계 처리 등 설정
-
-     설정 내용:
-     - minFilter: 축소 필터 = linear
-     - magFilter: 확대 필터 = linear
-     - sAddressMode: S축(가로) 경계 = clampToEdge
-     - tAddressMode: T축(세로) 경계 = clampToEdge
-     - mipFilter: 밉맵 = 사용 안 함
-     */
+    /// @brief 샘플러를 설정합니다.
+    ///
+    /// @details
+    /// Sampler란?
+    /// - 텍스처에서 색상을 읽는 방법
+    /// - 필터링, 경계 처리 등 설정
+    ///
+    /// 설정 내용:
+    /// - minFilter: 축소 필터 = linear
+    /// - magFilter: 확대 필터 = linear
+    /// - sAddressMode: S축(가로) 경계 = clampToEdge
+    /// - tAddressMode: T축(세로) 경계 = clampToEdge
+    /// - mipFilter: 밉맵 = 사용 안 함
     private func setupSampler() {
         let samplerDescriptor = MTLSamplerDescriptor()
 
@@ -637,30 +625,29 @@ class MultiChannelRenderer {
         samplerState = device.makeSamplerState(descriptor: samplerDescriptor)
     }
 
-    /**
-     유니폼 버퍼를 생성합니다.
-
-     Uniform Buffer:
-     - 변환 파라미터를 저장
-     - CPU에서 업데이트
-     - GPU 셰이더에서 읽기
-
-     버퍼 크기:
-     - 6개 float × 4바이트 = 24바이트
-
-     버퍼 내용:
-     - [0] brightness
-     - [1] flipHorizontal
-     - [2] flipVertical
-     - [3] zoomLevel
-     - [4] zoomCenterX
-     - [5] zoomCenterY
-
-     storageModeShared:
-     - CPU와 GPU가 공유하는 메모리
-     - CPU에서 쓰고, GPU에서 읽기
-     - 복사 없이 빠름
-     */
+    /// @brief 유니폼 버퍼를 생성합니다.
+    ///
+    /// @details
+    /// Uniform Buffer:
+    /// - 변환 파라미터를 저장
+    /// - CPU에서 업데이트
+    /// - GPU 셰이더에서 읽기
+    ///
+    /// 버퍼 크기:
+    /// - 6개 float × 4바이트 = 24바이트
+    ///
+    /// 버퍼 내용:
+    /// - [0] brightness
+    /// - [1] flipHorizontal
+    /// - [2] flipVertical
+    /// - [3] zoomLevel
+    /// - [4] zoomCenterX
+    /// - [5] zoomCenterY
+    ///
+    /// storageModeShared:
+    /// - CPU와 GPU가 공유하는 메모리
+    /// - CPU에서 쓰고, GPU에서 읽기
+    /// - 복사 없이 빠름
     private func setupUniformBuffer() {
         // Create uniform buffer for transformation parameters
         // Size matches TransformUniforms struct in Metal shader (6 floats)
@@ -678,22 +665,21 @@ class MultiChannelRenderer {
         }
     }
 
-    /**
-     유니폼 버퍼를 업데이트합니다.
-
-     업데이트 과정:
-     1. 현재 변환 설정 가져오기
-     2. 버퍼 포인터 얻기
-     3. 각 값을 버퍼에 쓰기
-
-     호출 시점:
-     - 매 프레임 렌더링 전
-     - 변환 설정이 바뀌었을 때
-
-     성능:
-     - 24바이트 복사: 매우 빠름 (나노초)
-     - 공유 메모리: 복사 없음
-     */
+    /// @brief 유니폼 버퍼를 업데이트합니다.
+    ///
+    /// @details
+    /// 업데이트 과정:
+    /// 1. 현재 변환 설정 가져오기
+    /// 2. 버퍼 포인터 얻기
+    /// 3. 각 값을 버퍼에 쓰기
+    ///
+    /// 호출 시점:
+    /// - 매 프레임 렌더링 전
+    /// - 변환 설정이 바뀌었을 때
+    ///
+    /// 성능:
+    /// - 24바이트 복사: 매우 빠름 (나노초)
+    /// - 공유 메모리: 복사 없음
     private func updateUniformBuffer() {
         guard let buffer = uniformBuffer else {
             return
@@ -736,41 +722,29 @@ class MultiChannelRenderer {
 
     // MARK: - Public Methods (공개 메서드)
 
-    /**
-     프레임들을 drawable에 렌더링합니다.
-
-     Drawable이란?
-     - 화면에 표시될 최종 이미지
-     - MTKView가 제공
-     - 더블 버퍼링 (Front + Back buffer)
-
-     렌더링 과정:
-     1. Command Buffer 생성
-     2. Render Pass 설정 (화면 지우기)
-     3. Render Encoder 생성
-     4. Viewport 계산 (각 채널의 위치/크기)
-     5. 각 채널 렌더링
-        - Pixel Buffer → Texture 변환
-        - Viewport 설정
-        - Buffers 바인딩
-        - Draw 호출
-     6. 화면 출력 (Present)
-
-     파라미터:
-     - frames: 각 채널의 프레임 (카메라 위치 → 프레임)
-     - drawable: 렌더링 대상 (화면 버퍼)
-     - drawableSize: 화면 크기
-
-     사용 예:
-     ```swift
-     let frames = syncController.getSynchronizedFrames()
-     renderer.render(
-         frames: frames,
-         to: mtkView.currentDrawable!,
-         drawableSize: mtkView.drawableSize
-     )
-     ```
-     */
+    /// @brief 프레임들을 drawable에 렌더링합니다.
+    ///
+    /// @param frames 각 채널의 프레임 (카메라 위치 → 프레임)
+    /// @param drawable 렌더링 대상 (화면 버퍼)
+    /// @param drawableSize 화면 크기
+    ///
+    /// @details
+    /// Drawable이란?
+    /// - 화면에 표시될 최종 이미지
+    /// - MTKView가 제공
+    /// - 더블 버퍼링 (Front + Back buffer)
+    ///
+    /// 렌더링 과정:
+    /// 1. Command Buffer 생성
+    /// 2. Render Pass 설정 (화면 지우기)
+    /// 3. Render Encoder 생성
+    /// 4. Viewport 계산 (각 채널의 위치/크기)
+    /// 5. 각 채널 렌더링
+    ///    - Pixel Buffer → Texture 변환
+    ///    - Viewport 설정
+    ///    - Buffers 바인딩
+    ///    - Draw 호출
+    /// 6. 화면 출력 (Present)
     func render(
         frames: [CameraPosition: VideoFrame],
         to drawable: CAMetalDrawable,
@@ -915,33 +889,19 @@ class MultiChannelRenderer {
         // 이제 GPU가 실제로 렌더링 시작
     }
 
-    /**
-     현재 프레임을 이미지로 캡처합니다.
-
-     캡처 과정:
-     1. 마지막 렌더링된 텍스처 확인
-     2. ScreenCaptureService로 변환
-     3. PNG/JPEG 데이터 반환
-
-     파라미터:
-     - format: 이미지 포맷 (.png 또는 .jpeg)
-     - timestamp: 오버레이할 날짜/시간
-     - videoTimestamp: 비디오 재생 시간
-
-     반환:
-     - Data?: 이미지 데이터 (nil = 실패)
-
-     사용 예:
-     ```swift
-     if let data = renderer.captureCurrentFrame(
-         format: .png,
-         timestamp: Date(),
-         videoTimestamp: 5.0
-     ) {
-         try data.write(to: fileURL)
-     }
-     ```
-     */
+    /// @brief 현재 프레임을 이미지로 캡처합니다.
+    ///
+    /// @param format 이미지 포맷 (.png 또는 .jpeg)
+    /// @param timestamp 오버레이할 날짜/시간
+    /// @param videoTimestamp 비디오 재생 시간
+    ///
+    /// @return 이미지 데이터 (nil = 실패)
+    ///
+    /// @details
+    /// 캡처 과정:
+    /// 1. 마지막 렌더링된 텍스처 확인
+    /// 2. ScreenCaptureService로 변환
+    /// 3. PNG/JPEG 데이터 반환
     func captureCurrentFrame(
         format: CaptureImageFormat = .png,
         timestamp: Date? = nil,
@@ -960,36 +920,24 @@ class MultiChannelRenderer {
         )
     }
 
-    /**
-     현재 프레임을 캡처하고 저장 다이얼로그를 표시합니다.
-
-     편의 메서드:
-     - captureCurrentFrame() + 파일 저장
-     - NSSavePanel로 저장 위치 선택
-     - 자동으로 확장자 추가 (.png 또는 .jpg)
-
-     @discardableResult:
-     - 반환값을 무시해도 경고 안 나옴
-     - renderer.captureAndSave() // OK
-
-     파라미터:
-     - format: 이미지 포맷
-     - timestamp: 오버레이할 날짜/시간 (기본: 현재 시간)
-     - videoTimestamp: 비디오 재생 시간
-     - defaultFilename: 기본 파일명 (확장자 제외)
-
-     반환:
-     - Bool: 저장 성공 여부
-
-     사용 예:
-     ```swift
-     // 버튼 클릭 시
-     renderer.captureAndSave(
-         format: .png,
-         defaultFilename: "Blackbox_2025-01-12"
-     )
-     ```
-     */
+    /// @brief 현재 프레임을 캡처하고 저장 다이얼로그를 표시합니다.
+    ///
+    /// @param format 이미지 포맷
+    /// @param timestamp 오버레이할 날짜/시간 (기본: 현재 시간)
+    /// @param videoTimestamp 비디오 재생 시간
+    /// @param defaultFilename 기본 파일명 (확장자 제외)
+    ///
+    /// @return 저장 성공 여부
+    ///
+    /// @details
+    /// 편의 메서드:
+    /// - captureCurrentFrame() + 파일 저장
+    /// - NSSavePanel로 저장 위치 선택
+    /// - 자동으로 확장자 추가 (.png 또는 .jpg)
+    ///
+    /// @discardableResult:
+    /// - 반환값을 무시해도 경고 안 나옴
+    /// - renderer.captureAndSave() // OK
     @discardableResult
     func captureAndSave(
         format: CaptureImageFormat = .png,
@@ -1012,69 +960,49 @@ class MultiChannelRenderer {
         )
     }
 
-    /**
-     레이아웃 모드를 설정합니다.
-
-     레이아웃 모드:
-     - .grid: 그리드 배치 (2×2, 2×3 등)
-     - .focus: 하나 크게 + 나머지 작게
-     - .horizontal: 가로로 나란히
-
-     사용 예:
-     ```swift
-     renderer.setLayoutMode(.grid)
-     // 다음 render() 호출 시 그리드 레이아웃 적용
-     ```
-
-     파라미터:
-     - mode: 새 레이아웃 모드
-     */
+    /// @brief 레이아웃 모드를 설정합니다.
+    ///
+    /// @param mode 새 레이아웃 모드
+    ///
+    /// @details
+    /// 레이아웃 모드:
+    /// - .grid: 그리드 배치 (2×2, 2×3 등)
+    /// - .focus: 하나 크게 + 나머지 작게
+    /// - .horizontal: 가로로 나란히
     func setLayoutMode(_ mode: LayoutMode) {
         self.layoutMode = mode
     }
 
-    /**
-     포커스할 채널을 설정합니다.
-
-     Focus 레이아웃에서만 사용:
-     - 지정된 채널을 크게 표시
-     - 나머지 채널은 작게 표시
-
-     사용 예:
-     ```swift
-     renderer.setLayoutMode(.focus)
-     renderer.setFocusedPosition(.rear)
-     // 후방 카메라를 크게 표시
-     ```
-
-     파라미터:
-     - position: 포커스할 카메라 위치
-     */
+    /// @brief 포커스할 채널을 설정합니다.
+    ///
+    /// @param position 포커스할 카메라 위치
+    ///
+    /// @details
+    /// Focus 레이아웃에서만 사용:
+    /// - 지정된 채널을 크게 표시
+    /// - 나머지 채널은 작게 표시
     func setFocusedPosition(_ position: CameraPosition) {
         self.focusedPosition = position
     }
 
     // MARK: - Private Methods (비공개 메서드)
 
-    /**
-     Pixel Buffer에서 Metal Texture를 생성합니다.
-
-     변환 과정:
-     1. Texture Cache 사용
-     2. CVMetalTextureCache로 변환
-     3. MTLTexture 추출
-
-     Zero-Copy:
-     - 메모리 복사 없이 공유
-     - CPU 메모리와 GPU 메모리 공유
-     - 빠르고 효율적
-
-     파라미터:
-     - pixelBuffer: 변환할 CVPixelBuffer
-
-     반환:
-     - MTLTexture?: GPU 텍스처 (nil = 실패)
-     */
+    /// @brief Pixel Buffer에서 Metal Texture를 생성합니다.
+    ///
+    /// @param pixelBuffer 변환할 CVPixelBuffer
+    ///
+    /// @return GPU 텍스처 (nil = 실패)
+    ///
+    /// @details
+    /// 변환 과정:
+    /// 1. Texture Cache 사용
+    /// 2. CVMetalTextureCache로 변환
+    /// 3. MTLTexture 추출
+    ///
+    /// Zero-Copy:
+    /// - 메모리 복사 없이 공유
+    /// - CPU 메모리와 GPU 메모리 공유
+    /// - 빠르고 효율적
     private func createTexture(from pixelBuffer: CVPixelBuffer) -> MTLTexture? {
         guard let textureCache = textureCache else {
             debugLog("[MultiChannelRenderer] Texture cache is nil")
@@ -1122,25 +1050,22 @@ class MultiChannelRenderer {
         return metalTexture
     }
 
-    /**
-     각 채널의 viewport를 계산합니다.
-
-     Viewport란?
-     - 화면에서 렌더링할 영역
-     - 위치 (x, y) + 크기 (width, height)
-
-     레이아웃 모드별 계산:
-     - .grid: calculateGridViewports
-     - .focus: calculateFocusViewports
-     - .horizontal: calculateHorizontalViewports
-
-     파라미터:
-     - positions: 채널 위치 배열 (정렬됨)
-     - size: 전체 화면 크기
-
-     반환:
-     - [CameraPosition: CGRect]: 각 채널의 viewport
-     */
+    /// @brief 각 채널의 viewport를 계산합니다.
+    ///
+    /// @param positions 채널 위치 배열 (정렬됨)
+    /// @param size 전체 화면 크기
+    ///
+    /// @return 각 채널의 viewport
+    ///
+    /// @details
+    /// Viewport란?
+    /// - 화면에서 렌더링할 영역
+    /// - 위치 (x, y) + 크기 (width, height)
+    ///
+    /// 레이아웃 모드별 계산:
+    /// - .grid: calculateGridViewports
+    /// - .focus: calculateFocusViewports
+    /// - .horizontal: calculateHorizontalViewports
     private func calculateViewports(
         for positions: [CameraPosition],
         in size: CGSize
@@ -1159,33 +1084,30 @@ class MultiChannelRenderer {
         return viewports
     }
 
-    /**
-     그리드 레이아웃의 viewport를 계산합니다.
-
-     Grid Layout:
-     - N×M 그리드 (행×열)
-     - 자동으로 최적 배치 계산
-
-     계산 방법:
-     1. 채널 수에서 √N (제곱근)
-     2. 올림하여 열 수 계산
-     3. 행 수 = 채널 수 / 열 수 (올림)
-     4. 각 셀 크기 = 화면 / 그리드
-
-     예:
-     - 1채널: 1×1 (전체 화면)
-     - 2채널: 1×2 (가로 2개)
-     - 3채널: 2×2 (3개 + 빈 공간 1개)
-     - 4채널: 2×2
-     - 5채널: 2×3 (5개 + 빈 공간 1개)
-
-     파라미터:
-     - positions: 채널 위치 배열
-     - size: 전체 화면 크기
-
-     반환:
-     - [CameraPosition: CGRect]: 각 채널의 viewport
-     */
+    /// @brief 그리드 레이아웃의 viewport를 계산합니다.
+    ///
+    /// @param positions 채널 위치 배열
+    /// @param size 전체 화면 크기
+    ///
+    /// @return 각 채널의 viewport
+    ///
+    /// @details
+    /// Grid Layout:
+    /// - N×M 그리드 (행×열)
+    /// - 자동으로 최적 배치 계산
+    ///
+    /// 계산 방법:
+    /// 1. 채널 수에서 √N (제곱근)
+    /// 2. 올림하여 열 수 계산
+    /// 3. 행 수 = 채널 수 / 열 수 (올림)
+    /// 4. 각 셀 크기 = 화면 / 그리드
+    ///
+    /// 예:
+    /// - 1채널: 1×1 (전체 화면)
+    /// - 2채널: 1×2 (가로 2개)
+    /// - 3채널: 2×2 (3개 + 빈 공간 1개)
+    /// - 4채널: 2×2
+    /// - 5채널: 2×3 (5개 + 빈 공간 1개)
     private func calculateGridViewports(
         positions: [CameraPosition],
         size: CGSize
@@ -1239,35 +1161,32 @@ class MultiChannelRenderer {
         return viewports
     }
 
-    /**
-     포커스 레이아웃의 viewport를 계산합니다.
-
-     Focus Layout:
-     - 하나의 채널을 크게 (75% 너비)
-     - 나머지는 작게 (25% 너비, 세로로 나열)
-
-     배치:
-     - 왼쪽 75%: 포커스된 채널
-     - 오른쪽 25%: 나머지 채널들 (썸네일)
-
-     예:
-     ```
-     ┌─────────────────────┬──────┐
-     │                     │Rear  │
-     │                     ├──────┤
-     │   Front (포커스)      │Left  │
-     │                     ├──────┤
-     │                     │Right │
-     └─────────────────────┴──────┘
-     ```
-
-     파라미터:
-     - positions: 채널 위치 배열
-     - size: 전체 화면 크기
-
-     반환:
-     - [CameraPosition: CGRect]: 각 채널의 viewport
-     */
+    /// @brief 포커스 레이아웃의 viewport를 계산합니다.
+    ///
+    /// @param positions 채널 위치 배열
+    /// @param size 전체 화면 크기
+    ///
+    /// @return 각 채널의 viewport
+    ///
+    /// @details
+    /// Focus Layout:
+    /// - 하나의 채널을 크게 (75% 너비)
+    /// - 나머지는 작게 (25% 너비, 세로로 나열)
+    ///
+    /// 배치:
+    /// - 왼쪽 75%: 포커스된 채널
+    /// - 오른쪽 25%: 나머지 채널들 (썸네일)
+    ///
+    /// 예:
+    /// ```
+    /// ┌─────────────────────┬──────┐
+    /// │                     │Rear  │
+    /// │                     ├──────┤
+    /// │   Front (포커스)      │Left  │
+    /// │                     ├──────┤
+    /// │                     │Right │
+    /// └─────────────────────┴──────┘
+    /// ```
     private func calculateFocusViewports(
         positions: [CameraPosition],
         size: CGSize
@@ -1303,30 +1222,27 @@ class MultiChannelRenderer {
         return viewports
     }
 
-    /**
-     가로 레이아웃의 viewport를 계산합니다.
-
-     Horizontal Layout:
-     - 모든 채널을 가로로 나란히 배치
-     - 같은 너비로 분할
-     - 전체 높이 사용
-
-     예:
-     ```
-     4채널:
-     ┌─────┬─────┬─────┬─────┐
-     │Front│Rear │Left │Right│
-     │     │     │     │     │
-     └─────┴─────┴─────┴─────┘
-     ```
-
-     파라미터:
-     - positions: 채널 위치 배열
-     - size: 전체 화면 크기
-
-     반환:
-     - [CameraPosition: CGRect]: 각 채널의 viewport
-     */
+    /// @brief 가로 레이아웃의 viewport를 계산합니다.
+    ///
+    /// @param positions 채널 위치 배열
+    /// @param size 전체 화면 크기
+    ///
+    /// @return 각 채널의 viewport
+    ///
+    /// @details
+    /// Horizontal Layout:
+    /// - 모든 채널을 가로로 나란히 배치
+    /// - 같은 너비로 분할
+    /// - 전체 높이 사용
+    ///
+    /// 예:
+    /// ```
+    /// 4채널:
+    /// ┌─────┬─────┬─────┬─────┐
+    /// │Front│Rear │Left │Right│
+    /// │     │     │     │     │
+    /// └─────┴─────┴─────┴─────┘
+    /// ```
     private func calculateHorizontalViewports(
         positions: [CameraPosition],
         size: CGSize
@@ -1357,28 +1273,22 @@ class MultiChannelRenderer {
 
 // MARK: - Supporting Types (지원 타입)
 
-/**
- 멀티 채널 표시 레이아웃 모드
-
- enum + String:
- - rawValue로 문자열 사용
- - UserDefaults 저장/불러오기 편리
-
- CaseIterable:
- - LayoutMode.allCases로 모든 케이스 접근
- - UI 선택 메뉴 생성 시 유용
-
- 사용 예:
- ```swift
- // 모든 레이아웃 모드 순회
- for mode in LayoutMode.allCases {
-     print(mode.displayName)
- }
- ```
- */
+/// @enum LayoutMode
+/// @brief 멀티 채널 표시 레이아웃 모드
+///
+/// @details
+/// enum + String:
+/// - rawValue로 문자열 사용
+/// - UserDefaults 저장/불러오기 편리
+///
+/// CaseIterable:
+/// - LayoutMode.allCases로 모든 케이스 접근
+/// - UI 선택 메뉴 생성 시 유용
 enum LayoutMode: String, CaseIterable {
-    /// **Grid 레이아웃 (그리드)**
+    /// @var grid
+    /// @brief Grid 레이아웃 (그리드)
     ///
+    /// @details
     /// N×M 그리드로 배치:
     /// - 1채널: 1×1 (전체 화면)
     /// - 2채널: 1×2 (가로 2분할)
@@ -1387,22 +1297,29 @@ enum LayoutMode: String, CaseIterable {
     /// - 5채널: 2×3 (6칸 중 5개 사용)
     case grid       // Grid layout (2x2, 2x3, etc.)
 
-    /// **Focus 레이아웃 (포커스)**
+    /// @var focus
+    /// @brief Focus 레이아웃 (포커스)
     ///
+    /// @details
     /// 하나 크게 + 나머지 작게:
     /// - 왼쪽 75%: 포커스된 채널
     /// - 오른쪽 25%: 나머지 썸네일
     case focus      // One large + thumbnails
 
-    /// **Horizontal 레이아웃 (가로)**
+    /// @var horizontal
+    /// @brief Horizontal 레이아웃 (가로)
     ///
+    /// @details
     /// 가로로 나란히:
     /// - 같은 너비로 분할
     /// - 전체 높이 사용
     case horizontal // Side-by-side horizontal
 
-    /// **UI에 표시할 이름**
+    /// @brief UI에 표시할 이름
     ///
+    /// @return 사용자 친화적 이름
+    ///
+    /// @details
     /// computed property:
     /// - 각 케이스의 사용자 친화적 이름
     /// - 메뉴, 버튼 등에 표시

@@ -1,43 +1,38 @@
-//
-//  VideoDecoder.swift
-//  BlackboxPlayer
-//
-//  FFmpeg-based video/audio decoder
-//
-//  이 파일은 FFmpeg 라이브러리를 사용하여 비디오와 오디오를 디코딩하는 클래스를 정의합니다.
-//  FFmpeg은 C 언어로 작성된 강력한 멀티미디어 프레임워크입니다.
-//
+/// @file VideoDecoder.swift
+/// @brief FFmpeg-based video/audio decoder
+/// @author BlackboxPlayer Development Team
+/// @details
+/// 이 파일은 FFmpeg 라이브러리를 사용하여 비디오와 오디오를 디코딩하는 클래스를 정의합니다.
+/// FFmpeg은 C 언어로 작성된 강력한 멀티미디어 프레임워크입니다.
 
 import Foundation       // Swift 기본 기능 (String, Data 등)
 import CoreGraphics     // 그래픽 관련 타입 (CGSize, CGRect 등)
 
-/**
- # VideoDecoder
-
- 블랙박스 영상 파일을 디코딩하는 클래스입니다.
-
- ## 주요 기능:
- - H.264 비디오 디코딩 (압축된 영상을 화면에 표시할 수 있는 형태로 변환)
- - MP3 오디오 디코딩 (압축된 음성을 재생할 수 있는 형태로 변환)
- - 비디오 탐색 (특정 시간으로 이동)
- - 프레임 단위 디코딩 (한 장씩 영상 프레임 추출)
-
- ## 디코딩이란?
- - 압축된 영상 파일(예: MP4)을 압축 해제하여 화면에 표시할 수 있는 형태로 변환하는 과정
- - 예: H.264로 압축된 데이터 → RGB 픽셀 데이터
-
- ## 사용 예:
- ```swift
- let decoder = VideoDecoder(filePath: "/path/to/video.mp4")
- try decoder.initialize()
-
- while let frames = try decoder.decodeNextFrame() {
-     if let videoFrame = frames.video {
-         // 비디오 프레임 처리
-     }
- }
- ```
- */
+/// @class VideoDecoder
+/// @brief 블랙박스 영상 파일을 디코딩하는 클래스입니다.
+///
+/// @details
+/// ## 주요 기능:
+/// - H.264 비디오 디코딩 (압축된 영상을 화면에 표시할 수 있는 형태로 변환)
+/// - MP3 오디오 디코딩 (압축된 음성을 재생할 수 있는 형태로 변환)
+/// - 비디오 탐색 (특정 시간으로 이동)
+/// - 프레임 단위 디코딩 (한 장씩 영상 프레임 추출)
+///
+/// ## 디코딩이란?
+/// - 압축된 영상 파일(예: MP4)을 압축 해제하여 화면에 표시할 수 있는 형태로 변환하는 과정
+/// - 예: H.264로 압축된 데이터 → RGB 픽셀 데이터
+///
+/// ## 사용 예:
+/// ```swift
+/// let decoder = VideoDecoder(filePath: "/path/to/video.mp4")
+/// try decoder.initialize()
+///
+/// while let frames = try decoder.decodeNextFrame() {
+///     if let videoFrame = frames.video {
+///         // 비디오 프레임 처리
+///     }
+/// }
+/// ```
 class VideoDecoder {
 
     // MARK: - Properties (속성)
@@ -47,7 +42,9 @@ class VideoDecoder {
     // MARK: 파일 정보
     // ============================================
 
-    /// 디코딩할 비디오 파일의 경로
+    /// @var filePath
+    /// @brief 디코딩할 비디오 파일의 경로
+    /// @details
     /// - 예: "/Users/username/Videos/blackbox.mp4"
     /// - private: 외부에서 직접 수정할 수 없음 (초기화 시에만 설정)
     private let filePath: String
@@ -63,27 +60,35 @@ class VideoDecoder {
      - UnsafeMutablePointer: C의 포인터를 Swift에서 사용하는 타입
      */
 
-    /// **FormatContext**: 파일의 전체 구조 정보를 담는 컨테이너
+    /// @var formatContext
+    /// @brief FormatContext - 파일의 전체 구조 정보를 담는 컨테이너
+    /// @details
     /// - 어떤 스트림들이 있는지 (비디오, 오디오, 자막 등)
     /// - 파일 포맷이 무엇인지 (MP4, AVI, MKV 등)
     /// - 전체 재생 시간이 얼마인지
     /// - Optional(?): 초기화 전에는 nil (없는 상태)
     private var formatContext: UnsafeMutablePointer<AVFormatContext>?
 
-    /// **Video Codec Context**: 비디오 디코딩 정보
+    /// @var videoCodecContext
+    /// @brief Video Codec Context - 비디오 디코딩 정보
+    /// @details
     /// - 코덱(Codec): 압축/압축해제 방식 (H.264, H.265 등)
     /// - 해상도 (width, height)
     /// - 프레임레이트 (초당 프레임 수)
     /// - 픽셀 포맷 (YUV420P, RGB 등)
     private var videoCodecContext: UnsafeMutablePointer<AVCodecContext>?
 
-    /// **Audio Codec Context**: 오디오 디코딩 정보
+    /// @var audioCodecContext
+    /// @brief Audio Codec Context - 오디오 디코딩 정보
+    /// @details
     /// - 샘플레이트 (44100Hz, 48000Hz 등)
     /// - 채널 수 (모노=1, 스테레오=2)
     /// - 오디오 포맷 (PCM, AAC 등)
     private var audioCodecContext: UnsafeMutablePointer<AVCodecContext>?
 
-    /// **Scaler Context**: 픽셀 포맷 변환기
+    /// @var scalerContext
+    /// @brief Scaler Context - 픽셀 포맷 변환기
+    /// @details
     /// - SwScale(Software Scale): 픽셀 포맷을 변환하는 FFmpeg 컴포넌트
     /// - 예: YUV420P(비디오 인코딩 표준) → BGRA(화면 표시용)
     /// - 해상도 변경도 가능 (예: 1080p → 720p)
@@ -100,12 +105,16 @@ class VideoDecoder {
      - 각 스트림은 고유한 인덱스 번호를 가짐
      */
 
-    /// 비디오 스트림의 인덱스 번호
+    /// @var videoStreamIndex
+    /// @brief 비디오 스트림의 인덱스 번호
+    /// @details
     /// - -1: 아직 찾지 못함 (초기값)
     /// - 0 이상: 찾은 비디오 스트림의 인덱스
     private var videoStreamIndex: Int = -1
 
-    /// 오디오 스트림의 인덱스 번호
+    /// @var audioStreamIndex
+    /// @brief 오디오 스트림의 인덱스 번호
+    /// @details
     /// - -1: 아직 찾지 못함 또는 오디오 없음
     /// - 0 이상: 찾은 오디오 스트림의 인덱스
     private var audioStreamIndex: Int = -1
@@ -114,12 +123,16 @@ class VideoDecoder {
     // MARK: 디코딩 상태
     // ============================================
 
-    /// 현재 디코딩한 프레임 번호
+    /// @var frameNumber
+    /// @brief 현재 디코딩한 프레임 번호
+    /// @details
     /// - 0부터 시작하여 1씩 증가
     /// - 디버깅 및 진행 상황 추적에 사용
     private var frameNumber: Int = 0
 
-    /// 디코더가 초기화되었는지 여부
+    /// @var isInitialized
+    /// @brief 디코더가 초기화되었는지 여부
+    /// @details
     /// - false: 아직 initialize() 호출 안 함
     /// - true: initialize() 완료, 디코딩 가능
     /// - private(set): 외부에서 읽을 수만 있고 수정은 불가
@@ -129,46 +142,48 @@ class VideoDecoder {
     // MARK: 스트림 정보
     // ============================================
 
-    /// 비디오 스트림의 상세 정보
+    /// @var videoInfo
+    /// @brief 비디오 스트림의 상세 정보
+    /// @details
     /// - Optional(?): 초기화 전에는 nil
     /// - VideoStreamInfo 구조체에는 해상도, 프레임레이트 등이 담김
     private(set) var videoInfo: VideoStreamInfo?
 
-    /// 오디오 스트림의 상세 정보
+    /// @var audioInfo
+    /// @brief 오디오 스트림의 상세 정보
+    /// @details
     /// - Optional(?): 오디오가 없으면 nil
     /// - AudioStreamInfo 구조체에는 샘플레이트, 채널 수 등이 담김
     private(set) var audioInfo: AudioStreamInfo?
 
     // MARK: - Initialization (초기화)
 
-    /**
-     디코더 객체를 생성합니다.
-
-     - Parameter filePath: 디코딩할 비디오 파일의 전체 경로
-
-     주의사항:
-     - 이 메서드는 객체만 생성하고, 실제 디코딩 준비는 하지 않습니다
-     - 디코딩을 시작하려면 반드시 `initialize()` 메서드를 호출해야 합니다
-
-     예제:
-     ```swift
-     let decoder = VideoDecoder(filePath: "/path/to/video.mp4")
-     // 아직 디코딩할 수 없는 상태
-     try decoder.initialize()  // 이제 디코딩 가능
-     ```
-     */
+    /// @brief 디코더 객체를 생성합니다.
+    ///
+    /// @param filePath 디코딩할 비디오 파일의 전체 경로
+    ///
+    /// @details
+    /// 주의사항:
+    /// - 이 메서드는 객체만 생성하고, 실제 디코딩 준비는 하지 않습니다
+    /// - 디코딩을 시작하려면 반드시 `initialize()` 메서드를 호출해야 합니다
+    ///
+    /// 예제:
+    /// ```swift
+    /// let decoder = VideoDecoder(filePath: "/path/to/video.mp4")
+    /// // 아직 디코딩할 수 없는 상태
+    /// try decoder.initialize()  // 이제 디코딩 가능
+    /// ```
     init(filePath: String) {
         self.filePath = filePath
     }
 
-    /**
-     객체가 메모리에서 해제될 때 자동으로 호출됩니다.
-
-     메모리 누수 방지:
-     - FFmpeg의 C 라이브러리는 Swift의 자동 메모리 관리(ARC)를 사용하지 않음
-     - 따라서 수동으로 메모리를 해제해야 함
-     - cleanup()을 호출하여 모든 FFmpeg 리소스를 정리
-     */
+    /// @brief 객체가 메모리에서 해제될 때 자동으로 호출됩니다.
+    ///
+    /// @details
+    /// 메모리 누수 방지:
+    /// - FFmpeg의 C 라이브러리는 Swift의 자동 메모리 관리(ARC)를 사용하지 않음
+    /// - 따라서 수동으로 메모리를 해제해야 함
+    /// - cleanup()을 호출하여 모든 FFmpeg 리소스를 정리
     deinit {
         cleanup()
     }
@@ -176,31 +191,30 @@ class VideoDecoder {
     // MARK: - Public Methods (공개 메서드)
     // 외부에서 호출할 수 있는 메서드들
 
-    /**
-     디코더를 초기화하고 비디오 파일을 엽니다.
-
-     초기화 과정:
-     1. 파일 존재 확인
-     2. FFmpeg으로 파일 열기
-     3. 비디오/오디오 스트림 찾기
-     4. 각 스트림의 디코더 초기화
-
-     - Throws: DecoderError
-       - `.alreadyInitialized`: 이미 초기화됨
-       - `.cannotOpenFile`: 파일을 열 수 없음
-       - `.cannotFindStreamInfo`: 스트림 정보를 찾을 수 없음
-       - `.noVideoStream`: 비디오 스트림이 없음
-
-     사용 예:
-     ```swift
-     do {
-         try decoder.initialize()
-         print("디코더 초기화 성공!")
-     } catch {
-         print("초기화 실패: \(error)")
-     }
-     ```
-     */
+    /// @brief 디코더를 초기화하고 비디오 파일을 엽니다.
+    ///
+    /// @details
+    /// 초기화 과정:
+    /// 1. 파일 존재 확인
+    /// 2. FFmpeg으로 파일 열기
+    /// 3. 비디오/오디오 스트림 찾기
+    /// 4. 각 스트림의 디코더 초기화
+    ///
+    /// @throws DecoderError
+    ///   - `.alreadyInitialized`: 이미 초기화됨
+    ///   - `.cannotOpenFile`: 파일을 열 수 없음
+    ///   - `.cannotFindStreamInfo`: 스트림 정보를 찾을 수 없음
+    ///   - `.noVideoStream`: 비디오 스트림이 없음
+    ///
+    /// 사용 예:
+    /// ```swift
+    /// do {
+    ///     try decoder.initialize()
+    ///     print("디코더 초기화 성공!")
+    /// } catch {
+    ///     print("초기화 실패: \(error)")
+    /// }
+    /// ```
     func initialize() throws {
         // 1. 중복 초기화 방지
         // - 이미 초기화된 디코더를 다시 초기화하면 메모리 누수 발생 가능
@@ -289,38 +303,37 @@ class VideoDecoder {
         isInitialized = true
     }
 
-    /**
-     다음 프레임을 디코딩합니다.
-
-     디코딩 과정:
-     1. 파일에서 압축된 패킷 읽기
-     2. 패킷이 비디오인지 오디오인지 확인
-     3. 해당 디코더로 압축 해제
-     4. 프레임 데이터 반환
-
-     - Returns: (video: VideoFrame?, audio: AudioFrame?) 튜플
-       - 비디오 프레임이면 video에 데이터, audio는 nil
-       - 오디오 프레임이면 audio에 데이터, video는 nil
-       - 파일 끝에 도달하면 nil 반환
-
-     - Throws: DecoderError
-       - `.notInitialized`: 초기화 안 됨
-       - `.readFrameError`: 프레임 읽기 실패
-       - 기타 디코딩 관련 에러
-
-     사용 예:
-     ```swift
-     while let frames = try decoder.decodeNextFrame() {
-         if let videoFrame = frames.video {
-             print("비디오 프레임: \(videoFrame.timestamp)초")
-         }
-         if let audioFrame = frames.audio {
-             print("오디오 프레임: \(audioFrame.timestamp)초")
-         }
-     }
-     print("파일 끝")
-     ```
-     */
+    /// @brief 다음 프레임을 디코딩합니다.
+    ///
+    /// @details
+    /// 디코딩 과정:
+    /// 1. 파일에서 압축된 패킷 읽기
+    /// 2. 패킷이 비디오인지 오디오인지 확인
+    /// 3. 해당 디코더로 압축 해제
+    /// 4. 프레임 데이터 반환
+    ///
+    /// @return (video: VideoFrame?, audio: AudioFrame?) 튜플
+    ///   - 비디오 프레임이면 video에 데이터, audio는 nil
+    ///   - 오디오 프레임이면 audio에 데이터, video는 nil
+    ///   - 파일 끝에 도달하면 nil 반환
+    ///
+    /// @throws DecoderError
+    ///   - `.notInitialized`: 초기화 안 됨
+    ///   - `.readFrameError`: 프레임 읽기 실패
+    ///   - 기타 디코딩 관련 에러
+    ///
+    /// 사용 예:
+    /// ```swift
+    /// while let frames = try decoder.decodeNextFrame() {
+    ///     if let videoFrame = frames.video {
+    ///         print("비디오 프레임: \(videoFrame.timestamp)초")
+    ///     }
+    ///     if let audioFrame = frames.audio {
+    ///         print("오디오 프레임: \(audioFrame.timestamp)초")
+    ///     }
+    /// }
+    /// print("파일 끝")
+    /// ```
     func decodeNextFrame() throws -> (video: VideoFrame?, audio: AudioFrame?)? {
         // 1. 초기화 확인
         guard isInitialized else {
@@ -373,28 +386,28 @@ class VideoDecoder {
         return (video: nil, audio: nil)
     }
 
-    /**
-     특정 시간으로 이동(시크)합니다.
-
-     시크(Seek)란?
-     - 영상의 특정 시점으로 빠르게 이동하는 기능
-     - 예: 10초 → 60초로 건너뛰기
-
-     키프레임(Keyframe)이란?
-     - 독립적으로 디코딩 가능한 프레임
-     - 정확한 시크를 위해 키프레임부터 디코딩 시작
-     - AVSEEK_FLAG_BACKWARD: 목표 시점 이전의 키프레임으로 이동
-
-     - Parameter timestamp: 이동할 시간 (초 단위)
-     - Throws: DecoderError
-       - `.notInitialized`: 초기화 안 됨
-       - `.unknown`: 시크 실패
-
-     사용 예:
-     ```swift
-     try decoder.seek(to: 30.0)  // 30초 위치로 이동
-     ```
-     */
+    /// @brief 특정 시간으로 이동(시크)합니다.
+    ///
+    /// @param timestamp 이동할 시간 (초 단위)
+    ///
+    /// @throws DecoderError
+    ///   - `.notInitialized`: 초기화 안 됨
+    ///   - `.unknown`: 시크 실패
+    ///
+    /// @details
+    /// 시크(Seek)란?
+    /// - 영상의 특정 시점으로 빠르게 이동하는 기능
+    /// - 예: 10초 → 60초로 건너뛰기
+    ///
+    /// 키프레임(Keyframe)이란?
+    /// - 독립적으로 디코딩 가능한 프레임
+    /// - 정확한 시크를 위해 키프레임부터 디코딩 시작
+    /// - AVSEEK_FLAG_BACKWARD: 목표 시점 이전의 키프레임으로 이동
+    ///
+    /// 사용 예:
+    /// ```swift
+    /// try decoder.seek(to: 30.0)  // 30초 위치로 이동
+    /// ```
     func seek(to timestamp: TimeInterval) throws {
         guard isInitialized else {
             throw DecoderError.notInitialized
@@ -433,24 +446,23 @@ class VideoDecoder {
         frameNumber = 0
     }
 
-    /**
-     영상의 전체 재생 시간을 반환합니다.
-
-     - Returns: 재생 시간 (초), 정보가 없으면 nil
-
-     AV_NOPTS_VALUE:
-     - FFmpeg에서 "시간 정보 없음"을 나타내는 특수 값
-     - 일부 스트리밍 파일은 전체 길이를 모를 수 있음
-
-     사용 예:
-     ```swift
-     if let duration = decoder.getDuration() {
-         print("영상 길이: \(duration)초")
-     } else {
-         print("길이 정보 없음 (라이브 스트림?)")
-     }
-     ```
-     */
+    /// @brief 영상의 전체 재생 시간을 반환합니다.
+    ///
+    /// @return 재생 시간 (초), 정보가 없으면 nil
+    ///
+    /// @details
+    /// AV_NOPTS_VALUE:
+    /// - FFmpeg에서 "시간 정보 없음"을 나타내는 특수 값
+    /// - 일부 스트리밍 파일은 전체 길이를 모를 수 있음
+    ///
+    /// 사용 예:
+    /// ```swift
+    /// if let duration = decoder.getDuration() {
+    ///     print("영상 길이: \(duration)초")
+    /// } else {
+    ///     print("길이 정보 없음 (라이브 스트림?)")
+    /// }
+    /// ```
     func getDuration() -> TimeInterval? {
         guard let formatCtx = formatContext else { return nil }
 
@@ -469,19 +481,19 @@ class VideoDecoder {
     // MARK: - Private Methods (내부 메서드)
     // 클래스 내부에서만 사용하는 헬퍼 메서드들
 
-    /**
-     비디오 스트림을 초기화합니다.
-
-     초기화 단계:
-     1. 코덱 찾기 (H.264, H.265 등)
-     2. 코덱 컨텍스트 생성
-     3. 코덱 파라미터 복사
-     4. 코덱 열기
-     5. 스트림 정보 추출
-
-     - Parameter stream: FFmpeg 스트림 포인터
-     - Throws: DecoderError (코덱 관련 에러)
-     */
+    /// @brief 비디오 스트림을 초기화합니다.
+    ///
+    /// @param stream FFmpeg 스트림 포인터
+    ///
+    /// @throws DecoderError (코덱 관련 에러)
+    ///
+    /// @details
+    /// 초기화 단계:
+    /// 1. 코덱 찾기 (H.264, H.265 등)
+    /// 2. 코덱 컨텍스트 생성
+    /// 3. 코덱 파라미터 복사
+    /// 4. 코덱 열기
+    /// 5. 스트림 정보 추출
     private func initializeVideoStream(stream: UnsafeMutablePointer<AVStream>) throws {
         // 1. 코덱 파라미터 가져오기
         guard let codecPar = stream.pointee.codecpar else {
@@ -537,14 +549,14 @@ class VideoDecoder {
         )
     }
 
-    /**
-     오디오 스트림을 초기화합니다.
-
-     비디오 스트림 초기화와 유사하지만 오디오 관련 정보를 추출합니다.
-
-     - Parameter stream: FFmpeg 스트림 포인터
-     - Throws: DecoderError (코덱 관련 에러)
-     */
+    /// @brief 오디오 스트림을 초기화합니다.
+    ///
+    /// @param stream FFmpeg 스트림 포인터
+    ///
+    /// @throws DecoderError (코덱 관련 에러)
+    ///
+    /// @details
+    /// 비디오 스트림 초기화와 유사하지만 오디오 관련 정보를 추출합니다.
     private func initializeAudioStream(stream: UnsafeMutablePointer<AVStream>) throws {
         guard let codecPar = stream.pointee.codecpar else {
             throw DecoderError.codecNotFound("audio")
@@ -587,21 +599,22 @@ class VideoDecoder {
         )
     }
 
-    /**
-     압축된 비디오 패킷을 디코딩합니다.
-
-     디코딩 2단계:
-     1. Send: 압축된 패킷을 디코더에 전송
-     2. Receive: 디코딩된 프레임 받기
-
-     EAGAIN 에러:
-     - 디코더가 더 많은 패킷을 필요로 함
-     - 정상적인 상황, 다음 패킷 계속 전송
-
-     - Parameter packet: 압축된 비디오 패킷
-     - Returns: 디코딩된 VideoFrame, EAGAIN이면 nil
-     - Throws: DecoderError
-     */
+    /// @brief 압축된 비디오 패킷을 디코딩합니다.
+    ///
+    /// @param packet 압축된 비디오 패킷
+    ///
+    /// @return 디코딩된 VideoFrame, EAGAIN이면 nil
+    ///
+    /// @throws DecoderError
+    ///
+    /// @details
+    /// 디코딩 2단계:
+    /// 1. Send: 압축된 패킷을 디코더에 전송
+    /// 2. Receive: 디코딩된 프레임 받기
+    ///
+    /// EAGAIN 에러:
+    /// - 디코더가 더 많은 패킷을 필요로 함
+    /// - 정상적인 상황, 다음 패킷 계속 전송
     private func decodeVideoPacket(packet: UnsafeMutablePointer<AVPacket>) throws -> VideoFrame? {
         guard let codecCtx = videoCodecContext else {
             throw DecoderError.notInitialized
@@ -642,17 +655,18 @@ class VideoDecoder {
         return videoFrame
     }
 
-    /**
-     압축된 오디오 패킷을 디코딩합니다.
-
-     비디오 디코딩과 동일한 2단계 프로세스:
-     1. Send packet
-     2. Receive frame
-
-     - Parameter packet: 압축된 오디오 패킷
-     - Returns: 디코딩된 AudioFrame, EAGAIN이면 nil
-     - Throws: DecoderError
-     */
+    /// @brief 압축된 오디오 패킷을 디코딩합니다.
+    ///
+    /// @param packet 압축된 오디오 패킷
+    ///
+    /// @return 디코딩된 AudioFrame, EAGAIN이면 nil
+    ///
+    /// @throws DecoderError
+    ///
+    /// @details
+    /// 비디오 디코딩과 동일한 2단계 프로세스:
+    /// 1. Send packet
+    /// 2. Receive frame
     private func decodeAudioPacket(packet: UnsafeMutablePointer<AVPacket>) throws -> AudioFrame? {
         guard let codecCtx = audioCodecContext else {
             throw DecoderError.notInitialized
@@ -679,28 +693,29 @@ class VideoDecoder {
         return convertFrameToAudio(frame: frame)
     }
 
-    /**
-     FFmpeg 프레임을 RGB 포맷으로 변환합니다.
-
-     변환 과정:
-     1. 스케일러 초기화 (처음 한 번만)
-     2. RGB 프레임 메모리 할당
-     3. 픽셀 포맷 변환 (YUV → RGB)
-     4. Swift Data 객체로 복사
-
-     YUV란?
-     - 비디오 압축에 최적화된 색 공간
-     - Y: 밝기, U/V: 색상 정보
-     - RGB보다 데이터 양이 적음
-
-     BGRA vs RGB:
-     - Metal (GPU)은 BGRA 포맷 선호
-     - B: Blue, G: Green, R: Red, A: Alpha (투명도)
-
-     - Parameter frame: FFmpeg 원본 프레임
-     - Returns: 변환된 VideoFrame
-     - Throws: DecoderError
-     */
+    /// @brief FFmpeg 프레임을 RGB 포맷으로 변환합니다.
+    ///
+    /// @param frame FFmpeg 원본 프레임
+    ///
+    /// @return 변환된 VideoFrame
+    ///
+    /// @throws DecoderError
+    ///
+    /// @details
+    /// 변환 과정:
+    /// 1. 스케일러 초기화 (처음 한 번만)
+    /// 2. RGB 프레임 메모리 할당
+    /// 3. 픽셀 포맷 변환 (YUV → RGB)
+    /// 4. Swift Data 객체로 복사
+    ///
+    /// YUV란?
+    /// - 비디오 압축에 최적화된 색 공간
+    /// - Y: 밝기, U/V: 색상 정보
+    /// - RGB보다 데이터 양이 적음
+    ///
+    /// BGRA vs RGB:
+    /// - Metal (GPU)은 BGRA 포맷 선호
+    /// - B: Blue, G: Green, R: Red, A: Alpha (투명도)
     private func convertFrameToRGB(frame: UnsafeMutablePointer<AVFrame>) throws -> VideoFrame? {
         guard let codecCtx = videoCodecContext, let videoInfo = videoInfo else {
             throw DecoderError.notInitialized
@@ -797,16 +812,16 @@ class VideoDecoder {
         )
     }
 
-    /**
-     FFmpeg 오디오 프레임을 AudioFrame으로 변환합니다.
-
-     오디오 포맷 종류:
-     - Planar: 각 채널의 샘플이 분리됨 (L L L... R R R...)
-     - Interleaved: 채널이 섞여 있음 (L R L R L R...)
-
-     - Parameter frame: FFmpeg 오디오 프레임
-     - Returns: 변환된 AudioFrame
-     */
+    /// @brief FFmpeg 오디오 프레임을 AudioFrame으로 변환합니다.
+    ///
+    /// @param frame FFmpeg 오디오 프레임
+    ///
+    /// @return 변환된 AudioFrame
+    ///
+    /// @details
+    /// 오디오 포맷 종류:
+    /// - Planar: 각 채널의 샘플이 분리됨 (L L L... R R R...)
+    /// - Interleaved: 채널이 섞여 있음 (L R L R L R...)
     private func convertFrameToAudio(frame: UnsafeMutablePointer<AVFrame>) -> AudioFrame? {
         guard let audioInfo = audioInfo else {
             return nil
@@ -875,18 +890,17 @@ class VideoDecoder {
         )
     }
 
-    /**
-     모든 FFmpeg 리소스를 정리합니다.
-
-     메모리 누수 방지:
-     - C 라이브러리는 자동 메모리 관리 없음
-     - 사용한 모든 리소스를 수동으로 해제해야 함
-     - 해제 순서: 스케일러 → 코덱 컨텍스트 → 포맷 컨텍스트
-
-     주의:
-     - 포인터를 nil로 설정하여 중복 해제 방지
-     - deinit에서 자동 호출됨
-     */
+    /// @brief 모든 FFmpeg 리소스를 정리합니다.
+    ///
+    /// @details
+    /// 메모리 누수 방지:
+    /// - C 라이브러리는 자동 메모리 관리 없음
+    /// - 사용한 모든 리소스를 수동으로 해제해야 함
+    /// - 해제 순서: 스케일러 → 코덱 컨텍스트 → 포맷 컨텍스트
+    ///
+    /// 주의:
+    /// - 포인터를 nil로 설정하여 중복 해제 방지
+    /// - deinit에서 자동 호출됨
     private func cleanup() {
         // 1. 스케일러 정리
         if let swsCtx = scalerContext {
@@ -922,39 +936,70 @@ class VideoDecoder {
 
 // MARK: - Supporting Types (보조 타입)
 
-/**
- 비디오 스트림의 상세 정보를 담는 구조체
-
- 프로퍼티 설명:
- - width/height: 영상의 가로/세로 픽셀 수 (예: 1920×1080)
- - frameRate: 초당 프레임 수 (예: 30fps, 60fps)
- - codecName: 코덱 이름 (예: "h264", "hevc")
- - bitrate: 초당 비트 수, 화질 지표 (높을수록 고화질)
- - timeBase: 시간 단위 (분수 형태: 1/30000)
- */
+/// @struct VideoStreamInfo
+/// @brief 비디오 스트림의 상세 정보를 담는 구조체
+///
+/// @details
+/// 프로퍼티 설명:
+/// - width/height: 영상의 가로/세로 픽셀 수 (예: 1920×1080)
+/// - frameRate: 초당 프레임 수 (예: 30fps, 60fps)
+/// - codecName: 코덱 이름 (예: "h264", "hevc")
+/// - bitrate: 초당 비트 수, 화질 지표 (높을수록 고화질)
+/// - timeBase: 시간 단위 (분수 형태: 1/30000)
 struct VideoStreamInfo {
+    /// @var width
+    /// @brief 영상 가로 픽셀 수
     let width: Int
+
+    /// @var height
+    /// @brief 영상 세로 픽셀 수
     let height: Int
+
+    /// @var frameRate
+    /// @brief 초당 프레임 수
     let frameRate: Double
+
+    /// @var codecName
+    /// @brief 코덱 이름
     let codecName: String
+
+    /// @var bitrate
+    /// @brief 초당 비트 수
     let bitrate: Int
+
+    /// @var timeBase
+    /// @brief 시간 단위
     let timeBase: AVRational
 }
 
-/**
- 오디오 스트림의 상세 정보를 담는 구조체
-
- 프로퍼티 설명:
- - sampleRate: 샘플레이트, 음질 지표 (44100Hz = CD 품질)
- - channels: 채널 수 (1=모노, 2=스테레오, 6=5.1 서라운드)
- - codecName: 코덱 이름 (예: "mp3", "aac")
- - bitrate: 초당 비트 수
- - timeBase: 시간 단위
- */
+/// @struct AudioStreamInfo
+/// @brief 오디오 스트림의 상세 정보를 담는 구조체
+///
+/// @details
+/// 프로퍼티 설명:
+/// - sampleRate: 샘플레이트, 음질 지표 (44100Hz = CD 품질)
+/// - channels: 채널 수 (1=모노, 2=스테레오, 6=5.1 서라운드)
+/// - codecName: 코덱 이름 (예: "mp3", "aac")
+/// - bitrate: 초당 비트 수
+/// - timeBase: 시간 단위
 struct AudioStreamInfo {
+    /// @var sampleRate
+    /// @brief 샘플레이트 (초당 샘플 수)
     let sampleRate: Int
+
+    /// @var channels
+    /// @brief 채널 수
     let channels: Int
+
+    /// @var codecName
+    /// @brief 코덱 이름
     let codecName: String
+
+    /// @var bitrate
+    /// @brief 초당 비트 수
     let bitrate: Int
+
+    /// @var timeBase
+    /// @brief 시간 단위
     let timeBase: AVRational
 }
