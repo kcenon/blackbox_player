@@ -634,6 +634,18 @@ struct ContentView: View {
     /// @brief Help 윈도우 표시 여부
     @State private var showHelpWindow = false
 
+    /// @var showMetadataOverlay
+    /// @brief 메타데이터 오버레이 표시 여부
+    @State private var showMetadataOverlay = true
+
+    /// @var showMapOverlay
+    /// @brief 지도 오버레이 표시 여부
+    @State private var showMapOverlay = true
+
+    /// @var showGraphOverlay
+    /// @brief 그래프 오버레이 표시 여부
+    @State private var showGraphOverlay = true
+
     // MARK: - Services
 
     private let fileScanner = FileScanner()
@@ -710,13 +722,13 @@ struct ContentView: View {
             showSidebar.toggle()
         }
         .onReceive(NotificationCenter.default.publisher(for: .toggleMetadataOverlayRequested)) { _ in
-            print("Toggle metadata overlay - not yet implemented")
+            showMetadataOverlay.toggle()
         }
         .onReceive(NotificationCenter.default.publisher(for: .toggleMapOverlayRequested)) { _ in
-            print("Toggle map overlay - not yet implemented")
+            showMapOverlay.toggle()
         }
         .onReceive(NotificationCenter.default.publisher(for: .toggleGraphOverlayRequested)) { _ in
-            print("Toggle graph overlay - not yet implemented")
+            showGraphOverlay.toggle()
         }
         .onReceive(NotificationCenter.default.publisher(for: .playPauseRequested)) { _ in
             isPlaying.toggle()
@@ -850,17 +862,17 @@ struct ContentView: View {
                 channelsCard(for: videoFile)
 
                 // Metadata information
-                if videoFile.hasGPSData || videoFile.hasAccelerationData {
+                if showMetadataOverlay && (videoFile.hasGPSData || videoFile.hasAccelerationData) {
                     metadataCard(for: videoFile)
                 }
 
                 // GPS Map
-                if videoFile.hasGPSData {
+                if showMapOverlay && videoFile.hasGPSData {
                     gpsMapCard(for: videoFile)
                 }
 
                 // Acceleration Graph
-                if videoFile.hasAccelerationData {
+                if showGraphOverlay && videoFile.hasAccelerationData {
                     accelerationGraphCard(for: videoFile)
                 }
             }
