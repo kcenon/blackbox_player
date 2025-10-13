@@ -349,6 +349,14 @@ struct PlayerControlsView: View {
     /// ```
     @ObservedObject var viewModel: VideoPlayerViewModel
 
+    /// @var eventMarkers
+    /// @brief 이벤트 마커 배열
+    ///
+    /// @details
+    /// 타임라인에 표시될 이벤트 마커들입니다.
+    /// GPS 데이터 분석으로 감지된 급가속, 급감속, 급회전 등의 이벤트를 표시합니다.
+    var eventMarkers: [EventMarker] = []
+
     /// @var isSeeking
     /// @brief 시킹 중 여부 (@State)
     ///
@@ -427,6 +435,14 @@ struct PlayerControlsView: View {
                 // stepBackward(), stepForward() 호출
                 // 정밀한 프레임 분석에 유용
                 frameStepButtons
+
+                // 이벤트 네비게이션 버튼
+                //
+                // 이전/다음 이벤트로 이동
+                // 급가속, 급감속, 급회전 등의 이벤트 위치로 즉시 이동
+                if !eventMarkers.isEmpty {
+                    eventNavigationButtons
+                }
 
                 Spacer()
 
@@ -566,6 +582,16 @@ struct PlayerControlsView: View {
                             height: 4
                         )
                         .cornerRadius(2)
+
+                    // 이벤트 마커들 (색상 코딩된 원)
+                    //
+                    // 급가속, 급감속, 급회전 등의 이벤트를 타임라인에 표시합니다.
+                    // duration이 0보다 클 때만 표시 (비디오 로드됨)
+                    if viewModel.duration > 0 {
+                        ForEach(eventMarkers) { marker in
+                            eventMarkerView(marker: marker, width: geometry.size.width)
+                        }
+                    }
 
                     // Thumb (흰색 원)
                     //
@@ -736,6 +762,148 @@ struct PlayerControlsView: View {
             .buttonStyle(.plain)
             .help("Next frame")
         }
+    }
+
+    // MARK: - Event Navigation Buttons
+
+    /// @brief 이벤트 네비게이션 버튼
+    ///
+    /// ## 기능
+    /// - **이전 이벤트**: 현재 시간 이전의 가장 가까운 이벤트로 이동
+    /// - **다음 이벤트**: 현재 시간 이후의 가장 가까운 이벤트로 이동
+    ///
+    /// ## 사용 시나리오
+    /// ```
+    /// 1. 급감속 이벤트 순회
+    ///    → 다음 이벤트 버튼으로 모든 급감속 구간 확인
+    ///
+    /// 2. 사고 후 분석
+    ///    → 사고 전후의 이벤트들을 빠르게 확인
+    ///
+    /// 3. 이벤트 비교
+    ///    → 여러 이벤트를 연속으로 확인하며 패턴 분석
+    /// ```
+    ///
+    /// ## SF Symbols 아이콘
+    /// - **chevron.backward.circle.fill**: 이전 이벤트
+    /// - **chevron.forward.circle.fill**: 다음 이벤트
+    ///
+    /// ## 색상
+    /// - 주황색 배경: 이벤트 마커와 같은 계열
+    /// - 흰색 아이콘: 명확한 대비
+    private var eventNavigationButtons: some View {
+        HStack(spacing: 8) {
+            // 이전 이벤트
+            Button(action: {
+                seekToPreviousEvent()
+            }) {
+                Image(systemName: "chevron.backward.circle.fill")
+                    .font(.system(size: 20))
+                    .foregroundColor(.white)
+            }
+            .buttonStyle(.plain)
+            .help("Previous event")
+            .disabled(getPreviousEvent() == nil)
+
+            // 다음 이벤트
+            Button(action: {
+                seekToNextEvent()
+            }) {
+                Image(systemName: "chevron.forward.circle.fill")
+                    .font(.system(size: 20))
+                    .foregroundColor(.white)
+            }
+            .buttonStyle(.plain)
+            .help("Next event")
+            .disabled(getNextEvent() == nil)
+        }
+    }
+
+    // MARK: - Event Marker View
+
+    /// @brief 이벤트 마커 뷰
+    /// @param marker 이벤트 마커 데이터
+    /// @param width 타임라인 전체 너비
+    /// @return 마커 뷰
+    ///
+    /// @details
+    /// 타임라인에 표시되는 개별 이벤트 마커입니다.
+    ///
+    /// ## 색상 코딩
+    /// - 급감속 (hardBraking): 빨간색
+    /// - 급가속 (rapidAcceleration): 주황색
+    /// - 급회전 (sharpTurn): 노란색
+    ///
+    /// ## 크기
+    /// - 직경: 10px
+    /// - 강도(magnitude)에 따라 불투명도 조절
+    private func eventMarkerView(marker: EventMarker, width: CGFloat) -> some View {
+        // 마커 위치 계산
+        let position = marker.timestamp / viewModel.duration
+        let xOffset = width * position - 5  // 중앙 정렬 (-5 = 직경/2)
+
+        // 이벤트 타입에 따른 색상
+        let markerColor: Color = {
+            switch marker.type {
+            case .hardBraking:
+                return .red
+            case .rapidAcceleration:
+                return .orange
+            case .sharpTurn:
+                return .yellow
+            }
+        }()
+
+        return Circle()
+            .fill(markerColor)
+            .frame(width: 10, height: 10)
+            .opacity(0.5 + marker.magnitude * 0.5)  // 강도에 따라 불투명도 조절
+            .offset(x: xOffset, y: 0)
+            .onTapGesture {
+                // 마커 클릭 시 해당 시간으로 이동
+                seekToEvent(marker)
+            }
+            .help("\(marker.displayName) - \(marker.timeString)")
+    }
+
+    // MARK: - Event Navigation Methods
+
+    /// @brief 이전 이벤트 가져오기
+    /// @return 이전 이벤트 마커 (없으면 nil)
+    private func getPreviousEvent() -> EventMarker? {
+        let currentTime = viewModel.currentTime
+        // 현재 시간 이전의 이벤트들 중 가장 가까운 것
+        return eventMarkers
+            .filter { $0.timestamp < currentTime }
+            .max(by: { $0.timestamp < $1.timestamp })
+    }
+
+    /// @brief 다음 이벤트 가져오기
+    /// @return 다음 이벤트 마커 (없으면 nil)
+    private func getNextEvent() -> EventMarker? {
+        let currentTime = viewModel.currentTime
+        // 현재 시간 이후의 이벤트들 중 가장 가까운 것
+        return eventMarkers
+            .filter { $0.timestamp > currentTime }
+            .min(by: { $0.timestamp < $1.timestamp })
+    }
+
+    /// @brief 이전 이벤트로 이동
+    private func seekToPreviousEvent() {
+        guard let event = getPreviousEvent() else { return }
+        seekToEvent(event)
+    }
+
+    /// @brief 다음 이벤트로 이동
+    private func seekToNextEvent() {
+        guard let event = getNextEvent() else { return }
+        seekToEvent(event)
+    }
+
+    /// @brief 특정 이벤트로 이동
+    /// @param event 이동할 이벤트 마커
+    private func seekToEvent(_ event: EventMarker) {
+        viewModel.seek(to: event.timestamp / viewModel.duration)
     }
 
     // MARK: - Time Display
