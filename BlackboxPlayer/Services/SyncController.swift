@@ -1105,10 +1105,16 @@ class SyncController: ObservableObject {
         var frames: [CameraPosition: VideoFrame] = [:]
         // 빈 딕셔너리로 시작
 
-        // 3. 각 채널에서 프레임 가져오기
+        // 3. 각 채널에서 프레임 가져오기 (시간 오프셋 적용)
         for channel in channelsCopy {
-            // getFrame(at:): currentTime에 가장 가까운 프레임
-            if let frame = channel.getFrame(at: currentTime) {
+            // 채널별 시간 오프셋 적용
+            // 예: currentTime = 5.0, timeOffset = 0.05
+            //     → adjustedTime = 5.05
+            //     → 이 채널에서는 5.05초 프레임을 가져옴
+            let adjustedTime = currentTime + channel.channelInfo.timeOffset
+
+            // getFrame(at:): adjustedTime에 가장 가까운 프레임
+            if let frame = channel.getFrame(at: adjustedTime) {
                 // 프레임을 찾았으면
                 frames[channel.channelInfo.position] = frame
                 // 딕셔너리에 추가
@@ -1120,6 +1126,7 @@ class SyncController: ObservableObject {
         // 4. 결과 반환
         return frames
         // 예: [.front: Frame1, .rear: Frame2]
+        // 모든 프레임이 시간 오프셋이 적용된 동기화된 프레임들
 
         // 렌더러가 이 프레임들을 화면에 그림
     }
@@ -1415,52 +1422,70 @@ class SyncController: ObservableObject {
      드리프트(Drift)란?
      - 채널의 프레임 시간과 마스터 시간의 차이
      - 디코딩 속도 차이로 발생
-     - 50ms 이상이면 감지
+     - 50ms 이상이면 감지, 100ms 이상이면 자동 보정
 
-     감지 과정:
+     감지 및 보정 과정:
      1. 모든 채널의 현재 프레임 가져오기
-     2. 각 프레임의 타임스탬프와 currentTime 비교
+     2. 각 프레임의 타임스탬프와 목표 시간 비교
      3. 차이가 driftThreshold(50ms) 이상이면 로그
+     4. 차이가 100ms 이상이면 자동 재시크 (심각한 드리프트)
 
-     보정 (현재는 로그만):
-     - 프로덕션에서는 프레임 스킵/대기 로직 구현
-     - 드리프트가 크면 채널 재시크
-     - 버퍼 관리 개선
+     보정 방법:
+     - 50ms ~ 100ms: 로그만 출력, 자연스럽게 따라잡음
+     - 100ms 이상: 자동 재시크하여 즉시 보정
 
      예:
      ```
      currentTime = 5.0초
      전방 프레임 = 5.0초 → 드리프트 0ms (OK)
-     후방 프레임 = 5.06초 → 드리프트 60ms (NG)
-     "Channel 후방 카메라 drift detected: 60ms"
+     후방 프레임 = 5.06초 → 드리프트 60ms (로그)
+     좌측 프레임 = 5.15초 → 드리프트 150ms (재시크!)
      ```
      */
     private func checkAndCorrectDrift() {
-        // 1. 모든 채널의 프레임 가져오기
-        let frames = getSynchronizedFrames()
-        // 각 채널의 currentTime에 가장 가까운 프레임
+        // 1. 채널 배열 복사 (스레드 안전)
+        channelsLock.lock()
+        let channelsCopy = channels
+        channelsLock.unlock()
 
-        // 2. 각 채널의 드리프트 계산
-        for (position, frame) in frames {
-            // position: 카메라 위치
-            // frame: 해당 채널의 프레임
+        // 2. 각 채널의 드리프트 계산 및 보정
+        for channel in channelsCopy {
+            // 2-1. 채널별 목표 시간 계산 (시간 오프셋 적용)
+            let targetTime = currentTime + channel.channelInfo.timeOffset
 
-            let drift = abs(frame.timestamp - currentTime)
-            // abs: 절댓값
-            // 프레임 시간과 마스터 시간의 차이
-
-            // 3. 드리프트가 임계값 초과하면 로그
-            if drift > driftThreshold {
-                // 50ms 초과
-                print("Channel \(position.displayName) drift detected: \(Int(drift * 1000))ms")
-                // 밀리초로 변환하여 표시
-                // 예: "Channel 후방 카메라 drift detected: 60ms"
-
-                // TODO: 프로덕션에서는 보정 로직 구현
-                // - 프레임 스킵: 너무 느린 채널
-                // - 프레임 대기: 너무 빠른 채널
-                // - 재시크: 드리프트가 너무 큰 경우
+            // 2-2. 현재 프레임 가져오기
+            guard let frame = channel.getFrame(at: targetTime) else {
+                // 프레임 없으면 스킵 (버퍼 비어있음)
+                continue
             }
+
+            // 2-3. 드리프트 계산
+            let drift = abs(frame.timestamp - targetTime)
+            // abs: 절댓값
+            // 프레임 시간과 목표 시간의 차이
+
+            // 2-4. 드리프트 레벨에 따라 처리
+            if drift > 0.100 {
+                // 100ms 이상: 심각한 드리프트 → 자동 재시크
+                warningLog("[SyncController] Channel \(channel.channelInfo.position.displayName) severe drift detected: \(Int(drift * 1000))ms - auto-correcting")
+
+                // 백그라운드에서 재시크 (메인 스레드 블로킹 방지)
+                DispatchQueue.global(qos: .userInitiated).async {
+                    do {
+                        try channel.seek(to: targetTime)
+                        infoLog("[SyncController] Channel \(channel.channelInfo.position.displayName) drift corrected by seeking to \(targetTime)s")
+                    } catch {
+                        errorLog("[SyncController] Failed to correct drift for channel \(channel.channelInfo.position.displayName): \(error)")
+                    }
+                }
+
+            } else if drift > driftThreshold {
+                // 50ms ~ 100ms: 경미한 드리프트 → 로그만 출력
+                debugLog("[SyncController] Channel \(channel.channelInfo.position.displayName) minor drift: \(Int(drift * 1000))ms")
+                // 자연스럽게 따라잡힐 것으로 기대
+                // 버퍼링이 정상화되면 드리프트 감소
+            }
+            // 50ms 미만: 정상 범위, 아무것도 안 함
         }
     }
 

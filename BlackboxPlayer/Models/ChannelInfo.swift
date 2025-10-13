@@ -612,6 +612,42 @@ struct ChannelInfo: Codable, Equatable, Identifiable, Hashable {
     /// ```
     let duration: TimeInterval
 
+    /// @var timeOffset
+    /// @brief 채널 시간 오프셋 (초)
+    ///
+    /// Time offset for this channel in seconds
+    ///
+    /// 채널 간 시간 차이를 보정하기 위한 오프셋입니다.
+    ///
+    /// **시간 오프셋(Time Offset)이란?**
+    /// - 카메라 간 하드웨어 딜레이 보정
+    /// - 각 채널이 정확히 같은 시간에 녹화를 시작하지 않을 수 있음
+    /// - 예: 전방 카메라가 후방 카메라보다 0.05초 빠르게 시작
+    ///
+    /// **사용 예시:**
+    /// ```swift
+    /// let frontChannel = ChannelInfo(
+    ///     position: .front,
+    ///     ...,
+    ///     timeOffset: 0.0  // 기준 채널
+    /// )
+    ///
+    /// let rearChannel = ChannelInfo(
+    ///     position: .rear,
+    ///     ...,
+    ///     timeOffset: 0.05  // 0.05초 늦게 시작
+    /// )
+    ///
+    /// // 동기화 시:
+    /// // 전방 5.00초 프레임 == 후방 5.05초 프레임
+    /// ```
+    ///
+    /// **값의 의미:**
+    /// - 0.0: 기준 시간 (보통 전방 카메라)
+    /// - 양수: 이 채널이 늦게 시작 (시간 추가)
+    /// - 음수: 이 채널이 빠르게 시작 (시간 감소)
+    let timeOffset: TimeInterval
+
     // MARK: - Initialization
 
     init(
@@ -626,7 +662,8 @@ struct ChannelInfo: Codable, Equatable, Identifiable, Hashable {
         audioCodec: String? = nil,
         isEnabled: Bool = true,
         fileSize: UInt64 = 0,
-        duration: TimeInterval = 0
+        duration: TimeInterval = 0,
+        timeOffset: TimeInterval = 0.0
     ) {
         self.id = id
         self.position = position
@@ -640,6 +677,7 @@ struct ChannelInfo: Codable, Equatable, Identifiable, Hashable {
         self.isEnabled = isEnabled
         self.fileSize = fileSize
         self.duration = duration
+        self.timeOffset = timeOffset
     }
 
     // MARK: - Computed Properties
