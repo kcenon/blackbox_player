@@ -456,6 +456,11 @@ struct PlayerControlsView: View {
                 // 현재 프레임을 이미지로 저장
                 snapshotButton
 
+                // 공유 버튼
+                //
+                // 비디오 파일, 스냅샷, 구간 공유
+                shareButton
+
                 Spacer()
 
                 // 시간 표시
@@ -1104,6 +1109,198 @@ struct PlayerControlsView: View {
         .buttonStyle(.plain)
         .help("Save current frame as image")
         .disabled(viewModel.currentFrame == nil)
+    }
+
+    // MARK: - Share Button
+
+    /// @brief 공유 버튼
+    ///
+    /// @details
+    /// macOS 네이티브 공유 메뉴를 표시합니다.
+    ///
+    /// ## 공유 옵션
+    /// - 현재 비디오 파일
+    /// - 현재 프레임 스냅샷
+    /// - (향후) 추출된 구간
+    ///
+    /// ## SF Symbols 아이콘
+    /// - **square.and.arrow.up**: 공유 아이콘 (macOS/iOS 표준)
+    private var shareButton: some View {
+        Menu {
+            // 비디오 파일 공유
+            Button(action: {
+                shareVideoFile()
+            }) {
+                Label("Share Video File", systemImage: "film")
+            }
+            .disabled(viewModel.videoFile == nil)
+
+            // 현재 프레임 스냅샷 공유
+            Button(action: {
+                shareCurrentFrame()
+            }) {
+                Label("Share Current Frame", systemImage: "camera")
+            }
+            .disabled(viewModel.currentFrame == nil)
+
+            Divider()
+
+            // 구간 공유 (유효한 구간이 있을 때만)
+            if viewModel.hasValidSegment {
+                Button(action: {
+                    shareSegment()
+                }) {
+                    Label("Share Selected Segment", systemImage: "scissors")
+                }
+            }
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: "square.and.arrow.up")
+                    .font(.system(size: 14))
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(Color.purple.opacity(0.3))
+            .cornerRadius(4)
+        }
+        .menuStyle(.borderlessButton)
+        .help("Share")
+    }
+
+    // MARK: - Share Methods
+
+    /// @brief 비디오 파일 공유
+    ///
+    /// @details
+    /// 현재 재생 중인 비디오 파일을 macOS 공유 서비스를 통해 공유합니다.
+    ///
+    /// ## 공유 가능한 서비스
+    /// - AirDrop
+    /// - Messages
+    /// - Mail
+    /// - Notes
+    /// - 기타 macOS 공유 확장
+    private func shareVideoFile() {
+        guard let videoFile = viewModel.videoFile,
+              let frontChannel = videoFile.channel(for: .front) ?? videoFile.channels.first else {
+            print("No video file available to share")
+            return
+        }
+
+        let fileURL = URL(fileURLWithPath: frontChannel.filePath)
+        shareItems([fileURL])
+    }
+
+    /// @brief 현재 프레임 스냅샷 공유
+    ///
+    /// @details
+    /// 현재 표시 중인 프레임을 이미지로 캡처하여 공유합니다.
+    /// 임시 파일로 PNG 형식으로 저장한 후 공유합니다.
+    private func shareCurrentFrame() {
+        guard let snapshot = viewModel.captureCurrentFrame() else {
+            print("Failed to capture current frame")
+            return
+        }
+
+        // 임시 디렉토리에 PNG 파일 생성
+        let tempDir = FileManager.default.temporaryDirectory
+        let fileName = "snapshot_\(formatTime(viewModel.currentTime)).png"
+        let tempURL = tempDir.appendingPathComponent(fileName)
+
+        // PNG 데이터 생성 및 저장
+        guard let tiffData = snapshot.tiffRepresentation,
+              let bitmapImage = NSBitmapImageRep(data: tiffData),
+              let pngData = bitmapImage.representation(using: .png, properties: [:]) else {
+            print("Failed to create PNG data")
+            return
+        }
+
+        do {
+            try pngData.write(to: tempURL)
+            shareItems([tempURL])
+        } catch {
+            print("Failed to save snapshot for sharing: \(error.localizedDescription)")
+        }
+    }
+
+    /// @brief 선택된 구간 공유
+    ///
+    /// @details
+    /// 선택된 구간을 임시 파일로 추출한 후 공유합니다.
+    /// 추출이 완료되면 자동으로 공유 메뉴가 표시됩니다.
+    private func shareSegment() {
+        guard let inTime = viewModel.inPoint,
+              let outTime = viewModel.outPoint,
+              let videoFile = viewModel.videoFile else {
+            return
+        }
+
+        // 임시 디렉토리에 파일 생성
+        let tempDir = FileManager.default.temporaryDirectory
+        let fileName = "segment_\(formatTime(inTime))_to_\(formatTime(outTime)).mp4"
+        let tempURL = tempDir.appendingPathComponent(fileName)
+
+        // 추출 실행
+        let exporter = SegmentExporter()
+        let duration = outTime - inTime
+
+        guard let frontChannel = videoFile.channel(for: .front) ?? videoFile.channels.first else {
+            print("No video channel available")
+            return
+        }
+
+        exporter.exportSegment(
+            inputPath: frontChannel.filePath,
+            outputPath: tempURL.path,
+            startTime: inTime,
+            duration: duration
+        ) { progress in
+            // 진행률 로그
+            DispatchQueue.main.async {
+                print("Export progress: \(Int(progress * 100))%")
+            }
+        } completion: { result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let url):
+                    print("Export completed for sharing: \(url)")
+                    self.shareItems([url])
+                case .failure(let error):
+                    print("Export failed: \(error.localizedDescription)")
+                }
+            }
+        }
+    }
+
+    /// @brief 아이템 공유 (macOS 공유 서비스 사용)
+    ///
+    /// @param items 공유할 아이템 배열 (URL, NSImage 등)
+    ///
+    /// @details
+    /// macOS의 NSSharingService를 사용하여 공유 메뉴를 표시합니다.
+    ///
+    /// ## 공유 가능한 타입
+    /// - URL: 파일 경로
+    /// - NSImage: 이미지
+    /// - String: 텍스트
+    ///
+    /// ## 공유 서비스 예시
+    /// - AirDrop: 근처 기기로 전송
+    /// - Messages: 메시지로 공유
+    /// - Mail: 이메일 첨부
+    /// - Notes: 노트에 추가
+    private func shareItems(_ items: [Any]) {
+        // NSSharingServicePicker를 사용하여 공유 메뉴 표시
+        let picker = NSSharingServicePicker(items: items)
+
+        // 현재 윈도우의 contentView에서 공유 메뉴 표시
+        if let window = NSApplication.shared.keyWindow,
+           let contentView = window.contentView {
+            // 공유 버튼의 프레임을 가져와서 그 위치에 메뉴 표시
+            // (여기서는 윈도우 중앙에 표시)
+            let rect = NSRect(x: contentView.bounds.midX, y: contentView.bounds.midY, width: 1, height: 1)
+            picker.show(relativeTo: rect, of: contentView, preferredEdge: .minY)
+        }
     }
 
     // MARK: - Snapshot Save
