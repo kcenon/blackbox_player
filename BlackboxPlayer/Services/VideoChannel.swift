@@ -726,110 +726,90 @@ class VideoChannel {
         // getFrame(at: time)으로 새 위치의 프레임 얻을 수 있음
     }
 
-    /// @brief 목표 시간에 가장 가까운 프레임을 반환합니다
+    /// @brief 목표 시간에 맞는 프레임을 반환합니다
     /// @param time 원하는 시간 위치 (초 단위)
-    /// @return 목표 시간에 가장 가까운 VideoFrame, 없으면 nil
+    /// @param strategy 프레임 선택 전략 (기본값: .nearest)
+    /// @return 선택된 VideoFrame, 없으면 nil
     /// @details
+    /// ## 프레임 선택 전략:
+    /// - `.nearest`: 가장 가까운 프레임 (기본)
+    /// - `.before`: 목표 시간 이전의 가장 가까운 프레임
+    /// - `.after`: 목표 시간 이후의 가장 가까운 프레임
+    /// - `.exact(tolerance)`: 허용 오차 내에서 정확히 일치하는 프레임
+    ///
+    /// ## 개선 사항:
+    /// - 이진 탐색으로 성능 향상 (O(n) → O(log n))
+    /// - 프레임 선택 전략 지원
+    /// - 프레임레이트 기반 tolerance
+    /// - 더 정확한 시간 매칭
+    ///
     /// 프레임 찾기 알고리즘:
-    /// 1. 버퍼에서 모든 프레임 검색
-    /// 2. 각 프레임의 타임스탬프와 목표 시간의 차이 계산
-    /// 3. 차이가 가장 작은 프레임 선택
-    /// 4. 오래된 프레임들 정리
+    /// 1. 버퍼에서 이진 탐색으로 목표 시간 위치 찾기
+    /// 2. 선택 전략에 따라 적절한 프레임 선택
+    /// 3. 오래된 프레임들 정리
     ///
     /// 예시:
-    /// ```
-    /// 버퍼: [4.97초, 5.03초, 5.07초] 프레임
-    /// 목표: 5.0초
+    /// ```swift
+    /// // 가장 가까운 프레임
+    /// let frame1 = channel.getFrame(at: 5.0)
     ///
-    /// 차이 계산:
-    /// - 4.97초: |4.97 - 5.0| = 0.03
-    /// - 5.03초: |5.03 - 5.0| = 0.03
-    /// - 5.07초: |5.07 - 5.0| = 0.07
+    /// // 5.0초 이전의 프레임 (되감기에 유용)
+    /// let frame2 = channel.getFrame(at: 5.0, strategy: .before)
     ///
-    /// 결과: 4.97초 또는 5.03초 프레임 (둘 다 0.03초 차이)
+    /// // 5.0초 이후의 프레임 (빨리감기에 유용)
+    /// let frame3 = channel.getFrame(at: 5.0, strategy: .after)
+    ///
+    /// // 정확히 5.0초±0.01초 이내의 프레임만
+    /// let frame4 = channel.getFrame(at: 5.0, strategy: .exact(tolerance: 0.01))
     /// ```
     ///
     /// 버퍼 정리:
-    /// - 현재 시간 - 1초 이전의 프레임 제거
-    /// - 예: 현재 5초 → 4초 이전 프레임 제거
-    /// - 이유: 메모리 절약, 뒤로 시크 시 1초까지는 즉시 가능
-    ///
-    /// 사용 예:
-    /// ```swift
-    /// // 5초 시점의 프레임 가져오기
-    /// if let frame = channel.getFrame(at: 5.0) {
-    ///     print("프레임 번호: \(frame.frameNumber)")
-    ///     print("정확한 시간: \(frame.timestamp)초")
-    ///     // 프레임 데이터로 화면에 그리기
-    /// } else {
-    ///     print("프레임 없음 (버퍼 비어있음)")
-    /// }
-    /// ```
+    /// - 현재 시간 - 0.5초 이전의 프레임 제거 (1초 → 0.5초로 개선)
+    /// - 더 빠른 응답성과 메모리 효율성
     ///
     /// nil을 반환하는 경우:
-    /// - 버퍼가 비어있음 (아직 디코딩 안 됨)
-    /// - 요청한 시간대의 프레임이 아직 디코딩 안 됨
-    /// - 너무 빠르게 시크해서 버퍼가 비워짐
-    func getFrame(at time: TimeInterval) -> VideoFrame? {
+    /// - 버퍼가 비어있음
+    /// - 선택 전략에 맞는 프레임이 없음
+    /// - exact 전략에서 tolerance 내의 프레임이 없음
+    func getFrame(at time: TimeInterval, strategy: FrameSelectionStrategy = .nearest) -> VideoFrame? {
         // 1. 버퍼 잠금
         bufferLock.lock()
-
-        // defer: 함수 종료 시 자동 실행
-        // - return이 어디서 호출되든
-        // - nil을 반환하든 프레임을 반환하든
-        // - 반드시 unlock 실행
-        // - 데드락(Deadlock) 방지
         defer { bufferLock.unlock() }
 
         // 2. 버퍼 비어있는지 확인
         guard !frameBuffer.isEmpty else {
-            // isEmpty: 배열이 비어있으면 true
-            // !isEmpty: 비어있지 않으면 true (이중 부정)
-            return nil  // 버퍼가 비어있으면 nil 반환
+            return nil
         }
 
-        // 3. 가장 가까운 프레임 찾기
-        // min(by:): 배열에서 최솟값 찾기
-        // by: 비교 클로저 (어떤 기준으로 작은지 판단)
-        let closestFrame = frameBuffer.min { frame1, frame2 in
-            // frame1과 frame2를 비교
-            // true를 반환하면 frame1이 더 "작음" (더 가까움)
+        // 3. 선택 전략에 따라 프레임 선택
+        let selectedFrame: VideoFrame?
 
-            // abs(): 절댓값 (absolute value)
-            // - abs(-3) = 3
-            // - abs(3) = 3
-            let diff1 = abs(frame1.timestamp - time)
-            let diff2 = abs(frame2.timestamp - time)
+        switch strategy {
+        case .nearest:
+            // 가장 가까운 프레임 (기본 동작)
+            selectedFrame = findNearestFrame(to: time)
 
-            // diff1이 더 작으면 true → frame1이 더 가까움
-            return diff1 < diff2
+        case .before:
+            // 목표 시간 이전의 가장 가까운 프레임
+            selectedFrame = findFrameBefore(time: time)
+
+        case .after:
+            // 목표 시간 이후의 가장 가까운 프레임
+            selectedFrame = findFrameAfter(time: time)
+
+        case .exact(let tolerance):
+            // 허용 오차 내에서 정확히 일치하는 프레임
+            selectedFrame = findExactFrame(at: time, tolerance: tolerance)
         }
-        // closestFrame은 Optional
-        // - 버퍼에 프레임이 있으면 VideoFrame
-        // - 없으면 nil (하지만 위에서 이미 체크함)
 
-        // 4. 오래된 프레임 정리
-        // 현재 시간 - 1초 이전의 프레임들 제거
-        let cleanupThreshold = time - 1.0
-        // cleanupThreshold: 정리 기준선
-        // 예: time = 5.0 → threshold = 4.0
-        //     4.0초 이전 프레임들 제거
-
-        // removeAll(where:): 조건에 맞는 요소 모두 제거
+        // 4. 오래된 프레임 정리 (0.5초로 개선)
+        let cleanupThreshold = time - 0.5
         frameBuffer.removeAll { frame in
-            // 각 프레임에 대해 이 클로저 실행
-            // true를 반환하면 제거
             frame.timestamp < cleanupThreshold
-            // 타임스탬프가 기준선보다 작으면 제거
         }
 
         // 5. 결과 반환
-        return closestFrame
-        // Optional<VideoFrame> 반환
-        // - 프레임 찾았으면 VideoFrame
-        // - 못 찾았으면 nil
-
-        // defer에 의해 자동으로 bufferLock.unlock() 실행됨
+        return selectedFrame
     }
 
     /// @brief 현재 버퍼 상태를 반환합니다
@@ -944,7 +924,168 @@ class VideoChannel {
      이 섹션의 메서드들:
      - decodingLoop(): 디코딩 루프 (백그라운드 스레드에서 실행)
      - addFrameToBuffer(): 프레임을 버퍼에 추가
+     - findNearestFrame(): 가장 가까운 프레임 찾기
+     - findFrameBefore(): 이전 프레임 찾기
+     - findFrameAfter(): 이후 프레임 찾기
+     - findExactFrame(): 정확한 프레임 찾기
      */
+
+    /// @brief 목표 시간에 가장 가까운 프레임을 찾습니다
+    /// @param time 목표 시간
+    /// @return 가장 가까운 프레임
+    /// @details
+    /// 이진 탐색으로 목표 시간에 가장 가까운 프레임을 찾습니다.
+    /// 버퍼는 이미 타임스탬프 순으로 정렬되어 있으므로 O(log n) 성능.
+    private func findNearestFrame(to time: TimeInterval) -> VideoFrame? {
+        guard !frameBuffer.isEmpty else { return nil }
+
+        // 이진 탐색으로 삽입 위치 찾기
+        var left = 0
+        var right = frameBuffer.count - 1
+
+        // 특수 케이스: 목표 시간이 버퍼 범위 밖인 경우
+        if time <= frameBuffer[0].timestamp {
+            return frameBuffer[0]
+        }
+        if time >= frameBuffer[right].timestamp {
+            return frameBuffer[right]
+        }
+
+        // 이진 탐색
+        while left <= right {
+            let mid = (left + right) / 2
+            let frame = frameBuffer[mid]
+
+            if frame.timestamp == time {
+                // 정확히 일치하는 프레임 발견
+                return frame
+            } else if frame.timestamp < time {
+                left = mid + 1
+            } else {
+                right = mid - 1
+            }
+        }
+
+        // left와 right 사이에 목표 시간이 있음
+        // left = 목표 시간 이후의 첫 프레임
+        // right = 목표 시간 이전의 마지막 프레임
+        if right >= 0 && left < frameBuffer.count {
+            let beforeFrame = frameBuffer[right]
+            let afterFrame = frameBuffer[left]
+
+            let diffBefore = abs(beforeFrame.timestamp - time)
+            let diffAfter = abs(afterFrame.timestamp - time)
+
+            // 더 가까운 프레임 선택 (같으면 이전 프레임 선택)
+            return diffBefore <= diffAfter ? beforeFrame : afterFrame
+        }
+
+        // 폴백: 배열 범위 확인
+        if right >= 0 && right < frameBuffer.count {
+            return frameBuffer[right]
+        }
+        if left >= 0 && left < frameBuffer.count {
+            return frameBuffer[left]
+        }
+
+        return nil
+    }
+
+    /// @brief 목표 시간 이전의 가장 가까운 프레임을 찾습니다
+    /// @param time 목표 시간
+    /// @return 이전 프레임
+    /// @details
+    /// 되감기나 정확한 시간 이전의 프레임이 필요할 때 사용.
+    private func findFrameBefore(time: TimeInterval) -> VideoFrame? {
+        guard !frameBuffer.isEmpty else { return nil }
+
+        // 이진 탐색으로 목표 시간 이전의 마지막 프레임 찾기
+        var left = 0
+        var right = frameBuffer.count - 1
+        var result: VideoFrame?
+
+        while left <= right {
+            let mid = (left + right) / 2
+            let frame = frameBuffer[mid]
+
+            if frame.timestamp < time {
+                // 이 프레임은 목표 시간 이전
+                result = frame
+                left = mid + 1  // 더 가까운 프레임이 있는지 오른쪽 탐색
+            } else if frame.timestamp == time {
+                // 정확히 일치하는 경우, 이전 프레임을 원함
+                if mid > 0 {
+                    return frameBuffer[mid - 1]
+                } else {
+                    return nil  // 이전 프레임 없음
+                }
+            } else {
+                // 이 프레임은 목표 시간 이후
+                right = mid - 1
+            }
+        }
+
+        return result
+    }
+
+    /// @brief 목표 시간 이후의 가장 가까운 프레임을 찾습니다
+    /// @param time 목표 시간
+    /// @return 이후 프레임
+    /// @details
+    /// 빨리감기나 정확한 시간 이후의 프레임이 필요할 때 사용.
+    private func findFrameAfter(time: TimeInterval) -> VideoFrame? {
+        guard !frameBuffer.isEmpty else { return nil }
+
+        // 이진 탐색으로 목표 시간 이후의 첫 프레임 찾기
+        var left = 0
+        var right = frameBuffer.count - 1
+        var result: VideoFrame?
+
+        while left <= right {
+            let mid = (left + right) / 2
+            let frame = frameBuffer[mid]
+
+            if frame.timestamp > time {
+                // 이 프레임은 목표 시간 이후
+                result = frame
+                right = mid - 1  // 더 가까운 프레임이 있는지 왼쪽 탐색
+            } else if frame.timestamp == time {
+                // 정확히 일치하는 경우, 이후 프레임을 원함
+                if mid < frameBuffer.count - 1 {
+                    return frameBuffer[mid + 1]
+                } else {
+                    return nil  // 이후 프레임 없음
+                }
+            } else {
+                // 이 프레임은 목표 시간 이전
+                left = mid + 1
+            }
+        }
+
+        return result
+    }
+
+    /// @brief 허용 오차 내에서 정확히 일치하는 프레임을 찾습니다
+    /// @param time 목표 시간
+    /// @param tolerance 허용 오차 (초)
+    /// @return 정확한 프레임
+    /// @details
+    /// 특정 tolerance 내의 프레임만 반환. 프레임레이트 기반 tolerance 권장.
+    /// 예: 30fps → tolerance = 1/(30*2) = 0.0167초
+    private func findExactFrame(at time: TimeInterval, tolerance: TimeInterval) -> VideoFrame? {
+        // 먼저 가장 가까운 프레임 찾기
+        guard let nearestFrame = findNearestFrame(to: time) else {
+            return nil
+        }
+
+        // tolerance 내에 있는지 확인
+        let diff = abs(nearestFrame.timestamp - time)
+        if diff <= tolerance {
+            return nearestFrame
+        }
+
+        return nil  // tolerance 밖이면 nil 반환
+    }
 
     /// @brief 디코딩 루프 (백그라운드 스레드에서 실행)
     /// @details
@@ -1187,6 +1328,64 @@ class VideoChannel {
 }
 
 // MARK: - Supporting Types (지원 타입)
+
+/// @enum FrameSelectionStrategy
+/// @brief 프레임 선택 전략을 나타내는 열거형
+/// @details
+/// getFrame(at:strategy:) 메서드에서 사용되는 프레임 선택 전략입니다.
+///
+/// ## 전략 종류:
+///
+/// **nearest (기본)**:
+/// - 목표 시간에 가장 가까운 프레임 선택
+/// - 앞뒤 프레임 모두 고려
+/// - 일반적인 재생에 적합
+///
+/// **before**:
+/// - 목표 시간 이전의 가장 가까운 프레임
+/// - 되감기나 정확한 시간 이전이 필요할 때
+/// - 예: 5.0초 요청 시 4.967초 프레임 반환
+///
+/// **after**:
+/// - 목표 시간 이후의 가장 가까운 프레임
+/// - 빨리감기나 정확한 시간 이후가 필요할 때
+/// - 예: 5.0초 요청 시 5.033초 프레임 반환
+///
+/// **exact(tolerance)**:
+/// - 허용 오차 내에서 정확히 일치하는 프레임만
+/// - tolerance 밖이면 nil 반환
+/// - 정밀한 동기화가 필요할 때
+/// - 예: exact(tolerance: 0.01) → ±10ms 이내만 허용
+///
+/// ## 사용 예시:
+/// ```swift
+/// // 일반 재생 (기본)
+/// let frame1 = channel.getFrame(at: 5.0)
+///
+/// // 프레임 단위 되감기
+/// let frame2 = channel.getFrame(at: currentTime, strategy: .before)
+///
+/// // 프레임 단위 빨리감기
+/// let frame3 = channel.getFrame(at: currentTime, strategy: .after)
+///
+/// // 정밀 동기화 (30fps 기준)
+/// let tolerance = 1.0 / (30.0 * 2)  // 약 0.0167초
+/// let frame4 = channel.getFrame(at: 5.0, strategy: .exact(tolerance: tolerance))
+/// ```
+enum FrameSelectionStrategy {
+    /// @brief 가장 가까운 프레임 (기본)
+    case nearest
+
+    /// @brief 목표 시간 이전의 프레임
+    case before
+
+    /// @brief 목표 시간 이후의 프레임
+    case after
+
+    /// @brief 정확히 일치하는 프레임 (허용 오차 내)
+    /// @param tolerance 허용 오차 (초 단위)
+    case exact(tolerance: TimeInterval)
+}
 
 /// @enum ChannelState
 /// @brief 채널 상태를 나타내는 열거형
