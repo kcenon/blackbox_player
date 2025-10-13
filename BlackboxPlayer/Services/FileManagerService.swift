@@ -1555,10 +1555,9 @@ class FileManagerService {
          print("캐시가 정리되었습니다")
      }
 
-     // 새로운 SD 카드 마운트 시
-     ext4Bridge.unmount()
-     service.clearCache()  // 이전 파일 시스템의 캐시 제거
-     ext4Bridge.mount(devicePath: newSDCard)
+     // 새로운 폴더 로드 시 캐시 정리
+     service.clearCache()  // 이전 폴더의 캐시 제거
+     fileScanner.scanVideoFiles(at: newFolderPath)
      ```
 
      메모리 해제:

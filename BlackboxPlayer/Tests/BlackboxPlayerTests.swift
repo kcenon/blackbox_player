@@ -420,8 +420,5 @@ final class BlackboxPlayerTests: XCTestCase {
  ║  • MultiChannelRendererTests.swift                                           ║
  ║    - Metal GPU 렌더링 테스트                                                  ║
  ║                                                                              ║
- ║  • EXT4FileSystemTests.swift                                                 ║
- ║    - EXT4 파일시스템 인터페이스 테스트                                           ║
- ║                                                                              ║
  ╚══════════════════════════════════════════════════════════════════════════════╝
  */
