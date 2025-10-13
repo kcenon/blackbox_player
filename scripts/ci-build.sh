@@ -265,9 +265,15 @@ main() {
     # Run tests (only for Debug builds)
     if [ "${CONFIGURATION}" = "Debug" ]; then
         if ! run_tests; then
-            log_warning "Tests failed, but continuing..."
-            # Don't fail the build on test failure in CI (optional)
-            # exit 1
+            log_error "Tests failed!"
+
+            # Fail the build on test failure
+            if [ "${CI}" = "true" ]; then
+                log_error "CI build failed due to test failures"
+                exit 1
+            else
+                log_warning "Local build: continuing despite test failures"
+            fi
         fi
     fi
 
