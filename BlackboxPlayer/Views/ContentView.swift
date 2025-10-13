@@ -714,10 +714,12 @@ struct ContentView: View {
             isPlaying.toggle()
         }
         .onReceive(NotificationCenter.default.publisher(for: .stepForwardRequested)) { _ in
-            print("Step forward - not yet implemented")
+            guard let videoFile = selectedVideoFile else { return }
+            seekBy(5, in: videoFile)
         }
         .onReceive(NotificationCenter.default.publisher(for: .stepBackwardRequested)) { _ in
-            print("Step backward - not yet implemented")
+            guard let videoFile = selectedVideoFile else { return }
+            seekBy(-5, in: videoFile)
         }
         .onReceive(NotificationCenter.default.publisher(for: .increaseSpeedRequested)) { _ in
             let speeds: [Double] = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 4.0]
