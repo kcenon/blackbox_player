@@ -1,703 +1,676 @@
-# 구현 체크리스트
+# BlackboxPlayer - 구현 체크리스트
 
-> 🌐 **Language**: [English](IMPLEMENTATION_CHECKLIST.md) | [한국어](#)
-
-이 문서는 macOS 블랙박스 플레이어 프로젝트 구현을 위한 상세한 체크리스트를 제공합니다. 작업을 완료할 때마다 체크하여 진행 상황을 추적하세요.
-
-**타임라인**: 12-16주 (3-4개월)
+**최종 업데이트**: 2025-10-13
+**목적**: TODO 항목 구현을 위한 단계별 실행 가능한 가이드
+**대상 독자**: TODO 항목을 구현하는 개발자
 
 ---
 
-## 진행 상황 개요
+## 📋 목차
 
-```
-단계 0: 준비                [█████████░] 11/15 작업  ✓ EXT4 인터페이스 준비 완료
-단계 1: 파일 시스템 및 데이터 [█░░░░░░░░] 3/24 작업   ✓ 프로토콜 계층 완료
-단계 2: 단일 채널 재생       [████████░] 18/22 작업  ✓ 비디오 재생 완료
-단계 3: 다채널 동기화        [████████░] 17/21 작업  ✓ 멀티 채널 렌더링 완료
-단계 4: 추가 기능           [█████░░░░░] 20/38 작업  ✓ Phase 4 Week 2 완료
-단계 5: 내보내기 및 설정     [ ] 0/16 작업  
-단계 6: 현지화 및 마무리     [ ] 0/20 작업  
-─────────────────────────────────────────────────────
-전체 진행률                 [████░░░░░░] 69/156 작업 (44.2%)
-
-📚 문서화 단계 (진행 중)    [███░░░░░░░] 10/29 파일  ⏳ A-3 Views 3/11 완료
-```
+1. [환경 설정](#1-환경-설정-체크리스트)
+2. [시작하기 전에](#2-시작하기-전-체크리스트)
+3. [Phase 1: 최우선 경로](#3-phase-1-최우선-경로)
+4. [Phase 2: 핵심 기능](#4-phase-2-핵심-기능)
+5. [Phase 3: 향상된 UX](#5-phase-3-향상된-ux)
+6. [Phase 4: 마무리](#6-phase-4-마무리)
+7. [테스트 및 검증](#7-테스트-및-검증-체크리스트)
+8. [코드 품질](#8-코드-품질-체크리스트)
 
 ---
 
-## 단계 0: 준비
+## 1. 환경 설정 체크리스트
 
-**목표**: 개발 환경 설정 및 기술적 실현 가능성 검증
+### 사전 요구사항 확인
 
-### 환경 설정
-
-- [x] Mac App Store에서 Xcode 15+ 설치 (26.0.1 installed)
-- [x] Homebrew 패키지 관리자 설치 (4.6.11 installed)
+- [ ] **Xcode 버전 확인**
   ```bash
-  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  xcodebuild -version
+  # 필수: Xcode 15.4+ 또는 16.0+ (26.x beta 제외)
   ```
-- [x] 개발 도구 설치 (FFmpeg 8.0, Git LFS 3.7.0, SwiftLint 0.61.0)
+  **Xcode 26.x beta인 경우**: https://developer.apple.com/download/all/ 에서 안정 버전 다운로드
+
+- [ ] **Homebrew 설치 확인**
   ```bash
-  brew install ffmpeg cmake git git-lfs swiftlint
+  brew --version
   ```
-- [x] Xcode 명령줄 도구 설치
+  **없는 경우**: `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"`
+
+- [ ] **Swift 버전 확인**
   ```bash
-  xcode-select --install
+  swift --version
+  # 필수: Swift 5.9+
   ```
-- [ ] Apple Developer 계정 생성/확인 (사용자가 직접 수행 필요)
-- [ ] Xcode에서 코드 서명 인증서 구성 (사용자가 직접 수행 필요)
 
-### 프로젝트 초기화
+### 개발 도구 설치
 
-- [x] 새 Xcode 프로젝트 생성 (xcodegen 사용)
-  - 템플릿: macOS App
-  - 인터페이스: SwiftUI
-  - 언어: Swift
-  - 최소 배포 대상: macOS 12.0
-- [x] 프로젝트 폴더 구조 설정
+- [ ] **FFmpeg 설치**
+  ```bash
+  brew install ffmpeg
+  ffmpeg -version | head -1
   ```
-  BlackboxPlayer/
-  ├── App/
-  ├── Views/
-  ├── ViewModels/
-  ├── Services/
-  ├── Models/
-  ├── Utilities/
-  ├── Resources/
-  └── Tests/
+
+- [ ] **빌드 도구 설치**
+  ```bash
+  brew install cmake git git-lfs xcodegen swiftlint
   ```
-- [x] Xcode용 .gitignore 구성
-- [x] 초기 커밋으로 Git 저장소 설정
-- [x] CI/CD 파이프라인 구성 (GitHub Actions)
 
-### 라이브러리 통합
+- [ ] **Metal Toolchain 설치**
+  ```bash
+  xcodebuild -downloadComponent MetalToolchain
+  # 예상 다운로드 크기: ~700MB
+  ```
+  **검증**: 빌드 시 "cannot execute tool 'metal'" 오류가 더 이상 나타나지 않음
 
-- [ ] 벤더로부터 EXT4 C/C++ 라이브러리 획득 (외부 의존성)
-- [x] Objective-C++ 브리징 헤더 생성 (BridgingHeader.h)
-- [x] EXT4 파일시스템 프로토콜 인터페이스 설계 (EXT4FileSystemProtocol)
-- [x] 개발용 Mock EXT4 파일시스템 구현 (MockEXT4FileSystem)
-- [x] 향후 C 라이브러리 통합을 위한 EXT4Bridge 스텁 생성
-- [x] EXT4 인터페이스 포괄적인 단위 테스트 작성 (22개 테스트 통과)
-- [x] C 라이브러리 통합 가이드 문서화 (EXT4_INTEGRATION_GUIDE.md)
-- [ ] 실제 C 라이브러리로 기본 EXT4 읽기 작업 테스트 (라이브러리 필요)
-- [ ] EXT4 라이브러리 macOS 호환성 확인 (라이브러리 필요)
-- [x] 프로젝트에 FFmpeg 라이브러리 링크 (project.yml 설정 완료)
-- [ ] 기본 FFmpeg Swift 래퍼 생성 (Phase 1-2에서 구현 예정)
-- [ ] FFmpeg으로 H.264 영상 디코딩 테스트 (Phase 1-2에서 구현 예정)
+### 프로젝트 설정
 
-### 샘플 데이터 수집
+- [ ] **Xcode에서 프로젝트 열기**
+  ```bash
+  cd /Users/dongcheolshin/Sources/blackbox_player
+  open BlackboxPlayer.xcodeproj
+  ```
 
-- [ ] 블랙박스에서 샘플 SD 카드 획득
-- [ ] SD 카드 파일 구조 문서화
-- [ ] 메타데이터 포맷 추출 및 문서화
-- [ ] GPS 데이터 샘플 추출
-- [ ] G-센서 데이터 샘플 추출
-- [ ] 영상 사양 문서화 (해상도, 코덱, 비트레이트, fps)
+- [ ] **코드 서명 구성**
+  - BlackboxPlayer 타겟 선택
+  - "Signing & Capabilities"로 이동
+  - 개발 팀 선택
+  - 번들 식별자 확인: `com.blackboxplayer.app`
 
-### 개념 증명
-
-- [ ] 최소한의 EXT4 파일 읽기 데모 생성
-- [ ] 최소한의 FFmpeg H.264 디코딩 데모 생성
-- [ ] SwiftUI에서 단일 디코딩된 프레임 표시
-- [ ] 하드웨어 성능 검증 (5개 스트림 동시 디코딩)
-- [ ] 기술적 장애물이나 제한사항 문서화
-
-**성공 기준**:
-- ✅ EXT4 포맷 SD 카드에서 파일 읽기 가능
-- ✅ FFmpeg으로 H.264 영상 디코딩 가능
-- ✅ SwiftUI에서 영상 프레임 표시 가능
-- ✅ 프로젝트가 오류 없이 빌드됨
+- [ ] **프로젝트 빌드 성공**
+  ```bash
+  xcodebuild -project BlackboxPlayer.xcodeproj \
+             -scheme BlackboxPlayer \
+             -configuration Debug build
+  ```
+  **예상 결과**: 0개의 오류로 빌드 성공
 
 ---
 
-## 단계 1: 파일 시스템 및 데이터 계층
+## 2. 시작하기 전 체크리스트
 
-**목표**: EXT4 파일 시스템 액세스 및 메타데이터 파싱 구현
+### 코드베이스 이해하기
+
+- [ ] **핵심 문서 읽기**
+  - [ ] `docs/03_architecture.md` - MVVM 아키텍처 이해
+  - [ ] `docs/02_technology_stack.md` - FFmpeg/Metal/SwiftUI 스택 검토
+  - [ ] `docs/04_project_plan.md` - 부록 A (TODO 요약) 읽기
+
+- [ ] **주요 파일 학습** (우선순위 순서)
+  1. [ ] `BlackboxPlayer/App/BlackboxPlayerApp.swift` (433줄, 14개 TODO)
+     - 앱 진입점
+     - 메뉴 구조
+     - 메뉴 액션을 위한 TODO 항목
+
+  2. [ ] `BlackboxPlayer/Models/VideoFile.swift` (1911줄)
+     - 핵심 데이터 모델
+     - 다중 채널 구조
+     - 테스트용 샘플 데이터
+
+  3. [ ] `BlackboxPlayer/Services/VideoDecoder.swift` (1006줄)
+     - FFmpeg 통합
+     - H.264/MP3 디코딩
+
+  4. [ ] `BlackboxPlayer/Services/EXT4Bridge.swift` (10개 TODO)
+     - EXT4 파일시스템 접근
+     - C 라이브러리 통합 지점
+
+### 기존 테스트 실행하기
+
+- [ ] **전체 테스트 스위트 실행**
+  ```bash
+  ./scripts/test.sh
+  # 또는: xcodebuild test -scheme BlackboxPlayer
+  ```
+  **참고**: 일부 테스트는 미구현으로 실패할 수 있음 - 이는 예상된 동작
+
+- [ ] **테스트 커버리지 검토**
+  - [ ] GPSSensorIntegrationTests - GPS/G-sensor 파이프라인
+  - [ ] SyncControllerTests - 다중 채널 동기화
+  - [ ] VideoDecoderTests - FFmpeg 디코딩
+  - [ ] DataModelsTests - 핵심 데이터 구조
+
+---
+
+## 3. Phase 1: 최우선 경로
+
+**목표**: 기본 파일 시스템 접근 및 재생 작동
 
 ### EXT4 통합
 
-#### EXT4 프로토콜 계층 (준비 작업 - 완료 ✓)
+#### TODO #15: EXT4 장치 마운트 🔴 P0 블로커
+- [ ] **lwext4 라이브러리 조사**
+  - [ ] lwext4 문서 읽기: https://github.com/gkostka/lwext4
+  - [ ] EXT4 디스크 레이아웃 연구: https://ext4.wiki.kernel.org/index.php/Ext4_Disk_Layout
+  - [ ] 기존 EXT4Bridge.swift 스텁 구현 검토
 
-- [x] `EXT4FileSystemProtocol` 인터페이스 설계
-- [x] 포괄적인 에러 타입 생성 (EXT4Error)
-- [x] 데이터 모델 정의 (EXT4FileInfo, EXT4DeviceInfo)
-- [x] 테스트용 `MockEXT4FileSystem` 생성
-- [x] 통합 예제가 포함된 `EXT4Bridge` 스텁 생성
-- [x] 단위 테스트 작성 (마운트, 언마운트, 파일 작업, 성능)
-- [x] C 라이브러리 통합 프로세스 문서화
+- [ ] **C 브리지 생성**
+  - [ ] lwext4용 Objective-C++ 래퍼 생성
+  - [ ] `BlackboxPlayer/Utilities/BridgingHeader.h` 업데이트
+  - [ ] 기본 마운트/언마운트를 독립적으로 테스트
 
-#### EXT4 브리지 구현 (C 라이브러리 대기 중)
+- [ ] **Swift 인터페이스 구현**
+  ```swift
+  // 파일: BlackboxPlayer/Services/EXT4Bridge.swift:298
+  func mount(devicePath: String) throws {
+      // TODO: lwext4 C 라이브러리 통합
+      // 장치 경로와 함께 ext4_mount 사용
+  }
+  ```
+  - [ ] 오류 처리 구현
+  - [ ] 디버깅을 위한 로깅 추가
+  - [ ] 단위 테스트 작성
 
-- [ ] 벤더로부터 C/C++ 라이브러리 획득
-- [ ] `EXT4Wrapper.h` 생성 (Objective-C++ 헤더)
-- [ ] `EXT4Wrapper.mm` 생성 (Objective-C++ 구현)
-- [ ] C 라이브러리로 `mount(device:)` 메서드 구현
-- [ ] C 라이브러리로 `unmount()` 메서드 구현
-- [ ] C 라이브러리로 `listFiles(at:)` 메서드 구현
-- [ ] C 라이브러리로 `readFile(at:)` 메서드 구현
-- [ ] C 라이브러리로 `writeFile(data:to:)` 메서드 구현
-- [ ] C 라이브러리 래퍼를 사용하도록 `EXT4Bridge` 업데이트
-- [ ] 실제 하드웨어용 단위 테스트 업데이트
-- [ ] 실제 SD 카드 하드웨어로 테스트
+- [ ] **검증**
+  - [ ] 테스트 EXT4 이미지 파일 마운트 가능
+  - [ ] 물리 SD 카드 마운트 가능
+  - [ ] 오류 발생 시 적절한 정리
 
-#### 장치 감지
+#### TODO #24: 장치 언마운트 🔴 P0
+- [ ] **언마운트 구현**
+  ```swift
+  // 파일: BlackboxPlayer/Services/EXT4Bridge.swift:1352
+  func unmount() throws {
+      // TODO: 플러시와 함께 ext4_umount 호출
+  }
+  ```
+  - [ ] 모든 파일 핸들 닫힘 확인
+  - [ ] 대기 중인 쓰기 플러시
+  - [ ] 리소스 해제
 
-- [ ] USB 장치 감지 구현 (IOKit)
-- [ ] SD 카드용 장치 필터 생성
-- [ ] 장치 선택 UI 구현
-- [ ] 장치 연결/연결 해제 알림 추가
-- [ ] 여러 연결된 SD 카드 처리
+- [ ] **검증**
+  - [ ] 언마운트 후 메모리 누수 없음
+  - [ ] 언마운트 후 재마운트 가능
+  - [ ] 오류를 우아하게 처리
+
+#### TODO #16: 디렉토리 목록 조회 🔴 P0
+- [ ] **디렉토리 열거 구현**
+  ```swift
+  // 파일: BlackboxPlayer/Services/EXT4Bridge.swift:548
+  func listDirectory(_ path: String) throws -> [FileInfo] {
+      // TODO: ext4_dir_open/ext4_dir_read 사용
+  }
+  ```
+  - [ ] 디렉토리 항목 파싱
+  - [ ] 파일 메타데이터 추출 (이름, 크기, 타임스탬프)
+  - [ ] 하위 디렉토리 재귀적으로 처리
+
+- [ ] **검증**
+  - [ ] DCIM 폴더의 모든 파일 나열
+  - [ ] Normal/Event/Parking 폴더 올바르게 식별
+  - [ ] 성능: 1000개 파일에 <1초
+
+#### TODO #1: 폴더 선택 대화상자 열기 🔴 P0
+- [ ] **NSOpenPanel 구현**
+  ```swift
+  // 파일: BlackboxPlayer/App/BlackboxPlayerApp.swift:463
+  func openFolderPicker() {
+      let panel = NSOpenPanel()
+      panel.canChooseFiles = false
+      panel.canChooseDirectories = true
+      panel.begin { response in
+          if response == .OK, let url = panel.url {
+              // url에서 파일 로드
+          }
+      }
+  }
+  ```
+
+- [ ] **검증**
+  - [ ] 대화상자가 올바르게 열리고 닫힘
+  - [ ] 선택한 폴더가 파일 로딩 트리거
+  - [ ] UI가 파일 목록으로 업데이트됨
+
+### 기본 재생
+
+#### TODO #18: 파일 읽기 🔴 P0
+- [ ] **파일 읽기 구현**
+  ```swift
+  // 파일: BlackboxPlayer/Services/EXT4Bridge.swift:781
+  func readFile(_ path: String) throws -> Data {
+      // TODO: ext4_fopen/ext4_fread 사용
+  }
+  ```
+  - [ ] 대용량 파일 처리 (>1GB)
+  - [ ] 버퍼링된 읽기 구현
+  - [ ] 진행 콜백 추가
+
+- [ ] **검증**
+  - [ ] H.264 비디오 파일 읽기 가능
+  - [ ] 메타데이터 파일 읽기 가능
+  - [ ] 성능: >50MB/s 읽기 속도
+
+#### TODO #7: 재생/일시정지 🔴 P0
+- [ ] **재생 제어 구현**
+  ```swift
+  // 파일: BlackboxPlayer/App/BlackboxPlayerApp.swift:681
+  func togglePlayPause() {
+      // TODO: VideoPlayerService.togglePlayPause() 호출
+  }
+  ```
+  - [ ] 기존 VideoDecoder에 연결
+  - [ ] UI 상태 업데이트
+  - [ ] 키보드 단축키 처리 (Space)
+
+- [ ] **검증**
+  - [ ] 비디오가 올바르게 재생 및 일시정지됨
+  - [ ] 오디오가 동기화됨
+  - [ ] 프레임 레이트 안정적 (최소 30fps)
+
+#### TODO #2: 파일 목록 새로고침 🔴 P0
+- [ ] **새로고침 구현**
+  ```swift
+  // 파일: BlackboxPlayer/App/BlackboxPlayerApp.swift:507
+  func refreshFileList() {
+      // TODO: FileSystemService.refreshFiles() 호출
+  }
+  ```
+
+- [ ] **검증**
+  - [ ] SD 카드에 추가된 새 파일 감지
+  - [ ] 전체 재시작 없이 UI 업데이트
+  - [ ] 사용자 선택 유지
+
+---
+
+## 4. Phase 2: 핵심 기능
+
+**목표**: 메타데이터를 포함한 다중 채널 재생
 
 ### 메타데이터 파싱
 
-#### 메타데이터 파서 구현
+#### TODO #17: 파일 정보 가져오기 🔴 P0
+- [ ] ext4_fstat 래퍼 구현
+- [ ] 크기, 타임스탬프, 권한 추출
+- [ ] 성능을 위한 파일 정보 캐싱
+- [ ] **검증**: 정보가 실제 파일과 일치
 
-- [ ] `MetadataParser` 클래스 생성
-- [ ] GPS 데이터 포맷 리버스 엔지니어링
-- [ ] GPS 데이터 파서 구현
-- [ ] G-센서 데이터 포맷 리버스 엔지니어링
-- [ ] G-센서 데이터 파서 구현
-- [ ] 타임스탬프 파서 구현
-- [ ] 채널 정보 파서 구현
-- [ ] 데이터 검증 로직 추가
-- [ ] 파서 단위 테스트 작성
+#### TODO #27: 비디오 메타데이터 로드 🟠 P1
+- [ ] 독점 메타데이터 포맷 파싱
+- [ ] 채널 정보 추출
+- [ ] 연관된 메타데이터 파일 로드 (.gps, .gsensor)
+- [ ] **검증**: 메타데이터가 비디오와 정렬됨
 
-#### 데이터 모델
+#### TODO #25: GPS 메타데이터 파싱 🟠 P1
+- [ ] **구현** (`MetadataExtractor.swift:359`)
+  - [ ] GPS 바이너리 포맷 역공학
+  - [ ] 위도, 경도, 고도, 속도 파싱
+  - [ ] 타임스탬프 동기화 처리
+- [ ] **검증**: GPS 포인트가 지도에 올바르게 렌더링됨
 
-- [ ] `VideoFile` 모델 정의 (Identifiable, Codable)
-- [ ] `VideoMetadata` 모델 정의
-- [ ] `GPSPoint` 모델 정의
-- [ ] `AccelerationData` 모델 정의
-- [ ] `EventType` enum 정의
-- [ ] `ChannelInfo` 모델 정의
-- [ ] `CameraPosition` enum 정의
-- [ ] 모든 모델에 대한 테스트 픽스처 생성
+### 동기화
 
-### 파일 관리자 서비스
+#### TODO #26: 비디오 타임스탬프 동기화 🟠 P1
+- [ ] **구현** (`SyncController.swift:1459`)
+  - [ ] 비디오 PTS를 GPS 타임스탬프와 정렬
+  - [ ] 드리프트 보정 구현 (±50ms)
+  - [ ] 다른 프레임 레이트 처리
+- [ ] **검증**: 재생 중 메타데이터가 실시간으로 업데이트됨
 
-#### 서비스 구현
+#### TODO #8: 프레임 앞으로 이동 🟠 P1
+- [ ] currentTime + (1/frameRate)로 탐색
+- [ ] 모든 채널 동기적으로 업데이트
+- [ ] **검증**: 프레임 단위 정확한 스테핑
 
-- [ ] `FileManagerService` 프로토콜 생성
-- [ ] 파일 스캔 로직 구현
-- [ ] 이벤트 유형 분류 구현 (일반/충격/주차)
-- [ ] 유형별 파일 필터링 구현
-- [ ] 검색 기능 구현
-- [ ] 파일 캐싱 메커니즘 추가
-- [ ] 손상된 파일을 우아하게 처리
-- [ ] 통합 테스트 작성
+#### TODO #9: 프레임 뒤로 이동 🟠 P1
+- [ ] currentTime - (1/frameRate)로 탐색
+- [ ] 파일 시작 경계 처리
+- [ ] **검증**: 역방향 프레임 스테핑 작동
 
-#### 기본 UI
-
-- [ ] `FileListView` 생성 (SwiftUI)
-- [ ] `FileRow` 컴포넌트 생성
-- [ ] 파일 정보 표시 (이름, 크기, 길이, 날짜)
-- [ ] 색상이 있는 이벤트 유형 배지 표시
-- [ ] 파일 선택 구현 (단일/다중)
-- [ ] 로딩 상태 추가
-- [ ] 오류 상태 추가
-
-**성공 기준**:
-- ✅ SD 카드를 마운트하고 모든 파일 나열 가능
-- ✅ 영상 파일 데이터 읽기 가능
-- ✅ GPS 및 G-센서 메타데이터 파싱 가능
-- ✅ 이벤트 유형과 함께 파일 목록 올바르게 표시
-- ✅ 파일 작업에서 메모리 누수 없음
+#### TODO #3: 사이드바 토글 🟠 P1
+- [ ] NavigationSplitViewVisibility 토글 구현
+- [ ] UserDefaults에 상태 저장
+- [ ] **검증**: 사이드바가 올바르게 표시/숨김
 
 ---
 
-## 단계 2: 단일 채널 영상 재생
+## 5. Phase 3: 향상된 UX
 
-**목표**: 부드러운 단일 영상 재생 구현
+**목표**: 오버레이 및 고급 제어
 
-### 영상 디코더
+### 오버레이 구현
 
-#### FFmpeg 통합
+#### TODO #4: 메타데이터 오버레이 토글 🟠 P1
+- [ ] MetadataOverlayView 생성
+- [ ] 표시: 시간, GPS, 속도, G-센서
+- [ ] 재생 중 실시간 업데이트
+- [ ] **검증**: 오버레이가 비디오와 동기화됨
 
-- [x] `VideoDecoder` 클래스 생성
-- [x] `initialize()` 메서드 구현
-- [x] H.264 디코딩 구현
-- [x] MP3 음성 디코딩 구현
-- [x] 다양한 영상 해상도 처리
-- [x] 프레임 버퍼링 구현 (VideoChannel)
-- [x] 오류 복구 로직 추가 (EAGAIN, EOF 처리)
-- [x] Swift/C 상호 운용성 수정 (String.withCString)
-- [ ] 단위 테스트 작성
+#### TODO #5: 지도 오버레이 토글 🟠 P1
+- [ ] MapKit 통합
+- [ ] 지도에 GPS 경로 그리기
+- [ ] 현재 위치 강조
+- [ ] **검증**: 재생 중 지도 업데이트
 
-#### 음성/영상 동기화
-
-- [x] 마스터 클록 구현 (CACurrentMediaTime)
-- [x] A/V 드리프트 감지 구현
-- [x] A/V 드리프트 수정 구현
-- [x] 가변 프레임 레이트 처리
-- [ ] 다양한 영상 샘플로 테스트
-
-### Metal 렌더러
-
-#### Metal 설정
-
-- [x] `MultiChannelRenderer` 클래스 생성
-- [x] Metal 장치 및 커맨드 큐 초기화
-- [x] 렌더 파이프라인 디스크립터 생성
-- [x] 버텍스 셰이더 구현 (Shaders.metal)
-- [x] 프래그먼트 셰이더 구현 (Shaders.metal)
-- [x] CVPixelBuffer에서 텍스처 생성 (IOSurface backing)
-- [x] 렌더 루프 구현 (30fps 목표)
-- [x] 윈도우 크기 조정 처리
-- [ ] 성능 최적화
-- [ ] Metal 디버거로 프로파일링
-
-#### 영상 플레이어 뷰
-
-- [x] `MultiChannelPlayerView` 생성 (SwiftUI + MTKView)
-- [x] 영상 프레임 표시
-- [x] 종횡비 처리 (viewport 계산)
-- [x] 로딩 인디케이터 추가 (BufferingView)
-- [x] 오류 표시 추가 (DebugLogView)
+#### TODO #6: 그래프 오버레이 토글 🟠 P1
+- [ ] Charts 프레임워크로 GSensorChartView 생성
+- [ ] X/Y/Z 가속도 플롯
+- [ ] 충격 이벤트 강조
+- [ ] **검증**: 그래프가 비디오와 동기화됨
 
 ### 재생 제어
 
-#### 제어 UI 구현
+#### TODO #10: 속도 증가 🟡 P2
+- [ ] 속도 증가 구현 (1x → 1.5x → 2x → 4x)
+- [ ] UI 표시기 업데이트
+- [ ] **검증**: 오디오 피치 유지
 
-- [x] `PlayerControlsView` 생성 (MultiChannelPlayerView 내부)
-- [x] 재생/일시정지 버튼 구현
-- [x] 정지 버튼 구현 (Pause로 대체)
-- [ ] 이전/다음 파일 버튼 구현
-- [x] 타임라인 스크러버 생성
-- [x] 현재 시간 / 총 길이 표시
-- [x] 속도 제어 피커 구현 (0.25x ~ 2.0x)
-- [ ] 볼륨 슬라이더 구현
-- [ ] 전체 화면 버튼 추가
+#### TODO #11: 속도 감소 🟡 P2
+- [ ] 속도 감소 구현 (4x → 2x → 1.5x → 1x → 0.5x)
+- [ ] 슬로우 모션 오디오 처리
+- [ ] **검증**: 부드러운 속도 전환
 
-#### 키보드 단축키
+#### TODO #12: 일반 속도 🟡 P2
+- [ ] 1.0x 재생 속도로 재설정
+- [ ] **검증**: 즉시 정상 속도로 복귀
 
-- [ ] Space 구현: 재생/일시정지
-- [x] 좌/우 구현: ±10초 탐색 (seekBySeconds)
-- [ ] 위/아래 구현: 볼륨 조절
-- [ ] F 구현: 전체 화면 토글
-- [ ] ESC 구현: 전체 화면 종료
+#### TODO #42: 파일 목록 필터링 🟡 P2
+- [ ] 필터 컨트롤 추가 (이벤트 유형, 날짜, 채널)
+- [ ] 조건자 로직 구현
+- [ ] **검증**: 필터가 올바르게 적용됨
 
-#### 플레이어 뷰 모델
-
-- [x] `SyncController` 생성 (ObservableObject)
-- [x] `play()` 메서드 구현
-- [x] `pause()` 메서드 구현
-- [x] `stop()` 메서드 구현
-- [x] `seekToTime(_:)` 메서드 구현
-- [x] `playbackSpeed` 속성 구현
-- [ ] `setVolume(_:)` 메서드 구현
-- [x] UI 바인딩을 위한 @Published 속성 추가
-- [ ] 모의 객체로 단위 테스트 작성
-
-**성공 기준**:
-- ✅ 영상이 최소 30fps로 재생
-- ✅ 음성/영상 동기화 ±50ms 이내
-- ✅ 탐색이 500ms 이내에 응답
-- ✅ 단일 HD 영상에 대한 메모리 사용량 < 500MB
-- ✅ 정상 재생 중 프레임 드롭 없음
+#### TODO #43: 파일 행 액션 🟡 P2
+- [ ] 컨텍스트 메뉴 추가 (내보내기, 삭제, 이름 변경)
+- [ ] 액션 핸들러 구현
+- [ ] **검증**: 선택한 파일에서 액션 작동
 
 ---
 
-## 단계 3: 다채널 동기화
+## 6. Phase 4: 마무리
 
-**목표**: 프레임 완벽 정확도로 5개 채널 동기화
+**목표**: 완전한 애플리케이션
 
-### 다채널 아키텍처
+### 도움말 및 설정
 
-#### 채널 관리
+#### TODO #13: About 윈도우 표시 🟢 P3
+- [ ] 앱 정보가 포함된 AboutView 생성
+- [ ] 버전, 저작권, 라이선스 포함
+- [ ] **검증**: About 윈도우가 올바르게 표시됨
 
-- [x] `VideoChannel` 클래스 생성
-- [x] 독립적인 디코더 인스턴스 구현
-- [x] 각 채널에 대한 프레임 버퍼 생성 (순환 버퍼, 30 프레임)
-- [x] 백그라운드 디코딩 큐 설정 (DispatchQueue)
-- [x] 채널 상태 관리 구현 (ChannelState enum)
-- [x] 채널 오류 처리 추가 (ChannelError)
-- [ ] 단위 테스트 작성
+#### TODO #14: 도움말 표시 🟢 P3
+- [ ] 사용자 가이드가 포함된 HelpView 생성
+- [ ] 키보드 단축키 문서화
+- [ ] **검증**: 도움말이 접근 가능하고 정확함
 
-#### 동기화 컨트롤러
+#### TODO #19: 파일 쓰기 🟡 P2
+- [ ] ext4_fwrite 래퍼 구현
+- [ ] 설정 지속성에 사용
+- [ ] **검증**: SD 카드에 설정 저장 가능
 
-- [x] `SyncController` 클래스 생성
-- [x] 마스터 클록 구현 (CACurrentMediaTime)
-- [x] `play()` 메서드 구현 (모든 채널 동기화)
-- [x] `pause()` 메서드 구현
-- [x] `seekToTime(_:)` 메서드 구현
-- [x] 드리프트 모니터링 구현 (updateSync, 30fps)
-- [x] 드리프트 임계값 설정 (50ms)
-- [x] 가변 프레임 레이트 처리
-- [ ] 동기화 테스트 작성
+#### TODO #20: 파일 삭제 🟡 P2
+- [ ] ext4_fremove 래퍼 구현
+- [ ] 확인 대화상자 추가
+- [ ] **검증**: 파일 삭제가 안전하게 작동
 
-### 다중 텍스처 렌더링
+#### TODO #21: 디렉토리 생성 🟢 P3
+- [ ] ext4_dir_mk 래퍼 구현
+- [ ] **검증**: 디렉토리 생성 성공
 
-#### Metal 다채널 렌더러
+#### TODO #22: 디렉토리 제거 🟢 P3
+- [ ] ext4_dir_rm 래퍼 구현
+- [ ] 디렉토리가 비어있는지 확인
+- [ ] **검증**: 빈 디렉토리 제거 작동
 
-- [x] `MultiChannelRenderer` 클래스 생성
-- [x] 단일 패스 다중-텍스처 렌더링 구현
-- [x] 그리드 레이아웃 계산기 생성 (자동 행/열 계산)
-- [x] 포커스 레이아웃 생성 (75% + 25% 썸네일)
-- [x] 수평 레이아웃 생성 (균등 분할)
-- [x] 누락된 채널 우아하게 처리 (guard 문)
-- [x] MTLSamplerState 구성 (linear filtering)
-- [ ] Metal 디버거로 프로파일링
+### 테스트 및 최적화
 
-#### 레이아웃 관리자
+#### TODO #23: 파일시스템 통계 가져오기 🟡 P2
+- [ ] ext4_mount_point_stats 래퍼 구현
+- [ ] 사용 가능/사용 중 공간 표시
+- [ ] **검증**: 통계가 실제 SD 카드와 일치
 
-- [x] `LayoutMode` enum 생성
-- [x] `calculateViewports` 메서드 구현
-- [x] `calculateGridViewports` 구현
-- [x] `calculateFocusViewports` 구현
-- [x] `calculateHorizontalViewports` 구현
-- [x] 윈도우 크기 조정 처리 (drawableSize 전달)
-- [x] 레이아웃 전환 UI 추가 (layoutControls)
-- [ ] 레이아웃 기본 설정 유지
-
-### 성능 최적화
-
-#### 메모리 최적화
-
-- [x] 프레임 버퍼 제한 구현 (채널당 30 프레임)
-- [x] 오래된 프레임 자동 해제 (1초 이전 프레임 삭제)
-- [x] 타이트 루프에 autoreleasepool 사용
-- [ ] MemoryMonitor로 메모리 사용량 모니터링
-- [x] 버퍼 상태 추적 (getBufferStatus)
-- [ ] Instruments(Allocations)로 테스트
-
-#### 스레딩 최적화
-
-- [x] 전용 디코드 큐 생성 (채널별 DispatchQueue)
-- [x] 메인 스레드에서 렌더링 보장 (MTKView delegate)
-- [x] NSLock으로 스레드 안전성 보장
-- [x] 스레드 우선순위 설정 (.userInitiated QoS)
-- [ ] Instruments(Time Profiler)로 프로파일링
-- [ ] 컨텍스트 전환 감소
-
-#### GPU 최적화
-
-- [x] 공유 Metal 리소스 사용 (단일 device, commandQueue)
-- [x] CVMetalTextureCache 활용
-- [x] 단일 렌더 패스에 다중 드로우 콜
-- [ ] Metal System Trace로 프로파일링
-- [ ] 셰이더 성능 최적화
-
-**성공 기준**:
-- ✅ 모든 5개 채널이 최소 30fps로 재생
-- ✅ 동기화 드리프트 < ±50ms
-- ✅ 메모리 사용량 < 2GB
-- ✅ Apple Silicon에서 CPU 사용량 < 80%
-- ✅ GPU 사용량 < 70%
-- ✅ 정상 재생 중 프레임 드롭 없음
+#### TODO #28-41: Metal 렌더러 테스트 🟡 P2
+- [ ] 다중 텍스처 렌더링 테스트
+- [ ] 레이아웃 전환 테스트
+- [ ] 비디오 변환 테스트
+- [ ] 성능 벤치마크 테스트
+- [ ] 메모리 관리 테스트
+- [ ] 스레드 안전성 테스트
+- [ ] **검증**: 모든 테스트 통과, 커버리지 >80%
 
 ---
 
-## 단계 4: 추가 기능
+## 7. 테스트 및 검증 체크리스트
 
-**목표**: GPS 매핑, G-센서 시각화 및 이미지 처리 구현
+### 단위 테스팅
 
-### GPS 및 G-센서
+- [ ] **전체 테스트 스위트 실행**
+  ```bash
+  xcodebuild test -scheme BlackboxPlayer \
+    -destination 'platform=macOS'
+  ```
 
-#### GPS 통합
+- [ ] **테스트 커버리지 분석**
+  ```bash
+  xcodebuild test -scheme BlackboxPlayer \
+    -enableCodeCoverage YES
+  ```
+  **목표**: >80% 커버리지
 
-- [ ] `GPSService` 클래스 생성
-- [ ] `loadGPSData(for:)` 메서드 구현
-- [ ] `getCurrentLocation(at:)` 메서드 구현
-- [ ] MapKit 프레임워크 통합
-- [ ] `GPSMapView` 생성 (NSView + MKMapView)
-- [ ] 지도에 경로 그리기 (MKPolyline)
-- [ ] 재생 중 위치 마커 업데이트
-- [ ] 지도 제어 추가 (줌, 패닝, 중심)
-- [ ] 속도 및 고도 정보 표시
-- [ ] 단위 테스트 작성
+- [ ] **특정 테스트 스위트**
+  - [ ] DataModelsTests - 핵심 데이터 구조
+  - [ ] EXT4FileSystemTests - 파일 시스템 접근
+  - [ ] VideoDecoderTests - FFmpeg 통합
+  - [ ] SyncControllerTests - 다중 채널 동기화
+  - [ ] GPSSensorIntegrationTests - 엔드투엔드 GPS/G-센서
 
-#### G-센서 시각화
+### 통합 테스팅
 
-- [ ] `GSensorService` 클래스 생성
-- [ ] G-센서 데이터 파싱 구현
-- [ ] `GSensorChartView` 생성 (NSView + Core Graphics)
-- [ ] X/Y/Z 가속도 축 그리기
-- [ ] 충격 이벤트 강조 (크기 > 임계값)
-- [ ] 영상 재생과 차트 동기화
-- [ ] 차트에 대한 줌/패닝 추가
-- [ ] 현재 값 표시
-- [ ] 단위 테스트 작성
+- [ ] **다중 채널 재생**
+  - [ ] 5개의 1080p 비디오 동시 재생
+  - [ ] 모든 채널 동기화 (±50ms)
+  - [ ] 10분 재생 중 프레임 드롭 없음
 
-### 이미지 처리
+- [ ] **파일 작업**
+  - [ ] 실제 SD 카드 마운트 가능
+  - [ ] 1000개 이상 파일 나열 가능
+  - [ ] 대용량 비디오 파일 읽기 가능 (>2GB)
 
-#### 화면 캡처
+- [ ] **성능**
+  - [ ] 재생 중 메모리 사용량 <2GB
+  - [ ] Apple Silicon에서 CPU 사용량 <80%
+  - [ ] GPU 사용량 <70%
 
-- [x] `captureCurrentFrame()` 메서드 구현
-- [x] 파일 저장 대화상자 생성
-- [x] PNG 포맷 지원
-- [x] JPEG 포맷 지원
-- [x] 선택적 타임스탬프 오버레이 추가
-- [x] 전체 해상도로 저장
-- [x] 성공/오류 알림 추가
+### 수동 테스팅
 
-#### 영상 변환
+- [ ] **정상 경로**
+  - [ ] 폴더 선택 대화상자 열기 → SD 카드 선택
+  - [ ] 파일 목록 탐색 → 비디오 선택
+  - [ ] 비디오 재생 → 모든 채널 표시
+  - [ ] 오버레이 토글 → GPS/메타데이터 표시
+  - [ ] MP4로 내보내기 → 파일 성공적으로 생성
 
-- [x] `VideoTransformations` 클래스 생성
-- [x] 밝기 조정 구현 (Metal 셰이더)
-- [x] 수평 반전 구현
-- [x] 수직 반전 구현
-- [x] 디지털 줌 구현
-- [x] 변환을 위한 Metal 셰이더 업데이트
-- [x] 변환 제어 UI 추가
-- [x] 변환 설정 유지
+- [ ] **오류 케이스**
+  - [ ] 잘못된 SD 카드 → 오류 메시지 표시
+  - [ ] 손상된 비디오 파일 → 우아한 처리
+  - [ ] 재생 중 SD 카드 분리 → 깨끗한 종료
 
-#### 전체 화면 모드
-
-- [x] 전체 화면 진입/종료 구현
-- [x] 전체 화면에서 제어 자동 숨기기
-- [x] 마우스 이동 시 제어 표시
-- [x] 여러 디스플레이 지원
-- [x] 디스플레이 배열 변경 처리
-
-**성공 기준**:
-- ✅ GPS 위치가 실시간으로 업데이트
-- ✅ G-센서 차트가 부드럽게 렌더링
-- ✅ 이미지 캡처가 전체 해상도로 저장
-- ✅ 영상 변환이 성능에 영향 없음
-- ✅ 전체 화면 모드가 올바르게 작동
+- [ ] **엣지 케이스**
+  - [ ] 매우 긴 비디오 (>2시간)
+  - [ ] 고해상도 비디오 (4K)
+  - [ ] 혼합 파일 형식의 SD 카드
 
 ---
 
-## 단계 5: 내보내기 및 설정
+## 8. 코드 품질 체크리스트
 
-**목표**: MP4 내보내기 및 블랙박스 구성 구현
+### 커밋 전
 
-### MP4 내보내기
+- [ ] **코드 포맷팅**
+  ```bash
+  swiftlint lint --fix
+  swiftlint lint --strict
+  ```
+  **예상**: 0개의 경고
 
-#### 내보내기 서비스
+- [ ] **코드 리뷰 자가 점검**
+  - [ ] 설명적인 함수/변수 이름
+  - [ ] guard 문으로 조기 종료
+  - [ ] do-catch로 오류 처리
+  - [ ] 매직 넘버 없음 (명명된 상수 사용)
+  - [ ] 주석은 "왜"를 설명, "무엇"이 아님
 
-- [ ] `ExportService` 클래스 생성
-- [ ] FFmpeg 먹싱 구현 (H.264 + MP3 → MP4)
-- [ ] 채널 선택 지원
-- [ ] 메타데이터 포함 (GPS, G-센서)
-- [ ] 진행률 추적 구현
-- [ ] 취소 지원
-- [ ] 배치 내보내기 구현
-- [ ] 통합 테스트 작성
+### 문서화
 
-#### 영상 복구
+- [ ] **DocC 주석 추가**
+  ```swift
+  /// 바이너리 메타데이터 파일에서 GPS 포인트 로드
+  ///
+  /// - Parameter filePath: .gps 메타데이터 파일의 절대 경로
+  /// - Returns: 타임스탬프가 포함된 파싱된 GPS 포인트 배열
+  /// - Throws: 파일이 손상된 경우 `MetadataError.invalidFormat`
+  func loadGPSPoints(from filePath: String) async throws -> [GPSPoint]
+  ```
 
-- [ ] `repairVideo(_:)` 메서드 구현
-- [ ] 손상된 파일 감지
-- [ ] 읽을 수 있는 프레임 복구
-- [ ] 손상된 섹션 건너뛰기
-- [ ] 재생 가능한 MP4 생성
-- [ ] 복구 통계 보고
+- [ ] **인라인 주석 업데이트**
+  - [ ] 완료된 TODO를 구현 노트로 표시
+  - [ ] 관련 있는 곳에 성능 노트 추가
+  - [ ] 알려진 제한사항 문서화
 
-#### 채널 추출
+### 커밋 메시지
 
-- [ ] `extractChannel(_:channel:)` 메서드 구현
-- [ ] 특정 채널 추출
-- [ ] 가능한 경우 음성 유지
-- [ ] 영상 품질 유지
+- [ ] **Conventional Commits 사용**
+  ```bash
+  # 형식: type(scope): description
 
-### 설정 관리
+  # 예시:
+  git commit -m "feat(ext4): implement mount/unmount operations"
+  git commit -m "fix(decoder): resolve memory leak in frame cleanup"
+  git commit -m "test(gps): add integration tests for route sync"
+  ```
 
-#### 설정 서비스
+- [ ] **유형**
+  - `feat`: 새로운 기능
+  - `fix`: 버그 수정
+  - `docs`: 문서만
+  - `test`: 테스트 추가/업데이트
+  - `refactor`: 코드 재구조화
+  - `perf`: 성능 개선
+  - `chore`: 빌드/도구 변경
 
-- [ ] `SettingsService` 클래스 생성
-- [ ] 설정 파일 포맷 리버스 엔지니어링
-- [ ] `loadSettings(from:)` 메서드 구현
-- [ ] `saveSettings(_:to:)` 메서드 구현
-- [ ] 설정 검증 추가
-- [ ] 다른 펌웨어 버전 처리
-- [ ] 통합 테스트 작성
+### Pull Request
 
-#### 설정 UI
+- [ ] **PR 설명 템플릿**
+  ```markdown
+  ## 요약
+  TODO #X 구현: [간단한 설명]
 
-- [ ] `SettingsView` 생성 (SwiftUI Form)
-- [ ] 영상 섹션 추가 (해상도, 모드)
-- [ ] 기능 섹션 추가 (주차 모드, 감도)
-- [ ] 음성 섹션 추가
-- [ ] 디스플레이 섹션 추가
-- [ ] 저장/취소 버튼 구현
-- [ ] 저장되지 않은 변경사항 경고 추가
-- [ ] 툴팁/도움말 텍스트 추가
+  ## 변경사항
+  - [주요 변경사항 목록]
 
-**성공 기준**:
-- ✅ 5채널 영상을 MP4로 내보내기 가능
-- ✅ 내보내기가 품질 유지
-- ✅ 복구가 최대한의 프레임 복구
-- ✅ 설정이 SD 카드에 올바르게 저장
-- ✅ 설정 UI가 직관적
+  ## 테스트
+  - [테스트 방법]
+  - [커버된 테스트 케이스]
 
----
+  ## 스크린샷 (UI 변경인 경우)
+  [변경 전/후 스크린샷 첨부]
 
-## 단계 6: 현지화 및 마무리
+  ## 성능 (해당되는 경우)
+  - 메모리: [영향]
+  - CPU: [영향]
+  - FPS: [영향]
 
-**목표**: 프로덕션 준비 완료된 애플리케이션
+  Closes #X
+  ```
 
-### 현지화
-
-#### 문자열 추출
-
-- [ ] 모든 UI 문자열 추출
-- [ ] `en.lproj/Localizable.strings` 생성
-- [ ] `ko.lproj/Localizable.strings` 생성
-- [ ] `ja.lproj/Localizable.strings` 생성 (선택사항)
-- [ ] 하드코딩된 문자열을 NSLocalizedString으로 교체
-- [ ] 언어 전환 테스트
-
-#### 번역
-
-- [ ] 한국어 번역 완료
-- [ ] 영어 번역 완료
-- [ ] 일본어 번역 완료 (선택사항)
-- [ ] 원어민과 번역 검토
-- [ ] 모든 언어에서 UI 레이아웃 테스트
-
-#### 현지화된 에셋
-
-- [ ] 오류 메시지 현지화
-- [ ] 도움말 텍스트 현지화
-- [ ] 플레이스홀더 텍스트 현지화
-- [ ] 알림 메시지 현지화
-
-### 마무리 및 패키징
-
-#### UI 마무리
-
-- [ ] 다크 모드 지원 구현
-- [ ] 앱 아이콘 디자인 및 추가 (1024x1024)
-- [ ] 애니메이션 및 전환 개선
-- [ ] 오류 메시지 명확성 향상
-- [ ] 모든 곳에 로딩 상태 추가
-- [ ] 뷰 간 전환 마무리
-- [ ] UI 불일치 검토 및 수정
-
-#### 성능 튜닝
-
-- [ ] Instruments(Time Profiler)로 프로파일링
-- [ ] 모든 메모리 누수 수정
-- [ ] 앱 시작 시간 최적화 (< 2초)
-- [ ] 유휴 상태에서 CPU 사용량 감소
-- [ ] 배터리 소모 감소
-- [ ] 구형 Mac 하드웨어에서 테스트
-
-#### 접근성
-
-- [ ] 모든 UI 요소에 VoiceOver 레이블 추가
-- [ ] 키보드 탐색이 작동하는지 확인
-- [ ] 색상 대비 확인 (WCAG AA)
-- [ ] Dynamic Type 지원 (텍스트 크기 조정)
-- [ ] VoiceOver 활성화하여 테스트
-
-#### 문서화
-
-- [ ] 사용자 매뉴얼 작성 (영어 및 한국어)
-- [ ] 설치 가이드 작성
-- [ ] 문제 해결 가이드 작성
-- [ ] 개발자 문서 작성
-- [ ] API 문서 생성 (DocC)
-
-#### 코드 서명 및 공증
-
-- [ ] Xcode에서 코드 서명 구성
-- [ ] 모든 프레임워크 및 라이브러리 서명
-- [ ] 메인 앱 번들 서명
-- [ ] create-dmg로 DMG 설치 프로그램 생성
-- [ ] 공증 제출
-- [ ] 공증 티켓 스테이플
-- [ ] 깨끗한 시스템에서 공증된 앱 테스트
-
-#### 최종 테스트
-
-- [ ] macOS 12 (Monterey)에서 테스트
-- [ ] macOS 13 (Ventura)에서 테스트
-- [ ] macOS 14 (Sonoma)에서 테스트
-- [ ] Intel Mac에서 테스트
-- [ ] Apple Silicon Mac에서 테스트
-- [ ] 다양한 SD 카드 및 블랙박스로 테스트
-- [ ] 모든 중요한 버그 수정
-- [ ] 모든 기능이 엔드투엔드로 작동하는지 확인
-
-**성공 기준**:
-- ✅ 모든 UI 텍스트가 올바르게 현지화됨
-- ✅ 다크 모드가 전문적으로 보임
-- ✅ 앱이 Apple 공증 통과
-- ✅ DMG가 원활하게 설치됨
-- ✅ 중요한 버그가 남아있지 않음
-- ✅ 성능이 모든 목표 달성
+- [ ] **리뷰 요청 전**
+  - [ ] 모든 테스트 통과
+  - [ ] SwiftLint 0개 경고
+  - [ ] 문서 업데이트
+  - [ ] 성능 벤치마크 실행 (해당되는 경우)
 
 ---
 
-## 테스트 체크리스트
+## 📊 진행 상황 추적
 
-### 단위 테스트 (목표: 80% 커버리지)
+### 마일스톤
 
-- [ ] EXT4Bridge 테스트
-- [ ] MetadataParser 테스트
-- [ ] FileManagerService 테스트
-- [ ] VideoDecoder 테스트
-- [ ] PlayerViewModel 테스트
-- [ ] ExportService 테스트
-- [ ] GPSService 테스트
-- [ ] GSensorService 테스트
-- [ ] 모든 모델에 테스트 있음
+#### 마일스톤 1: MVP (1-4주차)
+- [ ] EXT4 마운트/언마운트 작동
+- [ ] EXT4에서 파일 목록 로드
+- [ ] 단일 채널 비디오 재생
+- [ ] 기본 재생 제어 (재생, 일시정지, 탐색)
 
-### 통합 테스트
+**완료 정의**: SD 카드에서 단일 채널 비디오 재생 가능
 
-- [ ] 실제 SD 카드로 EXT4 읽기/쓰기
-- [ ] 다채널 재생 테스트
-- [ ] 다양한 영상 조합으로 내보내기
-- [ ] 설정 로드/저장 테스트
+#### 마일스톤 2: 다중 채널 (5-6주차)
+- [ ] 여러 채널 동기화
+- [ ] GPS 오버레이 작동
+- [ ] 메타데이터 오버레이 작동
+- [ ] G-센서 그래프 작동
 
-### 성능 테스트
+**완료 정의**: 오버레이와 함께 5개 채널 재생 가능
 
-- [ ] 재생 FPS 측정
-- [ ] 시간 경과에 따른 메모리 사용량
-- [ ] 내보내기 속도 측정
-- [ ] 앱 시작 시간
+#### 마일스톤 3: 기능 완료 (7-8주차)
+- [ ] 모든 메뉴 액션 구현
+- [ ] 내보내기 기능 작동
+- [ ] 설정 관리 작동
+- [ ] 테스트 커버리지 >80%
 
-### UI 테스트
-
-- [ ] 파일 목록 탐색
-- [ ] 재생 제어
-- [ ] 설정 폼 검증
-- [ ] 내보내기 워크플로우
+**완료 정의**: 59개 TODO 모두 완료, 베타 테스팅 준비 완료
 
 ---
 
-## 릴리스 체크리스트
+## 🆘 문제 해결 가이드
 
-- [ ] 모든 기능 구현 및 테스트 완료
-- [ ] 모든 중요한 버그 수정
-- [ ] 문서화 완료
-- [ ] 앱 서명 및 공증
-- [ ] DMG 설치 프로그램 생성 및 테스트
-- [ ] 릴리스 노트 작성
-- [ ] App Store 스크린샷 준비 (해당되는 경우)
-- [ ] 마케팅 자료 준비
-- [ ] 지원 채널 설정
-- [ ] 출시 후 모니터링 계획 준비
+### 일반적인 빌드 이슈
+
+#### "Cannot find module 'FFmpeg'"
+```bash
+# 해결법: FFmpeg를 헤더 검색 경로에 추가
+# project.yml에서:
+HEADER_SEARCH_PATHS: /opt/homebrew/Cellar/ffmpeg/8.0_1/include
+```
+
+#### "Metal pipeline state creation failed"
+```bash
+# 해결법: 셰이더 구문 확인
+# Xcode 빌드 로그에서 셰이더 컴파일 출력 확인
+# MultiChannelShaders.metal에서 구문 오류 찾기
+```
+
+#### "The Xcode build system has crashed"
+```bash
+# 해결법: 안정 버전 Xcode로 다운그레이드
+# Xcode 26.x beta는 실험적 기능에 알려진 이슈 있음
+# developer.apple.com에서 Xcode 15.4 또는 16.0 다운로드
+```
+
+### 런타임 이슈
+
+#### "EXT4Error.unsupportedOperation"
+EXT4 통합이 불완전한 경우 예상됩니다 (TODO #15-24 미완료).
+대신 테스트를 위해 `VideoFile.sampleVideos` 사용.
+
+#### 시간 경과에 따라 메모리 사용량 증가
+확인 사항:
+- 해제되지 않은 비디오 프레임
+- 닫히지 않은 파일 핸들
+- 클로저에서 유지된 강한 참조
+
+Instruments → Leaks 도구로 프로파일링.
 
 ---
 
-## 참고사항
+## 📚 참고자료
 
-**성공을 위한 팁**:
-- 자주 커밋하기
-- 개발하면서 테스트 작성하기
-- 정기적으로 성능 프로파일링하기
-- 실제 하드웨어에서 자주 테스트하기
-- 개발 중 사용자 피드백 받기
-- 어려움과 솔루션 문서화하기
-- 이 체크리스트를 업데이트하여 유지하기
+### 기능별 주요 파일
 
-**피해야 할 일반적인 함정**:
-- 오류 처리 생략
-- 메모리 누수 무시
-- 구형 하드웨어에서 테스트하지 않기
-- 문자열 하드코딩 (현지화 깨짐)
-- 메인 스레드 차단
-- 최적화 전에 프로파일링하지 않기
-- 단위 테스트 생략
+| 기능 | 주요 파일 | 테스트 파일 |
+|------|-----------|------------|
+| EXT4 통합 | EXT4Bridge.swift | EXT4FileSystemTests.swift |
+| 비디오 디코딩 | VideoDecoder.swift | VideoDecoderTests.swift |
+| 다중 채널 동기화 | SyncController.swift | SyncControllerTests.swift |
+| GPS 서비스 | GPSService.swift | GPSSensorIntegrationTests.swift |
+| Metal 렌더링 | MultiChannelRenderer.swift | MultiChannelRendererTests.swift |
+| 메뉴 액션 | BlackboxPlayerApp.swift | (UI Tests) |
 
----
+### 외부 리소스
 
-**프로젝트**: macOS용 블랙박스 플레이어
-**총 작업**: 156개
+- **EXT4**: https://github.com/gkostka/lwext4
+- **FFmpeg**: https://ffmpeg.org/documentation.html
+- **Metal**: https://developer.apple.com/documentation/metal
+- **SwiftUI**: https://developer.apple.com/documentation/swiftui
 
 ---
 
+**최종 업데이트**: 2025-10-13
+**다음 검토**: 각 마일스톤 완료 후

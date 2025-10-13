@@ -37,6 +37,12 @@ targets:
         HEADER_SEARCH_PATHS: /opt/homebrew/Cellar/ffmpeg/8.0_1/include
         LIBRARY_SEARCH_PATHS: /opt/homebrew/Cellar/ffmpeg/8.0_1/lib
         OTHER_LDFLAGS: -lavformat -lavcodec -lswscale -lavutil -lswresample
+        SWIFT_ACTIVE_COMPILATION_CONDITIONS: DEBUG
+      configs:
+        Debug:
+          OTHER_SWIFT_FLAGS: -DDEBUG
+        Release:
+          OTHER_SWIFT_FLAGS: -O
     scheme:
       testTargets:
         - BlackboxPlayerTests

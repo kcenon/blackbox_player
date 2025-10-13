@@ -1,701 +1,676 @@
-# Implementation Checklist
+# BlackboxPlayer - Implementation Checklist
 
-> 🌐 **Language**: [English](#) | [한국어](IMPLEMENTATION_CHECKLIST_kr.md)
-
-This document provides a detailed checklist for implementing the macOS Blackbox Player project. Check off tasks as you complete them to track your progress.
-
----
-
-## Progress Overview
-
-```
-Phase 0: Preparation           [█████████░] 11/15 tasks  ✓ EXT4 Interface Ready
-Phase 1: File System & Data    [█░░░░░░░░] 3/24 tasks   ✓ Protocol Layer Complete
-Phase 2: Single Channel        [████████░] 18/22 tasks  ✓ Video Playback Complete
-Phase 3: Multi-Channel Sync    [████████░] 17/21 tasks  ✓ Multi-Channel Rendering Complete
-Phase 4: Additional Features   [█████░░░░░] 20/38 tasks  ✓ Phase 4 Complete
-Phase 5: Export & Settings     [ ] 0/16 tasks
-Phase 6: Localization & Polish [ ] 0/20 tasks
-─────────────────────────────────────────────────────
-Total Progress                 [████░░░░░░] 69/156 tasks (44.2%)
-
-📚 Documentation Phase (In Progress)   [███░░░░░░░] 10/29 files  ⏳ A-3 Views 3/11 Complete
-```
+**Last Updated**: 2025-10-13
+**Purpose**: Step-by-step implementation guide with actionable checklists
+**Target Audience**: Developers implementing TODO items
 
 ---
 
-## Phase 0: Preparation
+## 📋 Table of Contents
 
-**Goal**: Set up development environment and verify technical feasibility
-
-### Environment Setup
-
-- [x] Install Xcode 15+ from Mac App Store (26.0.1 installed)
-- [x] Install Homebrew package manager (4.6.11 installed)
-  ```bash
-  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-  ```
-- [x] Install development tools (FFmpeg 8.0, Git LFS 3.7.0, SwiftLint 0.61.0)
-  ```bash
-  brew install ffmpeg cmake git git-lfs swiftlint
-  ```
-- [x] Install Xcode Command Line Tools
-  ```bash
-  xcode-select --install
-  ```
-- [ ] Create/verify Apple Developer account (user action required)
-- [ ] Configure code signing certificates in Xcode (user action required)
-
-### Project Initialization
-
-- [x] Create new Xcode project (using xcodegen)
-  - Template: macOS App
-  - Interface: SwiftUI
-  - Language: Swift
-  - Minimum Deployment: macOS 12.0
-- [x] Set up project folder structure
-  ```
-  BlackboxPlayer/
-  ├── App/
-  ├── Views/
-  ├── ViewModels/
-  ├── Services/
-  ├── Models/
-  ├── Utilities/
-  ├── Resources/
-  └── Tests/
-  ```
-- [x] Configure .gitignore for Xcode
-- [x] Set up Git repository with initial commit
-- [x] Configure CI/CD pipeline (GitHub Actions)
-
-### Library Integration
-
-- [ ] Obtain EXT4 C/C++ library from vendor (external dependency)
-- [x] Create Objective-C++ bridging header (BridgingHeader.h)
-- [x] Design EXT4 filesystem protocol interface (EXT4FileSystemProtocol)
-- [x] Implement mock EXT4 filesystem for development (MockEXT4FileSystem)
-- [x] Create EXT4Bridge stub for future C library integration
-- [x] Write comprehensive unit tests for EXT4 interface (22 tests passing)
-- [x] Document C library integration guide (EXT4_INTEGRATION_GUIDE.md)
-- [ ] Test basic EXT4 read operation with real C library (library required)
-- [ ] Verify EXT4 library macOS compatibility (library required)
-- [x] Link FFmpeg libraries to project (configured in project.yml)
-- [ ] Create basic FFmpeg Swift wrapper (planned for Phase 1-2)
-- [ ] Test H.264 video decoding with FFmpeg (planned for Phase 1-2)
-
-### Sample Data Collection
-
-- [ ] Obtain sample SD card from dashcam
-- [ ] Document SD card file structure
-- [ ] Extract and document metadata format
-- [ ] Extract GPS data samples
-- [ ] Extract G-Sensor data samples
-- [ ] Document video specifications (resolution, codec, bitrate, fps)
-
-### Proof of Concept
-
-- [ ] Create minimal EXT4 file read demo
-- [ ] Create minimal FFmpeg H.264 decode demo
-- [ ] Display single decoded frame in SwiftUI
-- [ ] Validate hardware performance (decode 5 streams simultaneously)
-- [ ] Document any technical blockers or limitations
-
-**Success Criteria**:
-- ✅ Can read files from EXT4-formatted SD card
-- ✅ Can decode H.264 video with FFmpeg
-- ✅ Can display video frame in SwiftUI
-- ✅ Project builds without errors
+1. [Environment Setup](#1-environment-setup-checklist)
+2. [Before You Start](#2-before-you-start-checklist)
+3. [Phase 1: Critical Path](#3-phase-1-critical-path)
+4. [Phase 2: Core Features](#4-phase-2-core-features)
+5. [Phase 3: Enhanced UX](#5-phase-3-enhanced-ux)
+6. [Phase 4: Polish](#6-phase-4-polish)
+7. [Testing & Validation](#7-testing--validation-checklist)
+8. [Code Quality](#8-code-quality-checklist)
 
 ---
 
-## Phase 1: File System & Data Layer
+## 1. Environment Setup Checklist
 
-**Goal**: Implement EXT4 file system access and metadata parsing
+### Prerequisites Verification
+
+- [ ] **Verify Xcode Version**
+  ```bash
+  xcodebuild -version
+  # Required: Xcode 15.4+ or 16.0+ (NOT 26.x beta)
+  ```
+  **If Xcode 26.x beta**: Download stable Xcode from https://developer.apple.com/download/all/
+
+- [ ] **Verify Homebrew Installation**
+  ```bash
+  brew --version
+  ```
+  **If missing**: `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"`
+
+- [ ] **Verify Swift Version**
+  ```bash
+  swift --version
+  # Required: Swift 5.9+
+  ```
+
+### Development Tools Installation
+
+- [ ] **Install FFmpeg**
+  ```bash
+  brew install ffmpeg
+  ffmpeg -version | head -1
+  ```
+
+- [ ] **Install Build Tools**
+  ```bash
+  brew install cmake git git-lfs xcodegen swiftlint
+  ```
+
+- [ ] **Install Metal Toolchain**
+  ```bash
+  xcodebuild -downloadComponent MetalToolchain
+  # Expected download: ~700MB
+  ```
+  **Verification**: Build should no longer show "cannot execute tool 'metal'" error
+
+### Project Setup
+
+- [ ] **Open Project in Xcode**
+  ```bash
+  cd /Users/dongcheolshin/Sources/blackbox_player
+  open BlackboxPlayer.xcodeproj
+  ```
+
+- [ ] **Configure Code Signing**
+  - Select BlackboxPlayer target
+  - Go to "Signing & Capabilities"
+  - Select your development team
+  - Verify bundle identifier: `com.blackboxplayer.app`
+
+- [ ] **Build Project Successfully**
+  ```bash
+  xcodebuild -project BlackboxPlayer.xcodeproj \
+             -scheme BlackboxPlayer \
+             -configuration Debug build
+  ```
+  **Expected**: Build succeeds with 0 errors
+
+---
+
+## 2. Before You Start Checklist
+
+### Understanding the Codebase
+
+- [ ] **Read Core Documentation**
+  - [ ] `docs/03_architecture.md` - Understand MVVM architecture
+  - [ ] `docs/02_technology_stack.md` - Review FFmpeg/Metal/SwiftUI stack
+  - [ ] `docs/04_project_plan.md` - Read Appendix A (TODO summary)
+
+- [ ] **Study Key Files** (Priority order)
+  1. [ ] `BlackboxPlayer/App/BlackboxPlayerApp.swift` (433 lines, 14 TODOs)
+     - App entry point
+     - Menu structure
+     - TODO items for menu actions
+
+  2. [ ] `BlackboxPlayer/Models/VideoFile.swift` (1911 lines)
+     - Core data model
+     - Multi-channel structure
+     - Sample data for testing
+
+  3. [ ] `BlackboxPlayer/Services/VideoDecoder.swift` (1006 lines)
+     - FFmpeg integration
+     - H.264/MP3 decoding
+
+  4. [ ] `BlackboxPlayer/Services/EXT4Bridge.swift` (10 TODOs)
+     - EXT4 filesystem access
+     - C library integration points
+
+### Running Existing Tests
+
+- [ ] **Run Full Test Suite**
+  ```bash
+  ./scripts/test.sh
+  # OR: xcodebuild test -scheme BlackboxPlayer
+  ```
+  **Note**: Some tests may fail due to missing implementations - this is expected
+
+- [ ] **Review Test Coverage**
+  - [ ] GPSSensorIntegrationTests - GPS/G-sensor pipeline
+  - [ ] SyncControllerTests - Multi-channel synchronization
+  - [ ] VideoDecoderTests - FFmpeg decoding
+  - [ ] DataModelsTests - Core data structures
+
+---
+
+## 3. Phase 1: Critical Path
+
+**Goal**: Basic file system access and playback working
 
 ### EXT4 Integration
 
-#### EXT4 Protocol Layer (Preparatory Work - Completed ✓)
+#### TODO #15: Mount EXT4 Device 🔴 P0 BLOCKER
+- [ ] **Research lwext4 Library**
+  - [ ] Read lwext4 documentation: https://github.com/gkostka/lwext4
+  - [ ] Study EXT4 disk layout: https://ext4.wiki.kernel.org/index.php/Ext4_Disk_Layout
+  - [ ] Review existing EXT4Bridge.swift stub implementation
 
-- [x] Design `EXT4FileSystemProtocol` interface
-- [x] Create comprehensive error types (EXT4Error)
-- [x] Define data models (EXT4FileInfo, EXT4DeviceInfo)
-- [x] Create `MockEXT4FileSystem` for testing
-- [x] Create `EXT4Bridge` stub with integration examples
-- [x] Write unit tests (mount, unmount, file ops, performance)
-- [x] Document C library integration process
+- [ ] **Create C Bridge**
+  - [ ] Create Objective-C++ wrapper for lwext4
+  - [ ] Update `BlackboxPlayer/Utilities/BridgingHeader.h`
+  - [ ] Test basic mount/unmount in isolation
 
-#### EXT4 Bridge Implementation (Awaiting C Library)
+- [ ] **Implement Swift Interface**
+  ```swift
+  // File: BlackboxPlayer/Services/EXT4Bridge.swift:298
+  func mount(devicePath: String) throws {
+      // TODO: Integrate lwext4 C library
+      // Use ext4_mount with device path
+  }
+  ```
+  - [ ] Implement error handling
+  - [ ] Add logging for debugging
+  - [ ] Write unit tests
 
-- [ ] Obtain C/C++ library from vendor
-- [ ] Create `EXT4Wrapper.h` (Objective-C++ header)
-- [ ] Create `EXT4Wrapper.mm` (Objective-C++ implementation)
-- [ ] Implement `mount(device:)` method with C library
-- [ ] Implement `unmount()` method with C library
-- [ ] Implement `listFiles(at:)` method with C library
-- [ ] Implement `readFile(at:)` method with C library
-- [ ] Implement `writeFile(data:to:)` method with C library
-- [ ] Update `EXT4Bridge` to use C library wrapper
-- [ ] Update unit tests for real hardware
-- [ ] Test with real SD card hardware
+- [ ] **Validation**
+  - [ ] Can mount test EXT4 image file
+  - [ ] Can mount physical SD card
+  - [ ] Proper cleanup on errors
 
-#### Device Detection
+#### TODO #24: Unmount Device 🔴 P0
+- [ ] **Implement Unmount**
+  ```swift
+  // File: BlackboxPlayer/Services/EXT4Bridge.swift:1352
+  func unmount() throws {
+      // TODO: Call ext4_umount with flush
+  }
+  ```
+  - [ ] Ensure all file handles closed
+  - [ ] Flush pending writes
+  - [ ] Release resources
 
-- [ ] Implement USB device detection (IOKit)
-- [ ] Create device filter for SD cards
-- [ ] Implement device selection UI
-- [ ] Add device connection/disconnection notifications
-- [ ] Handle multiple connected SD cards
+- [ ] **Validation**
+  - [ ] No memory leaks after unmount
+  - [ ] Can remount after unmount
+  - [ ] Handles errors gracefully
+
+#### TODO #16: List Directory 🔴 P0
+- [ ] **Implement Directory Enumeration**
+  ```swift
+  // File: BlackboxPlayer/Services/EXT4Bridge.swift:548
+  func listDirectory(_ path: String) throws -> [FileInfo] {
+      // TODO: Use ext4_dir_open/ext4_dir_read
+  }
+  ```
+  - [ ] Parse directory entries
+  - [ ] Extract file metadata (name, size, timestamp)
+  - [ ] Handle subdirectories recursively
+
+- [ ] **Validation**
+  - [ ] Lists all files in DCIM folder
+  - [ ] Correctly identifies Normal/Event/Parking folders
+  - [ ] Performance: <1s for 1000 files
+
+#### TODO #1: Open Folder Picker 🔴 P0
+- [ ] **Implement NSOpenPanel**
+  ```swift
+  // File: BlackboxPlayer/App/BlackboxPlayerApp.swift:463
+  func openFolderPicker() {
+      let panel = NSOpenPanel()
+      panel.canChooseFiles = false
+      panel.canChooseDirectories = true
+      panel.begin { response in
+          if response == .OK, let url = panel.url {
+              // Load files from url
+          }
+      }
+  }
+  ```
+
+- [ ] **Validation**
+  - [ ] Dialog opens and closes correctly
+  - [ ] Selected folder triggers file loading
+  - [ ] UI updates with file list
+
+### Basic Playback
+
+#### TODO #18: Read File 🔴 P0
+- [ ] **Implement File Reading**
+  ```swift
+  // File: BlackboxPlayer/Services/EXT4Bridge.swift:781
+  func readFile(_ path: String) throws -> Data {
+      // TODO: Use ext4_fopen/ext4_fread
+  }
+  ```
+  - [ ] Handle large files (>1GB)
+  - [ ] Implement buffered reading
+  - [ ] Add progress callback
+
+- [ ] **Validation**
+  - [ ] Can read H.264 video files
+  - [ ] Can read metadata files
+  - [ ] Performance: >50MB/s read speed
+
+#### TODO #7: Play/Pause 🔴 P0
+- [ ] **Implement Playback Control**
+  ```swift
+  // File: BlackboxPlayer/App/BlackboxPlayerApp.swift:681
+  func togglePlayPause() {
+      // TODO: Call VideoPlayerService.togglePlayPause()
+  }
+  ```
+  - [ ] Connect to existing VideoDecoder
+  - [ ] Update UI state
+  - [ ] Handle keyboard shortcut (Space)
+
+- [ ] **Validation**
+  - [ ] Video plays and pauses correctly
+  - [ ] Audio synchronized
+  - [ ] Frame rate stable (30fps minimum)
+
+#### TODO #2: Refresh File List 🔴 P0
+- [ ] **Implement Refresh**
+  ```swift
+  // File: BlackboxPlayer/App/BlackboxPlayerApp.swift:507
+  func refreshFileList() {
+      // TODO: Call FileSystemService.refreshFiles()
+  }
+  ```
+
+- [ ] **Validation**
+  - [ ] Detects new files added to SD card
+  - [ ] Updates UI without full restart
+  - [ ] Preserves user selection
+
+---
+
+## 4. Phase 2: Core Features
+
+**Goal**: Multi-channel playback with metadata
 
 ### Metadata Parsing
 
-#### Metadata Parser Implementation
+#### TODO #17: Get File Info 🔴 P0
+- [ ] Implement ext4_fstat wrapper
+- [ ] Extract size, timestamp, permissions
+- [ ] Cache file info for performance
+- [ ] **Validation**: Info matches actual file
 
-- [ ] Create `MetadataParser` class
-- [ ] Reverse engineer GPS data format
-- [ ] Implement GPS data parser
-- [ ] Reverse engineer G-Sensor data format
-- [ ] Implement G-Sensor data parser
-- [ ] Implement timestamp parser
-- [ ] Implement channel info parser
-- [ ] Add data validation logic
-- [ ] Write unit tests for parsers
+#### TODO #27: Load Video Metadata 🟠 P1
+- [ ] Parse proprietary metadata format
+- [ ] Extract channel information
+- [ ] Load associated metadata files (.gps, .gsensor)
+- [ ] **Validation**: Metadata aligns with video
 
-#### Data Models
+#### TODO #25: Parse GPS Metadata 🟠 P1
+- [ ] **Implementation** (`MetadataExtractor.swift:359`)
+  - [ ] Reverse engineer GPS binary format
+  - [ ] Parse latitude, longitude, altitude, speed
+  - [ ] Handle timestamp synchronization
+- [ ] **Validation**: GPS points render correctly on map
 
-- [ ] Define `VideoFile` model (Identifiable, Codable)
-- [ ] Define `VideoMetadata` model
-- [ ] Define `GPSPoint` model
-- [ ] Define `AccelerationData` model
-- [ ] Define `EventType` enum
-- [ ] Define `ChannelInfo` model
-- [ ] Define `CameraPosition` enum
-- [ ] Create test fixtures for all models
+### Synchronization
 
-### File Manager Service
+#### TODO #26: Sync Video Timestamp 🟠 P1
+- [ ] **Implementation** (`SyncController.swift:1459`)
+  - [ ] Align video PTS with GPS timestamps
+  - [ ] Implement drift correction (±50ms)
+  - [ ] Handle different frame rates
+- [ ] **Validation**: Metadata updates in real-time during playback
 
-#### Service Implementation
+#### TODO #8: Step Forward 🟠 P1
+- [ ] Seek to currentTime + (1/frameRate)
+- [ ] Update all channels synchronously
+- [ ] **Validation**: Frame-accurate stepping
 
-- [ ] Create `FileManagerService` protocol
-- [ ] Implement file scanning logic
-- [ ] Implement event type categorization (Normal/Impact/Parking)
-- [ ] Implement file filtering by type
-- [ ] Implement search functionality
-- [ ] Add file caching mechanism
-- [ ] Handle corrupted files gracefully
-- [ ] Write integration tests
+#### TODO #9: Step Backward 🟠 P1
+- [ ] Seek to currentTime - (1/frameRate)
+- [ ] Handle start-of-file boundary
+- [ ] **Validation**: Reverse frame stepping works
 
-#### Basic UI
-
-- [ ] Create `FileListView` (SwiftUI)
-- [ ] Create `FileRow` component
-- [ ] Display file information (name, size, duration, date)
-- [ ] Show event type badges with colors
-- [ ] Implement file selection (single/multi)
-- [ ] Add loading states
-- [ ] Add error states
-
-**Success Criteria**:
-- ✅ Can mount SD card and list all files
-- ✅ Can read video file data
-- ✅ Can parse GPS and G-Sensor metadata
-- ✅ File list displays correctly with event types
-- ✅ No memory leaks in file operations
+#### TODO #3: Toggle Sidebar 🟠 P1
+- [ ] Implement NavigationSplitViewVisibility toggle
+- [ ] Save state to UserDefaults
+- [ ] **Validation**: Sidebar shows/hides correctly
 
 ---
 
-## Phase 2: Single Channel Playback
+## 5. Phase 3: Enhanced UX
 
-**Goal**: Implement smooth single-video playback
+**Goal**: Overlays and advanced controls
 
-### Video Decoder
+### Overlay Implementation
 
-#### FFmpeg Integration
+#### TODO #4: Toggle Metadata Overlay 🟠 P1
+- [ ] Create MetadataOverlayView
+- [ ] Display: time, GPS, speed, G-sensor
+- [ ] Update in real-time during playback
+- [ ] **Validation**: Overlay synchronized with video
 
-- [x] Create `VideoDecoder` class
-- [x] Implement `initialize()` method
-- [x] Implement H.264 decoding
-- [x] Implement MP3 audio decoding
-- [x] Handle different video resolutions
-- [x] Implement frame buffering (VideoChannel)
-- [x] Add error recovery logic (EAGAIN, EOF handling)
-- [x] Fix Swift/C interoperability (String.withCString)
-- [ ] Write unit tests
+#### TODO #5: Toggle Map Overlay 🟠 P1
+- [ ] Integrate MapKit
+- [ ] Draw GPS route on map
+- [ ] Highlight current position
+- [ ] **Validation**: Map updates during playback
 
-#### Audio/Video Synchronization
-
-- [x] Implement master clock (CACurrentMediaTime)
-- [x] Implement A/V drift detection
-- [x] Implement A/V drift correction
-- [x] Handle variable frame rates
-- [ ] Test with different video samples
-
-### Metal Renderer
-
-#### Metal Setup
-
-- [x] Create `MultiChannelRenderer` class
-- [x] Initialize Metal device and command queue
-- [x] Create render pipeline descriptor
-- [x] Implement vertex shader (Shaders.metal)
-- [x] Implement fragment shader (Shaders.metal)
-- [x] Create texture from CVPixelBuffer (IOSurface backing)
-- [x] Implement render loop (30fps target)
-- [x] Handle window resizing
-- [ ] Optimize for performance
-- [ ] Profile with Metal debugger
-
-#### Video Player View
-
-- [x] Create `MultiChannelPlayerView` (SwiftUI + MTKView)
-- [x] Display video frames
-- [x] Handle aspect ratio (viewport calculation)
-- [x] Add loading indicator (BufferingView)
-- [x] Add error display (DebugLogView)
+#### TODO #6: Toggle Graph Overlay 🟠 P1
+- [ ] Create GSensorChartView with Charts framework
+- [ ] Plot X/Y/Z acceleration
+- [ ] Highlight impact events
+- [ ] **Validation**: Graph synchronized with video
 
 ### Playback Controls
 
-#### Controls UI Implementation
+#### TODO #10: Increase Speed 🟡 P2
+- [ ] Implement speed increments (1x → 1.5x → 2x → 4x)
+- [ ] Update UI indicator
+- [ ] **Validation**: Audio pitch maintained
 
-- [x] Create `PlayerControlsView` (inside MultiChannelPlayerView)
-- [x] Implement Play/Pause button
-- [x] Implement Stop button (replaced with Pause)
-- [ ] Implement Previous/Next file buttons
-- [x] Create timeline scrubber
-- [x] Display current time / duration
-- [x] Implement speed control picker (0.25x ~ 2.0x)
-- [ ] Implement volume slider
-- [ ] Add full-screen button
+#### TODO #11: Decrease Speed 🟡 P2
+- [ ] Implement speed decrements (4x → 2x → 1.5x → 1x → 0.5x)
+- [ ] Handle slow-motion audio
+- [ ] **Validation**: Smooth speed transitions
 
-#### Keyboard Shortcuts
+#### TODO #12: Normal Speed 🟡 P2
+- [ ] Reset to 1.0x playback rate
+- [ ] **Validation**: Returns to normal immediately
 
-- [ ] Implement Space: Play/Pause
-- [x] Implement Left/Right: Seek ±10 seconds (seekBySeconds)
-- [ ] Implement Up/Down: Volume adjustment
-- [ ] Implement F: Toggle full-screen
-- [ ] Implement ESC: Exit full-screen
+#### TODO #42: Filter File List 🟡 P2
+- [ ] Add filter controls (event type, date, channel)
+- [ ] Implement predicate logic
+- [ ] **Validation**: Filters apply correctly
 
-#### Player ViewModel
-
-- [x] Create `SyncController` (ObservableObject)
-- [x] Implement `play()` method
-- [x] Implement `pause()` method
-- [x] Implement `stop()` method
-- [x] Implement `seekToTime(_:)` method
-- [x] Implement `playbackSpeed` property
-- [ ] Implement `setVolume(_:)` method
-- [x] Add @Published properties for UI binding
-- [ ] Write unit tests with mocks
-
-**Success Criteria**:
-- ✅ Video plays at 30fps minimum
-- ✅ Audio/video sync within ±50ms
-- ✅ Seeking responds within 500ms
-- ✅ Memory usage < 500MB for single HD video
-- ✅ No frame drops during normal playback
+#### TODO #43: File Row Actions 🟡 P2
+- [ ] Add context menu (export, delete, rename)
+- [ ] Implement action handlers
+- [ ] **Validation**: Actions work on selected files
 
 ---
 
-## Phase 3: Multi-Channel Synchronization
+## 6. Phase 4: Polish
 
-**Goal**: Synchronize 5 channels with frame-perfect accuracy
+**Goal**: Complete application
 
-### Multi-Channel Architecture
+### Help & Settings
 
-#### Channel Management
+#### TODO #13: Show About Window 🟢 P3
+- [ ] Create AboutView with app info
+- [ ] Include version, copyright, licenses
+- [ ] **Validation**: About window displays correctly
 
-- [x] Create `VideoChannel` class
-- [x] Implement independent decoder instances
-- [x] Create frame buffer for each channel (circular buffer, 30 frames)
-- [x] Set up background decoding queues (DispatchQueue)
-- [x] Implement channel state management (ChannelState enum)
-- [x] Add channel error handling (ChannelError)
-- [ ] Write unit tests
+#### TODO #14: Show Help 🟢 P3
+- [ ] Create HelpView with user guide
+- [ ] Document keyboard shortcuts
+- [ ] **Validation**: Help is accessible and accurate
 
-#### Synchronization Controller
+#### TODO #19: Write File 🟡 P2
+- [ ] Implement ext4_fwrite wrapper
+- [ ] Used for settings persistence
+- [ ] **Validation**: Can save settings to SD card
 
-- [x] Create `SyncController` class
-- [x] Implement master clock (CACurrentMediaTime)
-- [x] Implement `play()` method (all channels synchronized)
-- [x] Implement `pause()` method
-- [x] Implement `seekToTime(_:)` method
-- [x] Implement drift monitoring (updateSync, 30fps)
-- [x] Set drift threshold (50ms)
-- [x] Handle channels with different frame rates
-- [ ] Write synchronization tests
+#### TODO #20: Delete File 🟡 P2
+- [ ] Implement ext4_fremove wrapper
+- [ ] Add confirmation dialog
+- [ ] **Validation**: File deletion works safely
 
-### Multi-Texture Rendering
+#### TODO #21: Create Directory 🟢 P3
+- [ ] Implement ext4_dir_mk wrapper
+- [ ] **Validation**: Directory creation succeeds
 
-#### Metal Multi-Channel Renderer
+#### TODO #22: Remove Directory 🟢 P3
+- [ ] Implement ext4_dir_rm wrapper
+- [ ] Verify directory is empty
+- [ ] **Validation**: Empty directory removal works
 
-- [x] Create `MultiChannelRenderer` class
-- [x] Implement single-pass multi-texture rendering
-- [x] Create grid layout calculator (auto row/column calculation)
-- [x] Create focus layout (75% + 25% thumbnails)
-- [x] Create horizontal layout (equal division)
-- [x] Handle missing channels gracefully (guard statements)
-- [x] Configure MTLSamplerState (linear filtering)
-- [ ] Profile with Metal debugger
+### Testing & Optimization
 
-#### Layout Manager
+#### TODO #23: Get Filesystem Stats 🟡 P2
+- [ ] Implement ext4_mount_point_stats wrapper
+- [ ] Display free/used space
+- [ ] **Validation**: Stats match actual SD card
 
-- [x] Create `LayoutMode` enum
-- [x] Implement `calculateViewports` method
-- [x] Implement `calculateGridViewports`
-- [x] Implement `calculateFocusViewports`
-- [x] Implement `calculateHorizontalViewports`
-- [x] Handle window resizing (drawableSize passed)
-- [x] Add layout switching UI (layoutControls)
-- [ ] Persist layout preference
-
-### Performance Optimization
-
-#### Memory Optimization
-
-- [x] Implement frame buffer limits (30 frames/channel)
-- [x] Auto-release old frames (delete frames older than 1 second)
-- [x] Use autoreleasepool in tight loops
-- [ ] Monitor memory usage with MemoryMonitor
-- [x] Track buffer status (getBufferStatus)
-- [ ] Test with Instruments (Allocations)
-
-#### Threading Optimization
-
-- [x] Create dedicated decode queues (per-channel DispatchQueue)
-- [x] Ensure rendering on main thread (MTKView delegate)
-- [x] Thread safety with NSLock
-- [x] Set thread priorities (.userInitiated QoS)
-- [ ] Profile with Instruments (Time Profiler)
-- [ ] Reduce context switching
-
-#### GPU Optimization
-
-- [x] Use shared Metal resources (single device, commandQueue)
-- [x] Leverage CVMetalTextureCache
-- [x] Multiple draw calls in single render pass
-- [ ] Profile with Metal System Trace
-- [ ] Optimize shader performance
-
-**Success Criteria**:
-- ✅ All 5 channels play at 30fps minimum
-- ✅ Synchronization drift < ±50ms
-- ✅ Memory usage < 2GB
-- ✅ CPU usage < 80% on Apple Silicon
-- ✅ GPU usage < 70%
-- ✅ No frame drops during normal playback
+#### TODO #28-41: Metal Renderer Tests 🟡 P2
+- [ ] Test multi-texture rendering
+- [ ] Test layout switching
+- [ ] Test video transformations
+- [ ] Test performance benchmarks
+- [ ] Test memory management
+- [ ] Test thread safety
+- [ ] **Validation**: All tests pass, coverage >80%
 
 ---
 
-## Phase 4: Additional Features
+## 7. Testing & Validation Checklist
 
-**Goal**: Implement GPS mapping, G-Sensor visualization, and image processing
+### Unit Testing
 
-### GPS & G-Sensor
+- [ ] **Run Full Test Suite**
+  ```bash
+  xcodebuild test -scheme BlackboxPlayer \
+    -destination 'platform=macOS'
+  ```
 
-#### GPS Integration
+- [ ] **Test Coverage Analysis**
+  ```bash
+  xcodebuild test -scheme BlackboxPlayer \
+    -enableCodeCoverage YES
+  ```
+  **Target**: >80% coverage
 
-- [x] Create `GPSService` class
-- [x] Implement `loadGPSData(from:startTime:)` method
-- [x] Implement `getCurrentLocation(at:)` method
-- [x] Integrate MapKit framework
-- [x] Create `MapOverlayView` (SwiftUI + MKMapView)
-- [x] Draw route on map (MKPolyline)
-- [x] Update location marker during playback
-- [x] Add map controls (zoom, pan, center)
-- [x] Display speed and altitude info
-- [ ] Write unit tests
+- [ ] **Specific Test Suites**
+  - [ ] DataModelsTests - Core data structures
+  - [ ] EXT4FileSystemTests - File system access
+  - [ ] VideoDecoderTests - FFmpeg integration
+  - [ ] SyncControllerTests - Multi-channel sync
+  - [ ] GPSSensorIntegrationTests - End-to-end GPS/G-sensor
 
-#### G-Sensor Visualization
+### Integration Testing
 
-- [x] Create `GSensorService` class
-- [x] Implement G-Sensor data parsing
-- [x] Create `GraphOverlayView` (SwiftUI + Charts)
-- [x] Draw X/Y/Z acceleration axes
-- [x] Highlight impact events (magnitude > threshold)
-- [x] Synchronize chart with video playback
-- [x] Add zoom/pan for chart
-- [x] Display current values
-- [x] Write integration tests (GPSSensorIntegrationTests)
+- [ ] **Multi-Channel Playback**
+  - [ ] 5x 1080p videos play simultaneously
+  - [ ] All channels synchronized (±50ms)
+  - [ ] No frame drops during 10-minute playback
 
-### Image Processing
+- [ ] **File Operations**
+  - [ ] Can mount real SD card
+  - [ ] Can list 1000+ files
+  - [ ] Can read large video files (>2GB)
 
-#### Screen Capture
+- [ ] **Performance**
+  - [ ] Memory usage <2GB during playback
+  - [ ] CPU usage <80% on Apple Silicon
+  - [ ] GPU usage <70%
 
-- [x] Implement `captureCurrentFrame()` method
-- [x] Create save file dialog
-- [x] Support PNG format
-- [x] Support JPEG format
-- [x] Add optional timestamp overlay
-- [x] Save at full resolution
-- [x] Add success/error notifications
+### Manual Testing
 
-#### Video Transformations
+- [ ] **Happy Path**
+  - [ ] Open folder picker → Select SD card
+  - [ ] Browse file list → Select video
+  - [ ] Play video → All channels display
+  - [ ] Toggle overlays → GPS/metadata visible
+  - [ ] Export to MP4 → File created successfully
 
-- [x] Create `VideoTransformations` class
-- [x] Implement brightness adjustment (Metal shader)
-- [x] Implement horizontal flip
-- [x] Implement vertical flip
-- [x] Implement digital zoom
-- [x] Update Metal shaders for transformations
-- [x] Add transformation controls UI
-- [x] Persist transformation settings
+- [ ] **Error Cases**
+  - [ ] Invalid SD card → Error message shown
+  - [ ] Corrupted video file → Graceful handling
+  - [ ] Disconnect SD card during playback → Clean shutdown
 
-#### Full-Screen Mode
-
-- [x] Implement enter/exit full-screen
-- [x] Auto-hide controls in full-screen
-- [x] Show controls on mouse move
-- [x] Support multiple displays
-- [x] Handle display arrangement changes
-
-**Success Criteria**:
-- ✅ GPS location updates in real-time
-- ✅ G-Sensor chart renders smoothly
-- ✅ Image capture saves at full resolution
-- ✅ Video transformations don't impact performance
-- ✅ Full-screen mode works correctly
+- [ ] **Edge Cases**
+  - [ ] Very long videos (>2 hours)
+  - [ ] High resolution videos (4K)
+  - [ ] SD card with mixed file formats
 
 ---
 
-## Phase 5: Export & Settings
+## 8. Code Quality Checklist
 
-**Goal**: Implement MP4 export and dashcam configuration
+### Before Committing
 
-### MP4 Export
+- [ ] **Code Formatting**
+  ```bash
+  swiftlint lint --fix
+  swiftlint lint --strict
+  ```
+  **Expected**: 0 warnings
 
-#### Export Service
+- [ ] **Code Review Self-Check**
+  - [ ] Descriptive function/variable names
+  - [ ] Early exit with guard statements
+  - [ ] Error handling with do-catch
+  - [ ] No magic numbers (use named constants)
+  - [ ] Comments explain "why", not "what"
 
-- [ ] Create `ExportService` class
-- [ ] Implement FFmpeg muxing (H.264 + MP3 → MP4)
-- [ ] Support channel selection
-- [ ] Embed metadata (GPS, G-Sensor)
-- [ ] Implement progress tracking
-- [ ] Support cancellation
-- [ ] Implement batch export
-- [ ] Write integration tests
+### Documentation
 
-#### Video Repair
+- [ ] **Add DocC Comments**
+  ```swift
+  /// Loads GPS points from binary metadata file
+  ///
+  /// - Parameter filePath: Absolute path to .gps metadata file
+  /// - Returns: Array of parsed GPS points with timestamps
+  /// - Throws: `MetadataError.invalidFormat` if file is corrupted
+  func loadGPSPoints(from filePath: String) async throws -> [GPSPoint]
+  ```
 
-- [ ] Implement `repairVideo(_:)` method
-- [ ] Detect corrupted files
-- [ ] Recover readable frames
-- [ ] Skip damaged sections
-- [ ] Generate playable MP4
-- [ ] Report recovery statistics
+- [ ] **Update Inline Comments**
+  - [ ] Mark completed TODOs with implementation notes
+  - [ ] Add performance notes where relevant
+  - [ ] Document known limitations
 
-#### Channel Extraction
+### Commit Message
 
-- [ ] Implement `extractChannel(_:channel:)` method
-- [ ] Extract specific channel
-- [ ] Preserve audio if available
-- [ ] Maintain video quality
+- [ ] **Use Conventional Commits**
+  ```bash
+  # Format: type(scope): description
 
-### Settings Management
+  # Examples:
+  git commit -m "feat(ext4): implement mount/unmount operations"
+  git commit -m "fix(decoder): resolve memory leak in frame cleanup"
+  git commit -m "test(gps): add integration tests for route sync"
+  ```
 
-#### Settings Service
+- [ ] **Types**
+  - `feat`: New feature
+  - `fix`: Bug fix
+  - `docs`: Documentation only
+  - `test`: Adding/updating tests
+  - `refactor`: Code restructuring
+  - `perf`: Performance improvement
+  - `chore`: Build/tooling changes
 
-- [ ] Create `SettingsService` class
-- [ ] Reverse engineer settings file format
-- [ ] Implement `loadSettings(from:)` method
-- [ ] Implement `saveSettings(_:to:)` method
-- [ ] Add settings validation
-- [ ] Handle different firmware versions
-- [ ] Write integration tests
+### Pull Request
 
-#### Settings UI
+- [ ] **PR Description Template**
+  ```markdown
+  ## Summary
+  Implements TODO #X: [Brief description]
 
-- [ ] Create `SettingsView` (SwiftUI Form)
-- [ ] Add Video section (resolution, mode)
-- [ ] Add Features section (parking mode, sensitivity)
-- [ ] Add Audio section
-- [ ] Add Display section
-- [ ] Implement save/cancel buttons
-- [ ] Add unsaved changes warning
-- [ ] Add tooltips/help text
+  ## Changes
+  - [List of key changes]
 
-**Success Criteria**:
-- ✅ Can export 5-channel video to MP4
-- ✅ Export preserves quality
-- ✅ Repair recovers maximum frames
-- ✅ Settings save correctly to SD card
-- ✅ Settings UI is intuitive
+  ## Testing
+  - [How to test]
+  - [Test cases covered]
 
----
+  ## Screenshots (if UI change)
+  [Attach before/after screenshots]
 
-## Phase 6: Localization & Polish
+  ## Performance (if applicable)
+  - Memory: [impact]
+  - CPU: [impact]
+  - FPS: [impact]
 
-**Goal**: Production-ready application
+  Closes #X
+  ```
 
-### Localization
-
-#### String Extraction
-
-- [ ] Extract all UI strings
-- [ ] Create `en.lproj/Localizable.strings`
-- [ ] Create `ko.lproj/Localizable.strings`
-- [ ] Create `ja.lproj/Localizable.strings` (optional)
-- [ ] Replace hardcoded strings with NSLocalizedString
-- [ ] Test language switching
-
-#### Translations
-
-- [ ] Complete Korean translation
-- [ ] Complete English translation
-- [ ] Complete Japanese translation (optional)
-- [ ] Review translations with native speakers
-- [ ] Test UI layout in all languages
-
-#### Localized Assets
-
-- [ ] Localize error messages
-- [ ] Localize help text
-- [ ] Localize placeholder text
-- [ ] Localize alert messages
-
-### Polish & Packaging
-
-#### UI Polish
-
-- [ ] Implement dark mode support
-- [ ] Design and add app icon (1024x1024)
-- [ ] Refine animations and transitions
-- [ ] Improve error message clarity
-- [ ] Add loading states everywhere
-- [ ] Polish transitions between views
-- [ ] Review and fix UI inconsistencies
-
-#### Performance Tuning
-
-- [ ] Profile with Instruments (Time Profiler)
-- [ ] Fix all memory leaks
-- [ ] Optimize app startup time (< 2 seconds)
-- [ ] Reduce CPU usage during idle
-- [ ] Reduce battery consumption
-- [ ] Test on older Mac hardware
-
-#### Accessibility
-
-- [ ] Add VoiceOver labels to all UI elements
-- [ ] Ensure keyboard navigation works
-- [ ] Verify color contrast (WCAG AA)
-- [ ] Support Dynamic Type (text scaling)
-- [ ] Test with VoiceOver enabled
-
-#### Documentation
-
-- [ ] Write user manual (English & Korean)
-- [ ] Write installation guide
-- [ ] Write troubleshooting guide
-- [ ] Write developer documentation
-- [ ] Generate API documentation (DocC)
-
-#### Code Signing & Notarization
-
-- [ ] Configure code signing in Xcode
-- [ ] Sign all frameworks and libraries
-- [ ] Sign main app bundle
-- [ ] Create DMG installer with create-dmg
-- [ ] Submit for notarization
-- [ ] Staple notarization ticket
-- [ ] Test notarized app on clean system
-
-#### Final Testing
-
-- [ ] Test on macOS 12 (Monterey)
-- [ ] Test on macOS 13 (Ventura)
-- [ ] Test on macOS 14 (Sonoma)
-- [ ] Test on Intel Mac
-- [ ] Test on Apple Silicon Mac
-- [ ] Test with various SD cards and dashcams
-- [ ] Fix all critical bugs
-- [ ] Verify all features work end-to-end
-
-**Success Criteria**:
-- ✅ All UI text properly localized
-- ✅ Dark mode looks professional
-- ✅ App passes Apple notarization
-- ✅ DMG installs smoothly
-- ✅ No critical bugs remain
-- ✅ Performance meets all targets
+- [ ] **Before Requesting Review**
+  - [ ] All tests passing
+  - [ ] SwiftLint 0 warnings
+  - [ ] Documentation updated
+  - [ ] Performance benchmarks run (if applicable)
 
 ---
 
-## Testing Checklist
+## 📊 Progress Tracking
 
-### Unit Tests (Target: 80% coverage)
+### Milestones
 
-- [ ] EXT4Bridge tests
-- [ ] MetadataParser tests
-- [ ] FileManagerService tests
-- [ ] VideoDecoder tests
-- [ ] PlayerViewModel tests
-- [ ] ExportService tests
-- [ ] GPSService tests
-- [ ] GSensorService tests
-- [ ] All models have tests
+#### Milestone 1: MVP
+- [ ] EXT4 mount/unmount working
+- [ ] File list loading from EXT4
+- [ ] Single channel video playback
+- [ ] Basic playback controls (play, pause, seek)
 
-### Integration Tests
+**Definition of Done**: Can play a single channel video from SD card
 
-- [ ] EXT4 read/write with real SD card
-- [ ] Multi-channel playback test
-- [ ] Export with various video combinations
-- [ ] Settings load/save test
+#### Milestone 2: Multi-Channel
+- [ ] Multiple channels synchronized
+- [ ] GPS overlay working
+- [ ] Metadata overlay working
+- [ ] G-sensor graph working
 
-### Performance Tests
+**Definition of Done**: Can play 5 channels with overlays
 
-- [ ] Playback FPS measurement
-- [ ] Memory usage over time
-- [ ] Export speed measurement
-- [ ] App startup time
+#### Milestone 3: Feature Complete
+- [ ] All menu actions implemented
+- [ ] Export functionality working
+- [ ] Settings management working
+- [ ] Test coverage >80%
 
-### UI Tests
-
-- [ ] File list navigation
-- [ ] Playback controls
-- [ ] Settings form validation
-- [ ] Export workflow
+**Definition of Done**: All 59 TODOs completed, ready for beta testing
 
 ---
 
-## Release Checklist
+## 🆘 Troubleshooting Guide
 
-- [ ] All features implemented and tested
-- [ ] All critical bugs fixed
-- [ ] Documentation complete
-- [ ] App signed and notarized
-- [ ] DMG installer created and tested
-- [ ] Release notes written
-- [ ] App Store screenshots prepared (if applicable)
-- [ ] Marketing materials ready
-- [ ] Support channels set up
-- [ ] Post-launch monitoring plan ready
+### Common Build Issues
+
+#### "Cannot find module 'FFmpeg'"
+```bash
+# Solution: Add FFmpeg to header search paths
+# In project.yml:
+HEADER_SEARCH_PATHS: /opt/homebrew/Cellar/ffmpeg/8.0_1/include
+```
+
+#### "Metal pipeline state creation failed"
+```bash
+# Solution: Check shader syntax
+# View shader compilation output in Xcode build log
+# Look for syntax errors in MultiChannelShaders.metal
+```
+
+#### "The Xcode build system has crashed"
+```bash
+# Solution: Downgrade to stable Xcode
+# Xcode 26.x beta has known issues with experimental features
+# Download Xcode 15.4 or 16.0 from developer.apple.com
+```
+
+### Runtime Issues
+
+#### "EXT4Error.unsupportedOperation"
+This is expected if EXT4 integration is incomplete (TODO #15-24 not done yet).
+Use `VideoFile.sampleVideos` for testing instead.
+
+#### Memory Usage Growing Over Time
+Check for:
+- Unreleased video frames
+- Unclosed file handles
+- Retained strong references in closures
+
+Profile with Instruments → Leaks tool.
 
 ---
 
-## Notes
+## 📚 Reference
 
-**Tips for Success**:
-- Commit early and often
-- Write tests as you develop
-- Profile performance regularly
-- Test on real hardware frequently
-- Get user feedback during development
-- Document challenges and solutions
-- Keep this checklist updated
+### Key Files by Feature
 
-**Common Pitfalls to Avoid**:
-- Skipping error handling
-- Ignoring memory leaks
-- Not testing on older hardware
-- Hardcoding strings (breaks localization)
-- Blocking main thread
-- Not profiling before optimizing
-- Skipping unit tests
+| Feature | Primary File | Test File |
+|---------|-------------|-----------|
+| EXT4 Integration | EXT4Bridge.swift | EXT4FileSystemTests.swift |
+| Video Decoding | VideoDecoder.swift | VideoDecoderTests.swift |
+| Multi-Channel Sync | SyncController.swift | SyncControllerTests.swift |
+| GPS Service | GPSService.swift | GPSSensorIntegrationTests.swift |
+| Metal Rendering | MultiChannelRenderer.swift | MultiChannelRendererTests.swift |
+| Menu Actions | BlackboxPlayerApp.swift | (UI Tests) |
 
----
+### External Resources
 
-**Project**: Blackbox Player for macOS
-**Total Tasks**: 156
+- **EXT4**: https://github.com/gkostka/lwext4
+- **FFmpeg**: https://ffmpeg.org/documentation.html
+- **Metal**: https://developer.apple.com/documentation/metal
+- **SwiftUI**: https://developer.apple.com/documentation/swiftui
 
 ---
 
+**Last Updated**: 2025-10-13
+**Next Review**: After each milestone completion

@@ -278,6 +278,12 @@ Comprehensive documentation is available in the `docs/` directory:
 
 ## Getting Started
 
+> ⚠️ **Important Build Note**: This project requires **stable Xcode (15.4+ or 16.0+)**. Xcode 26.x beta has known build system crashes. See [Known Issues](#known-issues) below.
+
+### Quick Start
+
+For implementation guidance, see **[Implementation Checklist](IMPLEMENTATION_CHECKLIST.md)** for step-by-step TODO item completion guide.
+
 ### Prerequisites
 
 ```bash
@@ -285,10 +291,13 @@ Comprehensive documentation is available in the `docs/` directory:
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
 # Install development tools
-brew install ffmpeg cmake git git-lfs swiftlint
+brew install ffmpeg cmake git git-lfs swiftlint xcodegen
 
 # Install Xcode Command Line Tools
 xcode-select --install
+
+# Download Metal Toolchain (required for shaders)
+xcodebuild -downloadComponent MetalToolchain
 ```
 
 ### Initial Setup

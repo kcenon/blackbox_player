@@ -991,3 +991,114 @@ jobs:
 - Feature usage
 - App Store ratings
 - Support tickets
+
+---
+
+## Appendix A: Current Implementation Status
+
+**Last Updated**: 2025-10-13
+**Status**: Active Development
+**Total TODO Items**: 59
+
+### TODO Summary by Category
+
+| Category | Count | Priority | Estimated Effort | Key Files |
+|----------|-------|----------|------------------|-----------|
+| **UI/Menu Actions** | 14 | 🔴 High | 5-7 days | BlackboxPlayerApp.swift |
+| **EXT4 Integration** | 10 | 🔴 High | 10-15 days | EXT4Bridge.swift |
+| **Video Playback** | 8 | 🟠 Medium | 7-10 days | VideoDecoder.swift, SyncController.swift |
+| **Testing** | 14 | 🟡 Low | 3-5 days | MultiChannelRendererTests.swift |
+| **UI Components** | 13 | 🟠 Medium | 5-7 days | FileListView.swift, FileRow.swift |
+
+**Total Estimated Effort**: 30-44 days (6-9 weeks)
+
+### Critical Path Items (P0 Priority)
+
+These items must be completed first as they block other features:
+
+1. **TODO #15** (EXT4Bridge.swift:298): Mount EXT4 device - **BLOCKER** for all file operations
+2. **TODO #16** (EXT4Bridge.swift:548): List Directory - Required for file browsing
+3. **TODO #18** (EXT4Bridge.swift:781): Read File - Required for video playback
+4. **TODO #24** (EXT4Bridge.swift:1352): Unmount Device - Required for safe cleanup
+5. **TODO #1** (BlackboxPlayerApp.swift:463): Open Folder Picker - Main UI entry point
+6. **TODO #7** (BlackboxPlayerApp.swift:681): Play/Pause - Core playback control
+
+### Implementation Roadmap (8 weeks)
+
+#### Phase 1: Critical Path (Weeks 1-2)
+- EXT4 Mount/Unmount (#15, #24)
+- List Directory (#16)
+- Open Folder Picker (#1)
+- Read File (#18)
+- Play/Pause (#7)
+
+#### Phase 2: Core Features (Weeks 3-4)
+- Get File Info (#17)
+- Load Video Metadata (#27)
+- Parse GPS Metadata (#25)
+- Sync Video Timestamp (#26)
+- Step Forward/Backward (#8, #9)
+
+#### Phase 3: Enhanced UX (Weeks 5-6)
+- Toggle Metadata Overlay (#4)
+- Toggle Map Overlay (#5)
+- Toggle Graph Overlay (#6)
+- Playback Speed Controls (#10, #11, #12)
+
+#### Phase 4: Polish (Weeks 7-8)
+- About/Help Windows (#13, #14)
+- Complete Test Suite (#28-41)
+- Bug fixes and optimization
+
+### Key Dependencies
+
+```
+EXT4 Mount (#15)
+  ├─→ List Directory (#16)
+  ├─→ Read File (#18)
+  └─→ Get File Info (#17)
+      ├─→ Load Metadata (#27)
+      │   ├─→ Parse GPS (#25)
+      │   └─→ Sync Timestamp (#26)
+      │       ├─→ Play/Pause (#7)
+      │       └─→ Toggle Overlays (#4, #5, #6)
+      └─→ Open Folder (#1)
+          └─→ Refresh Files (#2)
+```
+
+### Risk Assessment
+
+| Risk | Impact | Mitigation |
+|------|--------|------------|
+| EXT4 C library integration failure | 🔴 Critical | Use FUSE fallback or read-only access |
+| FFmpeg compatibility issues | 🟠 High | Extensive codec testing with sample files |
+| Metal performance on Intel Macs | 🟡 Medium | Optimize shaders, provide quality settings |
+| GPS metadata format unknown | 🟠 High | Reverse engineer from sample data |
+
+### Progress Tracking
+
+**Completed**: 0/59 (0%)
+**In Progress**: 0/59 (0%)
+**Not Started**: 59/59 (100%)
+
+#### Milestone 1: MVP (Weeks 1-4)
+- [ ] EXT4 mount/unmount working
+- [ ] File list loading from EXT4
+- [ ] Single channel video playback
+- [ ] Basic playback controls
+
+#### Milestone 2: Multi-Channel (Weeks 5-6)
+- [ ] Multiple channels synchronized
+- [ ] GPS overlay working
+- [ ] Metadata overlay working
+- [ ] G-sensor graph working
+
+#### Milestone 3: Feature Complete (Weeks 7-8)
+- [ ] All menu actions implemented
+- [ ] Export functionality working
+- [ ] Settings management working
+- [ ] Test coverage >80%
+
+---
+
+**Note**: For detailed implementation guidance on each TODO item, including specific code examples and line numbers, developers should refer to the inline comments in the source files listed above.
