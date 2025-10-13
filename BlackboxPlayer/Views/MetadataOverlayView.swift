@@ -641,18 +641,18 @@ struct MetadataOverlayView: View {
     /// - 현대적이고 친근한 느낌
     /// - 대시보드, 게이지에 적합
     ///
-    /// ## .opacity(0.8)
-    /// - 단위(km/h)를 약간 어둡게 표시
-    /// - 숫자에 집중하도록 시각적 계층 구조 형성
+    /// ## 시각적 게이지 추가
+    /// - SpeedometerGaugeView: 반원형 속도계
+    /// - 속도 범위별 색상 코딩
+    /// - 부드러운 애니메이션
     private func speedGauge(speed: Double) -> some View {
-        VStack(spacing: 4) {
-            Text(String(format: "%.0f", speed))
-                .font(.system(size: 48, weight: .bold, design: .rounded))
-                .foregroundColor(.white)
+        VStack(spacing: 8) {
+            // 시각적 속도계 게이지
+            SpeedometerGaugeView(speed: speed)
+                .frame(width: 140, height: 90)
 
-            Text("km/h")
-                .font(.caption)
-                .foregroundColor(.white.opacity(0.8))
+            Divider()
+                .background(Color.white.opacity(0.3))
         }
     }
 
