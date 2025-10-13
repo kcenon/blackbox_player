@@ -541,15 +541,24 @@ struct MetadataOverlayView: View {
                 )
             }
 
-            // 방향 (Heading)
+            // 방향 (Heading) - 나침반
             //
             // GPS 데이터와 방향 정보가 모두 있을 때만 표시
             if let gpsPoint = currentGPSPoint, let heading = gpsPoint.heading {
-                metadataRow(
-                    icon: "location.north.fill",
-                    label: "Heading",
-                    value: String(format: "%.0f°", heading)
-                )
+                VStack(spacing: 8) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "location.north.fill")
+                            .font(.caption)
+                        Text("Heading")
+                            .font(.caption)
+                            .fontWeight(.medium)
+                    }
+                    .foregroundColor(.white.opacity(0.8))
+
+                    // 나침반 뷰
+                    CompassView(heading: heading)
+                        .frame(width: 70, height: 70)
+                }
             }
         }
         .padding()
