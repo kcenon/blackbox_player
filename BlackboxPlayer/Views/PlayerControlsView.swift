@@ -451,6 +451,11 @@ struct PlayerControlsView: View {
                 // In/Out Point 설정 및 추출
                 segmentSelectionButtons
 
+                // 스냅샷 버튼
+                //
+                // 현재 프레임을 이미지로 저장
+                snapshotButton
+
                 Spacer()
 
                 // 시간 표시
@@ -1065,6 +1070,126 @@ struct PlayerControlsView: View {
                 }
                 .buttonStyle(.plain)
                 .help("Export selected segment (\(formatTime(viewModel.segmentDuration)))")
+            }
+        }
+    }
+
+    // MARK: - Snapshot Button
+
+    /// @brief 스냅샷 버튼
+    ///
+    /// @details
+    /// 현재 비디오 프레임을 이미지 파일로 저장합니다.
+    ///
+    /// ## 기능
+    /// - 현재 표시 중인 프레임 캡처
+    /// - PNG, JPEG, TIFF 포맷 지원
+    /// - 파일 저장 다이얼로그 표시
+    ///
+    /// ## SF Symbols 아이콘
+    /// - **camera.fill**: 카메라 아이콘 (스냅샷 의미)
+    private var snapshotButton: some View {
+        Button(action: {
+            saveSnapshot()
+        }) {
+            HStack(spacing: 4) {
+                Image(systemName: "camera.fill")
+                    .font(.system(size: 14))
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(Color.blue.opacity(0.3))
+            .cornerRadius(4)
+        }
+        .buttonStyle(.plain)
+        .help("Save current frame as image")
+        .disabled(viewModel.currentFrame == nil)
+    }
+
+    // MARK: - Snapshot Save
+
+    /// @brief 스냅샷 저장 실행
+    ///
+    /// @details
+    /// 현재 프레임을 이미지 파일로 저장합니다.
+    /// 사용자가 포맷(PNG, JPEG, TIFF)과 저장 위치를 선택할 수 있습니다.
+    ///
+    /// ## 저장 프로세스
+    /// ```
+    /// 1. currentFrame 캡처 (VideoPlayerViewModel.captureCurrentFrame)
+    ///      ↓
+    /// 2. NSSavePanel 표시 (포맷 선택, 저장 위치 선택)
+    ///      ↓
+    /// 3. 선택된 포맷으로 이미지 변환 (NSBitmapImageRep)
+    ///      ↓
+    /// 4. 파일 저장
+    /// ```
+    ///
+    /// ## 지원 포맷
+    /// - **PNG**: 무손실 압축, 투명도 지원, 파일 크기 중간
+    /// - **JPEG**: 손실 압축, 투명도 미지원, 파일 크기 작음
+    /// - **TIFF**: 무손실, 고품질, 파일 크기 큼
+    private func saveSnapshot() {
+        // 현재 프레임 캡처
+        guard let snapshot = viewModel.captureCurrentFrame() else {
+            print("Failed to capture current frame")
+            return
+        }
+
+        // 파일 저장 다이얼로그 표시
+        let savePanel = NSSavePanel()
+        savePanel.allowedContentTypes = [.png, .jpeg, .tiff]
+        savePanel.nameFieldStringValue = "snapshot_\(formatTime(viewModel.currentTime)).png"
+        savePanel.title = "Save Snapshot"
+        savePanel.message = "Choose where to save the snapshot"
+
+        savePanel.begin { response in
+            guard response == .OK, let outputURL = savePanel.url else {
+                return
+            }
+
+            // 선택된 파일 확장자로 포맷 결정
+            let fileExtension = outputURL.pathExtension.lowercased()
+            let imageType: NSBitmapImageRep.FileType
+
+            switch fileExtension {
+            case "jpg", "jpeg":
+                imageType = .jpeg
+            case "tiff", "tif":
+                imageType = .tiff
+            default:
+                imageType = .png
+            }
+
+            // 이미지 데이터 생성
+            guard let tiffData = snapshot.tiffRepresentation,
+                  let bitmapImage = NSBitmapImageRep(data: tiffData) else {
+                print("Failed to create bitmap representation")
+                return
+            }
+
+            // 포맷에 맞게 이미지 데이터 변환
+            let imageProperties: [NSBitmapImageRep.PropertyKey: Any]
+            if imageType == .jpeg {
+                // JPEG: 품질 0.9 (0.0 = 최저 품질, 1.0 = 최고 품질)
+                imageProperties = [.compressionFactor: 0.9]
+            } else {
+                imageProperties = [:]
+            }
+
+            guard let imageData = bitmapImage.representation(using: imageType, properties: imageProperties) else {
+                print("Failed to convert image to \(fileExtension) format")
+                return
+            }
+
+            // 파일 저장
+            do {
+                try imageData.write(to: outputURL)
+                print("Snapshot saved: \(outputURL.path)")
+                // TODO: 성공 알림 표시
+            } catch {
+                print("Failed to save snapshot: \(error.localizedDescription)")
+                // TODO: 에러 알림 표시
             }
         }
     }

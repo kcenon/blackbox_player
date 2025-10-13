@@ -1292,6 +1292,39 @@ class VideoPlayerViewModel: ObservableObject {
         setVolume(volume + delta)
     }
 
+    // MARK: - Snapshot Methods
+
+    /// 현재 프레임을 NSImage로 캡처
+    ///
+    /// ## 스냅샷 캡처
+    /// - 현재 표시 중인 비디오 프레임을 이미지로 변환
+    /// - CGImage → NSImage 변환
+    ///
+    /// - Returns: NSImage, 캡처 실패 시 nil
+    ///
+    /// **사용 예시:**
+    /// ```swift
+    /// if let snapshot = viewModel.captureCurrentFrame() {
+    ///     // 이미지 저장 또는 표시
+    ///     saveImage(snapshot, to: url)
+    /// }
+    /// ```
+    func captureCurrentFrame() -> NSImage? {
+        // currentFrame이 없으면 nil 반환
+        guard let frame = currentFrame else {
+            return nil
+        }
+
+        // VideoFrame → CGImage 변환
+        guard let cgImage = frame.toCGImage() else {
+            return nil
+        }
+
+        // CGImage → NSImage 변환
+        let size = NSSize(width: frame.width, height: frame.height)
+        return NSImage(cgImage: cgImage, size: size)
+    }
+
     // MARK: - Segment Selection Methods
 
     /// 현재 시간을 In Point로 설정
