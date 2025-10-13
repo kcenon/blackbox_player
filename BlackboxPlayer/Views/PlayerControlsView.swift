@@ -6,6 +6,8 @@
 /// 프레임 단위 이동, 시간 표시, 속도 조절, 볼륨 조절 기능을 포함합니다.
 
 import SwiftUI
+import AppKit
+import UniformTypeIdentifiers
 
 /// @struct PlayerControlsView
 /// @brief 비디오 플레이어의 재생 컨트롤을 제공하는 View
@@ -444,6 +446,11 @@ struct PlayerControlsView: View {
                     eventNavigationButtons
                 }
 
+                // 구간 선택 버튼
+                //
+                // In/Out Point 설정 및 추출
+                segmentSelectionButtons
+
                 Spacer()
 
                 // 시간 표시
@@ -583,6 +590,13 @@ struct PlayerControlsView: View {
                         )
                         .cornerRadius(2)
 
+                    // 선택된 구간 하이라이트 (반투명 녹색 바)
+                    //
+                    // In Point ~ Out Point 사이의 구간을 시각적으로 표시합니다.
+                    if let inTime = viewModel.inPoint, let outTime = viewModel.outPoint, viewModel.duration > 0 {
+                        segmentHighlightView(inTime: inTime, outTime: outTime, width: geometry.size.width)
+                    }
+
                     // 이벤트 마커들 (색상 코딩된 원)
                     //
                     // 급가속, 급감속, 급회전 등의 이벤트를 타임라인에 표시합니다.
@@ -591,6 +605,16 @@ struct PlayerControlsView: View {
                         ForEach(eventMarkers) { marker in
                             eventMarkerView(marker: marker, width: geometry.size.width)
                         }
+                    }
+
+                    // In Point 마커 (녹색 삼각형)
+                    if let inTime = viewModel.inPoint, viewModel.duration > 0 {
+                        inPointMarkerView(inTime: inTime, width: geometry.size.width)
+                    }
+
+                    // Out Point 마커 (녹색 삼각형)
+                    if let outTime = viewModel.outPoint, viewModel.duration > 0 {
+                        outPointMarkerView(outTime: outTime, width: geometry.size.width)
                     }
 
                     // Thumb (흰색 원)
@@ -904,6 +928,218 @@ struct PlayerControlsView: View {
     /// @param event 이동할 이벤트 마커
     private func seekToEvent(_ event: EventMarker) {
         viewModel.seek(to: event.timestamp / viewModel.duration)
+    }
+
+    // MARK: - Segment Selection Views
+
+    /// @brief 선택된 구간 하이라이트 뷰
+    /// @param inTime 시작 시간 (초)
+    /// @param outTime 끝 시간 (초)
+    /// @param width 타임라인 전체 너비
+    /// @return 구간 하이라이트 뷰
+    ///
+    /// @details
+    /// In Point ~ Out Point 사이를 반투명 녹색 바로 표시합니다.
+    private func segmentHighlightView(inTime: TimeInterval, outTime: TimeInterval, width: CGFloat) -> some View {
+        let startPosition = inTime / viewModel.duration
+        let endPosition = outTime / viewModel.duration
+        let segmentWidth = width * (endPosition - startPosition)
+        let xOffset = width * startPosition
+
+        return Rectangle()
+            .fill(Color.green.opacity(0.2))
+            .frame(width: segmentWidth, height: 4)
+            .cornerRadius(2)
+            .offset(x: xOffset, y: 0)
+    }
+
+    /// @brief In Point 마커 뷰
+    /// @param inTime 시작 시간 (초)
+    /// @param width 타임라인 전체 너비
+    /// @return In Point 마커 뷰
+    ///
+    /// @details
+    /// 녹색 삼각형으로 구간 시작점을 표시합니다.
+    private func inPointMarkerView(inTime: TimeInterval, width: CGFloat) -> some View {
+        let position = inTime / viewModel.duration
+        let xOffset = width * position - 6
+
+        return Triangle()
+            .fill(Color.green)
+            .frame(width: 12, height: 12)
+            .offset(x: xOffset, y: -8)
+            .help("In Point: \(formatTime(inTime))")
+    }
+
+    /// @brief Out Point 마커 뷰
+    /// @param outTime 끝 시간 (초)
+    /// @param width 타임라인 전체 너비
+    /// @return Out Point 마커 뷰
+    ///
+    /// @details
+    /// 녹색 역삼각형으로 구간 끝점을 표시합니다.
+    private func outPointMarkerView(outTime: TimeInterval, width: CGFloat) -> some View {
+        let position = outTime / viewModel.duration
+        let xOffset = width * position - 6
+
+        return Triangle()
+            .fill(Color.green)
+            .frame(width: 12, height: 12)
+            .rotationEffect(.degrees(180))  // 아래쪽을 가리키도록 회전
+            .offset(x: xOffset, y: 8)
+            .help("Out Point: \(formatTime(outTime))")
+    }
+
+    /// @brief 구간 선택 버튼들
+    ///
+    /// @details
+    /// In Point, Out Point 설정, 초기화, 추출 버튼을 제공합니다.
+    private var segmentSelectionButtons: some View {
+        HStack(spacing: 8) {
+            // In Point 설정 버튼
+            Button(action: {
+                viewModel.setInPoint()
+            }) {
+                HStack(spacing: 4) {
+                    Image(systemName: "arrow.down.to.line")
+                        .font(.system(size: 14))
+                    Text("In")
+                        .font(.system(size: 12))
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(viewModel.inPoint != nil ? Color.green.opacity(0.3) : Color.clear)
+                .cornerRadius(4)
+            }
+            .buttonStyle(.plain)
+            .help("Set In Point (start of segment)")
+
+            // Out Point 설정 버튼
+            Button(action: {
+                viewModel.setOutPoint()
+            }) {
+                HStack(spacing: 4) {
+                    Image(systemName: "arrow.up.to.line")
+                        .font(.system(size: 14))
+                    Text("Out")
+                        .font(.system(size: 12))
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(viewModel.outPoint != nil ? Color.green.opacity(0.3) : Color.clear)
+                .cornerRadius(4)
+            }
+            .buttonStyle(.plain)
+            .help("Set Out Point (end of segment)")
+            .disabled(viewModel.inPoint == nil)
+
+            // 구간 초기화 버튼
+            if viewModel.inPoint != nil || viewModel.outPoint != nil {
+                Button(action: {
+                    viewModel.clearSegment()
+                }) {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 14))
+                        .foregroundColor(.secondary)
+                }
+                .buttonStyle(.plain)
+                .help("Clear segment selection")
+            }
+
+            // 구간 추출 버튼
+            if viewModel.hasValidSegment {
+                Button(action: {
+                    exportSegment()
+                }) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "square.and.arrow.down")
+                            .font(.system(size: 14))
+                        Text("Export")
+                            .font(.system(size: 12))
+                    }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.green)
+                    .foregroundColor(.white)
+                    .cornerRadius(4)
+                }
+                .buttonStyle(.plain)
+                .help("Export selected segment (\(formatTime(viewModel.segmentDuration)))")
+            }
+        }
+    }
+
+    // MARK: - Segment Export
+
+    /// @brief 구간 추출 실행
+    ///
+    /// @details
+    /// 선택된 구간을 별도 파일로 추출합니다.
+    /// 파일 저장 다이얼로그를 표시하고 SegmentExporter를 사용하여 추출합니다.
+    private func exportSegment() {
+        guard let inTime = viewModel.inPoint,
+              let outTime = viewModel.outPoint,
+              let videoFile = viewModel.videoFile else {
+            return
+        }
+
+        // 파일 저장 다이얼로그 표시
+        let savePanel = NSSavePanel()
+        savePanel.allowedContentTypes = [.mpeg4Movie]
+        savePanel.nameFieldStringValue = "segment_\(formatTime(inTime))_to_\(formatTime(outTime)).mp4"
+        savePanel.title = "Export Segment"
+        savePanel.message = "Choose where to save the exported segment"
+
+        savePanel.begin { response in
+            guard response == .OK, let outputURL = savePanel.url else {
+                return
+            }
+
+            // 추출 실행
+            let exporter = SegmentExporter()
+            let duration = outTime - inTime
+
+            // 전면 카메라 채널 선택
+            guard let frontChannel = videoFile.channel(for: .front) ?? videoFile.channels.first else {
+                print("No video channel available")
+                return
+            }
+
+            exporter.exportSegment(
+                inputPath: frontChannel.filePath,
+                outputPath: outputURL.path,
+                startTime: inTime,
+                duration: duration
+            ) { progress in
+                // 진행률 업데이트 (메인 스레드)
+                DispatchQueue.main.async {
+                    // TODO: 진행률 UI 업데이트
+                    print("Export progress: \(Int(progress * 100))%")
+                }
+            } completion: { result in
+                // 완료 처리 (메인 스레드)
+                DispatchQueue.main.async {
+                    switch result {
+                    case .success(let url):
+                        print("Export completed: \(url)")
+                        // TODO: 성공 알림 표시
+                    case .failure(let error):
+                        print("Export failed: \(error.localizedDescription)")
+                        // TODO: 에러 알림 표시
+                    }
+                }
+            }
+        }
+    }
+
+    /// @brief 시간을 MM:SS 형식으로 포맷
+    /// @param time 시간 (초)
+    /// @return 포맷된 시간 문자열
+    private func formatTime(_ time: TimeInterval) -> String {
+        let totalSeconds = Int(time)
+        let minutes = totalSeconds / 60
+        let seconds = totalSeconds % 60
+        return String(format: "%02d:%02d", minutes, seconds)
     }
 
     // MARK: - Time Display
@@ -1233,3 +1469,30 @@ struct PlayerControlsView: View {
 //             .frame(height: 100)
 //     }
 // }
+
+// MARK: - Triangle Shape
+
+/// @struct Triangle
+/// @brief 삼각형 Shape
+///
+/// @details
+/// In/Out Point 마커용 삼각형 경로입니다.
+private struct Triangle: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+
+        // 삼각형 꼭지점 (위쪽 중앙)
+        path.move(to: CGPoint(x: rect.midX, y: rect.minY))
+
+        // 왼쪽 아래
+        path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
+
+        // 오른쪽 아래
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
+
+        // 닫기 (다시 꼭지점으로)
+        path.closeSubpath()
+
+        return path
+    }
+}

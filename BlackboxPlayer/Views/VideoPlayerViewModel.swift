@@ -490,6 +490,37 @@ class VideoPlayerViewModel: ObservableObject {
     /// ```
     @Published var errorMessage: String?
 
+    /// 구간 시작점 (In Point)
+    ///
+    /// ## 구간 추출
+    /// - 추출할 구간의 시작 시간 (초)
+    /// - nil: 시작점 미설정
+    /// - 0.0 ~ duration 범위
+    ///
+    /// **사용 예시:**
+    /// ```swift
+    /// viewModel.setInPoint()         // 현재 시간을 시작점으로
+    /// viewModel.inPoint              // 5.0 (5초)
+    /// viewModel.clearInPoint()       // nil로 초기화
+    /// ```
+    @Published var inPoint: TimeInterval?
+
+    /// 구간 끝점 (Out Point)
+    ///
+    /// ## 구간 추출
+    /// - 추출할 구간의 끝 시간 (초)
+    /// - nil: 끝점 미설정
+    /// - 0.0 ~ duration 범위
+    /// - inPoint보다 커야 함
+    ///
+    /// **사용 예시:**
+    /// ```swift
+    /// viewModel.setOutPoint()        // 현재 시간을 끝점으로
+    /// viewModel.outPoint             // 15.0 (15초)
+    /// viewModel.clearOutPoint()      // nil로 초기화
+    /// ```
+    @Published var outPoint: TimeInterval?
+
     // MARK: - Private Properties
 
     /// 비디오 디코더 (FFmpeg wrapper)
@@ -513,7 +544,11 @@ class VideoPlayerViewModel: ObservableObject {
     /// ## 사용 목적
     /// - 비디오 정보 참조 (duration, channels 등)
     /// - 메타데이터 접근 (GPS, 가속도 데이터)
-    private var videoFile: VideoFile?
+    /// - 구간 추출 시 채널 정보 접근
+    ///
+    /// ## 접근 제어
+    /// - internal: PlayerControlsView에서 구간 추출 시 접근 필요
+    var videoFile: VideoFile?
 
     /// 재생 타이머
     ///
@@ -1255,6 +1290,156 @@ class VideoPlayerViewModel: ObservableObject {
     /// ```
     func adjustVolume(by delta: Double) {
         setVolume(volume + delta)
+    }
+
+    // MARK: - Segment Selection Methods
+
+    /// 현재 시간을 In Point로 설정
+    ///
+    /// ## In Point 설정
+    /// - 현재 재생 위치를 구간 시작점으로 저장
+    /// - outPoint가 이미 설정되어 있고 currentTime보다 작으면 outPoint 제거
+    ///
+    /// **사용 예시:**
+    /// ```swift
+    /// // currentTime = 5.0
+    /// viewModel.setInPoint()
+    /// // inPoint = 5.0
+    ///
+    /// // 버튼 구현
+    /// Button("Set In") {
+    ///     viewModel.setInPoint()
+    /// }
+    /// ```
+    func setInPoint() {
+        inPoint = currentTime
+
+        // Out Point가 In Point보다 앞에 있으면 제거
+        if let out = outPoint, out <= currentTime {
+            outPoint = nil
+        }
+    }
+
+    /// 현재 시간을 Out Point로 설정
+    ///
+    /// ## Out Point 설정
+    /// - 현재 재생 위치를 구간 끝점으로 저장
+    /// - inPoint가 설정되어 있지 않거나 currentTime보다 크면 설정 불가
+    ///
+    /// **사용 예시:**
+    /// ```swift
+    /// // currentTime = 15.0, inPoint = 5.0
+    /// viewModel.setOutPoint()
+    /// // outPoint = 15.0
+    ///
+    /// // 버튼 구현
+    /// Button("Set Out") {
+    ///     viewModel.setOutPoint()
+    /// }
+    /// ```
+    func setOutPoint() {
+        // In Point가 설정되어 있고 현재 시간이 그보다 뒤일 때만 설정
+        guard let inTime = inPoint, currentTime > inTime else {
+            return
+        }
+
+        outPoint = currentTime
+    }
+
+    /// In Point 제거
+    ///
+    /// ## 초기화
+    /// - inPoint를 nil로 초기화
+    /// - outPoint도 함께 제거 (구간이 무효화됨)
+    ///
+    /// **사용 예시:**
+    /// ```swift
+    /// viewModel.clearInPoint()
+    /// // inPoint = nil, outPoint = nil
+    /// ```
+    func clearInPoint() {
+        inPoint = nil
+        outPoint = nil  // Out Point도 함께 제거
+    }
+
+    /// Out Point 제거
+    ///
+    /// ## 초기화
+    /// - outPoint를 nil로 초기화
+    /// - inPoint는 유지 (다시 Out Point 설정 가능)
+    ///
+    /// **사용 예시:**
+    /// ```swift
+    /// viewModel.clearOutPoint()
+    /// // outPoint = nil, inPoint는 유지
+    /// ```
+    func clearOutPoint() {
+        outPoint = nil
+    }
+
+    /// 선택된 구간 초기화
+    ///
+    /// ## 전체 초기화
+    /// - inPoint와 outPoint 모두 nil로 초기화
+    ///
+    /// **사용 예시:**
+    /// ```swift
+    /// viewModel.clearSegment()
+    /// // inPoint = nil, outPoint = nil
+    ///
+    /// // 버튼 구현
+    /// Button("Clear") {
+    ///     viewModel.clearSegment()
+    /// }
+    /// ```
+    func clearSegment() {
+        inPoint = nil
+        outPoint = nil
+    }
+
+    /// 선택된 구간이 유효한지 확인
+    ///
+    /// ## 유효성 검사
+    /// - inPoint와 outPoint 모두 설정되어 있음
+    /// - outPoint > inPoint (구간 길이 > 0)
+    ///
+    /// - Returns: 구간이 유효하면 true
+    ///
+    /// **사용 예시:**
+    /// ```swift
+    /// if viewModel.hasValidSegment {
+    ///     // Export 버튼 활성화
+    /// }
+    /// ```
+    var hasValidSegment: Bool {
+        guard let inTime = inPoint, let outTime = outPoint else {
+            return false
+        }
+        return outTime > inTime
+    }
+
+    /// 선택된 구간 길이 (초)
+    ///
+    /// ## 구간 길이 계산
+    /// - segmentDuration = outPoint - inPoint
+    /// - 유효하지 않으면 0.0 반환
+    ///
+    /// - Returns: 구간 길이 (초)
+    ///
+    /// **사용 예시:**
+    /// ```swift
+    /// // inPoint = 5.0, outPoint = 15.0
+    /// viewModel.segmentDuration  // 10.0
+    ///
+    /// // UI 표시
+    /// Text("Segment: \(formatTime(viewModel.segmentDuration))")
+    /// // "Segment: 00:10"
+    /// ```
+    var segmentDuration: TimeInterval {
+        guard let inTime = inPoint, let outTime = outPoint else {
+            return 0.0
+        }
+        return outTime - inTime
     }
 
     // MARK: - Private Methods
