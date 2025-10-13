@@ -110,10 +110,6 @@
      - FFmpeg integration
      - H.264/MP3 decoding
 
-  4. [ ] `BlackboxPlayer/Services/EXT4Bridge.swift` (10 TODOs)
-     - EXT4 filesystem access
-     - C library integration points
-
 ### Running Existing Tests
 
 - [ ] **Run Full Test Suite**
@@ -133,71 +129,7 @@
 
 ## 3. Phase 1: Critical Path
 
-**Goal**: Basic file system access and playback working
-
-### EXT4 Integration
-
-#### TODO #15: Mount EXT4 Device 🔴 P0 BLOCKER
-- [ ] **Research lwext4 Library**
-  - [ ] Read lwext4 documentation: https://github.com/gkostka/lwext4
-  - [ ] Study EXT4 disk layout: https://ext4.wiki.kernel.org/index.php/Ext4_Disk_Layout
-  - [ ] Review existing EXT4Bridge.swift stub implementation
-
-- [ ] **Create C Bridge**
-  - [ ] Create Objective-C++ wrapper for lwext4
-  - [ ] Update `BlackboxPlayer/Utilities/BridgingHeader.h`
-  - [ ] Test basic mount/unmount in isolation
-
-- [ ] **Implement Swift Interface**
-  ```swift
-  // File: BlackboxPlayer/Services/EXT4Bridge.swift:298
-  func mount(devicePath: String) throws {
-      // TODO: Integrate lwext4 C library
-      // Use ext4_mount with device path
-  }
-  ```
-  - [ ] Implement error handling
-  - [ ] Add logging for debugging
-  - [ ] Write unit tests
-
-- [ ] **Validation**
-  - [ ] Can mount test EXT4 image file
-  - [ ] Can mount physical SD card
-  - [ ] Proper cleanup on errors
-
-#### TODO #24: Unmount Device 🔴 P0
-- [ ] **Implement Unmount**
-  ```swift
-  // File: BlackboxPlayer/Services/EXT4Bridge.swift:1352
-  func unmount() throws {
-      // TODO: Call ext4_umount with flush
-  }
-  ```
-  - [ ] Ensure all file handles closed
-  - [ ] Flush pending writes
-  - [ ] Release resources
-
-- [ ] **Validation**
-  - [ ] No memory leaks after unmount
-  - [ ] Can remount after unmount
-  - [ ] Handles errors gracefully
-
-#### TODO #16: List Directory 🔴 P0
-- [ ] **Implement Directory Enumeration**
-  ```swift
-  // File: BlackboxPlayer/Services/EXT4Bridge.swift:548
-  func listDirectory(_ path: String) throws -> [FileInfo] {
-      // TODO: Use ext4_dir_open/ext4_dir_read
-  }
-  ```
-  - [ ] Parse directory entries
-  - [ ] Extract file metadata (name, size, timestamp)
-  - [ ] Handle subdirectories recursively
-
-- [ ] **Validation**
-  - [ ] Lists all files in DCIM folder
-  - [ ] Correctly identifies Normal/Event/Parking folders
-  - [ ] Performance: <1s for 1000 files
+**Goal**: Basic file loading and playback working
 
 #### TODO #1: Open Folder Picker 🔴 P0
 - [ ] **Implement NSOpenPanel**
@@ -219,25 +151,6 @@
   - [ ] Dialog opens and closes correctly
   - [ ] Selected folder triggers file loading
   - [ ] UI updates with file list
-
-### Basic Playback
-
-#### TODO #18: Read File 🔴 P0
-- [ ] **Implement File Reading**
-  ```swift
-  // File: BlackboxPlayer/Services/EXT4Bridge.swift:781
-  func readFile(_ path: String) throws -> Data {
-      // TODO: Use ext4_fopen/ext4_fread
-  }
-  ```
-  - [ ] Handle large files (>1GB)
-  - [ ] Implement buffered reading
-  - [ ] Add progress callback
-
-- [ ] **Validation**
-  - [ ] Can read H.264 video files
-  - [ ] Can read metadata files
-  - [ ] Performance: >50MB/s read speed
 
 #### TODO #7: Play/Pause 🔴 P0
 - [ ] **Implement Playback Control**
@@ -277,12 +190,6 @@
 **Goal**: Multi-channel playback with metadata
 
 ### Metadata Parsing
-
-#### TODO #17: Get File Info 🔴 P0
-- [ ] Implement ext4_fstat wrapper
-- [ ] Extract size, timestamp, permissions
-- [ ] Cache file info for performance
-- [ ] **Validation**: Info matches actual file
 
 #### TODO #27: Load Video Metadata 🟠 P1
 - [ ] Parse proprietary metadata format
@@ -391,31 +298,7 @@
 - [ ] Document keyboard shortcuts
 - [ ] **Validation**: Help is accessible and accurate
 
-#### TODO #19: Write File 🟡 P2
-- [ ] Implement ext4_fwrite wrapper
-- [ ] Used for settings persistence
-- [ ] **Validation**: Can save settings to SD card
-
-#### TODO #20: Delete File 🟡 P2
-- [ ] Implement ext4_fremove wrapper
-- [ ] Add confirmation dialog
-- [ ] **Validation**: File deletion works safely
-
-#### TODO #21: Create Directory 🟢 P3
-- [ ] Implement ext4_dir_mk wrapper
-- [ ] **Validation**: Directory creation succeeds
-
-#### TODO #22: Remove Directory 🟢 P3
-- [ ] Implement ext4_dir_rm wrapper
-- [ ] Verify directory is empty
-- [ ] **Validation**: Empty directory removal works
-
 ### Testing & Optimization
-
-#### TODO #23: Get Filesystem Stats 🟡 P2
-- [ ] Implement ext4_mount_point_stats wrapper
-- [ ] Display free/used space
-- [ ] **Validation**: Stats match actual SD card
 
 #### TODO #28-41: Metal Renderer Tests 🟡 P2
 - [ ] Test multi-texture rendering
@@ -447,7 +330,6 @@
 
 - [ ] **Specific Test Suites**
   - [ ] DataModelsTests - Core data structures
-  - [ ] EXT4FileSystemTests - File system access
   - [ ] VideoDecoderTests - FFmpeg integration
   - [ ] SyncControllerTests - Multi-channel sync
   - [ ] GPSSensorIntegrationTests - End-to-end GPS/G-sensor
@@ -460,9 +342,9 @@
   - [ ] No frame drops during 10-minute playback
 
 - [ ] **File Operations**
-  - [ ] Can mount real SD card
-  - [ ] Can list 1000+ files
-  - [ ] Can read large video files (>2GB)
+  - [ ] Can load files from local filesystem
+  - [ ] Can parse 1000+ video file metadata
+  - [ ] Can handle large video files (>2GB)
 
 - [ ] **Performance**
   - [ ] Memory usage <2GB during playback
@@ -472,21 +354,21 @@
 ### Manual Testing
 
 - [ ] **Happy Path**
-  - [ ] Open folder picker → Select SD card
+  - [ ] Open folder picker → Select video folder
   - [ ] Browse file list → Select video
   - [ ] Play video → All channels display
   - [ ] Toggle overlays → GPS/metadata visible
   - [ ] Export to MP4 → File created successfully
 
 - [ ] **Error Cases**
-  - [ ] Invalid SD card → Error message shown
+  - [ ] Invalid folder path → Error message shown
   - [ ] Corrupted video file → Graceful handling
-  - [ ] Disconnect SD card during playback → Clean shutdown
+  - [ ] Missing video files → Clean error handling
 
 - [ ] **Edge Cases**
   - [ ] Very long videos (>2 hours)
   - [ ] High resolution videos (4K)
-  - [ ] SD card with mixed file formats
+  - [ ] Folder with mixed file formats
 
 ---
 
@@ -532,7 +414,7 @@
   # Format: type(scope): description
 
   # Examples:
-  git commit -m "feat(ext4): implement mount/unmount operations"
+  git commit -m "feat(decoder): add H.265 video codec support"
   git commit -m "fix(decoder): resolve memory leak in frame cleanup"
   git commit -m "test(gps): add integration tests for route sync"
   ```
@@ -584,12 +466,11 @@
 ### Milestones
 
 #### Milestone 1: MVP
-- [ ] EXT4 mount/unmount working
-- [ ] File list loading from EXT4
+- [ ] File list loading from local filesystem
 - [ ] Single channel video playback
 - [ ] Basic playback controls (play, pause, seek)
 
-**Definition of Done**: Can play a single channel video from SD card
+**Definition of Done**: Can play a single channel video from local folder
 
 #### Milestone 2: Multi-Channel
 - [ ] Multiple channels synchronized
@@ -636,10 +517,6 @@ HEADER_SEARCH_PATHS: /opt/homebrew/Cellar/ffmpeg/8.0_1/include
 
 ### Runtime Issues
 
-#### "EXT4Error.unsupportedOperation"
-This is expected if EXT4 integration is incomplete (TODO #15-24 not done yet).
-Use `VideoFile.sampleVideos` for testing instead.
-
 #### Memory Usage Growing Over Time
 Check for:
 - Unreleased video frames
@@ -656,7 +533,6 @@ Profile with Instruments → Leaks tool.
 
 | Feature | Primary File | Test File |
 |---------|-------------|-----------|
-| EXT4 Integration | EXT4Bridge.swift | EXT4FileSystemTests.swift |
 | Video Decoding | VideoDecoder.swift | VideoDecoderTests.swift |
 | Multi-Channel Sync | SyncController.swift | SyncControllerTests.swift |
 | GPS Service | GPSService.swift | GPSSensorIntegrationTests.swift |
@@ -665,7 +541,6 @@ Profile with Instruments → Leaks tool.
 
 ### External Resources
 
-- **EXT4**: https://github.com/gkostka/lwext4
 - **FFmpeg**: https://ffmpeg.org/documentation.html
 - **Metal**: https://developer.apple.com/documentation/metal
 - **SwiftUI**: https://developer.apple.com/documentation/swiftui

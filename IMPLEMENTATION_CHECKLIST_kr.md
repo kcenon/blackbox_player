@@ -110,10 +110,6 @@
      - FFmpeg 통합
      - H.264/MP3 디코딩
 
-  4. [ ] `BlackboxPlayer/Services/EXT4Bridge.swift` (10개 TODO)
-     - EXT4 파일시스템 접근
-     - C 라이브러리 통합 지점
-
 ### 기존 테스트 실행하기
 
 - [ ] **전체 테스트 스위트 실행**
@@ -133,71 +129,7 @@
 
 ## 3. Phase 1: 최우선 경로
 
-**목표**: 기본 파일 시스템 접근 및 재생 작동
-
-### EXT4 통합
-
-#### TODO #15: EXT4 장치 마운트 🔴 P0 블로커
-- [ ] **lwext4 라이브러리 조사**
-  - [ ] lwext4 문서 읽기: https://github.com/gkostka/lwext4
-  - [ ] EXT4 디스크 레이아웃 연구: https://ext4.wiki.kernel.org/index.php/Ext4_Disk_Layout
-  - [ ] 기존 EXT4Bridge.swift 스텁 구현 검토
-
-- [ ] **C 브리지 생성**
-  - [ ] lwext4용 Objective-C++ 래퍼 생성
-  - [ ] `BlackboxPlayer/Utilities/BridgingHeader.h` 업데이트
-  - [ ] 기본 마운트/언마운트를 독립적으로 테스트
-
-- [ ] **Swift 인터페이스 구현**
-  ```swift
-  // 파일: BlackboxPlayer/Services/EXT4Bridge.swift:298
-  func mount(devicePath: String) throws {
-      // TODO: lwext4 C 라이브러리 통합
-      // 장치 경로와 함께 ext4_mount 사용
-  }
-  ```
-  - [ ] 오류 처리 구현
-  - [ ] 디버깅을 위한 로깅 추가
-  - [ ] 단위 테스트 작성
-
-- [ ] **검증**
-  - [ ] 테스트 EXT4 이미지 파일 마운트 가능
-  - [ ] 물리 SD 카드 마운트 가능
-  - [ ] 오류 발생 시 적절한 정리
-
-#### TODO #24: 장치 언마운트 🔴 P0
-- [ ] **언마운트 구현**
-  ```swift
-  // 파일: BlackboxPlayer/Services/EXT4Bridge.swift:1352
-  func unmount() throws {
-      // TODO: 플러시와 함께 ext4_umount 호출
-  }
-  ```
-  - [ ] 모든 파일 핸들 닫힘 확인
-  - [ ] 대기 중인 쓰기 플러시
-  - [ ] 리소스 해제
-
-- [ ] **검증**
-  - [ ] 언마운트 후 메모리 누수 없음
-  - [ ] 언마운트 후 재마운트 가능
-  - [ ] 오류를 우아하게 처리
-
-#### TODO #16: 디렉토리 목록 조회 🔴 P0
-- [ ] **디렉토리 열거 구현**
-  ```swift
-  // 파일: BlackboxPlayer/Services/EXT4Bridge.swift:548
-  func listDirectory(_ path: String) throws -> [FileInfo] {
-      // TODO: ext4_dir_open/ext4_dir_read 사용
-  }
-  ```
-  - [ ] 디렉토리 항목 파싱
-  - [ ] 파일 메타데이터 추출 (이름, 크기, 타임스탬프)
-  - [ ] 하위 디렉토리 재귀적으로 처리
-
-- [ ] **검증**
-  - [ ] DCIM 폴더의 모든 파일 나열
-  - [ ] Normal/Event/Parking 폴더 올바르게 식별
-  - [ ] 성능: 1000개 파일에 <1초
+**목표**: 기본 파일 로딩 및 재생 작동
 
 #### TODO #1: 폴더 선택 대화상자 열기 🔴 P0
 - [ ] **NSOpenPanel 구현**
@@ -219,25 +151,6 @@
   - [ ] 대화상자가 올바르게 열리고 닫힘
   - [ ] 선택한 폴더가 파일 로딩 트리거
   - [ ] UI가 파일 목록으로 업데이트됨
-
-### 기본 재생
-
-#### TODO #18: 파일 읽기 🔴 P0
-- [ ] **파일 읽기 구현**
-  ```swift
-  // 파일: BlackboxPlayer/Services/EXT4Bridge.swift:781
-  func readFile(_ path: String) throws -> Data {
-      // TODO: ext4_fopen/ext4_fread 사용
-  }
-  ```
-  - [ ] 대용량 파일 처리 (>1GB)
-  - [ ] 버퍼링된 읽기 구현
-  - [ ] 진행 콜백 추가
-
-- [ ] **검증**
-  - [ ] H.264 비디오 파일 읽기 가능
-  - [ ] 메타데이터 파일 읽기 가능
-  - [ ] 성능: >50MB/s 읽기 속도
 
 #### TODO #7: 재생/일시정지 🔴 P0
 - [ ] **재생 제어 구현**
@@ -277,12 +190,6 @@
 **목표**: 메타데이터를 포함한 다중 채널 재생
 
 ### 메타데이터 파싱
-
-#### TODO #17: 파일 정보 가져오기 🔴 P0
-- [ ] ext4_fstat 래퍼 구현
-- [ ] 크기, 타임스탬프, 권한 추출
-- [ ] 성능을 위한 파일 정보 캐싱
-- [ ] **검증**: 정보가 실제 파일과 일치
 
 #### TODO #27: 비디오 메타데이터 로드 🟠 P1
 - [ ] 독점 메타데이터 포맷 파싱
@@ -391,31 +298,7 @@
 - [ ] 키보드 단축키 문서화
 - [ ] **검증**: 도움말이 접근 가능하고 정확함
 
-#### TODO #19: 파일 쓰기 🟡 P2
-- [ ] ext4_fwrite 래퍼 구현
-- [ ] 설정 지속성에 사용
-- [ ] **검증**: SD 카드에 설정 저장 가능
-
-#### TODO #20: 파일 삭제 🟡 P2
-- [ ] ext4_fremove 래퍼 구현
-- [ ] 확인 대화상자 추가
-- [ ] **검증**: 파일 삭제가 안전하게 작동
-
-#### TODO #21: 디렉토리 생성 🟢 P3
-- [ ] ext4_dir_mk 래퍼 구현
-- [ ] **검증**: 디렉토리 생성 성공
-
-#### TODO #22: 디렉토리 제거 🟢 P3
-- [ ] ext4_dir_rm 래퍼 구현
-- [ ] 디렉토리가 비어있는지 확인
-- [ ] **검증**: 빈 디렉토리 제거 작동
-
 ### 테스트 및 최적화
-
-#### TODO #23: 파일시스템 통계 가져오기 🟡 P2
-- [ ] ext4_mount_point_stats 래퍼 구현
-- [ ] 사용 가능/사용 중 공간 표시
-- [ ] **검증**: 통계가 실제 SD 카드와 일치
 
 #### TODO #28-41: Metal 렌더러 테스트 🟡 P2
 - [ ] 다중 텍스처 렌더링 테스트
@@ -447,7 +330,6 @@
 
 - [ ] **특정 테스트 스위트**
   - [ ] DataModelsTests - 핵심 데이터 구조
-  - [ ] EXT4FileSystemTests - 파일 시스템 접근
   - [ ] VideoDecoderTests - FFmpeg 통합
   - [ ] SyncControllerTests - 다중 채널 동기화
   - [ ] GPSSensorIntegrationTests - 엔드투엔드 GPS/G-센서
@@ -460,9 +342,9 @@
   - [ ] 10분 재생 중 프레임 드롭 없음
 
 - [ ] **파일 작업**
-  - [ ] 실제 SD 카드 마운트 가능
-  - [ ] 1000개 이상 파일 나열 가능
-  - [ ] 대용량 비디오 파일 읽기 가능 (>2GB)
+  - [ ] 로컬 파일시스템에서 파일 로드 가능
+  - [ ] 1000개 이상 비디오 파일 메타데이터 파싱 가능
+  - [ ] 대용량 비디오 파일 처리 가능 (>2GB)
 
 - [ ] **성능**
   - [ ] 재생 중 메모리 사용량 <2GB
@@ -472,21 +354,21 @@
 ### 수동 테스팅
 
 - [ ] **정상 경로**
-  - [ ] 폴더 선택 대화상자 열기 → SD 카드 선택
+  - [ ] 폴더 선택 대화상자 열기 → 비디오 폴더 선택
   - [ ] 파일 목록 탐색 → 비디오 선택
   - [ ] 비디오 재생 → 모든 채널 표시
   - [ ] 오버레이 토글 → GPS/메타데이터 표시
   - [ ] MP4로 내보내기 → 파일 성공적으로 생성
 
 - [ ] **오류 케이스**
-  - [ ] 잘못된 SD 카드 → 오류 메시지 표시
+  - [ ] 잘못된 폴더 경로 → 오류 메시지 표시
   - [ ] 손상된 비디오 파일 → 우아한 처리
-  - [ ] 재생 중 SD 카드 분리 → 깨끗한 종료
+  - [ ] 누락된 비디오 파일 → 깨끗한 오류 처리
 
 - [ ] **엣지 케이스**
   - [ ] 매우 긴 비디오 (>2시간)
   - [ ] 고해상도 비디오 (4K)
-  - [ ] 혼합 파일 형식의 SD 카드
+  - [ ] 혼합 파일 형식의 폴더
 
 ---
 
@@ -532,7 +414,7 @@
   # 형식: type(scope): description
 
   # 예시:
-  git commit -m "feat(ext4): implement mount/unmount operations"
+  git commit -m "feat(decoder): add H.265 video codec support"
   git commit -m "fix(decoder): resolve memory leak in frame cleanup"
   git commit -m "test(gps): add integration tests for route sync"
   ```
@@ -583,15 +465,14 @@
 
 ### 마일스톤
 
-#### 마일스톤 1: MVP (1-4주차)
-- [ ] EXT4 마운트/언마운트 작동
-- [ ] EXT4에서 파일 목록 로드
+#### 마일스톤 1: MVP
+- [ ] 로컬 파일시스템에서 파일 목록 로드
 - [ ] 단일 채널 비디오 재생
 - [ ] 기본 재생 제어 (재생, 일시정지, 탐색)
 
-**완료 정의**: SD 카드에서 단일 채널 비디오 재생 가능
+**완료 정의**: 로컬 폴더에서 단일 채널 비디오 재생 가능
 
-#### 마일스톤 2: 다중 채널 (5-6주차)
+#### 마일스톤 2: 다중 채널
 - [ ] 여러 채널 동기화
 - [ ] GPS 오버레이 작동
 - [ ] 메타데이터 오버레이 작동
@@ -599,7 +480,7 @@
 
 **완료 정의**: 오버레이와 함께 5개 채널 재생 가능
 
-#### 마일스톤 3: 기능 완료 (7-8주차)
+#### 마일스톤 3: 기능 완료
 - [ ] 모든 메뉴 액션 구현
 - [ ] 내보내기 기능 작동
 - [ ] 설정 관리 작동
@@ -636,10 +517,6 @@ HEADER_SEARCH_PATHS: /opt/homebrew/Cellar/ffmpeg/8.0_1/include
 
 ### 런타임 이슈
 
-#### "EXT4Error.unsupportedOperation"
-EXT4 통합이 불완전한 경우 예상됩니다 (TODO #15-24 미완료).
-대신 테스트를 위해 `VideoFile.sampleVideos` 사용.
-
 #### 시간 경과에 따라 메모리 사용량 증가
 확인 사항:
 - 해제되지 않은 비디오 프레임
@@ -656,7 +533,6 @@ Instruments → Leaks 도구로 프로파일링.
 
 | 기능 | 주요 파일 | 테스트 파일 |
 |------|-----------|------------|
-| EXT4 통합 | EXT4Bridge.swift | EXT4FileSystemTests.swift |
 | 비디오 디코딩 | VideoDecoder.swift | VideoDecoderTests.swift |
 | 다중 채널 동기화 | SyncController.swift | SyncControllerTests.swift |
 | GPS 서비스 | GPSService.swift | GPSSensorIntegrationTests.swift |
@@ -665,7 +541,6 @@ Instruments → Leaks 도구로 프로파일링.
 
 ### 외부 리소스
 
-- **EXT4**: https://github.com/gkostka/lwext4
 - **FFmpeg**: https://ffmpeg.org/documentation.html
 - **Metal**: https://developer.apple.com/documentation/metal
 - **SwiftUI**: https://developer.apple.com/documentation/swiftui
