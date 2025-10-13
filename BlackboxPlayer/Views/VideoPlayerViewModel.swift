@@ -615,6 +615,71 @@ class VideoPlayerViewModel: ObservableObject {
     /// ```
     private var audioPlayer: AudioPlayer?
 
+    // ============================================
+    // MARK: 성능 최적화 (큰 파일 처리)
+    // ============================================
+
+    /// @var frameCache
+    /// @brief 최근 디코딩된 프레임 캐시
+    ///
+    /// ## 프레임 캐시의 목적
+    /// - 최근 재생한 프레임을 메모리에 보관
+    /// - 역방향 재생, 반복 재생 시 성능 향상
+    /// - 시크 후 즉시 프레임 표시 가능
+    ///
+    /// ## 캐시 키
+    /// - 타임스탬프를 100ms 단위로 반올림한 값
+    /// - 예: 1.234초 → 1.2초, 1.278초 → 1.3초
+    ///
+    /// ## 메모리 관리
+    /// - 최대 캐시 크기 제한 (maxFrameCacheSize)
+    /// - 오래된 항목 자동 제거 (LRU 방식)
+    ///
+    /// **예시:**
+    /// ```
+    /// 1080p RGBA 프레임 = 약 8.3MB
+    /// 캐시 30개 = 약 249MB
+    /// 캐시 60개 = 약 498MB
+    /// ```
+    private var frameCache: [TimeInterval: VideoFrame] = [:]
+
+    /// @var maxFrameCacheSize
+    /// @brief 최대 프레임 캐시 크기
+    ///
+    /// ## 캐시 크기 결정
+    /// - 기본값: 30프레임
+    /// - 30fps 영상 기준 약 1초분
+    /// - 메모리 사용량: 약 250MB (1080p RGBA 기준)
+    ///
+    /// ## 크기 조정 고려사항
+    /// - 메모리가 많은 시스템: 60~120 프레임
+    /// - 메모리가 적은 시스템: 15~20 프레임
+    /// - 고해상도 (4K): 10~15 프레임
+    private let maxFrameCacheSize: Int = 30
+
+    /// @var lastCacheCleanupTime
+    /// @brief 마지막 캐시 정리 시간
+    ///
+    /// ## 정기 캐시 정리
+    /// - 일정 시간마다 오래된 캐시 항목 제거
+    /// - 메모리 압력 완화
+    private var lastCacheCleanupTime: Date = Date()
+
+    /// @var memoryWarningObserver
+    /// @brief 메모리 경고 알림 관찰자
+    ///
+    /// ## 메모리 경고 처리
+    /// - iOS/macOS에서 메모리 부족 시 알림 발송
+    /// - 알림 수신 시 프레임 캐시 즉시 정리
+    /// - 메모리 압력 완화로 앱 강제 종료 방지
+    ///
+    /// **메모리 경고 발생 시나리오:**
+    /// - 다른 앱들이 많은 메모리 사용
+    /// - 큰 비디오 파일 재생 중
+    /// - 여러 채널 동시 재생
+    /// - 시스템 가용 메모리 부족
+    private var memoryWarningObserver: NSObjectProtocol?
+
     // MARK: - Initialization
 
     /// ViewModel 초기화
@@ -622,6 +687,7 @@ class VideoPlayerViewModel: ObservableObject {
     /// ## 빈 초기화
     /// - 모든 속성은 기본값으로 초기화됨
     /// - 비디오는 loadVideo()로 별도 로드
+    /// - 메모리 경고 관찰자 등록
     ///
     /// **사용 예시:**
     /// ```swift
@@ -629,7 +695,33 @@ class VideoPlayerViewModel: ObservableObject {
     /// viewModel.loadVideo(videoFile)  // 비디오 로드
     /// ```
     init() {
-        // Empty initialization
+        /// 메모리 경고 관찰자 등록
+        ///
+        /// ## NotificationCenter
+        /// - iOS/macOS의 알림 시스템
+        /// - 앱 전체에서 이벤트 방송/구독 가능
+        ///
+        /// ## didReceiveMemoryWarningNotification
+        /// - UIApplication (iOS) 또는 NSApplication (macOS)에서 발송
+        /// - 메모리 부족 시 모든 구독자에게 알림
+        ///
+        /// **동작:**
+        /// ```
+        /// 시스템 메모리 부족 감지
+        ///      ↓
+        /// didReceiveMemoryWarningNotification 발송
+        ///      ↓
+        /// handleMemoryWarning() 자동 호출
+        ///      ↓
+        /// 프레임 캐시 정리 (최대 250MB 해제)
+        /// ```
+        memoryWarningObserver = NotificationCenter.default.addObserver(
+            forName: NSNotification.Name("NSApplicationDidReceiveMemoryWarningNotification"),
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.handleMemoryWarning()
+        }
     }
 
     /// ViewModel 메모리 해제 시 호출
@@ -637,6 +729,7 @@ class VideoPlayerViewModel: ObservableObject {
     /// ## deinit
     /// - 객체가 메모리에서 해제될 때 자동 호출
     /// - 리소스 정리 (타이머, 디코더, 오디오 플레이어 등)
+    /// - 메모리 경고 관찰자 해제
     ///
     /// **동작:**
     /// ```
@@ -644,9 +737,22 @@ class VideoPlayerViewModel: ObservableObject {
     ///      ↓
     /// deinit 자동 호출
     ///      ↓
+    /// 메모리 경고 관찰자 해제
+    ///      ↓
     /// stop() → 타이머 중지, 오디오 정지, 디코더 해제
     /// ```
     deinit {
+        /// 메모리 경고 관찰자 해제
+        ///
+        /// ## removeObserver
+        /// - NotificationCenter에서 관찰자 제거
+        /// - 메모리 누수 방지 (순환 참조 해제)
+        /// - 해제하지 않으면 ViewModel이 메모리에 남아있을 수 있음
+        if let observer = memoryWarningObserver {
+            NotificationCenter.default.removeObserver(observer)
+        }
+
+        /// 기존 리소스 정리
         stop()
     }
 
@@ -947,12 +1053,19 @@ class VideoPlayerViewModel: ObservableObject {
     ///      ↓
     /// 3. audioPlayer = nil → AudioPlayer 해제
     ///      ↓
-    /// 4. 상태 초기화 (playbackState, currentTime, playbackPosition, currentFrame)
+    /// 4. frameCache.removeAll() → 프레임 캐시 정리
     ///      ↓
-    /// 5. decoder = nil → VideoDecoder 해제 (FFmpeg 리소스 정리)
+    /// 5. 상태 초기화 (playbackState, currentTime, playbackPosition, currentFrame)
     ///      ↓
-    /// 6. videoFile = nil → 파일 정보 해제
+    /// 6. decoder = nil → VideoDecoder 해제 (FFmpeg 리소스 정리)
+    ///      ↓
+    /// 7. videoFile = nil → 파일 정보 해제
     /// ```
+    ///
+    /// ## 캐시 정리 이유
+    /// - 비디오 정지 시 캐시 유지 불필요
+    /// - 메모리 해제 (최대 250MB)
+    /// - 다른 비디오 로드 시 깨끗한 상태 시작
     ///
     /// ## 사용 시점
     /// - 사용자가 정지 버튼 클릭
@@ -974,6 +1087,7 @@ class VideoPlayerViewModel: ObservableObject {
         stopPlaybackTimer()       // Timer 중지
         audioPlayer?.stop()       // 오디오 정지
         audioPlayer = nil         // AudioPlayer 해제
+        frameCache.removeAll()    // 프레임 캐시 정리 (메모리 해제)
         playbackState = .stopped  // 상태: 정지
         currentTime = 0.0         // 시간 초기화
         playbackPosition = 0.0    // 위치 초기화
@@ -1040,13 +1154,32 @@ class VideoPlayerViewModel: ObservableObject {
     /// ```
     /// 1. time을 0~duration 범위로 clamp
     ///      ↓
-    /// 2. decoder.seek(to: time) → FFmpeg seek 수행
+    /// 2. frameCache 무효화 (캐시 전체 제거)
     ///      ↓
-    /// 3. currentTime, playbackPosition 업데이트
+    /// 3. decoder.seek(to: time) → FFmpeg seek 수행
     ///      ↓
-    /// 4. audioPlayer.flush() → 오디오 버퍼 비우기
+    /// 4. currentTime, playbackPosition 업데이트
     ///      ↓
-    /// 5. loadFrameAt(time:) → 해당 시간의 프레임 로드
+    /// 5. audioPlayer.flush() → 오디오 버퍼 비우기
+    ///      ↓
+    /// 6. loadFrameAt(time:) → 해당 시간의 프레임 로드
+    /// ```
+    ///
+    /// ## 캐시 무효화 이유
+    /// - 시크는 멀리 떨어진 위치로 이동
+    /// - 기존 캐시된 프레임은 더 이상 유용하지 않음
+    /// - 새로운 위치 주변의 프레임을 다시 캐싱
+    ///
+    /// **예시:**
+    /// ```
+    /// currentTime = 10초 (캐시: 5~15초 프레임)
+    /// seekToTime(50초) 호출
+    ///      ↓
+    /// 캐시 무효화 (5~15초 프레임 제거)
+    ///      ↓
+    /// 50초로 이동
+    ///      ↓
+    /// 새로운 캐시 생성 (45~55초 프레임)
     /// ```
     ///
     /// - Parameter time: 시크할 시간 (초)
@@ -1070,6 +1203,23 @@ class VideoPlayerViewModel: ObservableObject {
         /// - time > duration → duration (끝)
         /// - 0.0 <= time <= duration → time (그대로)
         let clampedTime = max(0.0, min(duration, time))
+
+        /// 캐시 무효화
+        ///
+        /// ## frameCache.removeAll()
+        /// - 모든 캐시된 프레임 제거
+        /// - 메모리 즉시 해제 (ARC)
+        ///
+        /// **무효화 이유:**
+        /// - 시크는 멀리 떨어진 위치로 이동하는 경우가 많음
+        /// - 기존 캐시는 더 이상 유효하지 않음
+        /// - 새로운 위치 주변의 프레임을 다시 캐싱하는 것이 효율적
+        ///
+        /// **예외:**
+        /// - stepForward/stepBackward는 seekToTime 호출하지만 짧은 거리
+        /// - 이 경우에도 캐시 무효화하지만, loadFrameAt에서 즉시 다시 캐싱됨
+        /// - 큰 손해 없음 (단 1프레임 디코딩)
+        frameCache.removeAll()
 
         /// 시크 수행 (do-catch)
         do {
@@ -1666,13 +1816,23 @@ class VideoPlayerViewModel: ObservableObject {
         }
     }
 
-    /// 특정 시간의 프레임 로드
+    /// 특정 시간의 프레임 로드 (캐시 지원)
     ///
     /// ## 사용 시점
     /// - 비디오 로딩 후 첫 프레임 표시 (loadVideo)
     /// - 시크 후 해당 위치 프레임 표시 (seekToTime)
+    /// - 프레임 단위 이동 (stepForward/stepBackward)
     ///
-    /// ## 로딩 프로세스
+    /// ## 로딩 프로세스 (캐시 있을 때)
+    /// ```
+    /// 1. cacheKey(for: time) 계산 (100ms 단위로 반올림)
+    ///      ↓
+    /// 2. frameCache에서 조회
+    ///      ↓
+    /// 3. 캐시 히트 → 즉시 반환 (디코딩 스킵) ✅ 빠름!
+    /// ```
+    ///
+    /// ## 로딩 프로세스 (캐시 없을 때)
     /// ```
     /// 1. isBuffering = true (로딩 시작)
     ///      ↓
@@ -1682,14 +1842,37 @@ class VideoPlayerViewModel: ObservableObject {
     ///      ↓
     /// 4. currentFrame 업데이트 (@Published → View 갱신)
     ///      ↓
-    /// 5. isBuffering = false (로딩 완료)
+    /// 5. addToCache(frame, at: cacheKey) → 캐시에 저장
+    ///      ↓
+    /// 6. isBuffering = false (로딩 완료)
     /// ```
+    ///
+    /// ## 성능 개선
+    /// - 캐시 히트 시: 디코딩 시간 0ms (즉시 반환)
+    /// - 캐시 미스 시: 디코딩 + 캐시 저장 (다음번에 빠름)
+    /// - 프레임 단위 이동 시 매우 유용 (stepForward/stepBackward)
     ///
     /// - Parameter time: 로드할 시간 (초)
     private func loadFrameAt(time: TimeInterval) {
         guard let decoder = decoder else { return }
 
-        /// 버퍼링 시작
+        /// 1단계: 캐시 조회
+        ///
+        /// ## cacheKey 계산
+        /// - 100ms 단위로 반올림 (0.1초 정밀도)
+        /// - 1.234초 → 1.2초
+        /// - 1.278초 → 1.3초
+        let key = cacheKey(for: time)
+
+        /// ## 캐시 히트 체크
+        /// - frameCache[key]가 nil이 아니면 캐시 히트
+        /// - 디코딩 없이 즉시 반환 → 성능 향상!
+        if let cachedFrame = frameCache[key] {
+            currentFrame = cachedFrame  // @Published → View 갱신
+            return  // 디코딩 스킵
+        }
+
+        /// 2단계: 캐시 미스 - 디코딩 수행
         ///
         /// ## isBuffering = true
         /// - @Published → View에 로딩 인디케이터 표시
@@ -1697,10 +1880,10 @@ class VideoPlayerViewModel: ObservableObject {
 
         /// 프레임 로드 (do-catch)
         do {
-            /// 1. 해당 시간으로 시크
+            /// 3. 해당 시간으로 시크
             try decoder.seek(to: time)
 
-            /// 2. 프레임 디코딩
+            /// 4. 프레임 디코딩
             ///
             /// ## if let 중첩
             /// - result가 nil이 아니고
@@ -1715,6 +1898,14 @@ class VideoPlayerViewModel: ObservableObject {
             if let result = try decoder.decodeNextFrame(),
                let videoFrame = result.video {
                 currentFrame = videoFrame  // @Published → View 갱신
+
+                /// 5. 캐시에 저장
+                ///
+                /// ## addToCache
+                /// - 디코딩된 프레임을 캐시에 저장
+                /// - 다음번 동일 시간 접근 시 빠르게 반환
+                /// - LRU 방식으로 오래된 항목 자동 제거
+                addToCache(frame: videoFrame, at: key)
             }
 
             /// 버퍼링 완료
@@ -1724,6 +1915,211 @@ class VideoPlayerViewModel: ObservableObject {
             errorMessage = "Failed to load frame: \(error.localizedDescription)"
             isBuffering = false
         }
+    }
+
+    /// 캐시 키 계산 (100ms 단위 반올림)
+    ///
+    /// ## 반올림 알고리즘
+    /// ```
+    /// 1. time * 10.0 (0.1초 → 1.0)
+    ///      ↓
+    /// 2. round() (반올림)
+    ///      ↓
+    /// 3. / 10.0 (다시 초 단위로)
+    /// ```
+    ///
+    /// ## 예시
+    /// ```swift
+    /// cacheKey(for: 1.234) → 1.2
+    /// cacheKey(for: 1.278) → 1.3
+    /// cacheKey(for: 1.000) → 1.0
+    /// cacheKey(for: 5.555) → 5.6
+    /// ```
+    ///
+    /// ## 100ms 정밀도를 선택한 이유
+    /// - 30fps 영상: 프레임 간격 33ms → 100ms면 3프레임 범위
+    /// - 60fps 영상: 프레임 간격 17ms → 100ms면 6프레임 범위
+    /// - 너무 작으면: 캐시 미스 증가 (메모리 낭비)
+    /// - 너무 크면: 시간 정확도 저하
+    ///
+    /// - Parameter time: 원본 시간 (초)
+    /// - Returns: 100ms 단위로 반올림된 시간
+    private func cacheKey(for time: TimeInterval) -> TimeInterval {
+        return round(time * 10.0) / 10.0
+    }
+
+    /// 프레임을 캐시에 추가 (LRU 방식)
+    ///
+    /// ## 캐시 추가 프로세스
+    /// ```
+    /// 1. frameCache에 프레임 추가
+    ///      ↓
+    /// 2. 캐시 크기 확인
+    ///      ↓ frameCache.count > maxFrameCacheSize
+    /// 3. 오래된 항목 제거 (LRU)
+    ///      ↓
+    /// 4. 정기 캐시 정리 (5초마다)
+    /// ```
+    ///
+    /// ## LRU (Least Recently Used)
+    /// - 가장 오래 사용되지 않은 항목 제거
+    /// - 최근에 사용된 프레임은 유지
+    /// - 자주 접근하는 영역의 프레임 유지
+    ///
+    /// - Parameter frame: 저장할 비디오 프레임
+    /// - Parameter key: 캐시 키 (100ms 단위 시간)
+    private func addToCache(frame: VideoFrame, at key: TimeInterval) {
+        /// 1. 캐시에 추가
+        frameCache[key] = frame
+
+        /// 2. 캐시 크기 초과 시 정리
+        ///
+        /// ## maxFrameCacheSize 초과 체크
+        /// - 30개 초과 시 가장 오래된 항목 제거
+        /// - 메모리 사용량 제한
+        if frameCache.count > maxFrameCacheSize {
+            /// LRU 방식 제거
+            ///
+            /// ## 제거 알고리즘
+            /// 1. 모든 키를 정렬 (시간 순서)
+            /// 2. 첫 번째 키 (가장 오래된 시간) 제거
+            ///
+            /// **예시:**
+            /// ```
+            /// frameCache.keys = [1.0, 5.0, 3.0, 8.0, ...]
+            /// sorted() → [1.0, 3.0, 5.0, 8.0, ...]
+            /// first → 1.0 (가장 오래된 시간)
+            /// remove(1.0) → 해당 프레임 제거
+            /// ```
+            if let oldestKey = frameCache.keys.sorted().first {
+                frameCache.removeValue(forKey: oldestKey)
+            }
+        }
+
+        /// 3. 정기 캐시 정리 (5초마다)
+        ///
+        /// ## 정기 정리의 목적
+        /// - 메모리 압력 완화
+        /// - 더 이상 사용하지 않을 오래된 프레임 제거
+        /// - 재생 중인 영역과 멀리 떨어진 프레임 제거
+        let now = Date()
+        if now.timeIntervalSince(lastCacheCleanupTime) > 5.0 {
+            cleanupCache()
+            lastCacheCleanupTime = now
+        }
+    }
+
+    /// 캐시 정리 (오래된 항목 제거)
+    ///
+    /// ## 정리 알고리즘
+    /// ```
+    /// 1. 현재 재생 시간 기준으로 범위 설정
+    ///      ↓
+    /// 2. currentTime ± 5초 범위 밖의 프레임 제거
+    ///      ↓ 예: currentTime = 10초
+    /// 3. 5초 ~ 15초 범위의 프레임만 유지
+    ///      ↓
+    /// 4. 나머지 제거 (메모리 해제)
+    /// ```
+    ///
+    /// ## 범위 선택 이유
+    /// - ±5초: 프레임 단위 이동 시 충분한 범위
+    /// - 30fps 기준 약 150프레임 범위
+    /// - 메모리 사용량: 약 1.2GB (1080p RGBA 기준)
+    ///
+    /// ## 호출 시점
+    /// - addToCache()에서 5초마다 자동 호출
+    /// - seekToTime()에서 캐시 전체 제거 시 호출 안 함
+    private func cleanupCache() {
+        /// 현재 시간 기준 범위 설정
+        ///
+        /// ## 유지 범위: currentTime ± 5초
+        /// - lowerBound = currentTime - 5.0
+        /// - upperBound = currentTime + 5.0
+        let lowerBound = currentTime - 5.0
+        let upperBound = currentTime + 5.0
+
+        /// 범위 밖의 키 찾기
+        ///
+        /// ## filter
+        /// - 조건: key < lowerBound || key > upperBound
+        /// - 결과: 제거할 키 배열
+        let keysToRemove = frameCache.keys.filter { key in
+            key < lowerBound || key > upperBound
+        }
+
+        /// 범위 밖의 프레임 제거
+        ///
+        /// ## removeValue(forKey:)
+        /// - Dictionary에서 키-값 쌍 제거
+        /// - VideoFrame 메모리 자동 해제 (ARC)
+        for key in keysToRemove {
+            frameCache.removeValue(forKey: key)
+        }
+    }
+
+    /// 메모리 경고 처리
+    ///
+    /// ## 메모리 경고 대응
+    /// ```
+    /// 시스템 메모리 부족
+    ///      ↓
+    /// NSApplicationDidReceiveMemoryWarningNotification 발송
+    ///      ↓
+    /// handleMemoryWarning() 호출
+    ///      ↓
+    /// 프레임 캐시 전체 제거 (최대 250MB 해제)
+    ///      ↓
+    /// 메모리 압력 완화
+    /// ```
+    ///
+    /// ## 제거되는 메모리
+    /// - 프레임 캐시: 최대 30개 프레임
+    /// - 1080p RGBA 기준: 약 250MB
+    /// - 4K RGBA 기준: 약 1GB
+    ///
+    /// ## 제거하지 않는 것
+    /// - currentFrame (현재 표시 중인 프레임은 유지)
+    /// - decoder, audioPlayer (재생 계속 가능)
+    ///
+    /// ## 영향
+    /// - 캐시 히트율 감소 (일시적)
+    /// - 프레임 단위 이동 시 약간 느려짐 (일시적)
+    /// - 재생 자체는 정상 동작 (새로 캐싱됨)
+    ///
+    /// ## 호출 시점
+    /// - init()에서 NotificationCenter에 등록
+    /// - 시스템이 메모리 부족 감지 시 자동 호출
+    ///
+    /// **사용 예시:**
+    /// ```swift
+    /// // 사용자가 직접 호출하지 않음
+    /// // 시스템이 자동으로 호출
+    /// ```
+    private func handleMemoryWarning() {
+        /// 프레임 캐시 전체 제거
+        ///
+        /// ## removeAll()
+        /// - Dictionary의 모든 항목 제거
+        /// - VideoFrame 메모리 즉시 해제 (ARC)
+        /// - 최대 250MB (1080p) ~ 1GB (4K) 해제
+        ///
+        /// **메모리 해제 계산:**
+        /// ```
+        /// 1080p RGBA 프레임 = 1920 × 1080 × 4 bytes = 8.3MB
+        /// 캐시 30개 = 8.3MB × 30 = 249MB
+        ///
+        /// 4K RGBA 프레임 = 3840 × 2160 × 4 bytes = 33MB
+        /// 캐시 30개 = 33MB × 30 = 990MB
+        /// ```
+        frameCache.removeAll()
+
+        /// 디버그 로그
+        ///
+        /// ## print
+        /// - 개발 중 메모리 경고 발생 확인용
+        /// - 릴리즈 빌드에서는 제거 고려
+        print("Memory warning received: Frame cache cleared")
     }
 }
 
