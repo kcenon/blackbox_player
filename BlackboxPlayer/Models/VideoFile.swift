@@ -1664,7 +1664,7 @@ extension VideoFile {
         eventType: .normal,
         duration: 0.0,
         channels: [ChannelInfo.frontHD],
-        metadata: VideoMetadata.empty,
+        metadata: VideoMetadata.sample,
         basePath: "normal/2025_01_10_12_00_00",
         isCorrupted: true
     )
@@ -1723,7 +1723,7 @@ extension VideoFile {
                 duration: 48.0
             )
         ],
-        metadata: VideoMetadata.empty,
+        metadata: VideoMetadata.sample,
         basePath: "/Users/dongcheolshin/Downloads/blackbox_test_data/comma2k19_sample"
     )
 
@@ -1753,7 +1753,7 @@ extension VideoFile {
                 duration: 10.0
             )
         ],
-        metadata: VideoMetadata.empty,
+        metadata: VideoMetadata.sample,
         basePath: "/Users/dongcheolshin/Downloads/blackbox_test_data/big_buck_bunny_360p"
     )
 
@@ -1783,7 +1783,7 @@ extension VideoFile {
                 duration: 10.0
             )
         ],
-        metadata: VideoMetadata.empty,
+        metadata: VideoMetadata.sample,
         basePath: "/Users/dongcheolshin/Downloads/blackbox_test_data/big_buck_bunny_720p"
     )
 
@@ -1813,7 +1813,7 @@ extension VideoFile {
                 duration: 10.0
             )
         ],
-        metadata: VideoMetadata.empty,
+        metadata: VideoMetadata.sample,
         basePath: "/Users/dongcheolshin/Downloads/blackbox_test_data/sample_1080p"
     )
 
@@ -1876,7 +1876,7 @@ extension VideoFile {
                 duration: 48.0
             )
         ],
-        metadata: VideoMetadata.empty,
+        metadata: VideoMetadata.sample,
         basePath: "/Users/dongcheolshin/Downloads/blackbox_test_data/comma2k19_multichannel"
     )
 
