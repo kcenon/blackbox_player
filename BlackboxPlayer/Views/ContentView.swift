@@ -626,6 +626,14 @@ struct ContentView: View {
     /// @brief 디버그 로그 표시 여부
     @State private var showDebugLog = false
 
+    /// @var showAboutWindow
+    /// @brief About 윈도우 표시 여부
+    @State private var showAboutWindow = false
+
+    /// @var showHelpWindow
+    /// @brief Help 윈도우 표시 여부
+    @State private var showHelpWindow = false
+
     // MARK: - Services
 
     private let fileScanner = FileScanner()
@@ -739,10 +747,16 @@ struct ContentView: View {
             playbackSpeed = 1.0
         }
         .onReceive(NotificationCenter.default.publisher(for: .showAboutRequested)) { _ in
-            print("Show about window - not yet implemented")
+            showAboutWindow = true
         }
         .onReceive(NotificationCenter.default.publisher(for: .showHelpRequested)) { _ in
-            print("Show help - not yet implemented")
+            showHelpWindow = true
+        }
+        .sheet(isPresented: $showAboutWindow) {
+            AboutWindow()
+        }
+        .sheet(isPresented: $showHelpWindow) {
+            HelpWindow()
         }
     }
 
@@ -1640,6 +1654,154 @@ struct AccelerationGraphView: View {
         .padding(8)
         .background(Color.black.opacity(0.6))
         .cornerRadius(6)
+    }
+}
+
+// MARK: - About Window
+
+/// @struct AboutWindow
+/// @brief About 윈도우 View
+///
+/// @details
+/// 앱 정보, 버전, 저작권을 표시하는 About 윈도우입니다.
+struct AboutWindow: View {
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        VStack(spacing: 20) {
+            // App Icon
+            Image(systemName: "play.rectangle.fill")
+                .font(.system(size: 64))
+                .foregroundColor(.accentColor)
+
+            // App Name
+            Text("Blackbox Player")
+                .font(.title)
+                .fontWeight(.bold)
+
+            // Version
+            Text("Version 1.0.0")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+
+            Divider()
+                .padding(.horizontal, 40)
+
+            // Description
+            VStack(spacing: 8) {
+                Text("Multi-channel blackbox video player")
+                    .font(.body)
+                Text("with GPS and G-sensor visualization")
+                    .font(.body)
+            }
+            .foregroundColor(.secondary)
+
+            // Copyright
+            Text("© 2024 BlackboxPlayer Development Team")
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .padding(.top, 8)
+
+            // Close Button
+            Button("OK") {
+                dismiss()
+            }
+            .buttonStyle(.borderedProminent)
+            .keyboardShortcut(.defaultAction)
+        }
+        .padding(40)
+        .frame(width: 400)
+    }
+}
+
+// MARK: - Help Window
+
+/// @struct HelpWindow
+/// @brief Help 윈도우 View
+///
+/// @details
+/// 앱 사용법과 키보드 단축키를 표시하는 Help 윈도우입니다.
+struct HelpWindow: View {
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            // Title
+            HStack {
+                Image(systemName: "questionmark.circle.fill")
+                    .font(.title)
+                    .foregroundColor(.accentColor)
+                Text("Help")
+                    .font(.title)
+                    .fontWeight(.bold)
+            }
+
+            Divider()
+
+            // Usage
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Usage")
+                    .font(.headline)
+
+                helpItem(title: "Opening Files", description: "Use File > Open Folder to select a folder containing blackbox video files")
+                helpItem(title: "Playing Videos", description: "Select a file from the sidebar to view and play")
+                helpItem(title: "Navigation", description: "Use playback controls or keyboard shortcuts")
+            }
+
+            Divider()
+
+            // Keyboard Shortcuts
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Keyboard Shortcuts")
+                    .font(.headline)
+
+                shortcutItem(key: "Space", action: "Play/Pause")
+                shortcutItem(key: "→", action: "Step Forward (5s)")
+                shortcutItem(key: "←", action: "Step Backward (5s)")
+                shortcutItem(key: "⌘+O", action: "Open Folder")
+                shortcutItem(key: "⌘+R", action: "Refresh File List")
+                shortcutItem(key: "⌘+B", action: "Toggle Sidebar")
+            }
+
+            Spacer()
+
+            // Close Button
+            HStack {
+                Spacer()
+                Button("Close") {
+                    dismiss()
+                }
+                .buttonStyle(.borderedProminent)
+                .keyboardShortcut(.defaultAction)
+            }
+        }
+        .padding(30)
+        .frame(width: 500, height: 600)
+    }
+
+    private func helpItem(title: String, description: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title)
+                .font(.subheadline)
+                .fontWeight(.semibold)
+            Text(description)
+                .font(.caption)
+                .foregroundColor(.secondary)
+        }
+    }
+
+    private func shortcutItem(key: String, action: String) -> some View {
+        HStack {
+            Text(key)
+                .font(.system(.body, design: .monospaced))
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(Color.secondary.opacity(0.2))
+                .cornerRadius(4)
+            Text(action)
+                .font(.body)
+            Spacer()
+        }
     }
 }
 
