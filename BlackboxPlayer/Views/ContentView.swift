@@ -692,6 +692,56 @@ struct ContentView: View {
                     .transition(.move(edge: .bottom))
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: .openFolderRequested)) { _ in
+            openFolder()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .refreshFileListRequested)) { _ in
+            refreshFileList()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .toggleSidebarRequested)) { _ in
+            showSidebar.toggle()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .toggleMetadataOverlayRequested)) { _ in
+            print("Toggle metadata overlay - not yet implemented")
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .toggleMapOverlayRequested)) { _ in
+            print("Toggle map overlay - not yet implemented")
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .toggleGraphOverlayRequested)) { _ in
+            print("Toggle graph overlay - not yet implemented")
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .playPauseRequested)) { _ in
+            isPlaying.toggle()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .stepForwardRequested)) { _ in
+            print("Step forward - not yet implemented")
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .stepBackwardRequested)) { _ in
+            print("Step backward - not yet implemented")
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .increaseSpeedRequested)) { _ in
+            let speeds: [Double] = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 4.0]
+            if let currentIndex = speeds.firstIndex(of: playbackSpeed),
+               currentIndex < speeds.count - 1 {
+                playbackSpeed = speeds[currentIndex + 1]
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .decreaseSpeedRequested)) { _ in
+            let speeds: [Double] = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 4.0]
+            if let currentIndex = speeds.firstIndex(of: playbackSpeed),
+               currentIndex > 0 {
+                playbackSpeed = speeds[currentIndex - 1]
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .normalSpeedRequested)) { _ in
+            playbackSpeed = 1.0
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .showAboutRequested)) { _ in
+            print("Show about window - not yet implemented")
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .showHelpRequested)) { _ in
+            print("Show help - not yet implemented")
+        }
     }
 
     // MARK: - Sidebar

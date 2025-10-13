@@ -460,9 +460,7 @@ struct BlackboxPlayerApp: App {
                 //    panel.begin { response in ... }
                 //
                 Button("Open Folder...") {
-                    // TODO: Open folder picker
-                    // 폴더 선택 대화상자(NSOpenPanel)를 표시하여
-                    // 사용자가 블랙박스 영상 폴더를 선택할 수 있도록 구현 예정
+                    NotificationCenter.default.post(name: .openFolderRequested, object: nil)
                 }
                 // 📌 .keyboardShortcut("o", modifiers: .command):
                 //    Command+O (⌘O) 단축키 할당
@@ -504,9 +502,7 @@ struct BlackboxPlayerApp: App {
                 //    await videoLibrary.reload()
                 //
                 Button("Refresh File List") {
-                    // TODO: Refresh files
-                    // 파일 시스템 서비스를 통해 블랙박스 영상 목록을
-                    // 다시 스캔하여 UI를 업데이트할 예정
+                    NotificationCenter.default.post(name: .refreshFileListRequested, object: nil)
                 }
                 // 📌 .keyboardShortcut("r", modifiers: .command):
                 //    Command+R (⌘R) 단축키 할당
@@ -549,9 +545,7 @@ struct BlackboxPlayerApp: App {
                 //    sidebarVisibility = sidebarVisibility == .all ? .detailOnly : .all
                 //
                 Button("Toggle Sidebar") {
-                    // TODO: Toggle sidebar
-                    // NavigationSplitView의 사이드바 가시성을 토글하여
-                    // 파일 목록 패널을 표시하거나 숨길 예정
+                    NotificationCenter.default.post(name: .toggleSidebarRequested, object: nil)
                 }
                 // 📌 .keyboardShortcut("s", modifiers: [.command, .option]):
                 //    Option+Command+S (⌥⌘S) 단축키 할당
@@ -584,9 +578,7 @@ struct BlackboxPlayerApp: App {
                 //    @State var showMetadata: Bool 변수를 토글할 예정
                 //
                 Button("Toggle Metadata Overlay") {
-                    // TODO: Toggle metadata
-                    // 영상 플레이어 위에 메타데이터 정보
-                    // (시간, GPS, 속도, G-센서)를 오버레이로 표시/숨김
+                    NotificationCenter.default.post(name: .toggleMetadataOverlayRequested, object: nil)
                 }
                 // 📌 .keyboardShortcut("1", modifiers: .command):
                 //    Command+1 (⌘1) 단축키 할당
@@ -613,9 +605,7 @@ struct BlackboxPlayerApp: App {
                 //    MapKit 뷰를 표시/숨김하는 기능 구현 예정
                 //
                 Button("Toggle Map Overlay") {
-                    // TODO: Toggle map
-                    // GPS 데이터를 시각화하는 MapKit 뷰를
-                    // 영상 위에 오버레이로 표시/숨김
+                    NotificationCenter.default.post(name: .toggleMapOverlayRequested, object: nil)
                 }
                 .keyboardShortcut("2", modifiers: .command)
 
@@ -636,9 +626,7 @@ struct BlackboxPlayerApp: App {
                 //    Charts 프레임워크를 사용한 그래프 뷰 표시/숨김 예정
                 //
                 Button("Toggle Graph Overlay") {
-                    // TODO: Toggle graph
-                    // G-센서 데이터를 시각화하는 Charts 뷰를
-                    // 영상 위에 오버레이로 표시/숨김
+                    NotificationCenter.default.post(name: .toggleGraphOverlayRequested, object: nil)
                 }
                 .keyboardShortcut("3", modifiers: .command)
             }
@@ -678,8 +666,7 @@ struct BlackboxPlayerApp: App {
                 //    }
                 //
                 Button("Play/Pause") {
-                    // TODO: Play/pause
-                    // 비디오 플레이어의 재생/일시정지 상태를 토글
+                    NotificationCenter.default.post(name: .playPauseRequested, object: nil)
                 }
                 // 📌 .keyboardShortcut(.space):
                 //    Space 키 단축키 할당
@@ -709,8 +696,7 @@ struct BlackboxPlayerApp: App {
                 //    현재 재생 위치에서 정확히 1프레임 앞으로 이동할 예정
                 //
                 Button("Step Forward") {
-                    // TODO: Step forward
-                    // 현재 재생 위치에서 1프레임(1/frameRate 초) 앞으로 이동
+                    NotificationCenter.default.post(name: .stepForwardRequested, object: nil)
                 }
                 // 📌 .keyboardShortcut(.rightArrow, modifiers: .command):
                 //    Command+→ (⌘→) 단축키 할당
@@ -734,8 +720,7 @@ struct BlackboxPlayerApp: App {
                 //    현재 재생 위치에서 정확히 1프레임 뒤로 이동할 예정
                 //
                 Button("Step Backward") {
-                    // TODO: Step backward
-                    // 현재 재생 위치에서 1프레임(1/frameRate 초) 뒤로 이동
+                    NotificationCenter.default.post(name: .stepBackwardRequested, object: nil)
                 }
                 .keyboardShortcut(.leftArrow, modifiers: .command)
 
@@ -756,8 +741,7 @@ struct BlackboxPlayerApp: App {
                 //    videoPlayer.rate를 증가시킬 예정 (0.5x ~ 4x 범위)
                 //
                 Button("Increase Speed") {
-                    // TODO: Increase speed
-                    // 재생 속도를 단계적으로 증가 (예: 1.0x → 1.5x → 2.0x)
+                    NotificationCenter.default.post(name: .increaseSpeedRequested, object: nil)
                 }
                 // 📌 .keyboardShortcut("]", modifiers: .command):
                 //    Command+] (⌘]) 단축키 할당
@@ -781,8 +765,7 @@ struct BlackboxPlayerApp: App {
                 //    videoPlayer.rate를 감소시킬 예정 (0.5x ~ 4x 범위)
                 //
                 Button("Decrease Speed") {
-                    // TODO: Decrease speed
-                    // 재생 속도를 단계적으로 감소 (예: 2.0x → 1.5x → 1.0x)
+                    NotificationCenter.default.post(name: .decreaseSpeedRequested, object: nil)
                 }
                 .keyboardShortcut("[", modifiers: .command)
 
@@ -797,8 +780,7 @@ struct BlackboxPlayerApp: App {
                 //    videoPlayer.rate = 1.0으로 설정할 예정
                 //
                 Button("Normal Speed") {
-                    // TODO: Normal speed
-                    // 재생 속도를 1.0x (정상 속도)로 복원
+                    NotificationCenter.default.post(name: .normalSpeedRequested, object: nil)
                 }
                 // 📌 .keyboardShortcut("0", modifiers: .command):
                 //    Command+0 (⌘0) 단축키 할당
@@ -843,9 +825,7 @@ struct BlackboxPlayerApp: App {
                 //    }
                 //
                 Button("About BlackboxPlayer") {
-                    // TODO: Show about window
-                    // 앱 버전, 개발자 정보, 오픈소스 라이선스 등을
-                    // 표시하는 About 창을 Sheet 또는 별도 윈도우로 표시
+                    NotificationCenter.default.post(name: .showAboutRequested, object: nil)
                 }
 
                 Divider()
@@ -865,9 +845,7 @@ struct BlackboxPlayerApp: App {
                 //    또는 커스텀 HelpView() 표시
                 //
                 Button("BlackboxPlayer Help") {
-                    // TODO: Show help
-                    // 사용자 가이드, 단축키 목록, FAQ 등을 포함한
-                    // 도움말 뷰를 표시하거나 외부 문서 링크를 열기
+                    NotificationCenter.default.post(name: .showHelpRequested, object: nil)
                 }
                 // 📌 .keyboardShortcut("?", modifiers: .command):
                 //    Command+? (⌘?) 단축키 할당
