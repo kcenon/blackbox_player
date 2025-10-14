@@ -513,45 +513,56 @@ class VideoFileLoader {
             return nil
         }
 
-        // 4. TODO: FFmpeg 비디오 분석 구현 필요
-        //
-        // ┌────────────────────────────────────────────────────────────────┐
-        // │ 향후 구현 계획                                                   │
-        // ├────────────────────────────────────────────────────────────────┤
-        // │                                                                │
-        // │ let decoder = VideoDecoder(filePath: filePath)                 │
-        // │ try decoder.initialize()                                       │
-        // │                                                                │
-        // │ guard let videoInfo = decoder.videoInfo else {                 │
-        // │     return nil                                                 │
-        // │ }                                                              │
-        // │                                                                │
-        // │ let width = Int(videoInfo.width)                               │
-        // │ let height = Int(videoInfo.height)                             │
-        // │ let frameRate = videoInfo.frameRate                            │
-        // │ let codec = videoInfo.codecName                                │
-        // │ let duration = decoder.getDuration() ?? 0                      │
-        // │                                                                │
-        // │ let audioInfo = decoder.audioInfo                              │
-        // │ let audioCodec = audioInfo?.codecName                          │
-        // │                                                                │
-        // └────────────────────────────────────────────────────────────────┘
+        // 4. VideoDecoder를 사용하여 실제 비디오 정보 추출
+        // - VideoDecoder: FFmpeg 기반 비디오 분석 클래스
+        // - videoInfo: 해상도, 프레임레이트, 코덱 정보
+        // - getDuration(): 재생 시간 추출
+        // - 에러 시 기본값 사용 (fallback)
 
-        // 5. 현재는 일반적인 블랙박스 스펙 기본값 사용
-        // - 대부분의 블랙박스가 이 스펙 사용
-        // - 실제 값과 다를 수 있지만 UI 표시는 가능
-        let width = 1920                    // Full HD 가로
-        let height = 1080                   // Full HD 세로
-        let frameRate = 30.0                // 30 프레임/초
-        let bitrate: Int? = nil             // 비트레이트 알 수 없음
-        let codec = "h264"                  // H.264 코덱 (가장 일반적)
-        let audioCodec: String? = "aac"     // AAC 오디오 코덱
-        let duration: TimeInterval = 60.0   // 기본 1분 (실제와 다를 수 있음)
+        // 비디오 정보 추출 시도
+        let decoder = VideoDecoder(filePath: filePath)
+        var width = 1920                    // 기본값: Full HD 가로
+        var height = 1080                   // 기본값: Full HD 세로
+        var frameRate = 30.0                // 기본값: 30 프레임/초
+        var bitrate: Int? = nil             // 비트레이트 (추출 성공 시 설정)
+        var codec = "h264"                  // 기본값: H.264 코덱
+        var audioCodec: String? = "aac"     // 기본값: AAC 오디오 코덱
+        var duration: TimeInterval = 60.0   // 기본값: 1분
 
-        // 6. ChannelInfo 생성 및 반환
+        do {
+            // VideoDecoder 초기화 및 파일 열기
+            try decoder.initialize()
+
+            // 비디오 스트림 정보 추출
+            if let videoInfo = decoder.videoInfo {
+                width = videoInfo.width
+                height = videoInfo.height
+                frameRate = videoInfo.frameRate
+                codec = videoInfo.codecName
+                bitrate = videoInfo.bitrate > 0 ? videoInfo.bitrate : nil
+            }
+
+            // 재생 시간 추출
+            if let extractedDuration = decoder.getDuration() {
+                duration = extractedDuration
+            }
+
+            // 오디오 스트림 정보 추출 (optional)
+            if let audio = decoder.audioInfo {
+                audioCodec = audio.codecName
+            }
+        } catch {
+            // 디코딩 실패 시 기본값 사용
+            // - 파일이 손상되었거나 지원하지 않는 코덱일 수 있음
+            // - 경고 메시지 출력 후 기본값으로 ChannelInfo 생성
+            print("Warning: Failed to decode video info for \(filePath): \(error)")
+            print("Using default values: 1920x1080, 30fps, H.264")
+        }
+
+        // 5. ChannelInfo 생성 및 반환
         // - UUID(): 각 채널마다 고유 ID 생성
         // - fileInfo에서 가져온 값: position, fileSize
-        // - 위에서 결정한 값: width, height, frameRate 등
+        // - VideoDecoder에서 추출한 값: width, height, frameRate, codec, duration 등
         return ChannelInfo(
             id: UUID(),
             position: fileInfo.position,      // 카메라 위치 (front, rear 등)
