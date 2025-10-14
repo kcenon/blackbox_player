@@ -250,7 +250,7 @@ class GPSSensorIntegrationTests_Improved: XCTestCase {
         for i in 1..<gpsUpdates.count {
             XCTAssertGreaterThan(
                 gpsUpdates[i].timestamp,
-                gpsUpdates[i-1].timestamp,
+                gpsUpdates[i - 1].timestamp,
                 "GPS 타임스탬프가 순서대로 증가해야 함"
             )
         }

@@ -1048,7 +1048,7 @@ final class DataModelsTests: XCTestCase {
         /**
          * 16 / 9 = 1.777...
          */
-        XCTAssertEqual(hd.aspectRatio, 16.0/9.0, accuracy: 0.01)
+        XCTAssertEqual(hd.aspectRatio, 16.0 / 9.0, accuracy: 0.01)
     }
 
     /**

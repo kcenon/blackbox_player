@@ -15,33 +15,33 @@
  ### 지원하는 변환 효과:
 
  1. **밝기 조절 (Brightness)**
-    - 영상을 더 밝게 또는 어둡게 만듦
-    - 야간 영상 개선에 유용
+ - 영상을 더 밝게 또는 어둡게 만듦
+ - 야간 영상 개선에 유용
 
  2. **좌우 반전 (Horizontal Flip)**
-    - 영상을 좌우로 뒤집음
-    - 백미러 영상에 유용
+ - 영상을 좌우로 뒤집음
+ - 백미러 영상에 유용
 
  3. **상하 반전 (Vertical Flip)**
-    - 영상을 상하로 뒤집음
-    - 거꾸로 설치된 카메라 보정
+ - 영상을 상하로 뒤집음
+ - 거꾸로 설치된 카메라 보정
 
  4. **디지털 줌 (Digital Zoom)**
-    - 영상의 특정 부분 확대
-    - 번호판 확인 등에 유용
+ - 영상의 특정 부분 확대
+ - 번호판 확인 등에 유용
 
  ## 🎯 작동 원리
 
  ### GPU 셰이더에서 처리:
  ```
  원본 프레임
-   ↓
+ ↓
  Fragment Shader (GPU)
-   ↓ 변환 파라미터 적용
-   - brightness: 픽셀 밝기 조정
-   - flip: 좌표 반전
-   - zoom: 좌표 확대
-   ↓
+ ↓ 변환 파라미터 적용
+ - brightness: 픽셀 밝기 조정
+ - flip: 좌표 반전
+ - zoom: 좌표 확대
+ ↓
  변환된 프레임
  ```
 
@@ -49,28 +49,28 @@
  ```metal
  // Metal Shader
  fragment float4 videoFragmentShader(
-     VertexOut in [[stage_in]],
-     texture2d<float> texture [[texture(0)]],
-     constant Transforms &transforms [[buffer(0)]]
+ VertexOut in [[stage_in]],
+ texture2d<float> texture [[texture(0)]],
+ constant Transforms &transforms [[buffer(0)]]
  ) {
-     // 1. 좌표 변환 (줌, 반전)
-     float2 coord = in.texCoord;
+ // 1. 좌표 변환 (줌, 반전)
+ float2 coord = in.texCoord;
 
-     // 좌우 반전
-     if (transforms.flipH) {
-         coord.x = 1.0 - coord.x;
-     }
+ // 좌우 반전
+ if (transforms.flipH) {
+ coord.x = 1.0 - coord.x;
+ }
 
-     // 줌 적용
-     coord = (coord - transforms.zoomCenter) / transforms.zoomLevel + transforms.zoomCenter;
+ // 줌 적용
+ coord = (coord - transforms.zoomCenter) / transforms.zoomLevel + transforms.zoomCenter;
 
-     // 2. 텍스처 샘플링
-     float4 color = texture.sample(sampler, coord);
+ // 2. 텍스처 샘플링
+ float4 color = texture.sample(sampler, coord);
 
-     // 3. 밝기 조정
-     color.rgb += transforms.brightness;
+ // 3. 밝기 조정
+ color.rgb += transforms.brightness;
 
-     return color;
+ return color;
  }
  ```
 
@@ -110,15 +110,15 @@
 
  ```
  앱 시작
-   ↓
+ ↓
  UserDefaults에서 설정 로드
-   ↓
+ ↓
  사용자가 밝기 조절
-   ↓
+ ↓
  UserDefaults에 즉시 저장
-   ↓
+ ↓
  앱 종료
-   ↓
+ ↓
  설정 유지됨
  ```
 
@@ -419,9 +419,9 @@ struct VideoTransformations: Codable, Equatable {
     /// ```
     var hasActiveTransformations: Bool {
         return brightness != 0.0 ||
-               flipHorizontal ||
-               flipVertical ||
-               zoomLevel != 1.0
+            flipHorizontal ||
+            flipVertical ||
+            zoomLevel != 1.0
     }
 }
 
@@ -954,9 +954,9 @@ class VideoTransformationService: ObservableObject {
  // Swift 측:
  let transforms = service.transformations
  let uniformBuffer = device.makeBuffer(
-     bytes: &transforms,
-     length: MemoryLayout<VideoTransformations>.size,
-     options: []
+ bytes: &transforms,
+ length: MemoryLayout<VideoTransformations>.size,
+ options: []
  )
  ```
 
@@ -964,39 +964,39 @@ class VideoTransformationService: ObservableObject {
  ```metal
  // Shaders.metal
  struct Transforms {
-     float brightness;
-     bool flipHorizontal;
-     bool flipVertical;
-     float zoomLevel;
-     float2 zoomCenter;
+ float brightness;
+ bool flipHorizontal;
+ bool flipVertical;
+ float zoomLevel;
+ float2 zoomCenter;
  };
 
  fragment float4 videoFragmentShader(
-     VertexOut in [[stage_in]],
-     texture2d<float> texture [[texture(0)]],
-     constant Transforms &transforms [[buffer(0)]]
+ VertexOut in [[stage_in]],
+ texture2d<float> texture [[texture(0)]],
+ constant Transforms &transforms [[buffer(0)]]
  ) {
-     float2 coord = in.texCoord;
+ float2 coord = in.texCoord;
 
-     // 반전 적용
-     if (transforms.flipHorizontal) {
-         coord.x = 1.0 - coord.x;
-     }
-     if (transforms.flipVertical) {
-         coord.y = 1.0 - coord.y;
-     }
+ // 반전 적용
+ if (transforms.flipHorizontal) {
+ coord.x = 1.0 - coord.x;
+ }
+ if (transforms.flipVertical) {
+ coord.y = 1.0 - coord.y;
+ }
 
-     // 줌 적용
-     coord = (coord - transforms.zoomCenter) / transforms.zoomLevel + transforms.zoomCenter;
+ // 줌 적용
+ coord = (coord - transforms.zoomCenter) / transforms.zoomLevel + transforms.zoomCenter;
 
-     // 텍스처 샘플링
-     float4 color = texture.sample(sampler, coord);
+ // 텍스처 샘플링
+ float4 color = texture.sample(sampler, coord);
 
-     // 밝기 적용
-     color.rgb += transforms.brightness;
-     color.rgb = clamp(color.rgb, 0.0, 1.0);
+ // 밝기 적용
+ color.rgb += transforms.brightness;
+ color.rgb = clamp(color.rgb, 0.0, 1.0);
 
-     return color;
+ return color;
  }
  ```
 
@@ -1004,81 +1004,81 @@ class VideoTransformationService: ObservableObject {
 
  ```swift
  struct TransformationControlView: View {
-     @ObservedObject var service = VideoTransformationService.shared
+ @ObservedObject var service = VideoTransformationService.shared
 
-     var body: some View {
-         VStack {
-             // 밝기 슬라이더
-             HStack {
-                 Text("밝기")
-                 Slider(value: $service.transformations.brightness,
-                        in: -1.0...1.0)
-                     .onChange(of: service.transformations.brightness) { value in
-                         service.setBrightness(value)
-                     }
-                 Text(String(format: "%.2f", service.transformations.brightness))
-             }
+ var body: some View {
+ VStack {
+ // 밝기 슬라이더
+ HStack {
+ Text("밝기")
+ Slider(value: $service.transformations.brightness,
+ in: -1.0...1.0)
+ .onChange(of: service.transformations.brightness) { value in
+ service.setBrightness(value)
+ }
+ Text(String(format: "%.2f", service.transformations.brightness))
+ }
 
-             // 반전 토글
-             Toggle("좌우 반전", isOn: Binding(
-                 get: { service.transformations.flipHorizontal },
-                 set: { _ in service.toggleFlipHorizontal() }
-             ))
+ // 반전 토글
+ Toggle("좌우 반전", isOn: Binding(
+ get: { service.transformations.flipHorizontal },
+ set: { _ in service.toggleFlipHorizontal() }
+ ))
 
-             // 줌 컨트롤
-             HStack {
-                 Text("줌")
-                 Slider(value: Binding(
-                     get: { service.transformations.zoomLevel },
-                     set: { service.setZoomLevel($0) }
-                 ), in: 1.0...5.0, step: 0.1)
-                 Text(String(format: "%.1fx", service.transformations.zoomLevel))
-             }
+ // 줌 컨트롤
+ HStack {
+ Text("줌")
+ Slider(value: Binding(
+ get: { service.transformations.zoomLevel },
+ set: { service.setZoomLevel($0) }
+ ), in: 1.0...5.0, step: 0.1)
+ Text(String(format: "%.1fx", service.transformations.zoomLevel))
+ }
 
-             // 리셋 버튼
-             if service.transformations.hasActiveTransformations {
-                 Button("모두 리셋") {
-                     service.resetTransformations()
-                 }
-             }
-         }
-         .padding()
-     }
+ // 리셋 버튼
+ if service.transformations.hasActiveTransformations {
+ Button("모두 리셋") {
+ service.resetTransformations()
+ }
+ }
+ }
+ .padding()
+ }
  }
  ```
 
  ## 성능 최적화 팁:
 
  1. **불필요한 셰이더 처리 스킵**
-    ```swift
-    if !transforms.hasActiveTransformations {
-        // 원본 그대로 렌더링 (빠름)
-        renderPassDescriptor.colorAttachments[0].texture = sourceTexture
-    } else {
-        // 셰이더 적용 (느림)
-        applyTransformationsShader()
-    }
-    ```
+ ```swift
+ if !transforms.hasActiveTransformations {
+ // 원본 그대로 렌더링 (빠름)
+ renderPassDescriptor.colorAttachments[0].texture = sourceTexture
+ } else {
+ // 셰이더 적용 (느림)
+ applyTransformationsShader()
+ }
+ ```
 
  2. **변환 캐싱**
-    ```swift
-    private var cachedTransforms: VideoTransformations?
-    private var cachedUniformBuffer: MTLBuffer?
+ ```swift
+ private var cachedTransforms: VideoTransformations?
+ private var cachedUniformBuffer: MTLBuffer?
 
-    func updateUniformBuffer() {
-        if cachedTransforms == service.transformations {
-            return  // 변경 없으면 스킵
-        }
-        // ... buffer 업데이트
-    }
-    ```
+ func updateUniformBuffer() {
+ if cachedTransforms == service.transformations {
+ return  // 변경 없으면 스킵
+ }
+ // ... buffer 업데이트
+ }
+ ```
 
  3. **UserDefaults 저장 빈도 제한**
-    ```swift
-    // Slider 드래그 중에는 저장 안 함 (성능)
-    Slider(value: $brightness)
-        .onDragEnded { _ in
-            service.setBrightness(brightness)  // 드래그 끝날 때만 저장
-        }
-    ```
+ ```swift
+ // Slider 드래그 중에는 저장 안 함 (성능)
+ Slider(value: $brightness)
+ .onDragEnded { _ in
+ service.setBrightness(brightness)  // 드래그 끝날 때만 저장
+ }
+ ```
  */

@@ -663,7 +663,7 @@ class VideoPlayerViewModel: ObservableObject {
     /// ## 정기 캐시 정리
     /// - 일정 시간마다 오래된 캐시 항목 제거
     /// - 메모리 압력 완화
-    private var lastCacheCleanupTime: Date = Date()
+    private var lastCacheCleanupTime = Date()
 
     /// @var memoryWarningObserver
     /// @brief 메모리 경고 알림 관찰자

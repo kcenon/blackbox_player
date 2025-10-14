@@ -15,38 +15,38 @@
  │ [IMPACT] 2024_03_15_14_23_45_F.mp4           14:23:45 PM   ▶       │
  │          2:34 mins  │  1.2 GB  │  2 channels  │  📍  ⚠️  ⭐         │
  └─────────────────────────────────────────────────────────────────────┘
-  ~~~~~~~~  ~~~~~~~~~~~~~~~~~~~~~~~~  ~~~~~~~~~~~~~~~~~~~~~~~~  ~~~~~~~
-  이벤트       파일 정보                 메타데이터             재생
-  배지         (이름, 시간)              (시간, 크기, 채널)     버튼
+ ~~~~~~~~  ~~~~~~~~~~~~~~~~~~~~~~~~  ~~~~~~~~~~~~~~~~~~~~~~~~  ~~~~~~~
+ 이벤트       파일 정보                 메타데이터             재생
+ 배지         (이름, 시간)              (시간, 크기, 채널)     버튼
 
 
  【주요 기능】
 
  1. 이벤트 타입 배지
-    - NORMAL (녹화)
-    - IMPACT (충격)
-    - PARKING (주차)
-    - MANUAL (수동)
-    - EMERGENCY (비상)
+ - NORMAL (녹화)
+ - IMPACT (충격)
+ - PARKING (주차)
+ - MANUAL (수동)
+ - EMERGENCY (비상)
 
  2. 파일 정보
-    - 파일명 (모노스페이스 폰트)
-    - 타임스탬프 (날짜 및 시간)
+ - 파일명 (모노스페이스 폰트)
+ - 타임스탬프 (날짜 및 시간)
 
  3. 메타데이터
-    - 재생 시간 (Duration)
-    - 파일 크기 (File size)
-    - 채널 수 (Channel count)
+ - 재생 시간 (Duration)
+ - 파일 크기 (File size)
+ - 채널 수 (Channel count)
 
  4. 상태 인디케이터
-    - 📍 GPS: GPS 데이터 포함
-    - ⚠️ Impact: 충격 이벤트 포함
-    - ⭐ Favorite: 즐겨찾기 표시
-    - ❌ Corrupted: 파일 손상
+ - 📍 GPS: GPS 데이터 포함
+ - ⚠️ Impact: 충격 이벤트 포함
+ - ⭐ Favorite: 즐겨찾기 표시
+ - ❌ Corrupted: 파일 손상
 
  5. 선택 상태 표시
-    - 선택되지 않음: 투명 배경
-    - 선택됨: 강조 색상 배경 + 테두리
+ - 선택되지 않음: 투명 배경
+ - 선택됨: 강조 색상 배경 + 테두리
 
 
  【사용 예시】
@@ -54,20 +54,20 @@
  ```swift
  // 1. List에서 사용
  List(videoFiles) { file in
-     FileRow(videoFile: file, isSelected: selectedFile?.id == file.id)
-         .onTapGesture {
-             selectedFile = file
-         }
+ FileRow(videoFile: file, isSelected: selectedFile?.id == file.id)
+ .onTapGesture {
+ selectedFile = file
+ }
  }
 
  // 2. ForEach에서 사용
  ForEach(videoFiles) { file in
-     FileRow(videoFile: file, isSelected: false)
+ FileRow(videoFile: file, isSelected: false)
  }
 
  // 3. 단독으로 사용
  FileRow(videoFile: .normal5Channel, isSelected: true)
-     .padding()
+ .padding()
  ```
 
 
@@ -76,30 +76,30 @@
  이 파일에서 배울 수 있는 주요 SwiftUI 개념들:
 
  1. 재사용 가능한 컴포넌트
-    - 여러 곳에서 사용 가능한 독립적인 View
-    - 데이터 주입 방식 (let properties)
+ - 여러 곳에서 사용 가능한 독립적인 View
+ - 데이터 주입 방식 (let properties)
 
  2. 조건부 렌더링 (Conditional Rendering)
-    - if문으로 특정 조건에서만 View 표시
-    - Optional chaining
+ - if문으로 특정 조건에서만 View 표시
+ - Optional chaining
 
  3. Layout Containers
-    - HStack: 좌우 배치
-    - VStack: 상하 배치
-    - Spacer: 공간 분배
+ - HStack: 좌우 배치
+ - VStack: 상하 배치
+ - Spacer: 공간 분배
 
  4. Label 컴포넌트
-    - 아이콘 + 텍스트 조합
-    - SF Symbols 통합
+ - 아이콘 + 텍스트 조합
+ - SF Symbols 통합
 
  5. Shape와 Modifiers
-    - RoundedRectangle
-    - .background(), .overlay()
-    - .stroke(), .fill()
+ - RoundedRectangle
+ - .background(), .overlay()
+ - .stroke(), .fill()
 
  6. 선택 상태 표현
-    - 삼항 연산자 (isSelected ? A : B)
-    - 동적 스타일링
+ - 삼항 연산자 (isSelected ? A : B)
+ - 동적 스타일링
 
 
  【디자인 패턴】
@@ -109,19 +109,19 @@
  FileRow는 다음 원칙을 따릅니다:
 
  ✓ 단일 책임 (Single Responsibility)
-   → 비디오 파일 정보를 표시하는 것만 담당
+ → 비디오 파일 정보를 표시하는 것만 담당
 
  ✓ 독립성 (Independence)
-   → 외부 상태에 의존하지 않음
-   → 필요한 데이터만 주입받음
+ → 외부 상태에 의존하지 않음
+ → 필요한 데이터만 주입받음
 
  ✓ 구성 (Composition)
-   → 작은 서브뷰(EventBadge)로 분리
-   → 각 부분을 독립적으로 관리
+ → 작은 서브뷰(EventBadge)로 분리
+ → 각 부분을 독립적으로 관리
 
  ✓ 선언적 (Declarative)
-   → "어떻게"가 아닌 "무엇"을 선언
-   → SwiftUI가 렌더링 처리
+ → "어떻게"가 아닌 "무엇"을 선언
+ → SwiftUI가 렌더링 처리
 
 
  【관련 파일】

@@ -15,6 +15,8 @@ excluded:
 # Disable specific rules
 disabled_rules:
   - trailing_whitespace
+  - todo                            # TODO 주석 허용 (개발 중)
+  - orphaned_doc_comment            # Doxygen 스타일 주석 허용
 
 # Opt-in rules
 opt_in_rules:

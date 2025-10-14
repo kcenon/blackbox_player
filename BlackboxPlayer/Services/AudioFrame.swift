@@ -895,9 +895,9 @@ extension AudioFrame: Equatable {
     /// @return 동등하면 true
     static func == (lhs: AudioFrame, rhs: AudioFrame) -> Bool {
         return lhs.timestamp == rhs.timestamp &&
-               lhs.sampleCount == rhs.sampleCount &&
-               lhs.sampleRate == rhs.sampleRate &&
-               lhs.channels == rhs.channels
+            lhs.sampleCount == rhs.sampleCount &&
+            lhs.sampleRate == rhs.sampleRate &&
+            lhs.channels == rhs.channels
 
         // data는 비교하지 않음 (성능상 이유)
         // 필요시 data 비교 추가 가능:

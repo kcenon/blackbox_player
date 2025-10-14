@@ -583,9 +583,9 @@ final class SyncControllerTests: XCTestCase {
                 }
             }
             .store(in: &cancellables)
-            // ⚠️ .store(in:)을 빼먹으면:
-            // → 구독이 즉시 취소됨 (메모리 해제)
-            // → 값을 수신하지 못함
+        // ⚠️ .store(in:)을 빼먹으면:
+        // → 구독이 즉시 취소됨 (메모리 해제)
+        // → 값을 수신하지 못함
 
         // Then: 값 발행 검증
 
@@ -667,7 +667,7 @@ final class SyncControllerTests: XCTestCase {
                 }
             }
             .store(in: &cancellables)
-            // 📦 cancellables Set에 저장하여 구독 유지
+        // 📦 cancellables Set에 저장하여 구독 유지
 
         // Then: 초기값 검증
 

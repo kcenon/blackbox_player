@@ -602,9 +602,9 @@ extension VideoFrame: Equatable {
     /// @return 동등하면 true
     static func == (lhs: VideoFrame, rhs: VideoFrame) -> Bool {
         return lhs.timestamp == rhs.timestamp &&
-               lhs.frameNumber == rhs.frameNumber &&
-               lhs.width == rhs.width &&
-               lhs.height == rhs.height
+            lhs.frameNumber == rhs.frameNumber &&
+            lhs.width == rhs.width &&
+            lhs.height == rhs.height
     }
 }
 

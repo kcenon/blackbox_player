@@ -99,8 +99,8 @@
  eventType: .normal
  basePath: "/Volumes/SD/normal/"
  files: [
-     VideoFileInfo(url: "...F.mp4", position: .front, size: 100MB),
-     VideoFileInfo(url: "...R.mp4", position: .rear, size: 100MB)
+ VideoFileInfo(url: "...F.mp4", position: .front, size: 100MB),
+ VideoFileInfo(url: "...R.mp4", position: .rear, size: 100MB)
  ]
  ```
 
@@ -113,12 +113,12 @@
  eventType: .normal
  duration: 60.0 seconds
  channels: [
-     ChannelInfo(position: .front, width: 1920, height: 1080, ...),
-     ChannelInfo(position: .rear, width: 1920, height: 1080, ...)
+ ChannelInfo(position: .front, width: 1920, height: 1080, ...),
+ ChannelInfo(position: .rear, width: 1920, height: 1080, ...)
  ]
  metadata: VideoMetadata(
-     gpsPoints: [GPSPoint(), ...],
-     accelerationData: [AccelerationData(), ...]
+ gpsPoints: [GPSPoint(), ...],
+ accelerationData: [AccelerationData(), ...]
  )
  isCorrupted: false
  ```
@@ -454,7 +454,7 @@ class VideoFileLoader {
         // - 확장자가 목록에 있는지 확인
         // - "mp4" in ["mp4", "mov", "avi", "mkv"] → true
         return FileManager.default.fileExists(atPath: url.path) &&
-               validExtensions.contains(fileExtension)
+            validExtensions.contains(fileExtension)
     }
 
     // MARK: - Private Methods
@@ -593,16 +593,16 @@ class VideoFileLoader {
  ```swift
  // VideoFile 원본 (Models/VideoFile.swift)
  struct VideoFile {
-     let id: UUID
-     let timestamp: Date
-     // ... 기본 프로퍼티만
+ let id: UUID
+ let timestamp: Date
+ // ... 기본 프로퍼티만
  }
 
  // Extension으로 추가 (Services/VideoFileLoader.swift)
  extension VideoFile {
-     func checkCorruption() -> Bool {
-         // 로딩 관련 로직
-     }
+ func checkCorruption() -> Bool {
+ // 로딩 관련 로직
+ }
  }
  ```
  */
@@ -700,9 +700,9 @@ extension VideoFile {
  ```swift
  // 기본 Optional 처리
  if let first = channels.first {
-     if let duration = first.duration {
-         print(duration)
-     }
+ if let duration = first.duration {
+ print(duration)
+ }
  }
 
  // Optional Chaining으로 간결하게
@@ -739,18 +739,18 @@ extension VideoFile {
  ```swift
  // guard: early return 패턴 (권장)
  guard let user = getUser() else {
-     print("No user")
-     return
+ print("No user")
+ return
  }
  // user 사용 가능 (스코프 전체)
  print(user.name)
 
  // if-let: 중첩 가능성
  if let user = getUser() {
-     // user 사용 (if 블록 내에서만)
-     print(user.name)
+ // user 사용 (if 블록 내에서만)
+ print(user.name)
  } else {
-     print("No user")
+ print("No user")
  }
  // user 사용 불가 (스코프 밖)
  ```

@@ -498,8 +498,8 @@ class MultiChannelRenderer {
         /*
          버퍼 레이아웃:
          [px, py, tx, ty, px, py, tx, ty, ...]
-          └─────┘ └─────┘  ← 정점 1 (16바이트)
-                  └─────┘ └─────┘  ← 정점 2
+         └─────┘ └─────┘  ← 정점 1 (16바이트)
+         └─────┘ └─────┘  ← 정점 2
          */
 
         pipelineDescriptor.vertexDescriptor = vertexDescriptor
@@ -541,29 +541,29 @@ class MultiChannelRenderer {
         // Full-screen quad vertices (position + texCoord)
         let vertices: [Float] = [
             // Position (x, y)    TexCoord (u, v)
-            -1.0, -1.0,           0.0, 1.0,  // Bottom-left
-             1.0, -1.0,           1.0, 1.0,  // Bottom-right
-            -1.0,  1.0,           0.0, 0.0,  // Top-left
-             1.0,  1.0,           1.0, 0.0   // Top-right
+            -1.0, -1.0, 0.0, 1.0,  // Bottom-left
+            1.0, -1.0, 1.0, 1.0,  // Bottom-right
+            -1.0, 1.0, 0.0, 0.0,  // Top-left
+            1.0, 1.0, 1.0, 0.0   // Top-right
         ]
         // 4개 정점 × 4개 float = 16개 float
 
         /*
          좌표 설명:
          NDC (Normalized Device Coordinates):
-           (-1, 1) ──────── (1, 1)
-              │               │
-              │   화면 중심    │
-              │     (0, 0)    │
-              │               │
-           (-1,-1) ──────── (1,-1)
+         (-1, 1) ──────── (1, 1)
+         │               │
+         │   화면 중심    │
+         │     (0, 0)    │
+         │               │
+         (-1,-1) ──────── (1,-1)
 
          Texture Coordinates:
-           (0, 0) ──────── (1, 0)
-              │               │
-              │               │
-              │               │
-           (0, 1) ──────── (1, 1)
+         (0, 0) ──────── (1, 0)
+         │               │
+         │               │
+         │               │
+         (0, 1) ──────── (1, 1)
          */
 
         let size = vertices.count * MemoryLayout<Float>.size
@@ -602,8 +602,8 @@ class MultiChannelRenderer {
 
          Nearest:   [R][R][G][G][B][B][W][W]  (계단 현상)
          Linear:    [R][Y][G][C][B][P][W][W]  (부드러움)
-                       ↑      ↑      ↑
-                     보간된 색상
+         ↑      ↑      ↑
+         보간된 색상
          */
 
         // Clamp 경계 처리
@@ -716,7 +716,7 @@ class MultiChannelRenderer {
         /*
          버퍼 메모리 레이아웃:
          [brightness][flipH][flipV][zoom][centerX][centerY]
-          4바이트     4바이트  4바이트  4바이트  4바이트  4바이트
+         4바이트     4바이트  4바이트  4바이트  4바이트  4바이트
          */
     }
 

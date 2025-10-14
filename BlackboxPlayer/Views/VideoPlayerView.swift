@@ -20,32 +20,32 @@
  ├──────────────────────────────────────────────────────┤
  │ ⏯️  ⏮️ ⏭️  [━━━━━━━━━━━━━━●─────]  2:34 / 5:00  🔊 │ ← 재생 컨트롤
  └──────────────────────────────────────────────────────┘
-   (마우스 호버 시 표시, 3초 후 자동 숨김)
+ (마우스 호버 시 표시, 3초 후 자동 숨김)
 
 
  【주요 기능】
 
  1. 비디오 재생
-    - AVFoundation 기반 비디오 디코딩
-    - 프레임별 렌더링
-    - 다양한 코덱 지원
+ - AVFoundation 기반 비디오 디코딩
+ - 프레임별 렌더링
+ - 다양한 코덱 지원
 
  2. 사용자 인터페이스
-    - 마우스 호버 시 컨트롤 표시
-    - 3초 후 자동 숨김 (재생 중일 때만)
-    - 전체화면 모드
+ - 마우스 호버 시 컨트롤 표시
+ - 3초 후 자동 숨김 (재생 중일 때만)
+ - 전체화면 모드
 
  3. 키보드 단축키
-    - Space: 재생/일시정지
-    - ←/→: 5초 앞뒤 이동
-    - ↑/↓: 볼륨 조절
-    - F: 전체화면 토글
-    - ESC: 전체화면 종료
+ - Space: 재생/일시정지
+ - ←/→: 5초 앞뒤 이동
+ - ↑/↓: 볼륨 조절
+ - F: 전체화면 토글
+ - ESC: 전체화면 종료
 
  4. 상태별 UI
-    - 로딩 중: 스피너 표시
-    - 에러 발생: 에러 메시지
-    - 플레이스홀더: 비디오 없음
+ - 로딩 중: 스피너 표시
+ - 에러 발생: 에러 메시지
+ - 플레이스홀더: 비디오 없음
 
 
  【SwiftUI + AppKit 통합】
@@ -63,9 +63,9 @@
  - 네이티브 macOS 기능 접근
 
  통합의 장점:
-   ✓ SwiftUI의 선언적 UI
-   ✓ AppKit의 강력한 시스템 접근
-   ✓ 최고의 사용자 경험
+ ✓ SwiftUI의 선언적 UI
+ ✓ AppKit의 강력한 시스템 접근
+ ✓ 최고의 사용자 경험
 
 
  【MVVM 패턴】
@@ -74,11 +74,11 @@
 
  ```
  Model (VideoFile)
-   ↓ 데이터
+ ↓ 데이터
  ViewModel (VideoPlayerViewModel)
-   ↓ 상태 & 비즈니스 로직
+ ↓ 상태 & 비즈니스 로직
  View (VideoPlayerView)
-   ↓ UI 렌더링
+ ↓ UI 렌더링
  ```
 
  역할 분담:
@@ -95,12 +95,12 @@
 
  // 2. Sheet로 표시
  .sheet(isPresented: $showPlayer) {
-     VideoPlayerView(videoFile: selectedFile)
+ VideoPlayerView(videoFile: selectedFile)
  }
 
  // 3. NavigationLink로 전환
  NavigationLink(destination: VideoPlayerView(videoFile: file)) {
-     Text("Play Video")
+ Text("Play Video")
  }
  ```
 
@@ -682,15 +682,15 @@ struct VideoPlayerView: View {
                 //
                 VideoFrameView(frame: frame)
 
-            // Case 2: Buffering
-            //
-            // 버퍼링 중이면 로딩 스피너를 표시합니다.
-            //
-            // viewModel.isBuffering:
-            //   - 비디오 데이터를 읽는 중
-            //   - 네트워크 또는 디스크에서 로딩 중
-            //   - 디코딩 준비 중
-            //
+                // Case 2: Buffering
+                //
+                // 버퍼링 중이면 로딩 스피너를 표시합니다.
+                //
+                // viewModel.isBuffering:
+                //   - 비디오 데이터를 읽는 중
+                //   - 네트워크 또는 디스크에서 로딩 중
+                //   - 디코딩 준비 중
+                //
             } else if viewModel.isBuffering {
                 // **ProgressView:**
                 //
@@ -710,17 +710,17 @@ struct VideoPlayerView: View {
                     // 흰색 텍스트 (검은 배경에서 보이도록)
                     .foregroundColor(.white)
 
-            // Case 3: Error
-            //
-            // 에러가 발생하면 에러 메시지를 표시합니다.
-            //
-            // **Optional Binding:**
-            //
-            // if let errorMessage = viewModel.errorMessage:
-            //   - errorMessage가 nil이 아니면 (에러 있음)
-            //   - 언래핑된 문자열을 errorMessage에 저장
-            //   - 에러 UI 표시
-            //
+                // Case 3: Error
+                //
+                // 에러가 발생하면 에러 메시지를 표시합니다.
+                //
+                // **Optional Binding:**
+                //
+                // if let errorMessage = viewModel.errorMessage:
+                //   - errorMessage가 nil이 아니면 (에러 있음)
+                //   - 언래핑된 문자열을 errorMessage에 저장
+                //   - 에러 UI 표시
+                //
             } else if let errorMessage = viewModel.errorMessage {
                 // **에러 UI:**
                 //
@@ -770,15 +770,15 @@ struct VideoPlayerView: View {
                 .foregroundColor(.white)  // 전체 텍스트 흰색
                 .padding()  // 여백 추가
 
-            // Case 4: Placeholder
-            //
-            // 그 외의 경우 (비디오 없음) 플레이스홀더를 표시합니다.
-            //
-            // 이 경우는 언제 발생하는가?
-            //   - 비디오가 아직 로드되지 않음
-            //   - 로드 완료되었지만 프레임이 없음
-            //   - 초기 상태
-            //
+                // Case 4: Placeholder
+                //
+                // 그 외의 경우 (비디오 없음) 플레이스홀더를 표시합니다.
+                //
+                // 이 경우는 언제 발생하는가?
+                //   - 비디오가 아직 로드되지 않음
+                //   - 로드 완료되었지만 프레임이 없음
+                //   - 초기 상태
+                //
             } else {
                 // **플레이스홀더 UI:**
                 //
@@ -1165,10 +1165,10 @@ struct VideoPlayerView: View {
                 toggleFullscreen()
                 return nil  // 이벤트 소비
             }
-            // **ESC를 전체화면 종료 외에 다른 용도로 사용할 수 있도록:**
-            //
-            // 전체화면이 아니면 이벤트를 계속 전달합니다.
-            // 예: Sheet나 Alert를 닫는 데 사용
+        // **ESC를 전체화면 종료 외에 다른 용도로 사용할 수 있도록:**
+        //
+        // 전체화면이 아니면 이벤트를 계속 전달합니다.
+        // 예: Sheet나 Alert를 닫는 데 사용
 
         default:
             // **처리하지 않는 키:**

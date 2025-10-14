@@ -43,23 +43,23 @@
  【주요 문장 타입】
 
  1. $GPRMC (Recommended Minimum Specific GPS/TRANSIT Data)
-    - 위치 (위도, 경도)
-    - 속도 (knots)
-    - 진행 방향 (도)
-    - 날짜/시간
-    ➜ 가장 기본적이고 필수적인 GPS 정보
+ - 위치 (위도, 경도)
+ - 속도 (knots)
+ - 진행 방향 (도)
+ - 날짜/시간
+ ➜ 가장 기본적이고 필수적인 GPS 정보
 
  2. $GPGGA (Global Positioning System Fix Data)
-    - 위치 (위도, 경도)
-    - 고도 (해발 미터)
-    - 위성 개수
-    - HDOP (정확도 지표)
-    ➜ 3D 위치와 정확도 정보
+ - 위치 (위도, 경도)
+ - 고도 (해발 미터)
+ - 위성 개수
+ - HDOP (정확도 지표)
+ ➜ 3D 위치와 정확도 정보
 
  3. $GNRMC, $GNGGA
-    - GP: GPS 전용
-    - GN: GPS + GLONASS + Galileo (복합 위성 시스템)
-    ➜ 최신 수신기는 여러 위성 시스템을 동시 사용
+ - GP: GPS 전용
+ - GN: GPS + GLONASS + Galileo (복합 위성 시스템)
+ ➜ 최신 수신기는 여러 위성 시스템을 동시 사용
 
 
  【좌표 형식 변환】
@@ -74,8 +74,8 @@
 
  십진수 도(Decimal Degrees) 변환:
  DD = 48 + (07.038 / 60)
-    = 48 + 0.1173
-    = 48.1173°
+ = 48 + 0.1173
+ = 48.1173°
 
  방향:
  - N (북위) = 양수
@@ -84,7 +84,7 @@
  - W (서경) = 음수
 
  예: 4807.038,N → +48.1173° (북위 48.1173도)
-     01131.000,E → +11.5167° (동경 11.5167도)
+ 01131.000,E → +11.5167° (동경 11.5167도)
 
 
  【속도 단위 변환】
@@ -92,7 +92,7 @@
  NMEA는 속도를 knots(해리/시)로 표현:
 
  1 knot = 1 해리(nautical mile) / 1 시간
-        = 1.852 km/h
+ = 1.852 km/h
 
  예: 022.4 knots = 022.4 × 1.852 = 41.48 km/h
 
@@ -103,11 +103,11 @@
 
  HDOP 값      정확도
  ──────────────────────
-   < 1       이상적 (거의 불가능)
-   1-2       우수 (±1-2m)
-   2-5       양호 (±2-5m)
-   5-10      보통 (±5-10m)
-   > 10      나쁨 (±10m 이상)
+ < 1       이상적 (거의 불가능)
+ 1-2       우수 (±1-2m)
+ 2-5       양호 (±2-5m)
+ 5-10      보통 (±5-10m)
+ > 10      나쁨 (±10m 이상)
 
  ┌──────────────────────────────────────┐
  │       위성 배치에 따른 HDOP          │
@@ -168,11 +168,11 @@
 
  // 결과
  for point in gpsPoints {
-     print("위치: \(point.latitude), \(point.longitude)")
-     print("고도: \(point.altitude ?? 0)m")
-     print("속도: \(point.speed ?? 0) km/h")
-     print("방향: \(point.heading ?? 0)°")
-     print("위성: \(point.satelliteCount ?? 0)개")
+ print("위치: \(point.latitude), \(point.longitude)")
+ print("고도: \(point.altitude ?? 0)m")
+ print("속도: \(point.speed ?? 0) km/h")
+ print("방향: \(point.heading ?? 0)°")
+ print("위성: \(point.satelliteCount ?? 0)개")
  }
  ```
 
@@ -180,16 +180,16 @@
  【참고】
 
  1. NMEA 0183 표준 문서:
-    https://www.nmea.org/content/STANDARDS/NMEA_0183_Standard
+ https://www.nmea.org/content/STANDARDS/NMEA_0183_Standard
 
  2. 체크섬 계산:
-    XOR of all characters between $ and *
-    예: $GPRMC,... *6A
-        6A는 16진수 체크섬 (현재 미구현)
+ XOR of all characters between $ and *
+ 예: $GPRMC,... *6A
+ 6A는 16진수 체크섬 (현재 미구현)
 
  3. UTC 시간:
-    NMEA 시간은 항상 UTC (협정세계시)
-    한국 시간 = UTC + 9시간
+ NMEA 시간은 항상 UTC (협정세계시)
+ 한국 시간 = UTC + 9시간
 
  ═══════════════════════════════════════════════════════════════════════════
  */
@@ -252,19 +252,19 @@ import Foundation
  【주요 기능】
 
  1. 전체 데이터 파싱: parseNMEA(data:baseDate:)
-    - 여러 줄의 NMEA 문장을 한 번에 파싱
-    - RMC와 GGA를 병합하여 완전한 GPSPoint 생성
+ - 여러 줄의 NMEA 문장을 한 번에 파싱
+ - RMC와 GGA를 병합하여 완전한 GPSPoint 생성
 
  2. 단일 문장 파싱: parseSentence(_:)
-    - 개별 NMEA 문장을 즉시 파싱
-    - 실시간 GPS 수신 시 사용
+ - 개별 NMEA 문장을 즉시 파싱
+ - 실시간 GPS 수신 시 사용
 
  3. 좌표 변환: parseCoordinate(_:direction:)
-    - DDMM.MMMM → 십진수 도
+ - DDMM.MMMM → 십진수 도
 
  4. 시간 변환: parseDateTime(time:date:)
-    - HHMMSS + DDMMYY → Date
-    - baseDate와 병합 (파일명에서 추출한 날짜)
+ - HHMMSS + DDMMYY → Date
+ - baseDate와 병합 (파일명에서 추출한 날짜)
 
 
  【설계 특징】
@@ -306,12 +306,12 @@ class GPSParser {
      【예시】
 
      파일명: 20240115_143025_F.mp4
-              └──┬──┘
-                 기준 날짜 = 2024년 1월 15일
+     └──┬──┘
+     기준 날짜 = 2024년 1월 15일
 
      NMEA: $GPRMC,143025,A,...
-                   └─┬─┘
-                     14:30:25
+     └─┬─┘
+     14:30:25
 
      최종 타임스탬프: 2024-01-15 14:30:25 UTC
 
@@ -363,10 +363,10 @@ class GPSParser {
      【파라미터】
 
      - data: UTF-8 인코딩된 NMEA 텍스트
-       예: "$GPRMC,143025...\n$GPGGA,143025...\n"
+     예: "$GPRMC,143025...\n$GPGGA,143025...\n"
 
      - baseDate: 비디오 파일의 날짜 (파일명에서 추출)
-       예: 20240115_143025_F.mp4 → 2024-01-15
+     예: 20240115_143025_F.mp4 → 2024-01-15
 
 
      【반환값】
@@ -383,9 +383,9 @@ class GPSParser {
      │ $GPRMC,143026,A,3744.1235,N,...    │
      │ $GPGGA,143026,3744.1235,N,...      │
      └────────────────────────────────────┘
-              │
-              │ components(separatedBy: .newlines)
-              ▼
+     │
+     │ components(separatedBy: .newlines)
+     ▼
      [Line 1, Line 2, Line 3, Line 4]
 
 
@@ -452,13 +452,13 @@ class GPSParser {
      // 출력: 추출된 GPS 포인트: 2개
 
      for (i, point) in points.enumerated() {
-         print("Point \(i + 1):")
-         print("  시간: \(point.timestamp)")
-         print("  위치: \(point.latitude)°, \(point.longitude)°")
-         print("  고도: \(point.altitude ?? 0)m")
-         print("  속도: \(point.speed ?? 0) km/h")
-         print("  방향: \(point.heading ?? 0)°")
-         print("  위성: \(point.satelliteCount ?? 0)개")
+     print("Point \(i + 1):")
+     print("  시간: \(point.timestamp)")
+     print("  위치: \(point.latitude)°, \(point.longitude)°")
+     print("  고도: \(point.altitude ?? 0)m")
+     print("  속도: \(point.speed ?? 0) km/h")
+     print("  방향: \(point.heading ?? 0)°")
+     print("  위성: \(point.satelliteCount ?? 0)개")
      }
      ```
 
@@ -576,10 +576,10 @@ class GPSParser {
      【사용 사례】
 
      1. 실시간 GPS 스트리밍:
-        GPS 모듈에서 한 줄씩 수신될 때
+     GPS 모듈에서 한 줄씩 수신될 때
 
      2. 디버깅:
-        특정 문장의 파싱 결과를 테스트
+     특정 문장의 파싱 결과를 테스트
 
 
      【제한사항】
@@ -598,8 +598,8 @@ class GPSParser {
      let sentence = "$GPRMC,143025,A,3744.1234,N,12704.5678,E,45.2,120.0,150124,,,A*6A"
 
      if let point = parser.parseSentence(sentence) {
-         print("위치: \(point.latitude), \(point.longitude)")
-         print("속도: \(point.speed ?? 0) km/h")
+     print("위치: \(point.latitude), \(point.longitude)")
+     print("속도: \(point.speed ?? 0) km/h")
      }
      ```
 
@@ -684,9 +684,9 @@ class GPSParser {
      【속도 변환】
 
      NMEA: 022.4 knots
-           │
-           │ × 1.852
-           ▼
+     │
+     │ × 1.852
+     ▼
      Swift: 41.48 km/h
 
 
@@ -694,11 +694,11 @@ class GPSParser {
 
      북쪽(N)을 0도로 하여 시계방향으로 증가:
 
-           0° (N)
-           │
+     0° (N)
+     │
      270° ─┼─ 90° (E)
-           │
-          180° (S)
+     │
+     180° (S)
 
      예:
      - 45°: 북동쪽
@@ -891,7 +891,7 @@ class GPSParser {
      > 10   나쁨        사용 제한
 
      예: HDOP 0.9 → 우수한 정확도
-         HDOP 5.2 → 보통 정확도
+     HDOP 5.2 → 보통 정확도
 
 
      【고도 측정】
@@ -912,8 +912,8 @@ class GPSParser {
      └────────────────────────────────────┘
 
      실제 해발 고도 = 고도 - 지오이드 높이
-                  = 545.4 - 46.9
-                  = 498.5m
+     = 545.4 - 46.9
+     = 498.5m
 
      ➜ 블랙박스에서는 보통 WGS84 고도를 그대로 사용
 
@@ -1257,12 +1257,12 @@ class GPSParser {
      【입력 형식】
 
      time: HHMMSS 또는 HHMMSS.sss
-           └┬┘└┬┘└┬┘
-            시 분 초
+     └┬┘└┬┘└┬┘
+     시 분 초
 
      date: DDMMYY (선택적)
-           └┬┘└┬┘└┬┘
-            일 월 년(2자리)
+     └┬┘└┬┘└┬┘
+     일 월 년(2자리)
 
 
      【변환 과정】
@@ -1296,8 +1296,8 @@ class GPSParser {
      │ - second: 25                   │
      │ - timeZone: UTC                │
      └────────────────────────────────┘
-              │
-              ▼
+     │
+     ▼
      Date: 2024-01-15 14:30:25 +0000 (UTC)
 
 
@@ -1310,9 +1310,9 @@ class GPSParser {
      │          └───┬──┘                    │
      │              baseDate = 2024-01-15   │
      └──────────────────────────────────────┘
-              │
-              │ NMEA에 날짜 없음
-              ▼
+     │
+     │ NMEA에 날짜 없음
+     ▼
      ┌──────────────────────────────────────┐
      │ baseDate의 년/월/일 사용             │
      │ NMEA의 시/분/초 사용                 │
@@ -1322,9 +1322,9 @@ class GPSParser {
      【2자리 년도 처리】
 
      NMEA: "24" (YY)
-           │
-           │ + 2000
-           ▼
+     │
+     │ + 2000
+     ▼
      Swift: 2024 (YYYY)
 
      ⚠️ 2100년 이후는 처리 불가
@@ -1351,8 +1351,8 @@ class GPSParser {
      일부 수신기는 밀리초도 제공:
 
      "143025.123"
-            └─┬─┘
-              밀리초 (현재 미지원)
+     └─┬─┘
+     밀리초 (현재 미지원)
 
      현재는 초 단위까지만 파싱
 
@@ -1540,18 +1540,18 @@ class GPSParser {
  【왜 GPSPoint를 직접 사용하지 않나요?】
 
  1. 유연성:
-    - GPRMC: 속도/방향 있음, 고도 없음
-    - GPGGA: 고도 있음, 속도/방향 없음
-    - 모든 필드를 Optional로 처리
+ - GPRMC: 속도/방향 있음, 고도 없음
+ - GPGGA: 고도 있음, 속도/방향 없음
+ - 모든 필드를 Optional로 처리
 
  2. 병합:
-    - GPRMC로 NMEARecord 생성
-    - GPGGA로 NMEARecord 생성
-    - 두 개를 병합하여 GPSPoint 생성
+ - GPRMC로 NMEARecord 생성
+ - GPGGA로 NMEARecord 생성
+ - 두 개를 병합하여 GPSPoint 생성
 
  3. 내부 구현:
-    - 외부에 노출되지 않음 (private)
-    - GPSPoint는 public API용
+ - 외부에 노출되지 않음 (private)
+ - GPSPoint는 public API용
 
 
  【필드 설명】
@@ -1636,19 +1636,19 @@ private struct NMEARecord {
  【오류 타입】
 
  1. invalidFormat:
-    - NMEA 문장 형식이 잘못됨
-    - 필드 개수 부족
-    - $ 로 시작하지 않음
+ - NMEA 문장 형식이 잘못됨
+ - 필드 개수 부족
+ - $ 로 시작하지 않음
 
  2. invalidChecksum:
-    - 체크섬 불일치 (현재 미구현)
+ - 체크섬 불일치 (현재 미구현)
 
  3. invalidCoordinate:
-    - 좌표 파싱 실패
-    - 위도/경도 범위 초과
+ - 좌표 파싱 실패
+ - 위도/경도 범위 초과
 
  4. invalidTimestamp:
-    - 시간/날짜 파싱 실패
+ - 시간/날짜 파싱 실패
 
 
  【현재 사용】
@@ -1660,10 +1660,10 @@ private struct NMEARecord {
 
  ```swift
  func parseGPRMC(_ sentence: String) throws -> NMEARecord {
-     guard fields.count >= 10 else {
-         throw GPSParserError.invalidFormat
-     }
-     // ...
+ guard fields.count >= 10 else {
+ throw GPSParserError.invalidFormat
+ }
+ // ...
  }
  ```
 
@@ -1712,10 +1712,10 @@ enum GPSParserError: Error {
 
  ```swift
  do {
-     let record = try parseGPRMC(sentence)
+ let record = try parseGPRMC(sentence)
  } catch let error as GPSParserError {
-     print(error.localizedDescription)
-     // 출력: "Invalid NMEA format"
+ print(error.localizedDescription)
+ // 출력: "Invalid NMEA format"
  }
  ```
 
@@ -1768,50 +1768,50 @@ extension GPSParserError: LocalizedError {
 
  // Step 4: 경로 분석
  if let firstPoint = gpsPoints.first, let lastPoint = gpsPoints.last {
-     print("\n출발지:")
-     print("  위치: \(firstPoint.latitude), \(firstPoint.longitude)")
-     print("  시간: \(firstPoint.timestamp)")
+ print("\n출발지:")
+ print("  위치: \(firstPoint.latitude), \(firstPoint.longitude)")
+ print("  시간: \(firstPoint.timestamp)")
 
-     print("\n도착지:")
-     print("  위치: \(lastPoint.latitude), \(lastPoint.longitude)")
-     print("  시간: \(lastPoint.timestamp)")
+ print("\n도착지:")
+ print("  위치: \(lastPoint.latitude), \(lastPoint.longitude)")
+ print("  시간: \(lastPoint.timestamp)")
 
-     // 거리 계산
-     let start = CLLocation(
-         latitude: firstPoint.latitude,
-         longitude: firstPoint.longitude
-     )
-     let end = CLLocation(
-         latitude: lastPoint.latitude,
-         longitude: lastPoint.longitude
-     )
-     let distance = start.distance(from: end) / 1000.0  // km
-     print("  이동 거리: \(String(format: "%.2f", distance)) km")
+ // 거리 계산
+ let start = CLLocation(
+ latitude: firstPoint.latitude,
+ longitude: firstPoint.longitude
+ )
+ let end = CLLocation(
+ latitude: lastPoint.latitude,
+ longitude: lastPoint.longitude
+ )
+ let distance = start.distance(from: end) / 1000.0  // km
+ print("  이동 거리: \(String(format: "%.2f", distance)) km")
  }
 
  // Step 5: 속도 분석
  let speeds = gpsPoints.compactMap { $0.speed }
  if !speeds.isEmpty {
-     let avgSpeed = speeds.reduce(0, +) / Double(speeds.count)
-     let maxSpeed = speeds.max() ?? 0
+ let avgSpeed = speeds.reduce(0, +) / Double(speeds.count)
+ let maxSpeed = speeds.max() ?? 0
 
-     print("\n속도 분석:")
-     print("  평균 속도: \(String(format: "%.1f", avgSpeed)) km/h")
-     print("  최고 속도: \(String(format: "%.1f", maxSpeed)) km/h")
+ print("\n속도 분석:")
+ print("  평균 속도: \(String(format: "%.1f", avgSpeed)) km/h")
+ print("  최고 속도: \(String(format: "%.1f", maxSpeed)) km/h")
  }
 
  // Step 6: 위성 정확도 분석
  let accuracies = gpsPoints.compactMap { $0.horizontalAccuracy }
  if !accuracies.isEmpty {
-     let avgAccuracy = accuracies.reduce(0, +) / Double(accuracies.count)
+ let avgAccuracy = accuracies.reduce(0, +) / Double(accuracies.count)
 
-     print("\n정확도 분석:")
-     print("  평균 오차: \(String(format: "%.1f", avgAccuracy))m")
+ print("\n정확도 분석:")
+ print("  평균 오차: \(String(format: "%.1f", avgAccuracy))m")
  }
 
  // Step 7: 지도에 경로 표시
  let coordinates = gpsPoints.map {
-     CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude)
+ CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude)
  }
  // MapView에서 polyline으로 표시...
  ```
@@ -1822,20 +1822,20 @@ extension GPSParserError: LocalizedError {
  총 GPS 포인트: 3600개
 
  출발지:
-   위치: 37.7354, 127.0761
-   시간: 2024-01-15 14:30:25 +0000
+ 위치: 37.7354, 127.0761
+ 시간: 2024-01-15 14:30:25 +0000
 
  도착지:
-   위치: 37.5665, 126.9780
-   시간: 2024-01-15 15:00:25 +0000
-   이동 거리: 24.53 km
+ 위치: 37.5665, 126.9780
+ 시간: 2024-01-15 15:00:25 +0000
+ 이동 거리: 24.53 km
 
  속도 분석:
-   평균 속도: 49.1 km/h
-   최고 속도: 83.7 km/h
+ 평균 속도: 49.1 km/h
+ 최고 속도: 83.7 km/h
 
  정확도 분석:
-   평균 오차: 12.3m
+ 평균 오차: 12.3m
 
  ═══════════════════════════════════════════════════════════════════════════
  */

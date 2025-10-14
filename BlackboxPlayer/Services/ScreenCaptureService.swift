@@ -12,29 +12,29 @@
  ### 사용 예시:
  ```
  사용자가 영상에서 중요한 장면 발견
-    ↓
+ ↓
  캡처 버튼 클릭
-    ↓
+ ↓
  현재 화면을 PNG/JPEG 파일로 저장
  ```
 
  ## 🎯 주요 기능
 
  1. **Metal Texture → Image 변환**
-    - GPU 메모리의 텍스처를 CPU 메모리의 이미지로 변환
-    - CGImage, NSImage 사용
+ - GPU 메모리의 텍스처를 CPU 메모리의 이미지로 변환
+ - CGImage, NSImage 사용
 
  2. **타임스탬프 오버레이**
-    - 캡처 시각 표시
-    - 영상 재생 시간 표시
+ - 캡처 시각 표시
+ - 영상 재생 시간 표시
 
  3. **이미지 포맷 지원**
-    - PNG: 무손실 압축, 파일 크기 큼
-    - JPEG: 손실 압축, 파일 크기 작음
+ - PNG: 무손실 압축, 파일 크기 큼
+ - JPEG: 손실 압축, 파일 크기 작음
 
  4. **파일 저장**
-    - 저장 위치 선택 다이얼로그
-    - 저장 완료 알림
+ - 저장 위치 선택 다이얼로그
+ - 저장 완료 알림
 
  ## 💡 기술 개념
 
@@ -54,15 +54,15 @@
  ### 변환 과정:
  ```
  MTLTexture (GPU)
-   ↓ texture.getBytes() - GPU → CPU 복사
+ ↓ texture.getBytes() - GPU → CPU 복사
  [UInt8] 배열 (픽셀 데이터)
-   ↓ CGDataProvider
+ ↓ CGDataProvider
  CGImage (Core Graphics)
-   ↓ NSImage
+ ↓ NSImage
  NSImage (AppKit)
-   ↓ NSBitmapImageRep
+ ↓ NSBitmapImageRep
  PNG/JPEG Data
-   ↓ write(to:)
+ ↓ write(to:)
  파일 저장
  ```
 
@@ -74,17 +74,17 @@
 
  // 2. 현재 프레임 캡처
  if let data = captureService.captureFrame(
-     from: currentTexture,
-     format: .png,
-     timestamp: Date(),
-     videoTimestamp: 5.25  // 5.25초 시점
+ from: currentTexture,
+ format: .png,
+ timestamp: Date(),
+ videoTimestamp: 5.25  // 5.25초 시점
  ) {
-     // 3. 저장 다이얼로그 표시
-     captureService.showSavePanel(
-         data: data,
-         format: .png,
-         defaultFilename: "Blackbox_Front_2024-10-12"
-     )
+ // 3. 저장 다이얼로그 표시
+ captureService.showSavePanel(
+ data: data,
+ format: .png,
+ defaultFilename: "Blackbox_Front_2024-10-12"
+ )
  }
  ```
 
@@ -282,28 +282,28 @@ class ScreenCaptureService {
      ### 처리 단계:
      ```
      1. MTLTexture → CGImage 변환
-        - GPU 메모리 → CPU 메모리 복사
-        - RGBA 픽셀 데이터 추출
+     - GPU 메모리 → CPU 메모리 복사
+     - RGBA 픽셀 데이터 추출
 
      2. CGImage → NSImage 변환
-        - AppKit 이미지 객체 생성
+     - AppKit 이미지 객체 생성
 
      3. 타임스탬프 오버레이 (선택)
-        - 현재 시각 표시
-        - 영상 재생 시간 표시
+     - 현재 시각 표시
+     - 영상 재생 시간 표시
 
      4. PNG/JPEG 인코딩
-        - 지정된 포맷으로 압축
+     - 지정된 포맷으로 압축
 
      5. Data 반환
-        - 파일에 쓸 수 있는 바이너리 데이터
+     - 파일에 쓸 수 있는 바이너리 데이터
      ```
 
      - Parameters:
-       - texture: 캡처할 Metal 텍스처 (현재 화면)
-       - format: 저장할 이미지 포맷 (PNG 또는 JPEG)
-       - timestamp: 오버레이할 시각 (nil이면 오버레이 안 함)
-       - videoTimestamp: 영상 재생 시간 (초 단위)
+     - texture: 캡처할 Metal 텍스처 (현재 화면)
+     - format: 저장할 이미지 포맷 (PNG 또는 JPEG)
+     - timestamp: 오버레이할 시각 (nil이면 오버레이 안 함)
+     - videoTimestamp: 영상 재생 시간 (초 단위)
 
      - Returns: 이미지 데이터 (Data), 실패 시 nil
 
@@ -311,16 +311,16 @@ class ScreenCaptureService {
      ```swift
      // 1. 타임스탬프 없이 캡처
      let data = captureService.captureFrame(
-         from: currentTexture,
-         format: .png
+     from: currentTexture,
+     format: .png
      )
 
      // 2. 타임스탬프 포함 캡처
      let data = captureService.captureFrame(
-         from: currentTexture,
-         format: .jpeg,
-         timestamp: Date(),           // 현재 시각: 2024-10-12 15:30:45
-         videoTimestamp: 125.5        // 영상 시간: 00:02:05.500
+     from: currentTexture,
+     format: .jpeg,
+     timestamp: Date(),           // 현재 시각: 2024-10-12 15:30:45
+     videoTimestamp: 125.5        // 영상 시간: 00:02:05.500
      )
      ```
 
@@ -392,29 +392,29 @@ class ScreenCaptureService {
      ### 처리 흐름:
      ```
      1. NSSavePanel 생성 및 설정
-        - 제목, 메시지 설정
-        - 기본 파일명 설정
-        - 허용할 파일 확장자 설정
+     - 제목, 메시지 설정
+     - 기본 파일명 설정
+     - 허용할 파일 확장자 설정
 
      2. runModal() 호출
-        - 다이얼로그 표시 (모달)
-        - 사용자 입력 대기
-        - 취소 또는 저장 버튼 클릭 대기
+     - 다이얼로그 표시 (모달)
+     - 사용자 입력 대기
+     - 취소 또는 저장 버튼 클릭 대기
 
      3. 응답 확인
-        - .OK → 저장 진행
-        - 취소 → false 반환
+     - .OK → 저장 진행
+     - 취소 → false 반환
 
      4. 파일 쓰기
-        - data.write(to: url)
-        - 성공 → 알림 표시
-        - 실패 → 에러 알림
+     - data.write(to: url)
+     - 성공 → 알림 표시
+     - 실패 → 에러 알림
      ```
 
      - Parameters:
-       - data: 저장할 이미지 데이터
-       - format: 이미지 포맷 (확장자 결정)
-       - defaultFilename: 기본 파일명 (확장자 제외)
+     - data: 저장할 이미지 데이터
+     - format: 이미지 포맷 (확장자 결정)
+     - defaultFilename: 기본 파일명 (확장자 제외)
 
      - Returns: 저장 성공 여부 (true/false)
 
@@ -425,7 +425,7 @@ class ScreenCaptureService {
      ```swift
      // 반환값 사용:
      if captureService.showSavePanel(data: data, format: .png) {
-         print("저장 성공!")
+     print("저장 성공!")
      }
 
      // 반환값 무시 (경고 없음):
@@ -436,11 +436,11 @@ class ScreenCaptureService {
      ```swift
      // 캡처 및 저장:
      if let data = captureService.captureFrame(from: texture, format: .png) {
-         captureService.showSavePanel(
-             data: data,
-             format: .png,
-             defaultFilename: "Blackbox_Front_2024-10-12_15-30-45"
-         )
+     captureService.showSavePanel(
+     data: data,
+     format: .png,
+     defaultFilename: "Blackbox_Front_2024-10-12_15-30-45"
+     )
      }
      ```
      */
@@ -561,11 +561,11 @@ class ScreenCaptureService {
 
      예: 빨간색 픽셀
      [255, 0, 0, 255]
-      R   G  B  A
+     R   G  B  A
 
      2×2 이미지:
      [255,0,0,255,  0,255,0,255,    ← 첫 번째 줄 (빨강, 초록)
-      0,0,255,255,  255,255,255,255] ← 두 번째 줄 (파랑, 흰색)
+     0,0,255,255,  255,255,255,255] ← 두 번째 줄 (파랑, 흰색)
 
      총 크기 = 2 × 2 × 4 = 16바이트
      ```
@@ -667,36 +667,36 @@ class ScreenCaptureService {
      ### 처리 단계:
      ```
      1. NSBitmapImageRep 생성
-        - 비트맵 이미지 표현 객체
-        - 픽셀 데이터를 직접 조작 가능
+     - 비트맵 이미지 표현 객체
+     - 픽셀 데이터를 직접 조작 가능
 
      2. NSGraphicsContext 설정
-        - 그래픽 그리기 컨텍스트
-        - 현재 그리기 대상 설정
+     - 그래픽 그리기 컨텍스트
+     - 현재 그리기 대상 설정
 
      3. 원본 이미지 그리기
-        - 배경으로 사용
+     - 배경으로 사용
 
      4. 타임스탬프 텍스트 포맷팅
-        - 날짜/시간: "2024-10-12 15:30:45"
-        - 영상 시간: "[00:02:05.500]"
+     - 날짜/시간: "2024-10-12 15:30:45"
+     - 영상 시간: "[00:02:05.500]"
 
      5. 배경 사각형 그리기
-        - 반투명 검은색
-        - 텍스트 가독성 향상
+     - 반투명 검은색
+     - 텍스트 가독성 향상
 
      6. 텍스트 그리기
-        - 흰색 고정폭 폰트
-        - 우하단 위치
+     - 흰색 고정폭 폰트
+     - 우하단 위치
 
      7. NSImage로 변환
-        - 최종 결과 이미지
+     - 최종 결과 이미지
      ```
 
      - Parameters:
-       - image: 원본 이미지
-       - timestamp: 캡처 시각
-       - videoTimestamp: 영상 재생 시간 (초)
+     - image: 원본 이미지
+     - timestamp: 캡처 시각
+     - videoTimestamp: 영상 재생 시간 (초)
 
      - Returns: 타임스탬프가 추가된 이미지
      */
@@ -868,11 +868,11 @@ class ScreenCaptureService {
      ### 변환 과정:
      ```
      NSImage (AppKit 객체)
-       ↓ tiffRepresentation
+     ↓ tiffRepresentation
      TIFF Data (임시 포맷)
-       ↓ NSBitmapImageRep
+     ↓ NSBitmapImageRep
      비트맵 표현
-       ↓ representation(using:)
+     ↓ representation(using:)
      PNG/JPEG Data (최종)
      ```
 
@@ -889,8 +889,8 @@ class ScreenCaptureService {
      - 0.95 = 95% 품질 (기본값)
 
      - Parameters:
-       - image: 변환할 이미지
-       - format: 목표 포맷 (PNG 또는 JPEG)
+     - image: 변환할 이미지
+     - format: 목표 포맷 (PNG 또는 JPEG)
 
      - Returns: 이미지 데이터, 실패 시 nil
      */
@@ -954,9 +954,9 @@ class ScreenCaptureService {
      - async로 메인 스레드에 작업 전달
 
      - Parameters:
-       - title: 알림 제목
-       - message: 알림 메시지
-       - isError: 에러 알림 여부 (true = 경고 스타일)
+     - title: 알림 제목
+     - message: 알림 메시지
+     - isError: 에러 알림 여부 (true = 경고 스타일)
      */
     /// @brief 사용자 알림 표시
     /// @param title 알림 제목
@@ -1005,17 +1005,17 @@ class ScreenCaptureService {
 
  // 3. 프레임 캡처
  if let data = captureService.captureFrame(
-     from: currentTexture,
-     format: .png,
-     timestamp: Date(),
-     videoTimestamp: syncController.currentTime
+ from: currentTexture,
+ format: .png,
+ timestamp: Date(),
+ videoTimestamp: syncController.currentTime
  ) {
-     // 4. 파일 저장
-     captureService.showSavePanel(
-         data: data,
-         format: .png,
-         defaultFilename: generateFilename()
-     )
+ // 4. 파일 저장
+ captureService.showSavePanel(
+ data: data,
+ format: .png,
+ defaultFilename: generateFilename()
+ )
  }
  ```
 
@@ -1023,14 +1023,14 @@ class ScreenCaptureService {
 
  ```swift
  func generateFilename() -> String {
-     let dateFormatter = DateFormatter()
-     dateFormatter.dateFormat = "yyyy-MM-dd_HH-mm-ss"
-     let dateString = dateFormatter.string(from: Date())
+ let dateFormatter = DateFormatter()
+ dateFormatter.dateFormat = "yyyy-MM-dd_HH-mm-ss"
+ let dateString = dateFormatter.string(from: Date())
 
-     let position = "Front"  // 또는 currentCameraPosition
+ let position = "Front"  // 또는 currentCameraPosition
 
-     return "Blackbox_\(position)_\(dateString)"
-     // 예: "Blackbox_Front_2024-10-12_15-30-45"
+ return "Blackbox_\(position)_\(dateString)"
+ // 예: "Blackbox_Front_2024-10-12_15-30-45"
  }
  ```
 
@@ -1039,16 +1039,16 @@ class ScreenCaptureService {
  ```swift
  // ContentView.swift
  .onReceive(NotificationCenter.default.publisher(for: .captureScreenshot)) { _ in
-     if let texture = renderer.currentTexture {
-         if let data = captureService.captureFrame(
-             from: texture,
-             format: .png,
-             timestamp: Date(),
-             videoTimestamp: syncController.currentTime
-         ) {
-             captureService.showSavePanel(data: data, format: .png)
-         }
-     }
+ if let texture = renderer.currentTexture {
+ if let data = captureService.captureFrame(
+ from: texture,
+ format: .png,
+ timestamp: Date(),
+ videoTimestamp: syncController.currentTime
+ ) {
+ captureService.showSavePanel(data: data, format: .png)
+ }
+ }
  }
 
  // 단축키 등록: Command+S
@@ -1059,42 +1059,42 @@ class ScreenCaptureService {
 
  ```swift
  func autoSaveCapture() {
-     guard let texture = renderer.currentTexture else { return }
+ guard let texture = renderer.currentTexture else { return }
 
-     guard let data = captureService.captureFrame(
-         from: texture,
-         format: .jpeg,  // 파일 크기 작음
-         timestamp: Date(),
-         videoTimestamp: syncController.currentTime
-     ) else { return }
+ guard let data = captureService.captureFrame(
+ from: texture,
+ format: .jpeg,  // 파일 크기 작음
+ timestamp: Date(),
+ videoTimestamp: syncController.currentTime
+ ) else { return }
 
-     // 자동 저장 경로
-     let filename = generateFilename() + ".jpg"
-     let documentsURL = FileManager.default.urls(for: .picturesDirectory, in: .userDomainMask)[0]
-     let fileURL = documentsURL.appendingPathComponent("Blackbox").appendingPathComponent(filename)
+ // 자동 저장 경로
+ let filename = generateFilename() + ".jpg"
+ let documentsURL = FileManager.default.urls(for: .picturesDirectory, in: .userDomainMask)[0]
+ let fileURL = documentsURL.appendingPathComponent("Blackbox").appendingPathComponent(filename)
 
-     do {
-         try data.write(to: fileURL)
-         print("Auto-saved: \(fileURL.path)")
-     } catch {
-         print("Auto-save failed: \(error)")
-     }
+ do {
+ try data.write(to: fileURL)
+ print("Auto-saved: \(fileURL.path)")
+ } catch {
+ print("Auto-save failed: \(error)")
+ }
  }
  ```
 
  ## 성능 고려사항:
 
  1. **캡처는 비용이 큰 작업**
-    - GPU → CPU 메모리 복사 (8MB)
-    - 이미지 인코딩 (PNG: 느림, JPEG: 빠름)
-    - 파일 쓰기
+ - GPU → CPU 메모리 복사 (8MB)
+ - 이미지 인코딩 (PNG: 느림, JPEG: 빠름)
+ - 파일 쓰기
 
  2. **권장 사항**
-    - 재생 중에는 pause 후 캡처
-    - 연속 캡처 방지 (1초 간격 제한)
-    - JPEG 사용 (PNG보다 5-10배 빠름)
+ - 재생 중에는 pause 후 캡처
+ - 연속 캡처 방지 (1초 간격 제한)
+ - JPEG 사용 (PNG보다 5-10배 빠름)
 
  3. **메모리 관리**
-    - 캡처 후 Data는 자동으로 해제됨
-    - 메모리 부족 시 캡처 실패 가능
+ - 캡처 후 Data는 자동으로 해제됨
+ - 메모리 부족 시 캡처 실패 가능
  */

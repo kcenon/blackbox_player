@@ -74,9 +74,9 @@
  기본 사용법:
  ```swift
  enum EventType {
-     case normal
-     case impact
-     case parking
+ case normal
+ case impact
+ case parking
  }
 
  let event: EventType = .impact  // 타입 추론
@@ -85,8 +85,8 @@
  Raw Values (원시 값):
  ```swift
  enum EventType: String {  // String 타입 지정
-     case normal = "normal"
-     case impact = "impact"
+ case normal = "normal"
+ case impact = "impact"
  }
 
  let event = EventType.normal
@@ -125,20 +125,20 @@
  사용법:
  ```swift
  enum EventType: String, CaseIterable {
-     case normal
-     case impact
-     case parking
+ case normal
+ case impact
+ case parking
  }
 
  for eventType in EventType.allCases {
-     print(eventType.displayName)
+ print(eventType.displayName)
  }
 
  // UI Picker/Dropdown 생성
  Picker("이벤트 유형", selection: $selectedEvent) {
-     ForEach(EventType.allCases, id: \.self) { type in
-         Text(type.displayName).tag(type)
-     }
+ ForEach(EventType.allCases, id: \.self) { type in
+ Text(type.displayName).tag(type)
+ }
  }
 
  print("총 이벤트 유형: \(EventType.allCases.count)")  // 6
@@ -383,8 +383,8 @@ enum EventType: String, Codable, CaseIterable {
      처리 방법:
      ```swift
      if eventType == .unknown {
-         // 사용자에게 수동 분류 요청
-         showEventTypeSelector()
+     // 사용자에게 수동 분류 요청
+     showEventTypeSelector()
      }
      ```
      */
@@ -411,12 +411,12 @@ enum EventType: String, Codable, CaseIterable {
 
      // 리스트 아이템
      List(events) { event in
-         Text(event.displayName)
+     Text(event.displayName)
      }
 
      // 필터 버튼
      Button(event.displayName) {
-         filterBy(event)
+     filterBy(event)
      }
      ```
 
@@ -424,11 +424,11 @@ enum EventType: String, Codable, CaseIterable {
      현재는 영문만 지원하지만, 추후 다국어 지원 시:
      ```swift
      var displayName: String {
-         switch self {
-         case .impact:
-             return NSLocalizedString("impact", comment: "Impact event")
-         // ...
-         }
+     switch self {
+     case .impact:
+     return NSLocalizedString("impact", comment: "Impact event")
+     // ...
+     }
      }
      ```
      */
@@ -476,13 +476,13 @@ enum EventType: String, Codable, CaseIterable {
 
      // macOS: NSColor
      func hexToNSColor(_ hex: String) -> NSColor {
-         let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
-         var int: UInt64 = 0
-         Scanner(string: hex).scanHexInt64(&int)
-         let r = CGFloat((int >> 16) & 0xFF) / 255.0
-         let g = CGFloat((int >> 8) & 0xFF) / 255.0
-         let b = CGFloat(int & 0xFF) / 255.0
-         return NSColor(red: r, green: g, blue: b, alpha: 1.0)
+     let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+     var int: UInt64 = 0
+     Scanner(string: hex).scanHexInt64(&int)
+     let r = CGFloat((int >> 16) & 0xFF) / 255.0
+     let g = CGFloat((int >> 8) & 0xFF) / 255.0
+     let b = CGFloat(int & 0xFF) / 255.0
+     return NSColor(red: r, green: g, blue: b, alpha: 1.0)
      }
 
      let color = hexToNSColor(event.colorHex)
@@ -490,20 +490,20 @@ enum EventType: String, Codable, CaseIterable {
 
      // SwiftUI: Color
      extension Color {
-         init(hex: String) {
-             let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
-             var int: UInt64 = 0
-             Scanner(string: hex).scanHexInt64(&int)
-             let r = Double((int >> 16) & 0xFF) / 255.0
-             let g = Double((int >> 8) & 0xFF) / 255.0
-             let b = Double(int & 0xFF) / 255.0
-             self.init(red: r, green: g, blue: b)
-         }
+     init(hex: String) {
+     let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+     var int: UInt64 = 0
+     Scanner(string: hex).scanHexInt64(&int)
+     let r = Double((int >> 16) & 0xFF) / 255.0
+     let g = Double((int >> 8) & 0xFF) / 255.0
+     let b = Double(int & 0xFF) / 255.0
+     self.init(red: r, green: g, blue: b)
+     }
      }
 
      Circle()
-         .fill(Color(hex: event.colorHex))
-         .frame(width: 20, height: 20)
+     .fill(Color(hex: event.colorHex))
+     .frame(width: 20, height: 20)
      ```
 
      색상 선택 이유:
@@ -561,10 +561,10 @@ enum EventType: String, Codable, CaseIterable {
 
      // 2. 비디오 정렬
      let sortedVideos = videos.sorted { video1, video2 in
-         if video1.eventType.priority != video2.eventType.priority {
-             return video1.eventType.priority > video2.eventType.priority
-         }
-         return video1.timestamp > video2.timestamp  // 같은 우선순위면 최신순
+     if video1.eventType.priority != video2.eventType.priority {
+     return video1.eventType.priority > video2.eventType.priority
+     }
+     return video1.timestamp > video2.timestamp  // 같은 우선순위면 최신순
      }
 
      // 3. 중요 이벤트 필터링
@@ -575,7 +575,7 @@ enum EventType: String, Codable, CaseIterable {
 
      // 5. UI 배지 표시
      if event.priority >= 4 {
-         showBadge(text: "중요", color: .red)
+     showBadge(text: "중요", color: .red)
      }
      ```
 
@@ -585,7 +585,7 @@ enum EventType: String, Codable, CaseIterable {
      let event2 = EventType.impact  // priority = 4
 
      if event1 < event2 {  // true (1 < 4)
-         print("event2가 더 중요합니다")
+     print("event2가 더 중요합니다")
      }
 
      let events = [EventType.normal, .impact, .emergency]
@@ -656,27 +656,27 @@ enum EventType: String, Codable, CaseIterable {
      // 2. 파일 스캔 시 자동 분류
      let files = fileManager.contentsOfDirectory(atPath: sdcardPath)
      for file in files {
-         let fullPath = sdcardPath + "/" + file
-         let eventType = EventType.detect(from: fullPath)
-         print("\(file): \(eventType.displayName)")
+     let fullPath = sdcardPath + "/" + file
+     let eventType = EventType.detect(from: fullPath)
+     print("\(file): \(eventType.displayName)")
      }
 
      // 3. VideoFile 생성 시 자동 설정
      let videoFile = VideoFile(
-         path: filePath,
-         eventType: EventType.detect(from: filePath),
-         // ...
+     path: filePath,
+     eventType: EventType.detect(from: filePath),
+     // ...
      )
 
      // 4. 여러 패턴 처리
      let paths = [
-         "/normal/file.mp4",        // .normal
-         "event/file.mp4",          // .impact
-         "/SOS/file.mp4",           // .emergency
-         "/unknown_dir/file.mp4"    // .unknown
+     "/normal/file.mp4",        // .normal
+     "event/file.mp4",          // .impact
+     "/SOS/file.mp4",           // .emergency
+     "/unknown_dir/file.mp4"    // .unknown
      ]
      for path in paths {
-         print("\(path): \(EventType.detect(from: path))")
+     print("\(path): \(EventType.detect(from: path))")
      }
      ```
 
@@ -704,12 +704,12 @@ enum EventType: String, Codable, CaseIterable {
         }
         // 2. Impact 검사 (event 또는 impact 디렉토리)
         else if lowercasedPath.contains("/event/") || lowercasedPath.hasPrefix("event/") ||
-                  lowercasedPath.contains("/impact/") || lowercasedPath.hasPrefix("impact/") {
+                    lowercasedPath.contains("/impact/") || lowercasedPath.hasPrefix("impact/") {
             return .impact
         }
         // 3. Parking 검사 (parking 또는 park 디렉토리)
         else if lowercasedPath.contains("/parking/") || lowercasedPath.hasPrefix("parking/") ||
-                  lowercasedPath.contains("/park/") || lowercasedPath.hasPrefix("park/") {
+                    lowercasedPath.contains("/park/") || lowercasedPath.hasPrefix("park/") {
             return .parking
         }
         // 4. Manual 검사
@@ -718,7 +718,7 @@ enum EventType: String, Codable, CaseIterable {
         }
         // 5. Emergency 검사 (emergency 또는 sos 디렉토리)
         else if lowercasedPath.contains("/emergency/") || lowercasedPath.hasPrefix("emergency/") ||
-                  lowercasedPath.contains("/sos/") || lowercasedPath.hasPrefix("sos/") {
+                    lowercasedPath.contains("/sos/") || lowercasedPath.hasPrefix("sos/") {
             return .emergency
         }
 
@@ -750,11 +750,11 @@ enum EventType: String, Codable, CaseIterable {
  let impact = EventType.impact  // priority = 4
 
  if normal < impact {  // true (1 < 4)
-     print("normal이 더 낮은 우선순위")
+ print("normal이 더 낮은 우선순위")
  }
 
  if impact > normal {  // true (4 > 1)
-     print("impact가 더 높은 우선순위")
+ print("impact가 더 높은 우선순위")
  }
 
  // 2. 배열 정렬 (오름차순)
@@ -772,10 +772,10 @@ enum EventType: String, Codable, CaseIterable {
 
  // 5. 비디오 정렬 (이벤트 우선순위 + 시간)
  let sortedVideos = videos.sorted { video1, video2 in
-     if video1.eventType != video2.eventType {
-         return video1.eventType > video2.eventType  // 우선순위 높은 순
-     }
-     return video1.timestamp > video2.timestamp  // 같으면 최신순
+ if video1.eventType != video2.eventType {
+ return video1.eventType > video2.eventType  // 우선순위 높은 순
+ }
+ return video1.timestamp > video2.timestamp  // 같으면 최신순
  }
  ```
 

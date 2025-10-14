@@ -49,7 +49,7 @@
  │             │  📈 Acceleration Graph Card                              │
  │             │                                                           │
  └─────────────┴───────────────────────────────────────────────────────────┘
-    (FileListView)                    (ScrollView)
+ (FileListView)                    (ScrollView)
 
  [Debug Log Overlay] (하단, 토글 가능)
  [Loading Overlay] (전체화면, 스캔 중)
@@ -60,33 +60,33 @@
  ════════════════════════════════════════════════════════════════════════════════
 
  1. **NavigationView**
-    - 마스터(Sidebar) - 디테일(Main Content) 레이아웃
-    - Sidebar: 파일 목록 + 검색/필터
-    - Main Content: 선택된 파일의 상세 정보
+ - 마스터(Sidebar) - 디테일(Main Content) 레이아웃
+ - Sidebar: 파일 목록 + 검색/필터
+ - Main Content: 선택된 파일의 상세 정보
 
  2. **Toolbar**
-    - 사이드바 토글 버튼
-    - 폴더 열기 버튼 (NSOpenPanel)
-    - 디버그 로그 토글
+ - 사이드바 토글 버튼
+ - 폴더 열기 버튼 (NSOpenPanel)
+ - 디버그 로그 토글
 
  3. **Sidebar** (300-500px)
-    - 현재 폴더 경로 표시
-    - 파일 개수 표시
-    - FileListView 통합 (검색/필터/선택)
+ - 현재 폴더 경로 표시
+ - 파일 개수 표시
+ - FileListView 통합 (검색/필터/선택)
 
  4. **Main Content**
-    - Empty State: 파일 미선택 시 안내 화면
-    - File Info View: 선택된 파일의 상세 정보
-      - MultiChannelPlayerView (멀티채널 플레이어)
-      - File Information Card
-      - Camera Channels Card
-      - Metadata Card
-      - GPS Map Card (MapKit)
-      - Acceleration Graph Card (Custom Drawing)
+ - Empty State: 파일 미선택 시 안내 화면
+ - File Info View: 선택된 파일의 상세 정보
+ - MultiChannelPlayerView (멀티채널 플레이어)
+ - File Information Card
+ - Camera Channels Card
+ - Metadata Card
+ - GPS Map Card (MapKit)
+ - Acceleration Graph Card (Custom Drawing)
 
  5. **Overlays**
-    - Loading Overlay: 폴더 스캔 중 표시
-    - Debug Log Overlay: 하단에서 슬라이드 업
+ - Loading Overlay: 폴더 스캔 중 표시
+ - Debug Log Overlay: 하단에서 슬라이드 업
 
 
  📊 State 관리 패턴
@@ -120,12 +120,12 @@
  ```
 
  📌 @State란?
-    SwiftUI의 Property Wrapper로, 값이 변경되면 자동으로 View를 재렌더링합니다.
-    private로 선언하여 현재 View 내부에서만 사용 가능합니다.
+ SwiftUI의 Property Wrapper로, 값이 변경되면 자동으로 View를 재렌더링합니다.
+ private로 선언하여 현재 View 내부에서만 사용 가능합니다.
 
  📌 왜 이렇게 많은 State가 필요한가요?
-    ContentView는 앱의 최상위 View로 다양한 UI 상태를 관리해야 합니다.
-    각 State는 특정 UI 요소의 표시/동작을 제어합니다.
+ ContentView는 앱의 최상위 View로 다양한 UI 상태를 관리해야 합니다.
+ 각 State는 특정 UI 요소의 표시/동작을 제어합니다.
 
 
  🔌 서비스 통합
@@ -145,19 +145,19 @@
  사용자 액션          서비스 흐름
  ─────────────────────────────────────────
  [Open Folder]
-      ↓
+ ↓
  NSOpenPanel (폴더 선택)
-      ↓
+ ↓
  FileScanner.scanDirectory()
-      ↓ (백그라운드)
+ ↓ (백그라운드)
  FileGroup[] 생성
-      ↓
+ ↓
  VideoFileLoader.loadVideoFiles()
-      ↓
+ ↓
  VideoFile[] 생성
-      ↓ (메인 스레드)
+ ↓ (메인 스레드)
  videoFiles 업데이트
-      ↓
+ ↓
  View 자동 재렌더링
  ```
 
@@ -168,86 +168,86 @@
  ### 1. 폴더 열기 흐름
  ```
  1) Toolbar > "Open Folder" 버튼 클릭
-      ↓
+ ↓
  2) openFolder() 실행
-      ↓
+ ↓
  3) NSOpenPanel 표시 (macOS 네이티브 폴더 선택 대화상자)
-      ↓
+ ↓
  4) 사용자가 폴더 선택 → scanAndLoadFolder(URL) 호출
-      ↓
+ ↓
  5) isLoading = true (로딩 오버레이 표시)
-      ↓
+ ↓
  6) DispatchQueue.global() → 백그라운드 스레드에서 스캔
-      ↓
+ ↓
  7) FileScanner.scanDirectory() → FileGroup[] 생성
-      ↓
+ ↓
  8) VideoFileLoader.loadVideoFiles() → VideoFile[] 생성
-      ↓
+ ↓
  9) DispatchQueue.main.async → 메인 스레드로 복귀
-      ↓
+ ↓
  10) videoFiles 업데이트, isLoading = false
-      ↓
+ ↓
  11) 첫 번째 파일 자동 선택
-      ↓
+ ↓
  12) View 재렌더링 (파일 목록 + 상세 정보 표시)
  ```
 
  ### 2. 파일 선택 흐름
  ```
  1) Sidebar > FileListView에서 파일 탭
-      ↓
+ ↓
  2) selectedVideoFile = file (바인딩으로 전달)
-      ↓
+ ↓
  3) mainContent 조건부 렌더링
-      ↓ if selectedFile != nil
+ ↓ if selectedFile != nil
  4) fileInfoView(for: file) 호출
-      ↓
+ ↓
  5) ScrollView 내부에 순서대로 표시:
-      - MultiChannelPlayerView (비디오 플레이어)
-      - File Information Card (파일명, 타임스탬프, 크기 등)
-      - Camera Channels Card (채널 목록)
-      - Metadata Card (GPS, G-센서 요약)
-      - GPS Map Card (MapKit 통합)
-      - Acceleration Graph Card (Custom Drawing)
+ - MultiChannelPlayerView (비디오 플레이어)
+ - File Information Card (파일명, 타임스탬프, 크기 등)
+ - Camera Channels Card (채널 목록)
+ - Metadata Card (GPS, G-센서 요약)
+ - GPS Map Card (MapKit 통합)
+ - Acceleration Graph Card (Custom Drawing)
  ```
 
  ### 3. GPS 지도 표시 흐름
  ```
  1) videoFile.hasGPSData == true 확인
-      ↓
+ ↓
  2) gpsMapCard(for: videoFile) 호출
-      ↓
+ ↓
  3) GPSMapView(gpsPoints: [...]) 생성
-      ↓ NSViewRepresentable
+ ↓ NSViewRepresentable
  4) makeNSView() → MKMapView 생성
-      ↓
+ ↓
  5) updateNSView() → GPS 포인트 처리
-      ↓
+ ↓
  6) MKPolyline으로 경로 그리기
-      ↓
+ ↓
  7) 시작/끝 지점에 MKPointAnnotation 추가
-      ↓
+ ↓
  8) 지도 영역 설정 (1km 반경)
  ```
 
  ### 4. 가속도 그래프 표시 흐름
  ```
  1) videoFile.hasAccelerationData == true 확인
-      ↓
+ ↓
  2) accelerationGraphCard(for: videoFile) 호출
-      ↓
+ ↓
  3) AccelerationGraphView(accelerationData: [...]) 생성
-      ↓
+ ↓
  4) GeometryReader로 크기 측정
-      ↓
+ ↓
  5) gridLines() → 격자 그리기
-      ↓
+ ↓
  6) accelerationCurves() → 3개 축 그래프 그리기
-      ↓ KeyPath 사용
+ ↓ KeyPath 사용
  7) X축 (빨강), Y축 (초록), Z축 (파랑) Path 생성
-      ↓
+ ↓
  8) ±2G 범위로 정규화하여 표시
-      ↓
+ ↓
  9) Legend 표시 (우측 상단)
  ```
 
@@ -258,11 +258,11 @@
  ### 1. NavigationView (Master-Detail)
  ```swift
  NavigationView {
-     // Master (Sidebar)
-     if showSidebar { sidebar }
+ // Master (Sidebar)
+ if showSidebar { sidebar }
 
-     // Detail (Main Content)
-     mainContent
+ // Detail (Main Content)
+ mainContent
  }
  ```
  - macOS에서 사이드바 + 메인 콘텐츠 레이아웃 구현
@@ -272,9 +272,9 @@
  ### 2. Toolbar
  ```swift
  .toolbar {
-     ToolbarItemGroup(placement: .navigation) {
-         // 버튼들...
-     }
+ ToolbarItemGroup(placement: .navigation) {
+ // 버튼들...
+ }
  }
  ```
  - macOS 앱의 상단 툴바 커스터마이징
@@ -284,10 +284,10 @@
  ### 3. Overlay
  ```swift
  .overlay {
-     if isLoading { ... }
+ if isLoading { ... }
  }
  .overlay(alignment: .bottom) {
-     if showDebugLog { DebugLogView() }
+ if showDebugLog { DebugLogView() }
  }
  ```
  - 기존 View 위에 다른 View를 겹쳐 표시
@@ -297,9 +297,9 @@
  ### 4. Alert
  ```swift
  .alert("Error", isPresented: $showError) {
-     Button("OK", role: .cancel) { }
+ Button("OK", role: .cancel) { }
  } message: {
-     Text(errorMessage)
+ Text(errorMessage)
  }
  ```
  - @State 바인딩으로 알림 표시 제어
@@ -309,9 +309,9 @@
  ### 5. GeometryReader
  ```swift
  GeometryReader { geometry in
-     // geometry.size로 부모 크기 접근
-     let layout = calculateChannelLayout(count: channels.count, in: geometry.size)
-     ...
+ // geometry.size로 부모 크기 접근
+ let layout = calculateChannelLayout(count: channels.count, in: geometry.size)
+ ...
  }
  ```
  - 부모 View의 크기를 읽어서 동적 레이아웃 구성
@@ -321,9 +321,9 @@
  ### 6. NSViewRepresentable (GPSMapView)
  ```swift
  struct GPSMapView: NSViewRepresentable {
-     func makeNSView(context: Context) -> MKMapView { ... }
-     func updateNSView(_ mapView: MKMapView, context: Context) { ... }
-     func makeCoordinator() -> Coordinator { ... }
+ func makeNSView(context: Context) -> MKMapView { ... }
+ func updateNSView(_ mapView: MKMapView, context: Context) { ... }
+ func makeCoordinator() -> Coordinator { ... }
  }
  ```
  - AppKit(macOS)의 NSView를 SwiftUI에서 사용
@@ -341,8 +341,8 @@
  ### 8. Binding ($)
  ```swift
  FileListView(
-     videoFiles: $videoFiles,           // Binding<[VideoFile]>
-     selectedFile: $selectedVideoFile   // Binding<VideoFile?>
+ videoFiles: $videoFiles,           // Binding<[VideoFile]>
+ selectedFile: $selectedVideoFile   // Binding<VideoFile?>
  )
  ```
  - $ 접두사로 양방향 바인딩 생성
@@ -355,32 +355,32 @@
  **폴더 스캔 시 백그라운드 처리:**
  ```swift
  DispatchQueue.global(qos: .userInitiated).async {
-     // 🔄 백그라운드 스레드
-     do {
-         let groups = try fileScanner.scanDirectory(folderURL)
-         let loadedFiles = videoFileLoader.loadVideoFiles(from: groups)
+ // 🔄 백그라운드 스레드
+ do {
+ let groups = try fileScanner.scanDirectory(folderURL)
+ let loadedFiles = videoFileLoader.loadVideoFiles(from: groups)
 
-         DispatchQueue.main.async {
-             // 🎨 메인 스레드 (UI 업데이트)
-             self.videoFiles = loadedFiles
-             self.isLoading = false
-         }
-     } catch {
-         DispatchQueue.main.async {
-             self.errorMessage = "Failed: \(error.localizedDescription)"
-             self.showError = true
-         }
-     }
+ DispatchQueue.main.async {
+ // 🎨 메인 스레드 (UI 업데이트)
+ self.videoFiles = loadedFiles
+ self.isLoading = false
+ }
+ } catch {
+ DispatchQueue.main.async {
+ self.errorMessage = "Failed: \(error.localizedDescription)"
+ self.showError = true
+ }
+ }
  }
  ```
 
  📌 왜 백그라운드 스레드를 사용하나요?
-    파일 스캔은 I/O 작업으로 시간이 오래 걸릴 수 있습니다.
-    메인 스레드에서 실행하면 UI가 멈추므로(freeze), 백그라운드에서 처리합니다.
+ 파일 스캔은 I/O 작업으로 시간이 오래 걸릴 수 있습니다.
+ 메인 스레드에서 실행하면 UI가 멈추므로(freeze), 백그라운드에서 처리합니다.
 
  📌 왜 메인 스레드로 다시 돌아가나요?
-    SwiftUI에서 UI 업데이트는 반드시 메인 스레드에서 해야 합니다.
-    @State 값 변경도 메인 스레드에서 수행해야 자동 재렌더링이 동작합니다.
+ SwiftUI에서 UI 업데이트는 반드시 메인 스레드에서 해야 합니다.
+ @State 값 변경도 메인 스레드에서 수행해야 자동 재렌더링이 동작합니다.
 
 
  🗺️ MapKit 통합 패턴
@@ -389,42 +389,42 @@
  **GPSMapView (NSViewRepresentable):**
 
  1. **makeNSView()** - 초기 설정
-    ```swift
-    let mapView = MKMapView()
-    mapView.mapType = .standard        // 표준 지도
-    mapView.showsUserLocation = false  // 사용자 위치 안 보임
-    mapView.isZoomEnabled = true       // 줌 가능
-    mapView.isScrollEnabled = true     // 스크롤 가능
-    ```
+ ```swift
+ let mapView = MKMapView()
+ mapView.mapType = .standard        // 표준 지도
+ mapView.showsUserLocation = false  // 사용자 위치 안 보임
+ mapView.isZoomEnabled = true       // 줌 가능
+ mapView.isScrollEnabled = true     // 스크롤 가능
+ ```
 
  2. **updateNSView()** - 데이터 업데이트
-    ```swift
-    // 기존 오버레이 제거
-    mapView.removeOverlays(mapView.overlays)
+ ```swift
+ // 기존 오버레이 제거
+ mapView.removeOverlays(mapView.overlays)
 
-    // GPS 포인트 → CLLocationCoordinate2D 변환
-    let coordinates = gpsPoints.map { CLLocationCoordinate2D(...) }
+ // GPS 포인트 → CLLocationCoordinate2D 변환
+ let coordinates = gpsPoints.map { CLLocationCoordinate2D(...) }
 
-    // MKPolyline으로 경로 그리기
-    let polyline = MKPolyline(coordinates: coordinates, count: coordinates.count)
-    mapView.addOverlay(polyline)
+ // MKPolyline으로 경로 그리기
+ let polyline = MKPolyline(coordinates: coordinates, count: coordinates.count)
+ mapView.addOverlay(polyline)
 
-    // 시작/끝 지점 마커 추가
-    mapView.addAnnotation(startAnnotation)
-    mapView.addAnnotation(endAnnotation)
-    ```
+ // 시작/끝 지점 마커 추가
+ mapView.addAnnotation(startAnnotation)
+ mapView.addAnnotation(endAnnotation)
+ ```
 
  3. **Coordinator** - 델리게이트 패턴
-    ```swift
-    class Coordinator: NSObject, MKMapViewDelegate {
-        func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
-            let renderer = MKPolylineRenderer(polyline: polyline)
-            renderer.strokeColor = NSColor.systemBlue  // 파란색 선
-            renderer.lineWidth = 3                      // 3px 두께
-            return renderer
-        }
-    }
-    ```
+ ```swift
+ class Coordinator: NSObject, MKMapViewDelegate {
+ func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
+ let renderer = MKPolylineRenderer(polyline: polyline)
+ renderer.strokeColor = NSColor.systemBlue  // 파란색 선
+ renderer.lineWidth = 3                      // 3px 두께
+ return renderer
+ }
+ }
+ ```
 
 
  📈 Custom Drawing 패턴 (가속도 그래프)
@@ -433,43 +433,43 @@
  **AccelerationGraphView:**
 
  1. **GeometryReader로 크기 측정**
-    ```swift
-    GeometryReader { geometry in
-        ZStack {
-            gridLines(in: geometry.size)
-            accelerationCurves(in: geometry.size)
-            legend
-        }
-    }
-    ```
+ ```swift
+ GeometryReader { geometry in
+ ZStack {
+ gridLines(in: geometry.size)
+ accelerationCurves(in: geometry.size)
+ legend
+ }
+ }
+ ```
 
  2. **Path로 그래프 그리기**
-    ```swift
-    Path { path in
-        let points = accelerationData.enumerated().map { index, data in
-            let x = size.width * CGFloat(index) / CGFloat(count - 1)
-            let value = data[keyPath: keyPath]                    // KeyPath 사용
-            let normalizedValue = (value + maxValue) / (2 * maxValue)
-            let y = size.height * (1 - CGFloat(normalizedValue)) // 반전 (위→0, 아래→1)
-            return CGPoint(x: x, y: y)
-        }
+ ```swift
+ Path { path in
+ let points = accelerationData.enumerated().map { index, data in
+ let x = size.width * CGFloat(index) / CGFloat(count - 1)
+ let value = data[keyPath: keyPath]                    // KeyPath 사용
+ let normalizedValue = (value + maxValue) / (2 * maxValue)
+ let y = size.height * (1 - CGFloat(normalizedValue)) // 반전 (위→0, 아래→1)
+ return CGPoint(x: x, y: y)
+ }
 
-        path.move(to: points[0])
-        for point in points.dropFirst() {
-            path.addLine(to: point)
-        }
-    }
-    .stroke(color, lineWidth: 2)
-    ```
+ path.move(to: points[0])
+ for point in points.dropFirst() {
+ path.addLine(to: point)
+ }
+ }
+ .stroke(color, lineWidth: 2)
+ ```
 
  3. **KeyPath를 사용한 동적 접근**
-    ```swift
-    accelerationPath(for: \.x, in: size, color: .red)    // X축
-    accelerationPath(for: \.y, in: size, color: .green)  // Y축
-    accelerationPath(for: \.z, in: size, color: .blue)   // Z축
-    ```
-    - KeyPath: 타입 안전한 프로퍼티 참조
-    - 런타임에 다른 프로퍼티 값 읽기 가능
+ ```swift
+ accelerationPath(for: \.x, in: size, color: .red)    // X축
+ accelerationPath(for: \.y, in: size, color: .green)  // Y축
+ accelerationPath(for: \.z, in: size, color: .blue)   // Z축
+ ```
+ - KeyPath: 타입 안전한 프로퍼티 참조
+ - 런타임에 다른 프로퍼티 값 읽기 가능
 
 
  🔧 NSOpenPanel 사용 패턴
@@ -478,24 +478,24 @@
  **macOS 네이티브 폴더 선택 대화상자:**
  ```swift
  private func openFolder() {
-     let panel = NSOpenPanel()                        // 패널 생성
-     panel.canChooseFiles = false                     // 파일 선택 불가
-     panel.canChooseDirectories = true                // 폴더 선택 가능
-     panel.allowsMultipleSelection = false            // 단일 선택만
-     panel.message = "Select a folder containing..."  // 안내 메시지
-     panel.prompt = "Select"                          // 버튼 텍스트
+ let panel = NSOpenPanel()                        // 패널 생성
+ panel.canChooseFiles = false                     // 파일 선택 불가
+ panel.canChooseDirectories = true                // 폴더 선택 가능
+ panel.allowsMultipleSelection = false            // 단일 선택만
+ panel.message = "Select a folder containing..."  // 안내 메시지
+ panel.prompt = "Select"                          // 버튼 텍스트
 
-     panel.begin { response in                        // 비동기 표시
-         if response == .OK, let url = panel.url {
-             scanAndLoadFolder(url)
-         }
-     }
+ panel.begin { response in                        // 비동기 표시
+ if response == .OK, let url = panel.url {
+ scanAndLoadFolder(url)
+ }
+ }
  }
  ```
 
  📌 .begin vs .runModal:
-    • .begin: 비동기, UI를 차단하지 않음 (권장)
-    • .runModal: 동기, 선택 완료까지 UI 차단
+ • .begin: 비동기, UI를 차단하지 않음 (권장)
+ • .runModal: 동기, 선택 완료까지 UI 차단
 
 
  🎮 사용 예시
@@ -508,30 +508,30 @@
 
  // 2. 폴더 열기
  사용자: Toolbar > "Open Folder" 클릭
-      → NSOpenPanel 표시
-      → 폴더 선택 (/Users/me/Blackbox)
-      → FileScanner 동작
-      → VideoFile[] 생성
-      → Sidebar에 파일 목록 표시
+ → NSOpenPanel 표시
+ → 폴더 선택 (/Users/me/Blackbox)
+ → FileScanner 동작
+ → VideoFile[] 생성
+ → Sidebar에 파일 목록 표시
 
  // 3. 파일 선택
  사용자: Sidebar > "2024_03_15_14_23_45_F.mp4" 탭
-      → selectedVideoFile = file
-      → Main Content에 상세 정보 표시
-      → MultiChannelPlayerView 로드
-      → GPS 지도 표시
-      → 가속도 그래프 표시
+ → selectedVideoFile = file
+ → Main Content에 상세 정보 표시
+ → MultiChannelPlayerView 로드
+ → GPS 지도 표시
+ → 가속도 그래프 표시
 
  // 4. 사이드바 토글
  사용자: Toolbar > Sidebar 버튼 클릭
-      → showSidebar.toggle()
-      → Sidebar 숨김/표시
+ → showSidebar.toggle()
+ → Sidebar 숨김/표시
 
  // 5. 새로고침
  사용자: Sidebar > Refresh 버튼 클릭
-      → refreshFileList()
-      → 동일 폴더 재스캔
-      → 파일 목록 업데이트
+ → refreshFileList()
+ → 동일 폴더 재스캔
+ → 파일 목록 업데이트
  ```
 
 
@@ -884,7 +884,7 @@ struct ContentView: View {
         // Multi-channel video player
         MultiChannelPlayerView(videoFile: videoFile)
             .id(videoFile.id)  // Force view recreation when video changes
-            .aspectRatio(16/9, contentMode: .fit)
+            .aspectRatio(16 / 9, contentMode: .fit)
             .cornerRadius(12)
             .shadow(radius: 4)
     }

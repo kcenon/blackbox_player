@@ -119,9 +119,9 @@
  z = 1.0 (중력)
 
  magnitude = √(0² + (-1.8)² + 1²)
-           = √(0 + 3.24 + 1)
-           = √4.24
-           = 2.06G
+ = √(0 + 3.24 + 1)
+ = √4.24
+ = 2.06G
  ```
 
  왜 제곱근인가?:
@@ -138,12 +138,12 @@
  1. |x|, |y|, |z| 계산
  2. 최댓값 찾기
  3. 해당 축의 부호 확인
-    - x > 0: 우측
-    - x < 0: 좌측
-    - y > 0: 전방
-    - y < 0: 후방
-    - z > 0: 상방
-    - z < 0: 하방
+ - x > 0: 우측
+ - x < 0: 좌측
+ - y > 0: 전방
+ - y < 0: 후방
+ - z > 0: 상방
+ - z < 0: 하방
  ```
 
  예시:
@@ -182,17 +182,17 @@ import Foundation
 
  // 2. 충격 감지
  for data in dataPoints {
-     if data.isImpact {
-         print("충격 감지: \(data.magnitudeString)")
-         print("방향: \(data.primaryDirection.displayName)")
-         print("강도: \(data.impactSeverity.displayName)")
-     }
+ if data.isImpact {
+ print("충격 감지: \(data.magnitudeString)")
+ print("방향: \(data.primaryDirection.displayName)")
+ print("강도: \(data.impactSeverity.displayName)")
+ }
  }
 
  // 3. 차트 시각화
  Chart(dataPoints) { point in
-     LineMark(x: .value("Time", point.timestamp),
-              y: .value("G-Force", point.magnitude))
+ LineMark(x: .value("Time", point.timestamp),
+ y: .value("G-Force", point.magnitude))
  }
  ```
  */
@@ -228,11 +228,11 @@ struct AccelerationData: Codable, Equatable, Hashable {
 
      방향:
      - 양수 (+): 우측으로 가속
-       * 좌회전 시 원심력으로 우측으로 쏠림
-       * 좌측에서 충격 받음 (우측으로 밀림)
+     * 좌회전 시 원심력으로 우측으로 쏠림
+     * 좌측에서 충격 받음 (우측으로 밀림)
      - 음수 (-): 좌측으로 가속
-       * 우회전 시 원심력으로 좌측으로 쏠림
-       * 우측에서 충격 받음 (좌측으로 밀림)
+     * 우회전 시 원심력으로 좌측으로 쏠림
+     * 우측에서 충격 받음 (좌측으로 밀림)
 
      예시 값:
      - 0.0G: 직진
@@ -243,9 +243,9 @@ struct AccelerationData: Codable, Equatable, Hashable {
      사용:
      ```swift
      if data.x > 1.5 {
-         print("강한 좌회전 또는 좌측 충격")
+     print("강한 좌회전 또는 좌측 충격")
      } else if data.x < -1.5 {
-         print("강한 우회전 또는 우측 충격")
+     print("강한 우회전 또는 우측 충격")
      }
      ```
      */
@@ -263,11 +263,11 @@ struct AccelerationData: Codable, Equatable, Hashable {
 
      방향:
      - 양수 (+): 전방으로 가속
-       * 가속 페달 밟음
-       * 후방에서 충격 받음 (전방으로 밀림)
+     * 가속 페달 밟음
+     * 후방에서 충격 받음 (전방으로 밀림)
      - 음수 (-): 후방으로 가속
-       * 브레이크 밟음 (제동)
-       * 전방에서 충격 받음 (후방으로 밀림)
+     * 브레이크 밟음 (제동)
+     * 전방에서 충격 받음 (후방으로 밀림)
 
      예시 값:
      - 0.0G: 등속 주행
@@ -278,10 +278,10 @@ struct AccelerationData: Codable, Equatable, Hashable {
      사용:
      ```swift
      if data.y < -2.0 {
-         print("급제동 또는 전방 충돌!")
-         triggerEventRecording()
+     print("급제동 또는 전방 충돌!")
+     triggerEventRecording()
      } else if data.y > 1.5 {
-         print("급가속 또는 후방 충돌")
+     print("급가속 또는 후방 충돌")
      }
      ```
 
@@ -303,12 +303,12 @@ struct AccelerationData: Codable, Equatable, Hashable {
 
      방향:
      - 양수 (+): 위로 가속
-       * 포트홀에서 튀어 오름
-       * 과속방지턱 넘음
-       * 하방에서 충격 (위로 밀림)
+     * 포트홀에서 튀어 오름
+     * 과속방지턱 넘음
+     * 하방에서 충격 (위로 밀림)
      - 음수 (-): 아래로 가속
-       * 급격한 낙하
-       * 점프 후 착지
+     * 급격한 낙하
+     * 점프 후 착지
 
      정상 주행: 약 1.0G
      - 중력에 의한 가속도
@@ -324,11 +324,11 @@ struct AccelerationData: Codable, Equatable, Hashable {
      ```swift
      let verticalDeviation = abs(data.z - 1.0)
      if verticalDeviation > 0.5 {
-         print("노면 상태 불량 또는 충격")
+     print("노면 상태 불량 또는 충격")
      }
 
      if data.z > 2.0 {
-         print("과속방지턱 또는 포트홀")
+     print("과속방지턱 또는 포트홀")
      }
      ```
 
@@ -360,34 +360,34 @@ struct AccelerationData: Codable, Equatable, Hashable {
      ```swift
      // 1. 정상 주행 (중력만)
      let normal = AccelerationData(
-         timestamp: Date(),
-         x: 0.0,
-         y: 0.0,
-         z: 1.0  // 중력
+     timestamp: Date(),
+     x: 0.0,
+     y: 0.0,
+     z: 1.0  // 중력
      )
 
      // 2. 급제동
      let braking = AccelerationData(
-         timestamp: Date(),
-         x: 0.0,
-         y: -1.8,  // 후방으로 가속 (제동)
-         z: 1.0
+     timestamp: Date(),
+     x: 0.0,
+     y: -1.8,  // 후방으로 가속 (제동)
+     z: 1.0
      )
 
      // 3. 충돌
      let impact = AccelerationData(
-         timestamp: Date(),
-         x: 1.5,   // 우측으로 밀림
-         y: -3.5,  // 후방으로 밀림 (전방 충격)
-         z: 0.8    // 약간 하방으로
+     timestamp: Date(),
+     x: 1.5,   // 우측으로 밀림
+     y: -3.5,  // 후방으로 밀림 (전방 충격)
+     z: 0.8    // 약간 하방으로
      )
 
      // 4. 파싱 중 생성
      let data = AccelerationData(
-         timestamp: baseDate.addingTimeInterval(timeOffset),
-         x: parsedX,
-         y: parsedY,
-         z: parsedZ
+     timestamp: baseDate.addingTimeInterval(timeOffset),
+     x: parsedX,
+     y: parsedY,
+     z: parsedZ
      )
      ```
      */
@@ -420,9 +420,9 @@ struct AccelerationData: Codable, Equatable, Hashable {
      z = 0.8
 
      magnitude = √(1.5² + (-3.5)² + 0.8²)
-               = √(2.25 + 12.25 + 0.64)
-               = √15.14
-               = 3.89G
+     = √(2.25 + 12.25 + 0.64)
+     = √15.14
+     = 3.89G
      ```
 
      사용 예시:
@@ -431,16 +431,16 @@ struct AccelerationData: Codable, Equatable, Hashable {
      let mag = data.magnitude  // 3.89
 
      if mag > 2.5 {
-         print("충격 감지! \(mag)G")
-         triggerEventRecording()
+     print("충격 감지! \(mag)G")
+     triggerEventRecording()
      }
 
      // 차트에 표시
      Chart(dataPoints) { point in
-         LineMark(
-             x: .value("Time", point.timestamp),
-             y: .value("G-Force", point.magnitude)
-         )
+     LineMark(
+     x: .value("Time", point.timestamp),
+     y: .value("G-Force", point.magnitude)
+     )
      }
      ```
 
@@ -482,9 +482,9 @@ struct AccelerationData: Codable, Equatable, Hashable {
      z = 1.2  (노면 요철)
 
      lateralMagnitude = √(2.0² + (-1.5)²)
-                      = √(4.0 + 2.25)
-                      = √6.25
-                      = 2.5G
+     = √(4.0 + 2.25)
+     = √6.25
+     = 2.5G
 
      magnitude = √(2.0² + (-1.5)² + 1.2²) = 2.74G
      ```
@@ -495,7 +495,7 @@ struct AccelerationData: Codable, Equatable, Hashable {
 
      // 주행 패턴 분석
      if lateral > 1.5 {
-         print("급격한 조향 또는 제동")
+     print("급격한 조향 또는 제동")
      }
 
      // 운전 습관 점수 (Z축 노면 영향 제외)
@@ -525,8 +525,8 @@ struct AccelerationData: Codable, Equatable, Hashable {
      사용 예시:
      ```swift
      if data.isSignificant {
-         print("유의미한 가속도 감지: \(data.magnitudeString)")
-         highlightOnChart()
+     print("유의미한 가속도 감지: \(data.magnitudeString)")
+     highlightOnChart()
      }
 
      // 유의미한 데이터만 필터링
@@ -563,17 +563,17 @@ struct AccelerationData: Codable, Equatable, Hashable {
      사용 예시:
      ```swift
      if data.isImpact {
-         print("⚠️ 충격 감지! \(data.magnitudeString)")
-         print("방향: \(data.primaryDirection.displayName)")
+     print("⚠️ 충격 감지! \(data.magnitudeString)")
+     print("방향: \(data.primaryDirection.displayName)")
 
-         // 이벤트 녹화 트리거
-         triggerEventRecording(before: 10, after: 20)
+     // 이벤트 녹화 트리거
+     triggerEventRecording(before: 10, after: 20)
 
-         // 알림 전송
-         sendEmergencyNotification()
+     // 알림 전송
+     sendEmergencyNotification()
 
-         // 파일 보호 (자동 삭제 방지)
-         protectCurrentRecording()
+     // 파일 보호 (자동 삭제 방지)
+     protectCurrentRecording()
      }
 
      // 충격 이벤트만 표시
@@ -611,21 +611,21 @@ struct AccelerationData: Codable, Equatable, Hashable {
      사용 예시:
      ```swift
      if data.isSevereImpact {
-         print("🚨 심각한 충격 감지! \(data.magnitudeString)")
+     print("🚨 심각한 충격 감지! \(data.magnitudeString)")
 
-         // 긴급 조치
-         triggerEmergencyMode()
+     // 긴급 조치
+     triggerEmergencyMode()
 
-         // 자동으로 119 연결 (일부 블랙박스)
-         callEmergencyServices()
+     // 자동으로 119 연결 (일부 블랙박스)
+     callEmergencyServices()
 
-         // 비상 연락처에 SMS 전송
-         sendEmergencySMS(location: currentGPS)
+     // 비상 연락처에 SMS 전송
+     sendEmergencySMS(location: currentGPS)
 
-         // 에어백 전개 가능성
-         if data.magnitude > 10.0 {
-             print("⚠️ 에어백 전개 수준의 충격")
-         }
+     // 에어백 전개 가능성
+     if data.magnitude > 10.0 {
+     print("⚠️ 에어백 전개 수준의 충격")
+     }
      }
      ```
 
@@ -665,22 +665,22 @@ struct AccelerationData: Codable, Equatable, Hashable {
 
      switch severity {
      case .none:
-         statusLabel.text = "정상"
-         statusLabel.textColor = .systemGreen
+     statusLabel.text = "정상"
+     statusLabel.textColor = .systemGreen
      case .low:
-         statusLabel.text = "경미"
-         statusLabel.textColor = .systemYellow
+     statusLabel.text = "경미"
+     statusLabel.textColor = .systemYellow
      case .moderate:
-         statusLabel.text = "주의"
-         statusLabel.textColor = .systemOrange
+     statusLabel.text = "주의"
+     statusLabel.textColor = .systemOrange
      case .high:
-         statusLabel.text = "충격"
-         statusLabel.textColor = .systemRed
-         triggerEventRecording()
+     statusLabel.text = "충격"
+     statusLabel.textColor = .systemRed
+     triggerEventRecording()
      case .severe:
-         statusLabel.text = "심각"
-         statusLabel.textColor = .systemRed
-         triggerEmergencyMode()
+     statusLabel.text = "심각"
+     statusLabel.textColor = .systemRed
+     triggerEmergencyMode()
      }
 
      // UI 색상 적용
@@ -744,17 +744,17 @@ struct AccelerationData: Codable, Equatable, Hashable {
      // 방향별 처리
      switch direction {
      case .forward:
-         print("전방 가속 또는 후방 충격")
+     print("전방 가속 또는 후방 충격")
      case .backward:
-         print("제동 또는 전방 충격")
+     print("제동 또는 전방 충격")
      case .left:
-         print("우회전 또는 우측 충격")
+     print("우회전 또는 우측 충격")
      case .right:
-         print("좌회전 또는 좌측 충격")
+     print("좌회전 또는 좌측 충격")
      case .up:
-         print("포트홀 또는 하방 충격")
+     print("포트홀 또는 하방 충격")
      case .down:
-         print("낙하 또는 상방 충격")
+     print("낙하 또는 상방 충격")
      }
 
      // UI 화살표 회전
@@ -851,11 +851,11 @@ struct AccelerationData: Codable, Equatable, Hashable {
 
      // 차트 레이블
      Text(data.magnitudeString)
-         .font(.caption)
+     .font(.caption)
 
      // 알림 메시지
      if data.isImpact {
-         showAlert(title: "충격 감지", message: "강도: \(data.magnitudeString)")
+     showAlert(title: "충격 감지", message: "강도: \(data.magnitudeString)")
      }
 
      // 통계
@@ -943,12 +943,12 @@ enum ImpactSeverity: String, Codable {
      let color = Color(hex: severity.colorHex)
 
      Circle()
-         .fill(color)
-         .frame(width: 50, height: 50)
+     .fill(color)
+     .frame(width: 50, height: 50)
 
      // 차트 색상
      LineMark(...)
-         .foregroundStyle(Color(hex: severity.colorHex))
+     .foregroundStyle(Color(hex: severity.colorHex))
      ```
      */
     var colorHex: String {
@@ -1030,7 +1030,7 @@ enum ImpactDirection: String, Codable {
 
      // SwiftUI
      Image(systemName: direction.iconName)
-         .font(.largeTitle)
+     .font(.largeTitle)
 
      // UIKit
      let image = UIImage(systemName: direction.iconName)
@@ -1065,13 +1065,13 @@ enum ImpactDirection: String, Codable {
  사용 예시:
  ```swift
  List(accelerationData) { point in
-     HStack {
-         Text(point.magnitudeString)
-         Spacer()
-         Circle()
-             .fill(Color(hex: point.impactSeverity.colorHex))
-             .frame(width: 20, height: 20)
-     }
+ HStack {
+ Text(point.magnitudeString)
+ Spacer()
+ Circle()
+ .fill(Color(hex: point.impactSeverity.colorHex))
+ .frame(width: 20, height: 20)
+ }
  }
  ```
  */
@@ -1202,17 +1202,17 @@ extension AccelerationData {
      ```swift
      // 차트 프리뷰
      Chart(AccelerationData.sampleData) { point in
-         LineMark(
-             x: .value("Time", point.timestamp),
-             y: .value("G-Force", point.magnitude)
-         )
+     LineMark(
+     x: .value("Time", point.timestamp),
+     y: .value("G-Force", point.magnitude)
+     )
      }
 
      // 테스트
      func testImpactDetection() {
-         let sample = AccelerationData.sampleData
-         let impacts = sample.filter { $0.isImpact }
-         XCTAssertEqual(impacts.count, 1)
+     let sample = AccelerationData.sampleData
+     let impacts = sample.filter { $0.isImpact }
+     XCTAssertEqual(impacts.count, 1)
      }
      ```
      */

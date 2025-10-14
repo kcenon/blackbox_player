@@ -14,22 +14,22 @@
  ### GPS의 구성:
  ```
  GPS 위성 (우주)
-   ↓ 전파 송신
+ ↓ 전파 송신
  GPS 수신기 (블랙박스)
-   ↓ 위치 계산
+ ↓ 위치 계산
  좌표 데이터 (위도, 경도, 고도)
  ```
 
  ### GPS 좌표:
  - **위도 (Latitude)**: 남북 위치 (-90° ~ +90°)
-   - 적도: 0°
-   - 북극: +90°
-   - 남극: -90°
+ - 적도: 0°
+ - 북극: +90°
+ - 남극: -90°
 
  - **경도 (Longitude)**: 동서 위치 (-180° ~ +180°)
-   - 본초자오선: 0°
-   - 동쪽: 양수
-   - 서쪽: 음수
+ - 본초자오선: 0°
+ - 동쪽: 양수
+ - 서쪽: 음수
 
  예: 서울 = (37.5665° N, 126.9780° E)
 
@@ -98,8 +98,8 @@
 
  시간 오프셋 계산:
  offset = GPS 시각 - 영상 시작 시각
-        = 15:00:03 - 15:00:00
-        = 3초
+ = 15:00:03 - 15:00:00
+ = 3초
 
  영상 재생 3초 → 이 GPS 데이터 표시
  ```
@@ -117,24 +117,24 @@
 
  // 2. 영상 로드 시 GPS 데이터 로드
  gpsService.loadGPSData(
-     from: videoFile.metadata,
-     startTime: videoFile.timestamp
+ from: videoFile.metadata,
+ startTime: videoFile.timestamp
  )
 
  // 3. 재생 중 현재 위치 조회
  Timer.publish(every: 0.1, on: .main, in: .common)
-     .sink { _ in
-         if let location = gpsService.getCurrentLocation(at: currentTime) {
-             updateMapMarker(location)
-         }
-     }
+ .sink { _ in
+ if let location = gpsService.getCurrentLocation(at: currentTime) {
+ updateMapMarker(location)
+ }
+ }
 
  // 4. 주행 거리 표시
  Text("주행 거리: \(gpsService.distanceTraveled(at: currentTime)) m")
 
  // 5. 평균 속도 표시
  if let speed = gpsService.averageSpeed(at: currentTime) {
-     Text("평균 속도: \(speed) km/h")
+ Text("평균 속도: \(speed) km/h")
  }
  ```
 
@@ -1052,72 +1052,72 @@ class GPSService: ObservableObject {
  import MapKit
 
  class VideoMapView: UIView, MKMapViewDelegate {
-     let gpsService = GPSService()
-     let mapView = MKMapView()
+ let gpsService = GPSService()
+ let mapView = MKMapView()
 
-     // GPS 데이터 로드 및 지도 초기화
-     func setupMap(with videoFile: VideoFile) {
-         // GPS 데이터 로드
-         gpsService.loadGPSData(
-             from: videoFile.metadata,
-             startTime: videoFile.timestamp
-         )
+ // GPS 데이터 로드 및 지도 초기화
+ func setupMap(with videoFile: VideoFile) {
+ // GPS 데이터 로드
+ gpsService.loadGPSData(
+ from: videoFile.metadata,
+ startTime: videoFile.timestamp
+ )
 
-         guard gpsService.hasData else {
-             showNoDataMessage()
-             return
-         }
+ guard gpsService.hasData else {
+ showNoDataMessage()
+ return
+ }
 
-         // 전체 경로 표시
-         drawFullRoute()
+ // 전체 경로 표시
+ drawFullRoute()
 
-         // 지도 영역 설정 (전체 경로가 보이도록)
-         zoomToRoute()
-     }
+ // 지도 영역 설정 (전체 경로가 보이도록)
+ zoomToRoute()
+ }
 
-     // 전체 경로 그리기
-     func drawFullRoute() {
-         let coordinates = gpsService.routePoints.map {
-             CLLocationCoordinate2D(
-                 latitude: $0.latitude,
-                 longitude: $0.longitude
-             )
-         }
+ // 전체 경로 그리기
+ func drawFullRoute() {
+ let coordinates = gpsService.routePoints.map {
+ CLLocationCoordinate2D(
+ latitude: $0.latitude,
+ longitude: $0.longitude
+ )
+ }
 
-         let polyline = MKPolyline(
-             coordinates: coordinates,
-             count: coordinates.count
-         )
+ let polyline = MKPolyline(
+ coordinates: coordinates,
+ count: coordinates.count
+ )
 
-         mapView.addOverlay(polyline)
-     }
+ mapView.addOverlay(polyline)
+ }
 
-     // 재생 중 업데이트
-     func updateForPlayback(time: TimeInterval) {
-         // 현재 위치 마커
-         if let location = gpsService.getCurrentLocation(at: time) {
-             updateMarker(location)
-         }
+ // 재생 중 업데이트
+ func updateForPlayback(time: TimeInterval) {
+ // 현재 위치 마커
+ if let location = gpsService.getCurrentLocation(at: time) {
+ updateMarker(location)
+ }
 
-         // 지나온 경로 vs 앞으로 갈 경로
-         let (past, future) = gpsService.getRouteSegments(at: time)
-         updateRouteColors(past: past, future: future)
+ // 지나온 경로 vs 앞으로 갈 경로
+ let (past, future) = gpsService.getRouteSegments(at: time)
+ updateRouteColors(past: past, future: future)
 
-         // 정보 표시
-         updateInfoPanel(time: time)
-     }
+ // 정보 표시
+ updateInfoPanel(time: time)
+ }
 
-     // 정보 패널 업데이트
-     func updateInfoPanel(time: TimeInterval) {
-         let distance = gpsService.distanceTraveled(at: time)
-         let avgSpeed = gpsService.averageSpeed(at: time) ?? 0
+ // 정보 패널 업데이트
+ func updateInfoPanel(time: TimeInterval) {
+ let distance = gpsService.distanceTraveled(at: time)
+ let avgSpeed = gpsService.averageSpeed(at: time) ?? 0
 
-         infoLabel.text = """
-         주행 거리: \(String(format: "%.2f", distance / 1000)) km
-         평균 속도: \(String(format: "%.1f", avgSpeed)) km/h
-         GPS 점: \(gpsService.pointCount)개
-         """
-     }
+ infoLabel.text = """
+ 주행 거리: \(String(format: "%.2f", distance / 1000)) km
+ 평균 속도: \(String(format: "%.1f", avgSpeed)) km/h
+ GPS 점: \(gpsService.pointCount)개
+ """
+ }
  }
  ```
 
@@ -1128,107 +1128,107 @@ class GPSService: ObservableObject {
  import MapKit
 
  struct VideoMapView: View {
-     @ObservedObject var gpsService: GPSService
-     @Binding var currentTime: TimeInterval
+ @ObservedObject var gpsService: GPSService
+ @Binding var currentTime: TimeInterval
 
-     @State private var region = MKCoordinateRegion()
+ @State private var region = MKCoordinateRegion()
 
-     var body: some View {
-         VStack {
-             if gpsService.hasData {
-                 // 지도
-                 Map(coordinateRegion: $region, annotationItems: [gpsService.currentLocation].compactMap { $0 }) { location in
-                     MapMarker(
-                         coordinate: CLLocationCoordinate2D(
-                             latitude: location.latitude,
-                             longitude: location.longitude
-                         ),
-                         tint: .red
-                     )
-                 }
+ var body: some View {
+ VStack {
+ if gpsService.hasData {
+ // 지도
+ Map(coordinateRegion: $region, annotationItems: [gpsService.currentLocation].compactMap { $0 }) { location in
+ MapMarker(
+ coordinate: CLLocationCoordinate2D(
+ latitude: location.latitude,
+ longitude: location.longitude
+ ),
+ tint: .red
+ )
+ }
 
-                 // 정보 패널
-                 InfoPanel(
-                     distance: gpsService.distanceTraveled(at: currentTime),
-                     avgSpeed: gpsService.averageSpeed(at: currentTime),
-                     pointCount: gpsService.pointCount
-                 )
-             } else {
-                 Text("GPS 데이터 없음")
-                     .foregroundColor(.gray)
-             }
-         }
-         .onChange(of: currentTime) { _ in
-             // 현재 위치 업데이트
-             _ = gpsService.getCurrentLocation(at: currentTime)
-         }
-     }
+ // 정보 패널
+ InfoPanel(
+ distance: gpsService.distanceTraveled(at: currentTime),
+ avgSpeed: gpsService.averageSpeed(at: currentTime),
+ pointCount: gpsService.pointCount
+ )
+ } else {
+ Text("GPS 데이터 없음")
+ .foregroundColor(.gray)
+ }
+ }
+ .onChange(of: currentTime) { _ in
+ // 현재 위치 업데이트
+ _ = gpsService.getCurrentLocation(at: currentTime)
+ }
+ }
  }
 
  struct InfoPanel: View {
-     let distance: Double
-     let avgSpeed: Double?
-     let pointCount: Int
+ let distance: Double
+ let avgSpeed: Double?
+ let pointCount: Int
 
-     var body: some View {
-         HStack(spacing: 20) {
-             VStack {
-                 Text("주행 거리")
-                 Text(String(format: "%.2f km", distance / 1000))
-                     .bold()
-             }
+ var body: some View {
+ HStack(spacing: 20) {
+ VStack {
+ Text("주행 거리")
+ Text(String(format: "%.2f km", distance / 1000))
+ .bold()
+ }
 
-             if let speed = avgSpeed {
-                 VStack {
-                     Text("평균 속도")
-                     Text(String(format: "%.1f km/h", speed))
-                         .bold()
-                 }
-             }
+ if let speed = avgSpeed {
+ VStack {
+ Text("평균 속도")
+ Text(String(format: "%.1f km/h", speed))
+ .bold()
+ }
+ }
 
-             VStack {
-                 Text("GPS 점")
-                 Text("\(pointCount)개")
-                     .bold()
-             }
-         }
-         .padding()
-         .background(Color.black.opacity(0.7))
-         .cornerRadius(10)
-     }
+ VStack {
+ Text("GPS 점")
+ Text("\(pointCount)개")
+ .bold()
+ }
+ }
+ .padding()
+ .background(Color.black.opacity(0.7))
+ .cornerRadius(10)
+ }
  }
  ```
 
  ## 성능 최적화 팁:
 
  1. **업데이트 빈도 조절**
-    ```swift
-    // 너무 자주 업데이트하지 않기
-    var lastUpdateTime: TimeInterval = 0
+ ```swift
+ // 너무 자주 업데이트하지 않기
+ var lastUpdateTime: TimeInterval = 0
 
-    func updateIfNeeded(time: TimeInterval) {
-        if abs(time - lastUpdateTime) > 0.5 {  // 0.5초마다
-            _ = gpsService.getCurrentLocation(at: time)
-            lastUpdateTime = time
-        }
-    }
-    ```
+ func updateIfNeeded(time: TimeInterval) {
+ if abs(time - lastUpdateTime) > 0.5 {  // 0.5초마다
+ _ = gpsService.getCurrentLocation(at: time)
+ lastUpdateTime = time
+ }
+ }
+ ```
 
  2. **경로 간소화 (Douglas-Peucker)**
-    ```swift
-    // 표시용 경로는 점 개수 줄이기
-    let simplifiedRoute = simplifyRoute(
-        gpsService.routePoints,
-        tolerance: 0.0001  // 약 10m
-    )
-    ```
+ ```swift
+ // 표시용 경로는 점 개수 줄이기
+ let simplifiedRoute = simplifyRoute(
+ gpsService.routePoints,
+ tolerance: 0.0001  // 약 10m
+ )
+ ```
 
  3. **메모리 모니터링**
-    ```swift
-    // 매우 긴 영상 (10시간+)의 경우
-    if gpsService.pointCount > 100000 {
-        // 샘플링하여 메모리 절약
-        let sampledPoints = samplePoints(gpsService.routePoints, every: 10)
-    }
-    ```
+ ```swift
+ // 매우 긴 영상 (10시간+)의 경우
+ if gpsService.pointCount > 100000 {
+ // 샘플링하여 메모리 절약
+ let sampledPoints = samplePoints(gpsService.routePoints, every: 10)
+ }
+ ```
  */

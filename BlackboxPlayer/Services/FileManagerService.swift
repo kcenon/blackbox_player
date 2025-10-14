@@ -309,7 +309,7 @@ class FileManagerService {
      ```
      스레드 A                     스레드 B
      fileCache[key] 읽기 (nil)
-                                 fileCache[key] = value1
+     fileCache[key] = value1
      fileCache[key] = value2
 
      결과: value1이 손실됨!
@@ -329,7 +329,7 @@ class FileManagerService {
 
      // return이나 throw가 발생해도 unlock() 보장!
      if condition {
-         return  // unlock() 자동 호출
+     return  // unlock() 자동 호출
      }
      ```
      */
@@ -427,7 +427,7 @@ class FileManagerService {
      let videoFile = VideoFile(...)
 
      if service.isFavorite(videoFile) {
-         print("⭐ 즐겨찾기된 파일입니다")
+     print("⭐ 즐겨찾기된 파일입니다")
      }
      ```
      */
@@ -506,12 +506,12 @@ class FileManagerService {
 
      // 특정 파일이 즐겨찾기인지 확인
      if favorites.contains("some-uuid-string") {
-         print("즐겨찾기에 있습니다")
+     print("즐겨찾기에 있습니다")
      }
 
      // 모든 즐겨찾기 파일 순회
      for uuid in favorites {
-         print("즐겨찾기 파일 ID: \(uuid)")
+     print("즐겨찾기 파일 ID: \(uuid)")
      }
      ```
 
@@ -544,8 +544,8 @@ class FileManagerService {
      alert.addButton(withTitle: "취소")
 
      if alert.runModal() == .alertFirstButtonReturn {
-         service.clearAllFavorites()
-         print("즐겨찾기가 모두 삭제되었습니다")
+     service.clearAllFavorites()
+     print("즐겨찾기가 모두 삭제되었습니다")
      }
      ```
 
@@ -584,9 +584,9 @@ class FileManagerService {
      사용 예시:
      ```swift
      if let note = service.getNote(for: videoFile) {
-         print("메모: \(note)")
+     print("메모: \(note)")
      } else {
-         print("메모가 없습니다")
+     print("메모가 없습니다")
      }
 
      // nil 병합 연산자 사용
@@ -669,12 +669,12 @@ class FileManagerService {
 
      // 모든 메모 순회
      for (uuid, note) in allNotes {
-         print("파일 \(uuid): \(note)")
+     print("파일 \(uuid): \(note)")
      }
 
      // 특정 UUID의 메모 확인
      if let note = allNotes["some-uuid-string"] {
-         print("메모: \(note)")
+     print("메모: \(note)")
      }
      ```
 
@@ -707,8 +707,8 @@ class FileManagerService {
      alert.addButton(withTitle: "취소")
 
      if alert.runModal() == .alertFirstButtonReturn {
-         service.clearAllNotes()
-         print("메모가 모두 삭제되었습니다")
+     service.clearAllNotes()
+     print("메모가 모두 삭제되었습니다")
      }
      ```
 
@@ -745,18 +745,18 @@ class FileManagerService {
      채널 파일 예시:
      ```
      videoFile.channels = [
-         ChannelInfo(filePath: "/videos/20250115_100000_F.mp4"),  // 전방
-         ChannelInfo(filePath: "/videos/20250115_100000_R.mp4"),  // 후방
+     ChannelInfo(filePath: "/videos/20250115_100000_F.mp4"),  // 전방
+     ChannelInfo(filePath: "/videos/20250115_100000_R.mp4"),  // 후방
      ]
      ```
 
      에러 처리:
      ```swift
      do {
-         try service.deleteVideoFile(videoFile)
-         print("파일이 삭제되었습니다")
+     try service.deleteVideoFile(videoFile)
+     print("파일이 삭제되었습니다")
      } catch {
-         print("삭제 실패: \(error.localizedDescription)")
+     print("삭제 실패: \(error.localizedDescription)")
      }
      ```
 
@@ -817,10 +817,10 @@ class FileManagerService {
      let destination = URL(fileURLWithPath: "/videos/archive/")
 
      do {
-         let movedFile = try service.moveVideoFile(sourceFile, to: destination)
-         print("파일이 이동되었습니다: \(movedFile.basePath)")
+     let movedFile = try service.moveVideoFile(sourceFile, to: destination)
+     print("파일이 이동되었습니다: \(movedFile.basePath)")
      } catch {
-         print("이동 실패: \(error.localizedDescription)")
+     print("이동 실패: \(error.localizedDescription)")
      }
      ```
 
@@ -922,10 +922,10 @@ class FileManagerService {
      let exportPath = URL(fileURLWithPath: "/Users/user/Desktop/export/")
 
      do {
-         try service.exportVideoFile(videoFile, to: exportPath)
-         print("파일이 내보내기되었습니다")
+     try service.exportVideoFile(videoFile, to: exportPath)
+     print("파일이 내보내기되었습니다")
      } catch {
-         print("내보내기 실패: \(error.localizedDescription)")
+     print("내보내기 실패: \(error.localizedDescription)")
      }
      ```
 
@@ -939,10 +939,10 @@ class FileManagerService {
      var completedFiles = 0
 
      for channel in videoFile.channels {
-         // 복사 작업...
-         completedFiles += 1
-         let progress = Double(completedFiles) / Double(totalFiles)
-         print("진행률: \(Int(progress * 100))%")
+     // 복사 작업...
+     completedFiles += 1
+     let progress = Double(completedFiles) / Double(totalFiles)
+     print("진행률: \(Int(progress * 100))%")
      }
      ```
      */
@@ -993,7 +993,7 @@ class FileManagerService {
      ```swift
      let numbers = [1, 2, 3, 4, 5]
      let sum = numbers.reduce(0) { total, number in
-         return total + number
+     return total + number
      }
      // sum = 15
      ```
@@ -1044,18 +1044,18 @@ class FileManagerService {
      사용 예시:
      ```swift
      if let availableSpace = service.getAvailableDiskSpace(at: "/videos") {
-         let formatter = ByteCountFormatter()
-         formatter.countStyle = .file
-         let readable = formatter.string(fromByteCount: Int64(availableSpace))
-         print("사용 가능: \(readable)")
+     let formatter = ByteCountFormatter()
+     formatter.countStyle = .file
+     let readable = formatter.string(fromByteCount: Int64(availableSpace))
+     print("사용 가능: \(readable)")
 
-         // 공간 부족 확인
-         let requiredSpace: UInt64 = 1_000_000_000  // 1 GB
-         if availableSpace < requiredSpace {
-             print("경고: 디스크 공간이 부족합니다")
-         }
+     // 공간 부족 확인
+     let requiredSpace: UInt64 = 1_000_000_000  // 1 GB
+     if availableSpace < requiredSpace {
+     print("경고: 디스크 공간이 부족합니다")
+     }
      } else {
-         print("디스크 공간을 확인할 수 없습니다")
+     print("디스크 공간을 확인할 수 없습니다")
      }
      ```
 
@@ -1105,18 +1105,18 @@ class FileManagerService {
 
      성능 최적화:
      - 개별 호출 방식:
-       ```swift
-       for file in files {
-           service.setFavorite(file, isFavorite: true)  // 매번 저장
-       }
-       // UserDefaults 저장: 1000번 (파일 1000개인 경우)
-       ```
+     ```swift
+     for file in files {
+     service.setFavorite(file, isFavorite: true)  // 매번 저장
+     }
+     // UserDefaults 저장: 1000번 (파일 1000개인 경우)
+     ```
 
      - 일괄 호출 방식:
-       ```swift
-       service.setFavorite(for: files, isFavorite: true)
-       // UserDefaults 저장: 1번
-       ```
+     ```swift
+     service.setFavorite(for: files, isFavorite: true)
+     // UserDefaults 저장: 1번
+     ```
 
      사용 예시:
      ```swift
@@ -1171,14 +1171,14 @@ class FileManagerService {
      let errors = service.deleteVideoFiles(selectedFiles)
 
      if errors.isEmpty {
-         print("\(selectedFiles.count)개 파일이 모두 삭제되었습니다")
+     print("\(selectedFiles.count)개 파일이 모두 삭제되었습니다")
      } else {
-         print("삭제 완료: \(selectedFiles.count - errors.count)개")
-         print("실패: \(errors.count)개")
+     print("삭제 완료: \(selectedFiles.count - errors.count)개")
+     print("실패: \(errors.count)개")
 
-         for error in errors {
-             print("에러: \(error.localizedDescription)")
-         }
+     for error in errors {
+     print("에러: \(error.localizedDescription)")
+     }
      }
      ```
 
@@ -1191,20 +1191,20 @@ class FileManagerService {
      ```swift
      // 개별 에러 처리 (현재 방식)
      for file in files {
-         do {
-             try deleteVideoFile(file)
-         } catch {
-             errors.append(error)  // 에러 수집 후 계속 진행
-         }
+     do {
+     try deleteVideoFile(file)
+     } catch {
+     errors.append(error)  // 에러 수집 후 계속 진행
+     }
      }
 
      // 전체 에러 처리 (사용하지 않음)
      do {
-         for file in files {
-             try deleteVideoFile(file)  // 하나 실패 시 중단
-         }
+     for file in files {
+     try deleteVideoFile(file)  // 하나 실패 시 중단
+     }
      } catch {
-         // 첫 번째 에러만 처리
+     // 첫 번째 에러만 처리
      }
      ```
      */
@@ -1381,16 +1381,16 @@ class FileManagerService {
      let age = now.timeIntervalSince(cachedAt)               // 300초 (5분)
 
      if age < maxCacheAge {  // 300 < 300 (false)
-         // 만료됨, 캐시 제거
+     // 만료됨, 캐시 제거
      }
      ```
 
      사용 예시:
      ```swift
      if let cachedVideo = service.getCachedFileInfo(for: "/videos/file.mp4") {
-         print("캐시 히트! 파일 정보: \(cachedVideo.timestamp)")
+     print("캐시 히트! 파일 정보: \(cachedVideo.timestamp)")
      } else {
-         print("캐시 미스. 파일을 다시 읽어야 합니다")
+     print("캐시 미스. 파일을 다시 읽어야 합니다")
      }
      ```
 
@@ -1445,14 +1445,14 @@ class FileManagerService {
      캐시 상태: 1000개 (제한 도달)
 
      1. cachedAt 기준으로 정렬
-        oldest ──────────────────────────▶ newest
-        [file1, file2, file3, ..., file1000]
+     oldest ──────────────────────────▶ newest
+     [file1, file2, file3, ..., file1000]
 
      2. 가장 오래된 20% (200개) 제거
-        [file201, file202, ..., file1000]  // 800개
+     [file201, file202, ..., file1000]  // 800개
 
      3. 새 항목 추가
-        [file201, file202, ..., file1000, newFile]  // 801개
+     [file201, file202, ..., file1000, newFile]  // 801개
      ```
 
      왜 20%를 제거하는가?
@@ -1551,8 +1551,8 @@ class FileManagerService {
      ```swift
      // 메모리 압박 시 캐시 정리
      if lowMemoryWarning {
-         service.clearCache()
-         print("캐시가 정리되었습니다")
+     service.clearCache()
+     print("캐시가 정리되었습니다")
      }
 
      // 새로운 폴더 로드 시 캐시 정리
@@ -1593,12 +1593,12 @@ class FileManagerService {
      print("캐시 항목: \(count)개")
 
      if let age = oldestAge {
-         let minutes = Int(age / 60)
-         print("가장 오래된 캐시: \(minutes)분 전")
+     let minutes = Int(age / 60)
+     print("가장 오래된 캐시: \(minutes)분 전")
 
-         if age > 240 {  // 4분 초과
-             print("곧 만료될 캐시가 있습니다")
-         }
+     if age > 240 {  // 4분 초과
+     print("곧 만료될 캐시가 있습니다")
+     }
      }
 
      // UI에 표시
@@ -1652,7 +1652,7 @@ class FileManagerService {
 
      // 여기서는:
      let expired = fileCache.filter { key, value in
-         now.timeIntervalSince(value.cachedAt) >= maxCacheAge
+     now.timeIntervalSince(value.cachedAt) >= maxCacheAge
      }
      // 만료된 항목만 필터링
      ```
@@ -1667,13 +1667,13 @@ class FileManagerService {
      ```swift
      // 백그라운드 타이머로 주기적 정리
      Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { _ in
-         service.cleanupExpiredCache()
-         print("만료된 캐시를 정리했습니다")
+     service.cleanupExpiredCache()
+     print("만료된 캐시를 정리했습니다")
      }
 
      // 앱이 백그라운드로 갈 때
      NotificationCenter.default.addObserver(forName: NSApplication.didResignActiveNotification) {
-         service.cleanupExpiredCache()
+     service.cleanupExpiredCache()
      }
      ```
 
@@ -1690,7 +1690,7 @@ class FileManagerService {
         let now = Date()  // 현재 시간
 
         // 만료된 캐시 항목의 키 수집
-        let expiredKeys = fileCache.filter { key, value in
+        let expiredKeys = fileCache.filter { _, value in
             now.timeIntervalSince(value.cachedAt) >= maxCacheAge  // 5분 이상 경과
         }.map { $0.key }  // 키만 추출
 
@@ -1726,8 +1726,8 @@ class FileManagerService {
 
  // 체이닝
  let files = scanner.scanFiles()
-     .map { $0.withUpdatedMetadata(from: service) }
-     .filter { $0.isFavorite }
+ .map { $0.withUpdatedMetadata(from: service) }
+ .filter { $0.isFavorite }
  ```
  */
 extension VideoFile {
@@ -1759,7 +1759,7 @@ extension VideoFile {
      // 파일 스캔 후 메타데이터 업데이트
      let scannedFiles = fileScanner.scanVideoFiles(at: "/videos")
      let updatedFiles = scannedFiles.map { file in
-         file.withUpdatedMetadata(from: fileManagerService)
+     file.withUpdatedMetadata(from: fileManagerService)
      }
 
      // 개별 파일 업데이트
@@ -1836,17 +1836,17 @@ extension VideoFile {
  ```swift
  // 캐시에 저장
  let cached = CachedFileInfo(
-     videoFile: videoFile,
-     cachedAt: Date()
+ videoFile: videoFile,
+ cachedAt: Date()
  )
  fileCache[filePath] = cached
 
  // 캐시에서 조회
  if let cached = fileCache[filePath] {
-     let age = Date().timeIntervalSince(cached.cachedAt)
-     if age < 300 {  // 5분 이내
-         return cached.videoFile
-     }
+ let age = Date().timeIntervalSince(cached.cachedAt)
+ if age < 300 {  // 5분 이내
+ return cached.videoFile
+ }
  }
  ```
  */

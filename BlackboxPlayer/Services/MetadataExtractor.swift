@@ -18,22 +18,22 @@
  블랙박스는 비디오와 함께 다음 정보를 MP4 파일에 포함합니다:
 
  1. GPS 정보
-    - 위도/경도 (Latitude/Longitude)
-    - 속도 (km/h)
-    - 방향 (Bearing)
-    - 위성 수 (Satellite count)
-    - 정확도 (HDOP)
+ - 위도/경도 (Latitude/Longitude)
+ - 속도 (km/h)
+ - 방향 (Bearing)
+ - 위성 수 (Satellite count)
+ - 정확도 (HDOP)
 
  2. G-센서 정보 (Accelerometer)
-    - X/Y/Z 축 가속도 (G 단위)
-    - 충격 감지 (Impact detection)
-    - 주차 모드 이벤트
+ - X/Y/Z 축 가속도 (G 단위)
+ - 충격 감지 (Impact detection)
+ - 주차 모드 이벤트
 
  3. 디바이스 정보
-    - 제조사/모델명
-    - 펌웨어 버전
-    - 시리얼 번호
-    - 녹화 모드
+ - 제조사/모델명
+ - 펌웨어 버전
+ - 시리얼 번호
+ - 녹화 모드
 
  【메타데이터의 저장 위치】
  MP4 컨테이너 내에서 메타데이터는 여러 위치에 저장될 수 있습니다:
@@ -58,19 +58,19 @@
  1. FFmpeg으로 MP4 파일 열기 (avformat_open_input)
  2. 스트림 정보 읽기 (avformat_find_stream_info)
  3. 각 스트림 순회:
-    - 타입이 AVMEDIA_TYPE_DATA or AVMEDIA_TYPE_SUBTITLE인 스트림 찾기
-    - 패킷 읽어서 Data로 변환
+ - 타입이 AVMEDIA_TYPE_DATA or AVMEDIA_TYPE_SUBTITLE인 스트림 찾기
+ - 패킷 읽어서 Data로 변환
  4. 포맷 레벨 메타데이터 딕셔너리 확인:
-    - av_dict_get()으로 "gps", "accelerometer" 키 조회
+ - av_dict_get()으로 "gps", "accelerometer" 키 조회
  5. GPSParser와 AccelerationParser로 파싱
  6. VideoMetadata 구조체로 반환
 
  【데이터 흐름】
  Video File → FFmpeg → Data Streams → GPSParser → GPSPoint[]
-                    ↓                 ↓
-                    → Metadata Dict  → AccelerationParser → AccelerationData[]
-                    ↓
-                    → Device Info
+ ↓                 ↓
+ → Metadata Dict  → AccelerationParser → AccelerationData[]
+ ↓
+ → Device Info
 
  【현재 상태】
  이 파일의 대부분 메서드는 주석 처리되어 있습니다 (/* ... */).
@@ -101,11 +101,11 @@ import Foundation
  ```swift
  let extractor = MetadataExtractor()
  if let metadata = extractor.extractMetadata(from: "/path/to/video.mp4") {
-     print("GPS 포인트: \(metadata.gpsPoints.count)개")
-     print("가속도 데이터: \(metadata.accelerationData.count)개")
-     if let device = metadata.deviceInfo {
-         print("디바이스: \(device.manufacturer ?? "") \(device.model ?? "")")
-     }
+ print("GPS 포인트: \(metadata.gpsPoints.count)개")
+ print("가속도 데이터: \(metadata.accelerationData.count)개")
+ if let device = metadata.deviceInfo {
+ print("디바이스: \(device.manufacturer ?? "") \(device.model ?? "")")
+ }
  }
  ```
 
@@ -131,17 +131,17 @@ import Foundation
  // 현재 시각의 GPS 위치
  let currentGPS = metadata.gpsPoints.first { abs($0.timestamp - currentTime) < 0.1 }
  if let gps = currentGPS {
-     print("현재 위치: \(gps.coordinate.latitude), \(gps.coordinate.longitude)")
-     print("현재 속도: \(gps.speed ?? 0) km/h")
+ print("현재 위치: \(gps.coordinate.latitude), \(gps.coordinate.longitude)")
+ print("현재 속도: \(gps.speed ?? 0) km/h")
  }
 
  // 현재 시각의 G-센서 값
  let currentAccel = metadata.accelerationData.first { abs($0.timestamp - currentTime) < 0.05 }
  if let accel = currentAccel {
-     let magnitude = sqrt(accel.x*accel.x + accel.y*accel.y + accel.z*accel.z)
-     if magnitude > 2.0 {
-         print("⚠️ 충격 감지: \(magnitude)G")
-     }
+ let magnitude = sqrt(accel.x*accel.x + accel.y*accel.y + accel.z*accel.z)
+ if magnitude > 2.0 {
+ print("⚠️ 충격 감지: \(magnitude)G")
+ }
  }
  ```
 
@@ -184,14 +184,14 @@ class MetadataExtractor {
 
      ```swift
      class MetadataExtractor {
-         private let gpsParser: GPSParserProtocol
-         private let accelerationParser: AccelerationParserProtocol
+     private let gpsParser: GPSParserProtocol
+     private let accelerationParser: AccelerationParserProtocol
 
-         init(gpsParser: GPSParserProtocol = GPSParser(),
-              accelerationParser: AccelerationParserProtocol = AccelerationParser()) {
-             self.gpsParser = gpsParser
-             self.accelerationParser = accelerationParser
-         }
+     init(gpsParser: GPSParserProtocol = GPSParser(),
+     accelerationParser: AccelerationParserProtocol = AccelerationParser()) {
+     self.gpsParser = gpsParser
+     self.accelerationParser = accelerationParser
+     }
      }
      ```
 
@@ -228,8 +228,8 @@ class MetadataExtractor {
      싱글톤 패턴 예시:
      ```swift
      class MetadataExtractor {
-         static let shared = MetadataExtractor()
-         private init() { ... }
+     static let shared = MetadataExtractor()
+     private init() { ... }
      }
 
      // 사용
@@ -268,23 +268,23 @@ class MetadataExtractor {
 
      【향후 구현 계획】
      1. FFmpeg으로 파일 열기:
-        ```c
-        AVFormatContext *formatContext = avformat_alloc_context();
-        avformat_open_input(&formatContext, filePath, NULL, NULL);
-        avformat_find_stream_info(formatContext, NULL);
-        ```
+     ```c
+     AVFormatContext *formatContext = avformat_alloc_context();
+     avformat_open_input(&formatContext, filePath, NULL, NULL);
+     avformat_find_stream_info(formatContext, NULL);
+     ```
 
      2. Base date 추출:
-        파일명에서 녹화 시작 시각 파싱 (예: "20240115_143025_F.mp4")
+     파일명에서 녹화 시작 시각 파싱 (예: "20240115_143025_F.mp4")
 
      3. GPS 데이터 추출:
-        extractGPSData(from: formatContext, baseDate: baseDate)
+     extractGPSData(from: formatContext, baseDate: baseDate)
 
      4. 가속도 데이터 추출:
-        extractAccelerationData(from: formatContext, baseDate: baseDate)
+     extractAccelerationData(from: formatContext, baseDate: baseDate)
 
      5. 디바이스 정보 추출:
-        extractDeviceInfo(from: formatContext)
+     extractDeviceInfo(from: formatContext)
 
      6. VideoMetadata 구조체로 결합하여 반환
 
@@ -292,10 +292,10 @@ class MetadataExtractor {
      현재는 실패 시 nil 반환하지만, 향후 throws로 변경 가능:
      ```swift
      func extractMetadata(from filePath: String) throws -> VideoMetadata {
-         guard FileManager.default.fileExists(atPath: filePath) else {
-             throw MetadataExtractionError.cannotOpenFile(filePath)
-         }
-         // ... 추출 로직
+     guard FileManager.default.fileExists(atPath: filePath) else {
+     throw MetadataExtractionError.cannotOpenFile(filePath)
+     }
+     // ... 추출 로직
      }
      ```
      ───────────────────────────────────────────────────────────────────────
@@ -424,8 +424,8 @@ class MetadataExtractor {
      제조사마다 다르지만, 일반적인 패턴:
 
      BlackVue:     20240115_143025_F.mp4
-                   ↑        ↑       ↑
-                   날짜     시간    채널(Front)
+     ↑        ↑       ↑
+     날짜     시간    채널(Front)
 
      Thinkware:    20240115143025F.mp4  (언더스코어 없음)
 
@@ -471,64 +471,64 @@ class MetadataExtractor {
      */
 
     /*
-    /// @brief 파일명에서 녹화 시작 시각 추출
-    ///
-    /// @param filePath 비디오 파일 경로
-    /// @return 녹화 시작 시각, 추출 실패 시 nil
-    ///
-    /// @details
-    /// 블랙박스 파일명은 보통 "YYYYMMDD_HHMMSS" 패턴을 포함합니다.
-    /// 예: "20240115_143025_F.mp4" → 2024-01-15 14:30:25
-    ///
-    /// 지원 형식:
-    /// - "20240115_143025_F.mp4" (BlackVue)
-    /// - "20240115143025F.mp4" (Thinkware)
-    /// - "2024_0115_143025.mp4" (Garmin)
-    ///
-    /// 추출 과정:
-    /// 1. 파일명에서 경로 제거 (lastPathComponent)
-    /// 2. 정규식으로 날짜/시간 패턴 매칭
-    /// 3. DateFormatter로 Date 변환
-    /// 4. 타임존 적용 (Asia/Seoul)
-    ///
-    /// Fallback:
-    /// - 파일 생성 시각 사용
-    /// - 파일 수정 시각 사용
-    /// - 현재 시각 (최후의 수단)
-    private func extractBaseDate(from filePath: String) -> Date? {
-        // 파일명 추출: "/Videos/20240115_143025_F.mp4" → "20240115_143025_F.mp4"
-        let filename = (filePath as NSString).lastPathComponent
+     /// @brief 파일명에서 녹화 시작 시각 추출
+     ///
+     /// @param filePath 비디오 파일 경로
+     /// @return 녹화 시작 시각, 추출 실패 시 nil
+     ///
+     /// @details
+     /// 블랙박스 파일명은 보통 "YYYYMMDD_HHMMSS" 패턴을 포함합니다.
+     /// 예: "20240115_143025_F.mp4" → 2024-01-15 14:30:25
+     ///
+     /// 지원 형식:
+     /// - "20240115_143025_F.mp4" (BlackVue)
+     /// - "20240115143025F.mp4" (Thinkware)
+     /// - "2024_0115_143025.mp4" (Garmin)
+     ///
+     /// 추출 과정:
+     /// 1. 파일명에서 경로 제거 (lastPathComponent)
+     /// 2. 정규식으로 날짜/시간 패턴 매칭
+     /// 3. DateFormatter로 Date 변환
+     /// 4. 타임존 적용 (Asia/Seoul)
+     ///
+     /// Fallback:
+     /// - 파일 생성 시각 사용
+     /// - 파일 수정 시각 사용
+     /// - 현재 시각 (최후의 수단)
+     private func extractBaseDate(from filePath: String) -> Date? {
+     // 파일명 추출: "/Videos/20240115_143025_F.mp4" → "20240115_143025_F.mp4"
+     let filename = (filePath as NSString).lastPathComponent
 
-        // 정규식 패턴: 8자리 숫자 + 언더스코어 + 6자리 숫자
-        // \d{8} : YYYYMMDD
-        // _     : 구분자
-        // \d{6} : HHMMSS
-        let pattern = #"(\d{8})_(\d{6})"#
+     // 정규식 패턴: 8자리 숫자 + 언더스코어 + 6자리 숫자
+     // \d{8} : YYYYMMDD
+     // _     : 구분자
+     // \d{6} : HHMMSS
+     let pattern = #"(\d{8})_(\d{6})"#
 
-        // NSRegularExpression으로 패턴 매칭
-        guard let regex = try? NSRegularExpression(pattern: pattern, options: []),
-              let match = regex.firstMatch(in: filename, options: [], range: NSRange(filename.startIndex..., in: filename)) else {
-            return nil
-        }
+     // NSRegularExpression으로 패턴 매칭
+     guard let regex = try? NSRegularExpression(pattern: pattern, options: []),
+     let match = regex.firstMatch(in: filename, options: [], range: NSRange(filename.startIndex..., in: filename)) else {
+     return nil
+     }
 
-        // 캡처 그룹 추출
-        // match.range(at: 0): 전체 매칭 문자열
-        // match.range(at: 1): 첫 번째 그룹 (날짜)
-        // match.range(at: 2): 두 번째 그룹 (시간)
-        let dateString = (filename as NSString).substring(with: match.range(at: 1))
-        let timeString = (filename as NSString).substring(with: match.range(at: 2))
+     // 캡처 그룹 추출
+     // match.range(at: 0): 전체 매칭 문자열
+     // match.range(at: 1): 첫 번째 그룹 (날짜)
+     // match.range(at: 2): 두 번째 그룹 (시간)
+     let dateString = (filename as NSString).substring(with: match.range(at: 1))
+     let timeString = (filename as NSString).substring(with: match.range(at: 2))
 
-        // DateFormatter 설정
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyyMMddHHmmss"  // 입력 형식
-        dateFormatter.timeZone = TimeZone(identifier: "Asia/Seoul")  // 한국 시간대
+     // DateFormatter 설정
+     let dateFormatter = DateFormatter()
+     dateFormatter.dateFormat = "yyyyMMddHHmmss"  // 입력 형식
+     dateFormatter.timeZone = TimeZone(identifier: "Asia/Seoul")  // 한국 시간대
 
-        // 문자열 결합 및 변환
-        // "20240115" + "143025" = "20240115143025"
-        // → Date(2024-01-15 14:30:25 +0900)
-        return dateFormatter.date(from: dateString + timeString)
-    }
-    */
+     // 문자열 결합 및 변환
+     // "20240115" + "143025" = "20240115143025"
+     // → Date(2024-01-15 14:30:25 +0900)
+     return dateFormatter.date(from: dateString + timeString)
+     }
+     */
 
     /*
      ───────────────────────────────────────────────────────────────────────
@@ -542,17 +542,17 @@ class MetadataExtractor {
      블랙박스 제조사마다 다르지만, 주로 다음 위치에 저장:
 
      1. 데이터 스트림 (AVMEDIA_TYPE_DATA)
-        ┌──────────────────────────────────┐
-        │ Stream #0: Video (H.264)         │
-        │ Stream #1: Audio (AAC)           │
-        │ Stream #2: Data (GPS) ← 여기!    │
-        └──────────────────────────────────┘
+     ┌──────────────────────────────────┐
+     │ Stream #0: Video (H.264)         │
+     │ Stream #1: Audio (AAC)           │
+     │ Stream #2: Data (GPS) ← 여기!    │
+     └──────────────────────────────────┘
 
      2. 서브타이틀 스트림 (AVMEDIA_TYPE_SUBTITLE)
-        일부 제조사는 GPS를 서브타이틀로 저장
+     일부 제조사는 GPS를 서브타이틀로 저장
 
      3. 포맷 레벨 메타데이터 (AVDictionary)
-        moov.udta.meta에 "gps" 키로 저장
+     moov.udta.meta에 "gps" 키로 저장
 
      【검색 순서】
      1. 모든 스트림 순회 → Data/Subtitle 타입 찾기
@@ -589,78 +589,78 @@ class MetadataExtractor {
      */
 
     /*
-    /// @brief MP4 파일에서 GPS 데이터 추출
-    ///
-    /// @param formatContext FFmpeg의 AVFormatContext (열린 MP4 파일)
-    /// @param baseDate 녹화 시작 시각 (상대 시각을 절대 시각으로 변환)
-    /// @return GPS 포인트 배열, 없으면 빈 배열
-    ///
-    /// @details
-    /// 데이터 스트림, 서브타이틀 스트림, 메타데이터 딕셔너리를 순차적으로 검색하여
-    /// GPS 정보를 찾고 파싱합니다.
-    ///
-    /// 검색 위치:
-    /// 1. AVMEDIA_TYPE_DATA 스트림
-    /// 2. AVMEDIA_TYPE_SUBTITLE 스트림
-    /// 3. 포맷 레벨 메타데이터 딕셔너리 ("gps" 키)
-    ///
-    /// 데이터 형식:
-    /// - NMEA 0183 텍스트 (GPSParser가 처리)
-    /// - 예: "$GPGGA,123456,3723.1234,N,12658.5678,E,..."
-    ///
-    /// 타임스탬프 계산:
-    /// absolute_time = baseDate + relative_timestamp
-    ///
-    /// 사용 예시 (향후):
-    /// ```swift
-    /// var formatContext: OpaquePointer?
-    /// avformat_open_input(&formatContext, filePath, nil, nil)
-    /// let baseDate = extractBaseDate(from: filePath) ?? Date()
-    /// let gpsPoints = extractGPSData(from: formatContext!, baseDate: baseDate)
-    /// print("\(gpsPoints.count)개 GPS 포인트 추출")
-    /// ```
-    private func extractGPSData(from formatContext: OpaquePointer, baseDate: Date) -> [GPSPoint] {
-        // 1단계: 모든 스트림 순회
-        let numStreams = Int(formatContext.pointee.nb_streams)
-        var streams = formatContext.pointee.streams
+     /// @brief MP4 파일에서 GPS 데이터 추출
+     ///
+     /// @param formatContext FFmpeg의 AVFormatContext (열린 MP4 파일)
+     /// @param baseDate 녹화 시작 시각 (상대 시각을 절대 시각으로 변환)
+     /// @return GPS 포인트 배열, 없으면 빈 배열
+     ///
+     /// @details
+     /// 데이터 스트림, 서브타이틀 스트림, 메타데이터 딕셔너리를 순차적으로 검색하여
+     /// GPS 정보를 찾고 파싱합니다.
+     ///
+     /// 검색 위치:
+     /// 1. AVMEDIA_TYPE_DATA 스트림
+     /// 2. AVMEDIA_TYPE_SUBTITLE 스트림
+     /// 3. 포맷 레벨 메타데이터 딕셔너리 ("gps" 키)
+     ///
+     /// 데이터 형식:
+     /// - NMEA 0183 텍스트 (GPSParser가 처리)
+     /// - 예: "$GPGGA,123456,3723.1234,N,12658.5678,E,..."
+     ///
+     /// 타임스탬프 계산:
+     /// absolute_time = baseDate + relative_timestamp
+     ///
+     /// 사용 예시 (향후):
+     /// ```swift
+     /// var formatContext: OpaquePointer?
+     /// avformat_open_input(&formatContext, filePath, nil, nil)
+     /// let baseDate = extractBaseDate(from: filePath) ?? Date()
+     /// let gpsPoints = extractGPSData(from: formatContext!, baseDate: baseDate)
+     /// print("\(gpsPoints.count)개 GPS 포인트 추출")
+     /// ```
+     private func extractGPSData(from formatContext: OpaquePointer, baseDate: Date) -> [GPSPoint] {
+     // 1단계: 모든 스트림 순회
+     let numStreams = Int(formatContext.pointee.nb_streams)
+     var streams = formatContext.pointee.streams
 
-        for i in 0..<numStreams {
-            guard let stream = streams?[i] else { continue }
-            let codecType = stream.pointee.codecpar.pointee.codec_type
+     for i in 0..<numStreams {
+     guard let stream = streams?[i] else { continue }
+     let codecType = stream.pointee.codecpar.pointee.codec_type
 
-            // GPS 데이터는 보통 Data 또는 Subtitle 스트림에 저장
-            if codecType == AVMEDIA_TYPE_DATA || codecType == AVMEDIA_TYPE_SUBTITLE {
-                // 스트림의 모든 패킷 읽기
-                if let gpsData = readStreamData(from: formatContext, streamIndex: i) {
-                    // NMEA 형식으로 파싱 시도
-                    let points = gpsParser.parseNMEA(data: gpsData, baseDate: baseDate)
-                    if !points.isEmpty {
-                        // 성공: GPS 포인트 반환
-                        return points
-                    }
-                }
-            }
-        }
+     // GPS 데이터는 보통 Data 또는 Subtitle 스트림에 저장
+     if codecType == AVMEDIA_TYPE_DATA || codecType == AVMEDIA_TYPE_SUBTITLE {
+     // 스트림의 모든 패킷 읽기
+     if let gpsData = readStreamData(from: formatContext, streamIndex: i) {
+     // NMEA 형식으로 파싱 시도
+     let points = gpsParser.parseNMEA(data: gpsData, baseDate: baseDate)
+     if !points.isEmpty {
+     // 성공: GPS 포인트 반환
+     return points
+     }
+     }
+     }
+     }
 
-        // 2단계: 포맷 레벨 메타데이터 확인
-        if let metadata = formatContext.pointee.metadata {
-            // "gps" 키로 메타데이터 조회
-            if let gpsData = extractMetadataEntry(metadata, key: "gps") {
-                let points = gpsParser.parseNMEA(data: gpsData, baseDate: baseDate)
-                if !points.isEmpty {
-                    return points
-                }
-            }
-        }
+     // 2단계: 포맷 레벨 메타데이터 확인
+     if let metadata = formatContext.pointee.metadata {
+     // "gps" 키로 메타데이터 조회
+     if let gpsData = extractMetadataEntry(metadata, key: "gps") {
+     let points = gpsParser.parseNMEA(data: gpsData, baseDate: baseDate)
+     if !points.isEmpty {
+     return points
+     }
+     }
+     }
 
-        // 3단계: 제조사별 특수 형식 (GoPro GPMD 등)
-        // GoPro의 경우 GPMD (GoPro Metadata) 형식 사용
-        // 이는 별도의 파서가 필요하므로 향후 확장 예정
+     // 3단계: 제조사별 특수 형식 (GoPro GPMD 등)
+     // GoPro의 경우 GPMD (GoPro Metadata) 형식 사용
+     // 이는 별도의 파서가 필요하므로 향후 확장 예정
 
-        // GPS 데이터를 찾지 못함
-        return []
-    }
-    */
+     // GPS 데이터를 찾지 못함
+     return []
+     }
+     */
 
     /*
      ───────────────────────────────────────────────────────────────────────
@@ -674,24 +674,24 @@ class MetadataExtractor {
      GPS와 유사하지만 다른 키/스트림을 사용:
 
      1. 데이터 스트림 (AVMEDIA_TYPE_DATA)
-        GPS와 별도 스트림 또는 같은 스트림에 혼합
+     GPS와 별도 스트림 또는 같은 스트림에 혼합
 
      2. 포맷 레벨 메타데이터
-        키: "accelerometer", "gsensor", "accel" 등
+     키: "accelerometer", "gsensor", "accel" 등
 
      【데이터 형식】
      1. Binary 형식
-        - Float32: 각 축당 4바이트
-        - Int16: 각 축당 2바이트
-        - 구조: XYZXYZXYZ... (인터리브)
+     - Float32: 각 축당 4바이트
+     - Int16: 각 축당 2바이트
+     - 구조: XYZXYZXYZ... (인터리브)
 
      2. CSV 형식
-        ```
-        timestamp,x,y,z
-        0.0,0.12,-0.05,0.98
-        0.1,0.14,-0.03,1.02
-        ...
-        ```
+     ```
+     timestamp,x,y,z
+     0.0,0.12,-0.05,0.98
+     0.1,0.14,-0.03,1.02
+     ...
+     ```
 
      【파싱 전략】
      AccelerationParser는 자동 형식 감지 기능이 있습니다:
@@ -714,80 +714,80 @@ class MetadataExtractor {
      */
 
     /*
-    /// @brief MP4 파일에서 가속도 데이터 추출
-    ///
-    /// @param formatContext FFmpeg의 AVFormatContext
-    /// @param baseDate 녹화 시작 시각
-    /// @return 가속도 데이터 배열, 없으면 빈 배열
-    ///
-    /// @details
-    /// 데이터 스트림과 메타데이터 딕셔너리를 검색하여 G-센서 정보를 찾고 파싱합니다.
-    ///
-    /// 검색 위치:
-    /// 1. AVMEDIA_TYPE_DATA 스트림
-    /// 2. 포맷 레벨 메타데이터 ("accelerometer", "gsensor" 키)
-    ///
-    /// 지원 형식:
-    /// - Binary (Float32 또는 Int16)
-    /// - CSV (timestamp,x,y,z)
-    ///
-    /// 형식 자동 감지:
-    /// AccelerationParser가 자동으로 형식을 판별하여 파싱합니다.
-    ///
-    /// 사용 예시 (향후):
-    /// ```swift
-    /// let accelData = extractAccelerationData(from: formatContext, baseDate: baseDate)
-    /// print("\(accelData.count)개 가속도 샘플 추출")
-    ///
-    /// // 최대 충격 값 계산
-    /// let maxImpact = accelData.map { sample in
-    ///     sqrt(sample.x*sample.x + sample.y*sample.y + sample.z*sample.z)
-    /// }.max() ?? 0
-    /// print("최대 충격: \(maxImpact)G")
-    /// ```
-    private func extractAccelerationData(from formatContext: OpaquePointer, baseDate: Date) -> [AccelerationData] {
-        // 1단계: 모든 데이터 스트림 순회
-        let numStreams = Int(formatContext.pointee.nb_streams)
-        var streams = formatContext.pointee.streams
+     /// @brief MP4 파일에서 가속도 데이터 추출
+     ///
+     /// @param formatContext FFmpeg의 AVFormatContext
+     /// @param baseDate 녹화 시작 시각
+     /// @return 가속도 데이터 배열, 없으면 빈 배열
+     ///
+     /// @details
+     /// 데이터 스트림과 메타데이터 딕셔너리를 검색하여 G-센서 정보를 찾고 파싱합니다.
+     ///
+     /// 검색 위치:
+     /// 1. AVMEDIA_TYPE_DATA 스트림
+     /// 2. 포맷 레벨 메타데이터 ("accelerometer", "gsensor" 키)
+     ///
+     /// 지원 형식:
+     /// - Binary (Float32 또는 Int16)
+     /// - CSV (timestamp,x,y,z)
+     ///
+     /// 형식 자동 감지:
+     /// AccelerationParser가 자동으로 형식을 판별하여 파싱합니다.
+     ///
+     /// 사용 예시 (향후):
+     /// ```swift
+     /// let accelData = extractAccelerationData(from: formatContext, baseDate: baseDate)
+     /// print("\(accelData.count)개 가속도 샘플 추출")
+     ///
+     /// // 최대 충격 값 계산
+     /// let maxImpact = accelData.map { sample in
+     ///     sqrt(sample.x*sample.x + sample.y*sample.y + sample.z*sample.z)
+     /// }.max() ?? 0
+     /// print("최대 충격: \(maxImpact)G")
+     /// ```
+     private func extractAccelerationData(from formatContext: OpaquePointer, baseDate: Date) -> [AccelerationData] {
+     // 1단계: 모든 데이터 스트림 순회
+     let numStreams = Int(formatContext.pointee.nb_streams)
+     var streams = formatContext.pointee.streams
 
-        for i in 0..<numStreams {
-            guard let stream = streams?[i] else { continue }
-            let codecType = stream.pointee.codecpar.pointee.codec_type
+     for i in 0..<numStreams {
+     guard let stream = streams?[i] else { continue }
+     let codecType = stream.pointee.codecpar.pointee.codec_type
 
-            // 가속도 데이터는 보통 Data 스트림에 저장
-            if codecType == AVMEDIA_TYPE_DATA {
-                if let accelData = readStreamData(from: formatContext, streamIndex: i) {
-                    // Binary 형식 파싱 시도
-                    let data = accelerationParser.parseAccelerationData(accelData, baseDate: baseDate)
-                    if !data.isEmpty {
-                        return data
-                    }
+     // 가속도 데이터는 보통 Data 스트림에 저장
+     if codecType == AVMEDIA_TYPE_DATA {
+     if let accelData = readStreamData(from: formatContext, streamIndex: i) {
+     // Binary 형식 파싱 시도
+     let data = accelerationParser.parseAccelerationData(accelData, baseDate: baseDate)
+     if !data.isEmpty {
+     return data
+     }
 
-                    // CSV 형식 파싱 시도
-                    let csvData = accelerationParser.parseCSVData(accelData, baseDate: baseDate)
-                    if !csvData.isEmpty {
-                        return csvData
-                    }
-                }
-            }
-        }
+     // CSV 형식 파싱 시도
+     let csvData = accelerationParser.parseCSVData(accelData, baseDate: baseDate)
+     if !csvData.isEmpty {
+     return csvData
+     }
+     }
+     }
+     }
 
-        // 2단계: 포맷 레벨 메타데이터 확인
-        if let metadata = formatContext.pointee.metadata {
-            // "accelerometer" 또는 "gsensor" 키로 조회
-            if let accelData = extractMetadataEntry(metadata, key: "accelerometer") ??
-                               extractMetadataEntry(metadata, key: "gsensor") {
-                let data = accelerationParser.parseAccelerationData(accelData, baseDate: baseDate)
-                if !data.isEmpty {
-                    return data
-                }
-            }
-        }
+     // 2단계: 포맷 레벨 메타데이터 확인
+     if let metadata = formatContext.pointee.metadata {
+     // "accelerometer" 또는 "gsensor" 키로 조회
+     if let accelData = extractMetadataEntry(metadata, key: "accelerometer") ??
+     extractMetadataEntry(metadata, key: "gsensor") {
+     let data = accelerationParser.parseAccelerationData(accelData, baseDate: baseDate)
+     if !data.isEmpty {
+     return data
+     }
+     }
+     }
 
-        // 가속도 데이터를 찾지 못함
-        return []
-    }
-    */
+     // 가속도 데이터를 찾지 못함
+     return []
+     }
+     */
 
     /*
      ───────────────────────────────────────────────────────────────────────
@@ -826,11 +826,11 @@ class MetadataExtractor {
      【DeviceInfo 구조체】
      ```swift
      struct DeviceInfo {
-         let manufacturer: String?
-         let model: String?
-         let firmwareVersion: String?
-         let serialNumber: String?
-         let recordingMode: String?
+     let manufacturer: String?
+     let model: String?
+     let firmwareVersion: String?
+     let serialNumber: String?
+     let recordingMode: String?
      }
      ```
 
@@ -843,63 +843,63 @@ class MetadataExtractor {
      */
 
     /*
-    /// @brief MP4 파일에서 디바이스 정보 추출
-    ///
-    /// @param formatContext FFmpeg의 AVFormatContext
-    /// @return DeviceInfo, 메타데이터가 없으면 nil
-    ///
-    /// @details
-    /// 포맷 레벨 메타데이터 딕셔너리에서 제조사, 모델, 펌웨어 등을 조회합니다.
-    ///
-    /// 추출 필드:
-    /// - manufacturer: 제조사 ("make" 또는 "manufacturer" 키)
-    /// - model: 모델명 ("model" 키)
-    /// - firmwareVersion: 펌웨어 버전 ("firmware" 또는 "firmware_version" 키)
-    /// - serialNumber: 시리얼 번호 ("serial_number" 또는 "device_id" 키)
-    /// - recordingMode: 녹화 모드 ("recording_mode" 키)
-    ///
-    /// 반환 조건:
-    /// 위 필드 중 최소 1개라도 추출되면 DeviceInfo 반환, 모두 nil이면 nil 반환
-    ///
-    /// 사용 예시 (향후):
-    /// ```swift
-    /// if let deviceInfo = extractDeviceInfo(from: formatContext) {
-    ///     print("디바이스: \(deviceInfo.manufacturer ?? "Unknown") \(deviceInfo.model ?? "")")
-    ///     print("펌웨어: \(deviceInfo.firmwareVersion ?? "Unknown")")
-    ///     print("녹화 모드: \(deviceInfo.recordingMode ?? "Normal")")
-    /// }
-    /// ```
-    private func extractDeviceInfo(from formatContext: OpaquePointer) -> DeviceInfo? {
-        // 메타데이터 딕셔너리 확인
-        guard let metadata = formatContext.pointee.metadata else {
-            return nil
-        }
+     /// @brief MP4 파일에서 디바이스 정보 추출
+     ///
+     /// @param formatContext FFmpeg의 AVFormatContext
+     /// @return DeviceInfo, 메타데이터가 없으면 nil
+     ///
+     /// @details
+     /// 포맷 레벨 메타데이터 딕셔너리에서 제조사, 모델, 펌웨어 등을 조회합니다.
+     ///
+     /// 추출 필드:
+     /// - manufacturer: 제조사 ("make" 또는 "manufacturer" 키)
+     /// - model: 모델명 ("model" 키)
+     /// - firmwareVersion: 펌웨어 버전 ("firmware" 또는 "firmware_version" 키)
+     /// - serialNumber: 시리얼 번호 ("serial_number" 또는 "device_id" 키)
+     /// - recordingMode: 녹화 모드 ("recording_mode" 키)
+     ///
+     /// 반환 조건:
+     /// 위 필드 중 최소 1개라도 추출되면 DeviceInfo 반환, 모두 nil이면 nil 반환
+     ///
+     /// 사용 예시 (향후):
+     /// ```swift
+     /// if let deviceInfo = extractDeviceInfo(from: formatContext) {
+     ///     print("디바이스: \(deviceInfo.manufacturer ?? "Unknown") \(deviceInfo.model ?? "")")
+     ///     print("펌웨어: \(deviceInfo.firmwareVersion ?? "Unknown")")
+     ///     print("녹화 모드: \(deviceInfo.recordingMode ?? "Normal")")
+     /// }
+     /// ```
+     private func extractDeviceInfo(from formatContext: OpaquePointer) -> DeviceInfo? {
+     // 메타데이터 딕셔너리 확인
+     guard let metadata = formatContext.pointee.metadata else {
+     return nil
+     }
 
-        // 각 필드 추출 (여러 키 시도)
-        let manufacturer = extractMetadataString(metadata, key: "manufacturer") ??
-                          extractMetadataString(metadata, key: "make")
-        let model = extractMetadataString(metadata, key: "model")
-        let firmware = extractMetadataString(metadata, key: "firmware") ??
-                      extractMetadataString(metadata, key: "firmware_version")
-        let serial = extractMetadataString(metadata, key: "serial_number") ??
-                    extractMetadataString(metadata, key: "device_id")
-        let mode = extractMetadataString(metadata, key: "recording_mode")
+     // 각 필드 추출 (여러 키 시도)
+     let manufacturer = extractMetadataString(metadata, key: "manufacturer") ??
+     extractMetadataString(metadata, key: "make")
+     let model = extractMetadataString(metadata, key: "model")
+     let firmware = extractMetadataString(metadata, key: "firmware") ??
+     extractMetadataString(metadata, key: "firmware_version")
+     let serial = extractMetadataString(metadata, key: "serial_number") ??
+     extractMetadataString(metadata, key: "device_id")
+     let mode = extractMetadataString(metadata, key: "recording_mode")
 
-        // 최소 1개 필드라도 있으면 DeviceInfo 반환
-        if manufacturer != nil || model != nil || firmware != nil || serial != nil || mode != nil {
-            return DeviceInfo(
-                manufacturer: manufacturer,
-                model: model,
-                firmwareVersion: firmware,
-                serialNumber: serial,
-                recordingMode: mode
-            )
-        }
+     // 최소 1개 필드라도 있으면 DeviceInfo 반환
+     if manufacturer != nil || model != nil || firmware != nil || serial != nil || mode != nil {
+     return DeviceInfo(
+     manufacturer: manufacturer,
+     model: model,
+     firmwareVersion: firmware,
+     serialNumber: serial,
+     recordingMode: mode
+     )
+     }
 
-        // 모든 필드가 nil이면 nil 반환
-        return nil
-    }
-    */
+     // 모든 필드가 nil이면 nil 반환
+     return nil
+     }
+     */
 
     /*
      ───────────────────────────────────────────────────────────────────────
@@ -935,72 +935,72 @@ class MetadataExtractor {
      */
 
     /*
-    /// @brief 특정 스트림의 모든 패킷 읽기
-    ///
-    /// @param formatContext FFmpeg의 AVFormatContext
-    /// @param streamIndex 읽을 스트림의 인덱스 (0, 1, 2, ...)
-    /// @return 모든 패킷을 결합한 Data, 패킷이 없으면 nil
-    ///
-    /// @details
-    /// FFmpeg의 av_read_frame()으로 패킷을 순차적으로 읽어 Data로 누적합니다.
-    ///
-    /// 동작 과정:
-    /// 1. av_packet_alloc(): 패킷 구조체 할당
-    /// 2. 반복: av_read_frame()으로 패킷 읽기
-    ///    - 패킷의 stream_index가 일치하면 data 추가
-    ///    - av_packet_unref(): 패킷 참조 해제
-    /// 3. av_seek_frame(): 파일 처음으로 되돌리기
-    /// 4. av_packet_free(): 패킷 구조체 해제 (defer)
-    /// 5. 누적된 Data 반환
-    ///
-    /// 메모리 관리:
-    /// - defer로 자동 메모리 해제 보장
-    /// - av_packet_unref()로 각 패킷 후처리
-    ///
-    /// Seek Back 이유:
-    /// 다른 스트림도 읽을 수 있도록 파일 포인터를 처음으로 되돌립니다.
-    ///
-    /// 사용 예시 (향후):
-    /// ```swift
-    /// // Stream #2 (GPS 데이터) 읽기
-    /// if let gpsData = readStreamData(from: formatContext, streamIndex: 2) {
-    ///     print("GPS 데이터: \(gpsData.count) bytes")
-    ///     let gpsPoints = gpsParser.parseNMEA(data: gpsData, baseDate: baseDate)
-    /// }
-    /// ```
-    private func readStreamData(from formatContext: OpaquePointer, streamIndex: Int) -> Data? {
-        var accumulatedData = Data()
+     /// @brief 특정 스트림의 모든 패킷 읽기
+     ///
+     /// @param formatContext FFmpeg의 AVFormatContext
+     /// @param streamIndex 읽을 스트림의 인덱스 (0, 1, 2, ...)
+     /// @return 모든 패킷을 결합한 Data, 패킷이 없으면 nil
+     ///
+     /// @details
+     /// FFmpeg의 av_read_frame()으로 패킷을 순차적으로 읽어 Data로 누적합니다.
+     ///
+     /// 동작 과정:
+     /// 1. av_packet_alloc(): 패킷 구조체 할당
+     /// 2. 반복: av_read_frame()으로 패킷 읽기
+     ///    - 패킷의 stream_index가 일치하면 data 추가
+     ///    - av_packet_unref(): 패킷 참조 해제
+     /// 3. av_seek_frame(): 파일 처음으로 되돌리기
+     /// 4. av_packet_free(): 패킷 구조체 해제 (defer)
+     /// 5. 누적된 Data 반환
+     ///
+     /// 메모리 관리:
+     /// - defer로 자동 메모리 해제 보장
+     /// - av_packet_unref()로 각 패킷 후처리
+     ///
+     /// Seek Back 이유:
+     /// 다른 스트림도 읽을 수 있도록 파일 포인터를 처음으로 되돌립니다.
+     ///
+     /// 사용 예시 (향후):
+     /// ```swift
+     /// // Stream #2 (GPS 데이터) 읽기
+     /// if let gpsData = readStreamData(from: formatContext, streamIndex: 2) {
+     ///     print("GPS 데이터: \(gpsData.count) bytes")
+     ///     let gpsPoints = gpsParser.parseNMEA(data: gpsData, baseDate: baseDate)
+     /// }
+     /// ```
+     private func readStreamData(from formatContext: OpaquePointer, streamIndex: Int) -> Data? {
+     var accumulatedData = Data()
 
-        // 패킷 구조체 할당
-        guard let packet = av_packet_alloc() else {
-            return nil
-        }
-        // defer: 함수 종료 시 자동 실행
-        defer { av_packet_free(&(UnsafeMutablePointer(mutating: packet))) }
+     // 패킷 구조체 할당
+     guard let packet = av_packet_alloc() else {
+     return nil
+     }
+     // defer: 함수 종료 시 자동 실행
+     defer { av_packet_free(&(UnsafeMutablePointer(mutating: packet))) }
 
-        // 모든 패킷 읽기
-        while av_read_frame(formatContext, packet) >= 0 {
-            // defer: 루프 종료 시 패킷 참조 해제
-            defer { av_packet_unref(packet) }
+     // 모든 패킷 읽기
+     while av_read_frame(formatContext, packet) >= 0 {
+     // defer: 루프 종료 시 패킷 참조 해제
+     defer { av_packet_unref(packet) }
 
-            // 원하는 스트림의 패킷인지 확인
-            if Int(packet.pointee.stream_index) == streamIndex {
-                // 패킷 데이터를 Swift Data에 추가
-                if let data = packet.pointee.data {
-                    let size = Int(packet.pointee.size)
-                    accumulatedData.append(Data(bytes: data, count: size))
-                }
-            }
-        }
+     // 원하는 스트림의 패킷인지 확인
+     if Int(packet.pointee.stream_index) == streamIndex {
+     // 패킷 데이터를 Swift Data에 추가
+     if let data = packet.pointee.data {
+     let size = Int(packet.pointee.size)
+     accumulatedData.append(Data(bytes: data, count: size))
+     }
+     }
+     }
 
-        // 파일 포인터를 처음으로 되돌리기
-        // AVSEEK_FLAG_BACKWARD: 이전 키프레임으로 이동
-        av_seek_frame(formatContext, Int32(streamIndex), 0, AVSEEK_FLAG_BACKWARD)
+     // 파일 포인터를 처음으로 되돌리기
+     // AVSEEK_FLAG_BACKWARD: 이전 키프레임으로 이동
+     av_seek_frame(formatContext, Int32(streamIndex), 0, AVSEEK_FLAG_BACKWARD)
 
-        // 데이터가 없으면 nil 반환
-        return accumulatedData.isEmpty ? nil : accumulatedData
-    }
-    */
+     // 데이터가 없으면 nil 반환
+     return accumulatedData.isEmpty ? nil : accumulatedData
+     }
+     */
 
     /*
      ───────────────────────────────────────────────────────────────────────
@@ -1014,10 +1014,10 @@ class MetadataExtractor {
      FFmpeg의 key-value 저장소:
      ```
      Dictionary {
-         "gps": "$GPGGA,123456,..."
-         "accelerometer": "binary data..."
-         "manufacturer": "BlackVue"
-         "model": "DR900X"
+     "gps": "$GPGGA,123456,..."
+     "accelerometer": "binary data..."
+     "manufacturer": "BlackVue"
+     "model": "DR900X"
      }
      ```
 
@@ -1025,10 +1025,10 @@ class MetadataExtractor {
      C API 함수:
      ```c
      AVDictionaryEntry *av_dict_get(
-         const AVDictionary *dict,
-         const char *key,
-         const AVDictionaryEntry *prev,
-         int flags
+     const AVDictionary *dict,
+     const char *key,
+     const AVDictionaryEntry *prev,
+     int flags
      );
      ```
 
@@ -1045,8 +1045,8 @@ class MetadataExtractor {
      【AVDictionaryEntry 구조】
      ```c
      typedef struct AVDictionaryEntry {
-         char *key;     // 키
-         char *value;   // 값 (C 문자열)
+     char *key;     // 키
+     char *value;   // 값 (C 문자열)
      } AVDictionaryEntry;
      ```
 
@@ -1060,50 +1060,50 @@ class MetadataExtractor {
      */
 
     /*
-    /// @brief 메타데이터 딕셔너리에서 Data 추출
-    ///
-    /// @param dict AVDictionary (FFmpeg 메타데이터 딕셔너리)
-    /// @param key 조회할 키 (예: "gps", "accelerometer")
-    /// @return 값의 Data 표현, 키가 없으면 nil
-    ///
-    /// @details
-    /// FFmpeg의 AVDictionary에서 지정된 키의 값을 읽어 Data로 변환합니다.
-    ///
-    /// 동작 과정:
-    /// 1. av_dict_get()으로 키 검색
-    /// 2. 찾으면 value (C 문자열) 추출
-    /// 3. String(cString:)으로 Swift 문자열 변환
-    /// 4. data(using: .utf8)으로 Data 변환
-    ///
-    /// 사용 예시 (향후):
-    /// ```swift
-    /// if let metadata = formatContext.pointee.metadata {
-    ///     if let gpsData = extractMetadataEntry(metadata, key: "gps") {
-    ///         let gpsPoints = gpsParser.parseNMEA(data: gpsData, baseDate: baseDate)
-    ///     }
-    /// }
-    /// ```
-    ///
-    /// 참고:
-    /// - Binary 데이터도 C 문자열로 저장된 경우가 있어 Data로 변환
-    /// - UTF-8 인코딩 실패 시 nil 반환
-    private func extractMetadataEntry(_ dict: OpaquePointer, key: String) -> Data? {
-        var entry: UnsafeMutablePointer<AVDictionaryEntry>?
+     /// @brief 메타데이터 딕셔너리에서 Data 추출
+     ///
+     /// @param dict AVDictionary (FFmpeg 메타데이터 딕셔너리)
+     /// @param key 조회할 키 (예: "gps", "accelerometer")
+     /// @return 값의 Data 표현, 키가 없으면 nil
+     ///
+     /// @details
+     /// FFmpeg의 AVDictionary에서 지정된 키의 값을 읽어 Data로 변환합니다.
+     ///
+     /// 동작 과정:
+     /// 1. av_dict_get()으로 키 검색
+     /// 2. 찾으면 value (C 문자열) 추출
+     /// 3. String(cString:)으로 Swift 문자열 변환
+     /// 4. data(using: .utf8)으로 Data 변환
+     ///
+     /// 사용 예시 (향후):
+     /// ```swift
+     /// if let metadata = formatContext.pointee.metadata {
+     ///     if let gpsData = extractMetadataEntry(metadata, key: "gps") {
+     ///         let gpsPoints = gpsParser.parseNMEA(data: gpsData, baseDate: baseDate)
+     ///     }
+     /// }
+     /// ```
+     ///
+     /// 참고:
+     /// - Binary 데이터도 C 문자열로 저장된 경우가 있어 Data로 변환
+     /// - UTF-8 인코딩 실패 시 nil 반환
+     private func extractMetadataEntry(_ dict: OpaquePointer, key: String) -> Data? {
+     var entry: UnsafeMutablePointer<AVDictionaryEntry>?
 
-        // AVDictionary에서 키 검색
-        // av_dict_get(딕셔너리, 키, 이전 엔트리, 플래그)
-        entry = av_dict_get(dict, key, nil, 0)
+     // AVDictionary에서 키 검색
+     // av_dict_get(딕셔너리, 키, 이전 엔트리, 플래그)
+     entry = av_dict_get(dict, key, nil, 0)
 
-        // 키를 찾지 못했거나 값이 없으면 nil
-        guard let entry = entry, let value = entry.pointee.value else {
-            return nil
-        }
+     // 키를 찾지 못했거나 값이 없으면 nil
+     guard let entry = entry, let value = entry.pointee.value else {
+     return nil
+     }
 
-        // C 문자열 → Swift String → Data
-        let string = String(cString: value)
-        return string.data(using: .utf8)
-    }
-    */
+     // C 문자열 → Swift String → Data
+     let string = String(cString: value)
+     return string.data(using: .utf8)
+     }
+     */
 
     /*
      ───────────────────────────────────────────────────────────────────────
@@ -1138,48 +1138,48 @@ class MetadataExtractor {
      */
 
     /*
-    /// @brief 메타데이터 딕셔너리에서 String 추출
-    ///
-    /// @param dict AVDictionary
-    /// @param key 조회할 키 (예: "manufacturer", "model")
-    /// @return 값의 문자열, 키가 없으면 nil
-    ///
-    /// @details
-    /// FFmpeg의 AVDictionary에서 지정된 키의 값을 String으로 반환합니다.
-    ///
-    /// 동작 과정:
-    /// 1. av_dict_get()으로 키 검색
-    /// 2. 찾으면 value (C 문자열) 추출
-    /// 3. String(cString:)으로 Swift 문자열 변환
-    /// 4. 반환
-    ///
-    /// 사용 예시 (향후):
-    /// ```swift
-    /// if let metadata = formatContext.pointee.metadata {
-    ///     let manufacturer = extractMetadataString(metadata, key: "manufacturer")
-    ///     let model = extractMetadataString(metadata, key: "model")
-    ///     print("디바이스: \(manufacturer ?? "Unknown") \(model ?? "")")
-    /// }
-    /// ```
-    ///
-    /// 참고:
-    /// - 순수 텍스트 정보 추출 시 사용
-    /// - Data 변환 없이 직접 String 반환
-    private func extractMetadataString(_ dict: OpaquePointer, key: String) -> String? {
-        var entry: UnsafeMutablePointer<AVDictionaryEntry>?
+     /// @brief 메타데이터 딕셔너리에서 String 추출
+     ///
+     /// @param dict AVDictionary
+     /// @param key 조회할 키 (예: "manufacturer", "model")
+     /// @return 값의 문자열, 키가 없으면 nil
+     ///
+     /// @details
+     /// FFmpeg의 AVDictionary에서 지정된 키의 값을 String으로 반환합니다.
+     ///
+     /// 동작 과정:
+     /// 1. av_dict_get()으로 키 검색
+     /// 2. 찾으면 value (C 문자열) 추출
+     /// 3. String(cString:)으로 Swift 문자열 변환
+     /// 4. 반환
+     ///
+     /// 사용 예시 (향후):
+     /// ```swift
+     /// if let metadata = formatContext.pointee.metadata {
+     ///     let manufacturer = extractMetadataString(metadata, key: "manufacturer")
+     ///     let model = extractMetadataString(metadata, key: "model")
+     ///     print("디바이스: \(manufacturer ?? "Unknown") \(model ?? "")")
+     /// }
+     /// ```
+     ///
+     /// 참고:
+     /// - 순수 텍스트 정보 추출 시 사용
+     /// - Data 변환 없이 직접 String 반환
+     private func extractMetadataString(_ dict: OpaquePointer, key: String) -> String? {
+     var entry: UnsafeMutablePointer<AVDictionaryEntry>?
 
-        // AVDictionary에서 키 검색
-        entry = av_dict_get(dict, key, nil, 0)
+     // AVDictionary에서 키 검색
+     entry = av_dict_get(dict, key, nil, 0)
 
-        // 키를 찾지 못했거나 값이 없으면 nil
-        guard let entry = entry, let value = entry.pointee.value else {
-            return nil
-        }
+     // 키를 찾지 못했거나 값이 없으면 nil
+     guard let entry = entry, let value = entry.pointee.value else {
+     return nil
+     }
 
-        // C 문자열 → Swift String
-        return String(cString: value)
-    }
-    */
+     // C 문자열 → Swift String
+     return String(cString: value)
+     }
+     */
 }
 
 // MARK: - Extraction Errors
@@ -1191,30 +1191,30 @@ class MetadataExtractor {
 
  【오류 종류】
  1. cannotOpenFile: 파일을 열 수 없음
-    - 파일이 존재하지 않음
-    - 권한 부족
-    - 파일이 손상됨
-    - 지원하지 않는 형식
+ - 파일이 존재하지 않음
+ - 권한 부족
+ - 파일이 손상됨
+ - 지원하지 않는 형식
 
  2. noMetadataFound: 메타데이터가 없음
-    - GPS/G-센서 미장착 모델
-    - 위성 신호 없음 (터널, 실내)
-    - 메타데이터가 삭제됨
+ - GPS/G-센서 미장착 모델
+ - 위성 신호 없음 (터널, 실내)
+ - 메타데이터가 삭제됨
 
  3. invalidMetadataFormat: 메타데이터 형식이 잘못됨
-    - 파싱 실패
-    - 손상된 데이터
-    - 지원하지 않는 형식
+ - 파싱 실패
+ - 손상된 데이터
+ - 지원하지 않는 형식
 
  【LocalizedError 프로토콜】
  사용자에게 표시할 오류 메시지를 제공합니다.
 
  ```swift
  do {
-     let metadata = try extractor.extractMetadata(from: path)
+ let metadata = try extractor.extractMetadata(from: path)
  } catch {
-     // error.localizedDescription이 자동으로 호출됨
-     print(error.localizedDescription)
+ // error.localizedDescription이 자동으로 호출됨
+ print(error.localizedDescription)
  }
  ```
 
@@ -1222,10 +1222,10 @@ class MetadataExtractor {
  더 구체적인 오류 정보 추가:
  ```swift
  enum MetadataExtractionError: Error {
-     case cannotOpenFile(String, reason: String)
-     case noMetadataFound(searched: [String])  // 검색한 위치
-     case invalidMetadataFormat(format: String, details: String)
-     case ffmpegError(code: Int32)
+ case cannotOpenFile(String, reason: String)
+ case noMetadataFound(searched: [String])  // 검색한 위치
+ case invalidMetadataFormat(format: String, details: String)
+ case ffmpegError(code: Int32)
  }
  ```
  ───────────────────────────────────────────────────────────────────────────
@@ -1291,10 +1291,10 @@ enum MetadataExtractionError: Error {
 
  ```swift
  protocol LocalizedError : Error {
-     var errorDescription: String? { get }
-     var failureReason: String? { get }
-     var recoverySuggestion: String? { get }
-     var helpAnchor: String? { get }
+ var errorDescription: String? { get }
+ var failureReason: String? { get }
+ var recoverySuggestion: String? { get }
+ var helpAnchor: String? { get }
  }
  ```
 
@@ -1304,13 +1304,13 @@ enum MetadataExtractionError: Error {
  향후 NSLocalizedString으로 변경 가능:
  ```swift
  var errorDescription: String? {
-     switch self {
-     case .cannotOpenFile(let path):
-         return NSLocalizedString(
-             "metadata.error.cannotOpen",
-             comment: "Cannot open file error"
-         )
-     }
+ switch self {
+ case .cannotOpenFile(let path):
+ return NSLocalizedString(
+ "metadata.error.cannotOpen",
+ comment: "Cannot open file error"
+ )
+ }
  }
  ```
  ───────────────────────────────────────────────────────────────────────────
@@ -1343,12 +1343,12 @@ extension MetadataExtractionError: LocalizedError {
 
  // 단일 파일 추출
  if let metadata = extractor.extractMetadata(from: "/Videos/20240115_143025_F.mp4") {
-     print("GPS: \(metadata.gpsPoints.count) points")
-     print("G-sensor: \(metadata.accelerationData.count) samples")
+ print("GPS: \(metadata.gpsPoints.count) points")
+ print("G-sensor: \(metadata.accelerationData.count) samples")
 
-     if let device = metadata.deviceInfo {
-         print("Device: \(device.manufacturer ?? "") \(device.model ?? "")")
-     }
+ if let device = metadata.deviceInfo {
+ print("Device: \(device.manufacturer ?? "") \(device.model ?? "")")
+ }
  }
  ```
 
@@ -1358,26 +1358,26 @@ extension MetadataExtractionError: LocalizedError {
 
  ```swift
  class VideoLoader {
-     func loadMetadata(from path: String, completion: @escaping (VideoMetadata?) -> Void) {
-         DispatchQueue.global(qos: .userInitiated).async {
-             let extractor = MetadataExtractor()
-             let metadata = extractor.extractMetadata(from: path)
+ func loadMetadata(from path: String, completion: @escaping (VideoMetadata?) -> Void) {
+ DispatchQueue.global(qos: .userInitiated).async {
+ let extractor = MetadataExtractor()
+ let metadata = extractor.extractMetadata(from: path)
 
-             DispatchQueue.main.async {
-                 completion(metadata)
-             }
-         }
-     }
+ DispatchQueue.main.async {
+ completion(metadata)
+ }
+ }
+ }
  }
 
  // 사용
  let loader = VideoLoader()
  loader.loadMetadata(from: videoPath) { metadata in
-     guard let metadata = metadata else {
-         print("메타데이터 추출 실패")
-         return
-     }
-     // UI 업데이트
+ guard let metadata = metadata else {
+ print("메타데이터 추출 실패")
+ return
+ }
+ // UI 업데이트
  }
  ```
 
@@ -1386,37 +1386,37 @@ extension MetadataExtractionError: LocalizedError {
  ```swift
  @MainActor
  class VideoViewModel: ObservableObject {
-     @Published var metadata: VideoMetadata?
-     @Published var isLoading = false
+ @Published var metadata: VideoMetadata?
+ @Published var isLoading = false
 
-     func loadMetadata(from path: String) async {
-         isLoading = true
-         defer { isLoading = false }
+ func loadMetadata(from path: String) async {
+ isLoading = true
+ defer { isLoading = false }
 
-         metadata = await Task.detached(priority: .userInitiated) {
-             let extractor = MetadataExtractor()
-             return extractor.extractMetadata(from: path)
-         }.value
-     }
+ metadata = await Task.detached(priority: .userInitiated) {
+ let extractor = MetadataExtractor()
+ return extractor.extractMetadata(from: path)
+ }.value
+ }
  }
 
  // SwiftUI에서 사용
  struct VideoView: View {
-     @StateObject private var viewModel = VideoViewModel()
+ @StateObject private var viewModel = VideoViewModel()
 
-     var body: some View {
-         VStack {
-             if viewModel.isLoading {
-                 ProgressView("메타데이터 로딩 중...")
-             } else if let metadata = viewModel.metadata {
-                 Text("GPS: \(metadata.gpsPoints.count) points")
-                 Text("G-sensor: \(metadata.accelerationData.count) samples")
-             }
-         }
-         .task {
-             await viewModel.loadMetadata(from: videoPath)
-         }
-     }
+ var body: some View {
+ VStack {
+ if viewModel.isLoading {
+ ProgressView("메타데이터 로딩 중...")
+ } else if let metadata = viewModel.metadata {
+ Text("GPS: \(metadata.gpsPoints.count) points")
+ Text("G-sensor: \(metadata.accelerationData.count) samples")
+ }
+ }
+ .task {
+ await viewModel.loadMetadata(from: videoPath)
+ }
+ }
  }
  ```
 
@@ -1440,12 +1440,12 @@ extension MetadataExtractionError: LocalizedError {
 
  // G-센서 값은 평균 또는 최대값 사용
  let combinedAccel = zip(frontAccel, rearAccel).map { (front, rear) in
-     AccelerationData(
-         timestamp: front.timestamp,
-         x: (front.x + rear.x) / 2,
-         y: (front.y + rear.y) / 2,
-         z: (front.z + rear.z) / 2
-     )
+ AccelerationData(
+ timestamp: front.timestamp,
+ x: (front.x + rear.x) / 2,
+ y: (front.y + rear.y) / 2,
+ z: (front.z + rear.z) / 2
+ )
  }
  ```
 
@@ -1453,24 +1453,24 @@ extension MetadataExtractionError: LocalizedError {
 
  ```swift
  class MetadataOverlay {
-     let metadata: VideoMetadata
+ let metadata: VideoMetadata
 
-     /// 현재 재생 시각의 GPS 위치
-     func currentGPS(at time: TimeInterval) -> GPSPoint? {
-         return metadata.gpsPoints.first { abs($0.timestamp - time) < 0.1 }
-     }
+ /// 현재 재생 시각의 GPS 위치
+ func currentGPS(at time: TimeInterval) -> GPSPoint? {
+ return metadata.gpsPoints.first { abs($0.timestamp - time) < 0.1 }
+ }
 
-     /// 현재 재생 시각의 G-센서 값
-     func currentAcceleration(at time: TimeInterval) -> AccelerationData? {
-         return metadata.accelerationData.first { abs($0.timestamp - time) < 0.05 }
-     }
+ /// 현재 재생 시각의 G-센서 값
+ func currentAcceleration(at time: TimeInterval) -> AccelerationData? {
+ return metadata.accelerationData.first { abs($0.timestamp - time) < 0.05 }
+ }
 
-     /// 충격 감지
-     func detectImpact(at time: TimeInterval, threshold: Double = 2.0) -> Bool {
-         guard let accel = currentAcceleration(at: time) else { return false }
-         let magnitude = sqrt(accel.x*accel.x + accel.y*accel.y + accel.z*accel.z)
-         return magnitude > threshold
-     }
+ /// 충격 감지
+ func detectImpact(at time: TimeInterval, threshold: Double = 2.0) -> Bool {
+ guard let accel = currentAcceleration(at: time) else { return false }
+ let magnitude = sqrt(accel.x*accel.x + accel.y*accel.y + accel.z*accel.z)
+ return magnitude > threshold
+ }
  }
 
  // 사용
@@ -1478,12 +1478,12 @@ extension MetadataExtractionError: LocalizedError {
  let currentTime: TimeInterval = 15.5
 
  if let gps = overlay.currentGPS(at: currentTime) {
-     print("현재 위치: \(gps.coordinate.latitude), \(gps.coordinate.longitude)")
-     print("현재 속도: \(gps.speed ?? 0) km/h")
+ print("현재 위치: \(gps.coordinate.latitude), \(gps.coordinate.longitude)")
+ print("현재 속도: \(gps.speed ?? 0) km/h")
  }
 
  if overlay.detectImpact(at: currentTime) {
-     print("⚠️ 충격 감지!")
+ print("⚠️ 충격 감지!")
  }
  ```
 
@@ -1491,21 +1491,21 @@ extension MetadataExtractionError: LocalizedError {
 
  ```swift
  do {
-     let metadata = try extractor.extractMetadata(from: path)
-     // 성공 처리
+ let metadata = try extractor.extractMetadata(from: path)
+ // 성공 처리
 
  } catch MetadataExtractionError.cannotOpenFile(let path) {
-     showAlert("파일을 열 수 없습니다: \(path)")
+ showAlert("파일을 열 수 없습니다: \(path)")
 
  } catch MetadataExtractionError.noMetadataFound {
-     // 메타데이터 없이 비디오만 재생
-     showWarning("GPS/G-센서 데이터가 없습니다")
+ // 메타데이터 없이 비디오만 재생
+ showWarning("GPS/G-센서 데이터가 없습니다")
 
  } catch MetadataExtractionError.invalidMetadataFormat {
-     showWarning("메타데이터 형식을 인식할 수 없습니다")
+ showWarning("메타데이터 형식을 인식할 수 없습니다")
 
  } catch {
-     showAlert("알 수 없는 오류: \(error)")
+ showAlert("알 수 없는 오류: \(error)")
  }
  ```
 
@@ -1513,38 +1513,38 @@ extension MetadataExtractionError: LocalizedError {
 
  ```swift
  class MetadataExtractorTests: XCTestCase {
-     var extractor: MetadataExtractor!
+ var extractor: MetadataExtractor!
 
-     override func setUp() {
-         extractor = MetadataExtractor()
-     }
+ override func setUp() {
+ extractor = MetadataExtractor()
+ }
 
-     func testExtractGPS() {
-         let metadata = extractor.extractMetadata(from: testVideoPath)
-         XCTAssertNotNil(metadata)
-         XCTAssertFalse(metadata!.gpsPoints.isEmpty)
+ func testExtractGPS() {
+ let metadata = extractor.extractMetadata(from: testVideoPath)
+ XCTAssertNotNil(metadata)
+ XCTAssertFalse(metadata!.gpsPoints.isEmpty)
 
-         let firstGPS = metadata!.gpsPoints[0]
-         XCTAssertEqual(firstGPS.coordinate.latitude, 37.5665, accuracy: 0.001)
-         XCTAssertEqual(firstGPS.speed, 45.0, accuracy: 0.1)
-     }
+ let firstGPS = metadata!.gpsPoints[0]
+ XCTAssertEqual(firstGPS.coordinate.latitude, 37.5665, accuracy: 0.001)
+ XCTAssertEqual(firstGPS.speed, 45.0, accuracy: 0.1)
+ }
 
-     func testExtractAcceleration() {
-         let metadata = extractor.extractMetadata(from: testVideoPath)
-         XCTAssertNotNil(metadata)
-         XCTAssertFalse(metadata!.accelerationData.isEmpty)
+ func testExtractAcceleration() {
+ let metadata = extractor.extractMetadata(from: testVideoPath)
+ XCTAssertNotNil(metadata)
+ XCTAssertFalse(metadata!.accelerationData.isEmpty)
 
-         let firstAccel = metadata!.accelerationData[0]
-         XCTAssertEqual(firstAccel.x, 0.0, accuracy: 0.1)
-         XCTAssertEqual(firstAccel.z, 1.0, accuracy: 0.1)  // 중력
-     }
+ let firstAccel = metadata!.accelerationData[0]
+ XCTAssertEqual(firstAccel.x, 0.0, accuracy: 0.1)
+ XCTAssertEqual(firstAccel.z, 1.0, accuracy: 0.1)  // 중력
+ }
 
-     func testNoMetadata() {
-         let metadata = extractor.extractMetadata(from: videoWithoutMetadata)
-         XCTAssertNotNil(metadata)
-         XCTAssertTrue(metadata!.gpsPoints.isEmpty)
-         XCTAssertTrue(metadata!.accelerationData.isEmpty)
-     }
+ func testNoMetadata() {
+ let metadata = extractor.extractMetadata(from: videoWithoutMetadata)
+ XCTAssertNotNil(metadata)
+ XCTAssertTrue(metadata!.gpsPoints.isEmpty)
+ XCTAssertTrue(metadata!.accelerationData.isEmpty)
+ }
  }
  ```
 

@@ -60,19 +60,19 @@
  이 모델은 struct로 정의되었습니다. 그 이유는:
 
  1. 값 타입 (Value Type):
-    - GPS 데이터는 불변(immutable)이어야 함
-    - 복사 시 완전히 독립적인 사본 생성
-    - 참조 추적 불필요
+ - GPS 데이터는 불변(immutable)이어야 함
+ - 복사 시 완전히 독립적인 사본 생성
+ - 참조 추적 불필요
 
  2. 스택 메모리:
-    - 힙(heap)이 아닌 스택(stack)에 할당
-    - 더 빠른 생성/해제
-    - ARC(Automatic Reference Counting) 오버헤드 없음
+ - 힙(heap)이 아닌 스택(stack)에 할당
+ - 더 빠른 생성/해제
+ - ARC(Automatic Reference Counting) 오버헤드 없음
 
  3. 스레드 안전:
-    - 여러 스레드에서 동시 접근해도 안전
-    - 각 스레드가 독립적인 복사본 보유
-    - 동기화 메커니즘 불필요
+ - 여러 스레드에서 동시 접근해도 안전
+ - 각 스레드가 독립적인 복사본 보유
+ - 동기화 메커니즘 불필요
 
  예시:
  ```swift
@@ -135,7 +135,7 @@
 
  // Equatable
  if point1 == point2 {
-     print("같은 위치입니다")
+ print("같은 위치입니다")
  }
 
  // Hashable
@@ -173,15 +173,15 @@ import CoreLocation
 
  // 2. 지도에 표시
  for point in points {
-     let annotation = MKPointAnnotation()
-     annotation.coordinate = point.coordinate
-     mapView.addAnnotation(annotation)
+ let annotation = MKPointAnnotation()
+ annotation.coordinate = point.coordinate
+ mapView.addAnnotation(annotation)
  }
 
  // 3. 경로 분석
  let totalDistance = points.adjacentPairs()
-     .map { $0.distance(to: $1) }
-     .reduce(0, +)
+ .map { $0.distance(to: $1) }
+ .reduce(0, +)
  print("총 이동 거리: \(totalDistance)m")
  ```
  */
@@ -330,16 +330,16 @@ struct GPSPoint: Codable, Equatable, Hashable {
      사용 예시:
      ```swift
      if let altitude = point.altitude {
-         print("현재 고도: \(Int(altitude))m")
+     print("현재 고도: \(Int(altitude))m")
 
-         // 고도 변화율 계산 (등반/하강)
-         let previousAltitude = previousPoint.altitude ?? 0
-         let elevationChange = altitude - previousAltitude
-         if elevationChange > 0 {
-             print("등반 중: +\(elevationChange)m")
-         }
+     // 고도 변화율 계산 (등반/하강)
+     let previousAltitude = previousPoint.altitude ?? 0
+     let elevationChange = altitude - previousAltitude
+     if elevationChange > 0 {
+     print("등반 중: +\(elevationChange)m")
+     }
      } else {
-         print("고도 정보 없음")
+     print("고도 정보 없음")
      }
      ```
      */
@@ -373,21 +373,21 @@ struct GPSPoint: Codable, Equatable, Hashable {
      예시:
      ```swift
      if let speed = point.speed {
-         print("현재 속도: \(Int(speed)) km/h")
+     print("현재 속도: \(Int(speed)) km/h")
 
-         // 과속 감지
-         if speed > 100 {
-             print("⚠️ 과속 경고!")
-         }
+     // 과속 감지
+     if speed > 100 {
+     print("⚠️ 과속 경고!")
+     }
 
-         // 속도 등급 분류
-         switch speed {
-         case 0..<5: print("정지")
-         case 5..<30: print("저속")
-         case 30..<80: print("일반 도로")
-         case 80...: print("고속 도로")
-         default: break
-         }
+     // 속도 등급 분류
+     switch speed {
+     case 0..<5: print("정지")
+     case 5..<30: print("저속")
+     case 30..<80: print("일반 도로")
+     case 80...: print("고속 도로")
+     default: break
+     }
      }
 
      // 평균 속도 계산
@@ -430,23 +430,23 @@ struct GPSPoint: Codable, Equatable, Hashable {
      사용 예시:
      ```swift
      if let heading = point.heading {
-         // 방향 문자열로 변환
-         let direction: String
-         switch heading {
-         case 0..<22.5, 337.5...360: direction = "북"
-         case 22.5..<67.5: direction = "북동"
-         case 67.5..<112.5: direction = "동"
-         case 112.5..<157.5: direction = "남동"
-         case 157.5..<202.5: direction = "남"
-         case 202.5..<247.5: direction = "남서"
-         case 247.5..<292.5: direction = "서"
-         case 292.5..<337.5: direction = "북서"
-         default: direction = "알 수 없음"
-         }
-         print("진행 방향: \(direction)")
+     // 방향 문자열로 변환
+     let direction: String
+     switch heading {
+     case 0..<22.5, 337.5...360: direction = "북"
+     case 22.5..<67.5: direction = "북동"
+     case 67.5..<112.5: direction = "동"
+     case 112.5..<157.5: direction = "남동"
+     case 157.5..<202.5: direction = "남"
+     case 202.5..<247.5: direction = "남서"
+     case 247.5..<292.5: direction = "서"
+     case 292.5..<337.5: direction = "북서"
+     default: direction = "알 수 없음"
+     }
+     print("진행 방향: \(direction)")
 
-         // 화살표 아이콘 회전 (지도 UI)
-         arrowImageView.transform = CGAffineTransform(rotationAngle: heading * .pi / 180)
+     // 화살표 아이콘 회전 (지도 UI)
+     arrowImageView.transform = CGAffineTransform(rotationAngle: heading * .pi / 180)
      }
      ```
 
@@ -489,23 +489,23 @@ struct GPSPoint: Codable, Equatable, Hashable {
      사용 예시:
      ```swift
      if let accuracy = point.horizontalAccuracy {
-         print("위치 정확도: ±\(Int(accuracy))m")
+     print("위치 정확도: ±\(Int(accuracy))m")
 
-         // 정확도 필터링
-         if accuracy > 50 {
-             print("⚠️ GPS 신호 약함. 위치 부정확할 수 있음")
-             // 이 데이터 포인트 무시 또는 표시 방법 변경
-         }
+     // 정확도 필터링
+     if accuracy > 50 {
+     print("⚠️ GPS 신호 약함. 위치 부정확할 수 있음")
+     // 이 데이터 포인트 무시 또는 표시 방법 변경
+     }
 
-         // 지도에 정확도 원 표시
-         let circle = MKCircle(center: point.coordinate, radius: accuracy)
-         mapView.addOverlay(circle)
+     // 지도에 정확도 원 표시
+     let circle = MKCircle(center: point.coordinate, radius: accuracy)
+     mapView.addOverlay(circle)
      }
 
      // 정확한 포인트만 필터링
      let accuratePoints = allPoints.filter {
-         guard let acc = $0.horizontalAccuracy else { return false }
-         return acc < 20  // 20m 이내만
+     guard let acc = $0.horizontalAccuracy else { return false }
+     return acc < 20  // 20m 이내만
      }
      ```
 
@@ -545,23 +545,23 @@ struct GPSPoint: Codable, Equatable, Hashable {
      사용 예시:
      ```swift
      if let satellites = point.satelliteCount {
-         print("사용 중인 위성: \(satellites)개")
+     print("사용 중인 위성: \(satellites)개")
 
-         // 신호 강도 표시
-         let signalBars: Int
-         switch satellites {
-         case 0..<4: signalBars = 1  // 약함
-         case 4..<6: signalBars = 2  // 보통
-         case 6..<8: signalBars = 3  // 좋음
-         case 8...: signalBars = 4   // 매우 좋음
-         default: signalBars = 0
-         }
-         print("신호: \(String(repeating: "█", count: signalBars))")
+     // 신호 강도 표시
+     let signalBars: Int
+     switch satellites {
+     case 0..<4: signalBars = 1  // 약함
+     case 4..<6: signalBars = 2  // 보통
+     case 6..<8: signalBars = 3  // 좋음
+     case 8...: signalBars = 4   // 매우 좋음
+     default: signalBars = 0
+     }
+     print("신호: \(String(repeating: "█", count: signalBars))")
 
-         // 터널 진입 감지
-         if satellites < 4 {
-             print("⚠️ GPS 신호 약함 (터널/지하일 수 있음)")
-         }
+     // 터널 진입 감지
+     if satellites < 4 {
+     print("⚠️ GPS 신호 약함 (터널/지하일 수 있음)")
+     }
      }
      ```
 
@@ -604,33 +604,33 @@ struct GPSPoint: Codable, Equatable, Hashable {
      ```swift
      // 최소 정보만 (위도/경도)
      let point1 = GPSPoint(
-         timestamp: Date(),
-         latitude: 37.5665,
-         longitude: 126.9780
+     timestamp: Date(),
+     latitude: 37.5665,
+     longitude: 126.9780
      )
 
      // 전체 정보 포함
      let point2 = GPSPoint(
-         timestamp: Date(),
-         latitude: 37.5665,
-         longitude: 126.9780,
-         altitude: 15.0,
-         speed: 45.0,
-         heading: 90.0,
-         horizontalAccuracy: 5.0,
-         satelliteCount: 8
+     timestamp: Date(),
+     latitude: 37.5665,
+     longitude: 126.9780,
+     altitude: 15.0,
+     speed: 45.0,
+     heading: 90.0,
+     horizontalAccuracy: 5.0,
+     satelliteCount: 8
      )
 
      // 파싱 중 생성 (NMEA 데이터에서)
      let point3 = GPSPoint(
-         timestamp: baseDate.addingTimeInterval(timeOffset),
-         latitude: parsedLat,
-         longitude: parsedLon,
-         altitude: gpgga?.altitude,  // GPGGA에만 있음
-         speed: gprmc?.speed,  // GPRMC에만 있음
-         heading: gprmc?.heading,
-         horizontalAccuracy: gpgga?.horizontalAccuracy,
-         satelliteCount: gpgga?.satelliteCount
+     timestamp: baseDate.addingTimeInterval(timeOffset),
+     latitude: parsedLat,
+     longitude: parsedLon,
+     altitude: gpgga?.altitude,  // GPGGA에만 있음
+     speed: gprmc?.speed,  // GPRMC에만 있음
+     heading: gprmc?.heading,
+     horizontalAccuracy: gpgga?.horizontalAccuracy,
+     satelliteCount: gpgga?.satelliteCount
      )
      ```
 
@@ -703,8 +703,8 @@ struct GPSPoint: Codable, Equatable, Hashable {
      타입 정의:
      ```swift
      struct CLLocationCoordinate2D {
-         var latitude: CLLocationDegrees  // Double의 typealias
-         var longitude: CLLocationDegrees
+     var latitude: CLLocationDegrees  // Double의 typealias
+     var longitude: CLLocationDegrees
      }
      ```
      */
@@ -742,17 +742,17 @@ struct GPSPoint: Codable, Equatable, Hashable {
 
      // 위치 업데이트 시뮬레이션 (테스트용)
      locationManager.delegate?.locationManager?(
-         locationManager,
-         didUpdateLocations: [location]
+     locationManager,
+     didUpdateLocations: [location]
      )
 
      // 지오코딩 (주소 변환)
      let geocoder = CLGeocoder()
      geocoder.reverseGeocodeLocation(location) { placemarks, error in
-         if let placemark = placemarks?.first {
-             print("주소: \(placemark.name ?? "")")
-             print("도시: \(placemark.locality ?? "")")
-         }
+     if let placemark = placemarks?.first {
+     print("주소: \(placemark.name ?? "")")
+     print("도시: \(placemark.locality ?? "")")
+     }
      }
      ```
 
@@ -794,17 +794,17 @@ struct GPSPoint: Codable, Equatable, Hashable {
      ```swift
      // 1. 실시간 위치 추적
      func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
-         guard let location = locations.last else { return }
+     guard let location = locations.last else { return }
 
-         let point = GPSPoint.from(location)
-         self.gpsPoints.append(point)
-         print("현재 위치: \(point.decimalString)")
+     let point = GPSPoint.from(location)
+     self.gpsPoints.append(point)
+     print("현재 위치: \(point.decimalString)")
      }
 
      // 2. 시뮬레이션 데이터 생성
      let simulatedLocation = CLLocation(
-         latitude: 37.5665,
-         longitude: 126.9780
+     latitude: 37.5665,
+     longitude: 126.9780
      )
      let point = GPSPoint.from(simulatedLocation)
 
@@ -866,22 +866,22 @@ struct GPSPoint: Codable, Equatable, Hashable {
 
      // 유효성 검사 후 처리
      for point in points {
-         guard point.isValid else {
-             print("⚠️ 유효하지 않은 GPS 데이터: \(point)")
-             continue
-         }
+     guard point.isValid else {
+     print("⚠️ 유효하지 않은 GPS 데이터: \(point)")
+     continue
+     }
 
-         // 지도에 표시
-         addAnnotation(for: point)
+     // 지도에 표시
+     addAnnotation(for: point)
      }
 
      // 유효하지 않은 데이터 로깅
      let invalidPoints = points.filter { !$0.isValid }
      if !invalidPoints.isEmpty {
-         print("⚠️ \(invalidPoints.count)개의 유효하지 않은 GPS 포인트 발견")
-         for point in invalidPoints {
-             print("  - Lat: \(point.latitude), Lon: \(point.longitude)")
-         }
+     print("⚠️ \(invalidPoints.count)개의 유효하지 않은 GPS 포인트 발견")
+     for point in invalidPoints {
+     print("  - Lat: \(point.latitude), Lon: \(point.longitude)")
+     }
      }
      ```
 
@@ -895,7 +895,7 @@ struct GPSPoint: Codable, Equatable, Hashable {
     /// @return 좌표가 유효 범위 내에 있으면 true
     var isValid: Bool {
         return latitude >= -90 && latitude <= 90 &&  // 위도 범위 확인
-               longitude >= -180 && longitude <= 180  // 경도 범위 확인
+            longitude >= -180 && longitude <= 180  // 경도 범위 확인
     }
 
     /*
@@ -924,34 +924,34 @@ struct GPSPoint: Codable, Equatable, Hashable {
 
      // UI 표시
      for point in allPoints {
-         let color: NSColor = point.hasStrongSignal ? .systemGreen : .systemRed
-         let annotation = ColoredAnnotation(coordinate: point.coordinate, color: color)
-         mapView.addAnnotation(annotation)
+     let color: NSColor = point.hasStrongSignal ? .systemGreen : .systemRed
+     let annotation = ColoredAnnotation(coordinate: point.coordinate, color: color)
+     mapView.addAnnotation(annotation)
      }
 
      // 경고 메시지
      if !point.hasStrongSignal {
-         statusLabel.stringValue = "⚠️ GPS 신호 약함"
-         statusLabel.textColor = .systemOrange
+     statusLabel.stringValue = "⚠️ GPS 신호 약함"
+     statusLabel.textColor = .systemOrange
 
-         // 신호 약한 이유 표시
-         var reasons: [String] = []
-         if let acc = point.horizontalAccuracy, acc > 50 {
-             reasons.append("정확도 낮음 (±\(Int(acc))m)")
-         }
-         if let sats = point.satelliteCount, sats < 4 {
-             reasons.append("위성 부족 (\(sats)개)")
-         }
-         print("신호 약한 이유: \(reasons.joined(separator: ", "))")
+     // 신호 약한 이유 표시
+     var reasons: [String] = []
+     if let acc = point.horizontalAccuracy, acc > 50 {
+     reasons.append("정확도 낮음 (±\(Int(acc))m)")
+     }
+     if let sats = point.satelliteCount, sats < 4 {
+     reasons.append("위성 부족 (\(sats)개)")
+     }
+     print("신호 약한 이유: \(reasons.joined(separator: ", "))")
      }
 
      // 터널 진입/이탈 감지
      if previousPoint.hasStrongSignal && !currentPoint.hasStrongSignal {
-         print("터널 진입 감지")
-         tunnelEntered = true
+     print("터널 진입 감지")
+     tunnelEntered = true
      } else if !previousPoint.hasStrongSignal && currentPoint.hasStrongSignal {
-         print("터널 이탈 감지")
-         tunnelEntered = false
+     print("터널 이탈 감지")
+     tunnelEntered = false
      }
      ```
 
@@ -1014,15 +1014,15 @@ struct GPSPoint: Codable, Equatable, Hashable {
      // 경로 총 거리 계산
      var totalDistance = 0.0
      for i in 0..<(gpsPoints.count - 1) {
-         let current = gpsPoints[i]
-         let next = gpsPoints[i + 1]
-         totalDistance += current.distance(to: next)
+     let current = gpsPoints[i]
+     let next = gpsPoints[i + 1]
+     totalDistance += current.distance(to: next)
      }
      print("총 이동 거리: \(Int(totalDistance / 1000))km")
 
      // 근처 포인트 찾기
      let nearbyPoints = allPoints.filter { point in
-         point.distance(to: currentPoint) < 100  // 100m 이내
+     point.distance(to: currentPoint) < 100  // 100m 이내
      }
 
      // 속도 검증
@@ -1030,10 +1030,10 @@ struct GPSPoint: Codable, Equatable, Hashable {
      let distance = current.distance(to: next)
      let calculatedSpeed = (distance / timeDiff) * 3.6  // m/s → km/h
      if let gpsSpeed = next.speed {
-         let speedDiff = abs(calculatedSpeed - gpsSpeed)
-         if speedDiff > 10 {
-             print("⚠️ 속도 불일치: GPS=\(gpsSpeed), 계산=\(calculatedSpeed)")
-         }
+     let speedDiff = abs(calculatedSpeed - gpsSpeed)
+     if speedDiff > 10 {
+     print("⚠️ 속도 불일치: GPS=\(gpsSpeed), 계산=\(calculatedSpeed)")
+     }
      }
      ```
 
@@ -1091,17 +1091,17 @@ struct GPSPoint: Codable, Equatable, Hashable {
 
      // 방향 문자열 변환
      func directionString(from bearing: Double) -> String {
-         switch bearing {
-         case 0..<22.5, 337.5...360: return "북"
-         case 22.5..<67.5: return "북동"
-         case 67.5..<112.5: return "동"
-         case 112.5..<157.5: return "남동"
-         case 157.5..<202.5: return "남"
-         case 202.5..<247.5: return "남서"
-         case 247.5..<292.5: return "서"
-         case 292.5..<337.5: return "북서"
-         default: return "?"
-         }
+     switch bearing {
+     case 0..<22.5, 337.5...360: return "북"
+     case 22.5..<67.5: return "북동"
+     case 67.5..<112.5: return "동"
+     case 112.5..<157.5: return "남동"
+     case 157.5..<202.5: return "남"
+     case 202.5..<247.5: return "남서"
+     case 247.5..<292.5: return "서"
+     case 292.5..<337.5: return "북서"
+     default: return "?"
+     }
      }
      print("방향: \(directionString(from: bearing))")
 
@@ -1111,22 +1111,22 @@ struct GPSPoint: Codable, Equatable, Hashable {
 
      // 경로 편차 확인 (내비게이션)
      if let currentHeading = current.heading {
-         let deviation = bearing - currentHeading
-         if abs(deviation) > 15 {
-             print("경로 이탈! 방향 수정 필요: \(Int(deviation))°")
-         }
+     let deviation = bearing - currentHeading
+     if abs(deviation) > 15 {
+     print("경로 이탈! 방향 수정 필요: \(Int(deviation))°")
+     }
      }
 
      // 회전 방향 안내
      if let currentHeading = current.heading {
-         let turnAngle = bearing - currentHeading
-         if turnAngle > 10 {
-             print("우회전 권장")
-         } else if turnAngle < -10 {
-             print("좌회전 권장")
-         } else {
-             print("직진")
-         }
+     let turnAngle = bearing - currentHeading
+     if turnAngle > 10 {
+     print("우회전 권장")
+     } else if turnAngle < -10 {
+     print("좌회전 권장")
+     } else {
+     print("직진")
+     }
      }
      ```
 
@@ -1290,9 +1290,9 @@ struct GPSPoint: Codable, Equatable, Hashable {
 
      // 속도 표시
      if let speedStr = point.speedString {
-         speedLabel.stringValue = speedStr
+     speedLabel.stringValue = speedStr
      } else {
-         speedLabel.stringValue = "속도 정보 없음"
+     speedLabel.stringValue = "속도 정보 없음"
      }
 
      // nil 병합 연산자 사용
@@ -1300,9 +1300,9 @@ struct GPSPoint: Codable, Equatable, Hashable {
 
      // 여러 포인트의 속도 출력
      for point in gpsPoints {
-         if let speedStr = point.speedString {
-             print("\(point.timestamp): \(speedStr)")
-         }
+     if let speedStr = point.speedString {
+     print("\(point.timestamp): \(speedStr)")
+     }
      }
      ```
      */
@@ -1331,16 +1331,16 @@ struct GPSPoint: Codable, Equatable, Hashable {
      입력: 37.5665
 
      1. 도 (Degrees):
-        Int(37.5665) = 37
+     Int(37.5665) = 37
 
      2. 분의 십진법:
-        (37.5665 - 37.0) × 60 = 0.5665 × 60 = 33.99
+     (37.5665 - 37.0) × 60 = 0.5665 × 60 = 33.99
 
      3. 분 (Minutes):
-        Int(33.99) = 33
+     Int(33.99) = 33
 
      4. 초 (Seconds):
-        (33.99 - 33.0) × 60 = 0.99 × 60 = 59.4
+     (33.99 - 33.0) × 60 = 0.99 × 60 = 59.4
 
      출력: "37°33'59.4\""
      ```
@@ -1388,21 +1388,21 @@ struct GPSPoint: Codable, Equatable, Hashable {
  ```swift
  // SwiftUI List
  List(gpsPoints) { point in
-     HStack {
-         Text(point.decimalString)
-         Spacer()
-         if let speed = point.speedString {
-             Text(speed)
-         }
-     }
+ HStack {
+ Text(point.decimalString)
+ Spacer()
+ if let speed = point.speedString {
+ Text(speed)
+ }
+ }
  }
  // id 지정 불필요 (Identifiable 프로토콜로 자동 처리)
 
  // ForEach
  ForEach(gpsPoints) { point in
-     MapAnnotation(coordinate: point.coordinate) {
-         Image(systemName: "mappin")
-     }
+ MapAnnotation(coordinate: point.coordinate) {
+ Image(systemName: "mappin")
+ }
  }
 
  // 수동 id 지정 (Identifiable 없을 때)
@@ -1413,7 +1413,7 @@ struct GPSPoint: Codable, Equatable, Hashable {
  ```swift
  // Identifiable 사용 (권장)
  struct GPSPoint: Identifiable {
-     var id: Date { timestamp }
+ var id: Date { timestamp }
  }
  List(points) { point in ... }
 
@@ -1461,21 +1461,21 @@ extension GPSPoint {
      ```swift
      // 단위 테스트
      func testDistanceCalculation() {
-         let point1 = GPSPoint.sample
-         let point2 = GPSPoint(
-             timestamp: Date(),
-             latitude: 37.5667,
-             longitude: 126.9782
-         )
-         let distance = point1.distance(to: point2)
-         XCTAssertEqual(distance, 25, accuracy: 5)  // 약 25m ±5m
+     let point1 = GPSPoint.sample
+     let point2 = GPSPoint(
+     timestamp: Date(),
+     latitude: 37.5667,
+     longitude: 126.9782
+     )
+     let distance = point1.distance(to: point2)
+     XCTAssertEqual(distance, 25, accuracy: 5)  // 약 25m ±5m
      }
 
      // SwiftUI 프리뷰
      struct MapView_Previews: PreviewProvider {
-         static var previews: some View {
-             MapView(location: GPSPoint.sample)
-         }
+     static var previews: some View {
+     MapView(location: GPSPoint.sample)
+     }
      }
 
      // 개발 테스트
@@ -1516,13 +1516,13 @@ extension GPSPoint {
      ```swift
      // 경로 테스트
      func testRouteDistance() {
-         var totalDistance = 0.0
-         for i in 0..<(GPSPoint.sampleRoute.count - 1) {
-             let current = GPSPoint.sampleRoute[i]
-             let next = GPSPoint.sampleRoute[i + 1]
-             totalDistance += current.distance(to: next)
-         }
-         XCTAssertGreaterThan(totalDistance, 100)
+     var totalDistance = 0.0
+     for i in 0..<(GPSPoint.sampleRoute.count - 1) {
+     let current = GPSPoint.sampleRoute[i]
+     let next = GPSPoint.sampleRoute[i + 1]
+     totalDistance += current.distance(to: next)
+     }
+     XCTAssertGreaterThan(totalDistance, 100)
      }
 
      // 지도에 경로 그리기
@@ -1532,22 +1532,22 @@ extension GPSPoint {
 
      // SwiftUI List 프리뷰
      struct GPSListView_Previews: PreviewProvider {
-         static var previews: some View {
-             List(GPSPoint.sampleRoute) { point in
-                 HStack {
-                     Text(point.decimalString)
-                     Spacer()
-                     Text(point.speedString ?? "N/A")
-                 }
-             }
-         }
+     static var previews: some View {
+     List(GPSPoint.sampleRoute) { point in
+     HStack {
+     Text(point.decimalString)
+     Spacer()
+     Text(point.speedString ?? "N/A")
+     }
+     }
+     }
      }
 
      // 애니메이션 시뮬레이션
      for (index, point) in GPSPoint.sampleRoute.enumerated() {
-         DispatchQueue.main.asyncAfter(deadline: .now() + Double(index)) {
-             mapView.centerCoordinate = point.coordinate
-         }
+     DispatchQueue.main.asyncAfter(deadline: .now() + Double(index)) {
+     mapView.centerCoordinate = point.coordinate
+     }
      }
      ```
 

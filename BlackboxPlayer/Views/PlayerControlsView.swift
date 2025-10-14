@@ -1444,10 +1444,10 @@ struct PlayerControlsView: View {
                     switch result {
                     case .success(let url):
                         print("Export completed: \(url)")
-                        // TODO: 성공 알림 표시
+                    // TODO: 성공 알림 표시
                     case .failure(let error):
                         print("Export failed: \(error.localizedDescription)")
-                        // TODO: 에러 알림 표시
+                    // TODO: 에러 알림 표시
                     }
                 }
             }

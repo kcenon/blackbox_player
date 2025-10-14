@@ -322,7 +322,7 @@ struct FileListView: View {
     ///      ↓
     /// filteredFiles에서 eventType == .event인 파일만 필터링
     /// ```
-    @State private var selectedEventType: EventType? = nil
+    @State private var selectedEventType: EventType?
 
     /// 검색어와 이벤트 타입으로 필터링된 파일 배열 (Computed Property)
     ///
@@ -411,7 +411,7 @@ struct FileListView: View {
         if !searchText.isEmpty {
             files = files.filter { file in
                 file.baseFilename.localizedCaseInsensitiveContains(searchText) ||
-                file.timestampString.localizedCaseInsensitiveContains(searchText)
+                    file.timestampString.localizedCaseInsensitiveContains(searchText)
             }
         }
 
@@ -882,7 +882,7 @@ struct FilterButton: View {
     /// ## 값이 있을 때 (예: .red)
     /// - 선택됨: .red 배경 + 흰색 텍스트
     /// - 비선택: .red 텍스트 + 회색 배경
-    var color: Color? = nil
+    var color: Color?
 
     /// 선택 상태 여부
     ///

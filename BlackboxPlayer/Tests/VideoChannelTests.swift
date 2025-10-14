@@ -1613,7 +1613,7 @@ final class VideoChannelTests: XCTestCase {
          * @section __________ ⚠️ 에러 발생 안 하면
          * 테스트 실패 (파일 검증 누락)
          */
-        XCTAssertThrowsError(try channel.initialize()) { error in
+        XCTAssertThrowsError(try channel.initialize()) { _ in
             /**
              * 발생한 에러 타입 확인
              */

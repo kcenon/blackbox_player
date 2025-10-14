@@ -229,4 +229,3 @@ extension Notification.Name {
     /// **구독자:** ContentView
     static let showHelpRequested = Notification.Name("showHelpRequested")
 }
-

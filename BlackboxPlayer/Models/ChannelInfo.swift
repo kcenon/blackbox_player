@@ -21,71 +21,71 @@ import Foundation
  채널은 블랙박스의 각 카메라를 의미합니다.
 
  멀티 채널 블랙박스 구성 예시:
-   - 1채널: 전방 카메라만 (기본)
-   - 2채널: 전방 + 후방 (가장 일반적)
-   - 3채널: 전방 + 후방 + 실내
-   - 4채널: 전방 + 후방 + 좌측 + 우측
-   - 5채널: 전방 + 후방 + 좌측 + 우측 + 실내 (고급형)
+ - 1채널: 전방 카메라만 (기본)
+ - 2채널: 전방 + 후방 (가장 일반적)
+ - 3채널: 전방 + 후방 + 실내
+ - 4채널: 전방 + 후방 + 좌측 + 우측
+ - 5채널: 전방 + 후방 + 좌측 + 우측 + 실내 (고급형)
 
  각 채널은 독립적인 비디오 파일로 녹화됩니다:
-   2025_01_10_09_00_00_F.mp4  ← 전방(Front) 채널
-   2025_01_10_09_00_00_R.mp4  ← 후방(Rear) 채널
-   2025_01_10_09_00_00_I.mp4  ← 실내(Interior) 채널
+ 2025_01_10_09_00_00_F.mp4  ← 전방(Front) 채널
+ 2025_01_10_09_00_00_R.mp4  ← 후방(Rear) 채널
+ 2025_01_10_09_00_00_I.mp4  ← 실내(Interior) 채널
 
  【비디오 해상도(Resolution)】
 
  해상도는 영상의 픽셀 수를 나타냅니다.
 
  해상도 표기:
-   너비(Width) × 높이(Height)
-   예: 1920 × 1080 (Full HD)
+ 너비(Width) × 높이(Height)
+ 예: 1920 × 1080 (Full HD)
 
  일반적인 해상도 등급:
 
-   4K UHD:    3840 × 2160  (829만 픽셀) ★★★★★ 최고급
-   2K QHD:    2560 × 1440  (369만 픽셀) ★★★★ 고급
-   Full HD:   1920 × 1080  (207만 픽셀) ★★★ 일반
-   HD:        1280 × 720   (92만 픽셀)  ★★ 보급형
-   SD:         640 × 480   (31만 픽셀)  ★ 구형
+ 4K UHD:    3840 × 2160  (829만 픽셀) ★★★★★ 최고급
+ 2K QHD:    2560 × 1440  (369만 픽셀) ★★★★ 고급
+ Full HD:   1920 × 1080  (207만 픽셀) ★★★ 일반
+ HD:        1280 × 720   (92만 픽셀)  ★★ 보급형
+ SD:         640 × 480   (31만 픽셀)  ★ 구형
 
  비교:
-   ┌──────────────────────────────────┐
-   │                                  │  4K (3840×2160)
-   │                                  │
-   │      ┌──────────────────┐        │
-   │      │                  │        │  Full HD (1920×1080)
-   │      │    ┌──────┐      │        │
-   │      │    │      │      │        │  HD (1280×720)
-   │      │    └──────┘      │        │
-   │      └──────────────────┘        │
-   └──────────────────────────────────┘
+ ┌──────────────────────────────────┐
+ │                                  │  4K (3840×2160)
+ │                                  │
+ │      ┌──────────────────┐        │
+ │      │                  │        │  Full HD (1920×1080)
+ │      │    ┌──────┐      │        │
+ │      │    │      │      │        │  HD (1280×720)
+ │      │    └──────┘      │        │
+ │      └──────────────────┘        │
+ └──────────────────────────────────┘
 
  해상도가 높을수록:
-   - 더 선명한 영상
-   - 더 큰 파일 크기
-   - 더 많은 저장 공간 필요
-   - 더 높은 처리 성능 요구
+ - 더 선명한 영상
+ - 더 큰 파일 크기
+ - 더 많은 저장 공간 필요
+ - 더 높은 처리 성능 요구
 
  【화면 비율(Aspect Ratio)】
 
  화면 비율은 가로와 세로의 비율입니다.
 
  일반적인 비율:
-   16:9  - 와이드스크린 (일반 블랙박스, TV, 모니터)
-   4:3   - 구형 비율 (오래된 블랙박스, 구형 TV)
-   21:9  - 울트라 와이드 (영화관, 고급 모니터)
+ 16:9  - 와이드스크린 (일반 블랙박스, TV, 모니터)
+ 4:3   - 구형 비율 (오래된 블랙박스, 구형 TV)
+ 21:9  - 울트라 와이드 (영화관, 고급 모니터)
 
  비율 비교:
-   16:9  ▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬  (와이드)
-         ▬▬▬▬▬▬▬▬▬▬▬
+ 16:9  ▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬  (와이드)
+ ▬▬▬▬▬▬▬▬▬▬▬
 
-   4:3   ▬▬▬▬▬▬▬▬▬▬▬▬      (정사각형에 가까움)
-         ▬▬▬▬▬▬▬▬▬
+ 4:3   ▬▬▬▬▬▬▬▬▬▬▬▬      (정사각형에 가까움)
+ ▬▬▬▬▬▬▬▬▬
 
  계산 예시:
-   1920 ÷ 1080 = 1.777... ≈ 16/9 = 1.777...
-   1280 ÷ 720  = 1.777... ≈ 16/9
-   1024 ÷ 768  = 1.333... ≈ 4/3 = 1.333...
+ 1920 ÷ 1080 = 1.777... ≈ 16/9 = 1.777...
+ 1280 ÷ 720  = 1.777... ≈ 16/9
+ 1024 ÷ 768  = 1.333... ≈ 4/3 = 1.333...
 
  【프레임 레이트(Frame Rate)】
 
@@ -93,24 +93,24 @@ import Foundation
  단위: fps (frames per second, 초당 프레임)
 
  일반적인 프레임 레이트:
-   60 fps  - 매우 부드러운 영상 (고급 블랙박스, 게임, 슬로우모션)
-   30 fps  - 일반 영상 (대부분의 블랙박스, 유튜브)
-   24 fps  - 영화 표준
-   15 fps  - 저성능 모드 (주차 모드)
+ 60 fps  - 매우 부드러운 영상 (고급 블랙박스, 게임, 슬로우모션)
+ 30 fps  - 일반 영상 (대부분의 블랙박스, 유튜브)
+ 24 fps  - 영화 표준
+ 15 fps  - 저성능 모드 (주차 모드)
 
  프레임 레이트와 부드러움:
-   15 fps:  ●   ●   ●   ●      (뚝뚝 끊김)
-   30 fps:  ●●  ●●  ●●  ●●     (자연스러움)
-   60 fps:  ●●●●●●●●●●●●●●●● (매우 부드러움)
+ 15 fps:  ●   ●   ●   ●      (뚝뚝 끊김)
+ 30 fps:  ●●  ●●  ●●  ●●     (자연스러움)
+ 60 fps:  ●●●●●●●●●●●●●●●● (매우 부드러움)
 
  높은 프레임 레이트의 장점:
-   - 더 부드러운 영상
-   - 빠른 움직임 포착 (사고 순간 포착)
-   - 슬로우모션 가능
+ - 더 부드러운 영상
+ - 빠른 움직임 포착 (사고 순간 포착)
+ - 슬로우모션 가능
 
  단점:
-   - 더 큰 파일 크기
-   - 더 많은 처리 성능 필요
+ - 더 큰 파일 크기
+ - 더 많은 처리 성능 필요
 
  【비트레이트(Bitrate)】
 
@@ -118,31 +118,31 @@ import Foundation
  단위: bps (bits per second, 초당 비트)
 
  단위 변환:
-   1 Kbps = 1,000 bps
-   1 Mbps = 1,000,000 bps = 1,000 Kbps
+ 1 Kbps = 1,000 bps
+ 1 Mbps = 1,000,000 bps = 1,000 Kbps
 
  일반적인 비트레이트:
 
-   Full HD (1920×1080):
-     - 저품질:  4 Mbps
-     - 일반:    8 Mbps  ← 대부분의 블랙박스
-     - 고품질: 12 Mbps
+ Full HD (1920×1080):
+ - 저품질:  4 Mbps
+ - 일반:    8 Mbps  ← 대부분의 블랙박스
+ - 고품질: 12 Mbps
 
-   4K (3840×2160):
-     - 저품질: 16 Mbps
-     - 일반:   24 Mbps
-     - 고품질: 40 Mbps
+ 4K (3840×2160):
+ - 저품질: 16 Mbps
+ - 일반:   24 Mbps
+ - 고품질: 40 Mbps
 
  비트레이트와 화질:
-   낮은 비트레이트 (4 Mbps):
-     - 압축 많음 → 화질 저하
-     - 작은 파일 크기
-     - 저장 공간 절약
+ 낮은 비트레이트 (4 Mbps):
+ - 압축 많음 → 화질 저하
+ - 작은 파일 크기
+ - 저장 공간 절약
 
-   높은 비트레이트 (12 Mbps):
-     - 압축 적음 → 선명한 화질
-     - 큰 파일 크기
-     - 더 많은 저장 공간 필요
+ 높은 비트레이트 (12 Mbps):
+ - 압축 적음 → 선명한 화질
+ - 큰 파일 크기
+ - 더 많은 저장 공간 필요
 
  【비디오 코덱(Video Codec)】
 
@@ -151,66 +151,66 @@ import Foundation
 
  일반적인 비디오 코덱:
 
-   H.264 (AVC):
-     - 가장 널리 사용
-     - 호환성 최고
-     - 적당한 압축률
-     - 대부분의 블랙박스 사용
+ H.264 (AVC):
+ - 가장 널리 사용
+ - 호환성 최고
+ - 적당한 압축률
+ - 대부분의 블랙박스 사용
 
-   H.265 (HEVC):
-     - H.264보다 2배 효율적인 압축
-     - 같은 화질에 파일 크기 절반
-     - 최신 블랙박스 사용
-     - 일부 구형 기기에서 재생 안 될 수 있음
+ H.265 (HEVC):
+ - H.264보다 2배 효율적인 압축
+ - 같은 화질에 파일 크기 절반
+ - 최신 블랙박스 사용
+ - 일부 구형 기기에서 재생 안 될 수 있음
 
  압축률 비교 (같은 화질 기준):
-   H.264: ████████ (8 MB)
-   H.265: ████     (4 MB) ← 50% 작음
+ H.264: ████████ (8 MB)
+ H.265: ████     (4 MB) ← 50% 작음
 
  【오디오 코덱(Audio Codec)】
 
  오디오 압축 기술입니다.
 
-   AAC:
-     - 고음질 압축
-     - Apple 기기 최적화
-     - 최신 블랙박스 사용
+ AAC:
+ - 고음질 압축
+ - Apple 기기 최적화
+ - 최신 블랙박스 사용
 
-   MP3:
-     - 범용 코덱
-     - 호환성 최고
-     - 구형 블랙박스 사용
+ MP3:
+ - 범용 코덱
+ - 호환성 최고
+ - 구형 블랙박스 사용
 
  【파일 크기 계산 예시】
 
  Full HD, 30 fps, 8 Mbps, 1분 녹화:
-   8 Mbps = 8,000,000 bits/초
-          = 1,000,000 bytes/초 (8 bits = 1 byte)
-          = 1 MB/초
+ 8 Mbps = 8,000,000 bits/초
+ = 1,000,000 bytes/초 (8 bits = 1 byte)
+ = 1 MB/초
 
-   1분 = 60초
-   파일 크기 = 1 MB/초 × 60초 = 60 MB
+ 1분 = 60초
+ 파일 크기 = 1 MB/초 × 60초 = 60 MB
 
  1시간 녹화:
-   60 MB/분 × 60분 = 3,600 MB = 3.6 GB
+ 60 MB/분 × 60분 = 3,600 MB = 3.6 GB
 
  32GB SD 카드 녹화 시간:
-   32 GB ÷ 3.6 GB/시간 ≈ 8.9시간
+ 32 GB ÷ 3.6 GB/시간 ≈ 8.9시간
 
  【ChannelInfo 사용 예시】
 
  ```swift
  // 전방 카메라 Full HD 채널
  let frontChannel = ChannelInfo(
-     position: .front,
-     filePath: "normal/2025_01_10_09_00_00_F.mp4",
-     width: 1920,
-     height: 1080,
-     frameRate: 30.0,
-     bitrate: 8_000_000,  // 8 Mbps
-     codec: "h264",
-     audioCodec: "mp3",
-     fileSize: 100_000_000  // 100 MB
+ position: .front,
+ filePath: "normal/2025_01_10_09_00_00_F.mp4",
+ width: 1920,
+ height: 1080,
+ frameRate: 30.0,
+ bitrate: 8_000_000,  // 8 Mbps
+ codec: "h264",
+ audioCodec: "mp3",
+ fileSize: 100_000_000  // 100 MB
  )
 
  // 채널 정보 표시
@@ -846,15 +846,15 @@ struct ChannelInfo: Codable, Equatable, Identifiable, Hashable {
     var aspectRatioString: String {
         let ratio = aspectRatio
         // 16:9 체크 (1.777...)
-        if abs(ratio - 16.0/9.0) < 0.01 {
+        if abs(ratio - 16.0 / 9.0) < 0.01 {
             return "16:9"
-        // 4:3 체크 (1.333...)
-        } else if abs(ratio - 4.0/3.0) < 0.01 {
+            // 4:3 체크 (1.333...)
+        } else if abs(ratio - 4.0 / 3.0) < 0.01 {
             return "4:3"
-        // 21:9 체크 (2.333...)
-        } else if abs(ratio - 21.0/9.0) < 0.01 {
+            // 21:9 체크 (2.333...)
+        } else if abs(ratio - 21.0 / 9.0) < 0.01 {
             return "21:9"
-        // 기타: "1.78:1" 형식
+            // 기타: "1.78:1" 형식
         } else {
             return String(format: "%.2f:1", ratio)
         }
@@ -961,7 +961,7 @@ struct ChannelInfo: Codable, Equatable, Identifiable, Hashable {
         // 1 Mbps 이상: Mbps 단위로 표시
         if mbps >= 1.0 {
             return String(format: "%.1f Mbps", mbps)
-        // 1 Mbps 미만: Kbps 단위로 표시
+            // 1 Mbps 미만: Kbps 단위로 표시
         } else {
             let kbps = Double(bitrate) / 1000
             return String(format: "%.0f Kbps", kbps)
@@ -1217,9 +1217,9 @@ struct ChannelInfo: Codable, Equatable, Identifiable, Hashable {
     /// ```
     var isValid: Bool {
         return width > 0 &&
-               height > 0 &&
-               frameRate > 0 &&
-               !filePath.isEmpty
+            height > 0 &&
+            frameRate > 0 &&
+            !filePath.isEmpty
     }
 }
 
@@ -1235,64 +1235,64 @@ struct ChannelInfo: Codable, Equatable, Identifiable, Hashable {
  【샘플 채널 구성】
 
  1. frontHD: 전방 카메라 (Full HD, 1920×1080, 30fps, 8 Mbps)
-    - 가장 일반적인 설정
-    - 오디오 포함 (MP3)
+ - 가장 일반적인 설정
+ - 오디오 포함 (MP3)
 
  2. rearHD: 후방 카메라 (HD, 1280×720, 30fps, 4 Mbps)
-    - 전방보다 낮은 해상도 (일반적)
-    - 오디오 없음
+ - 전방보다 낮은 해상도 (일반적)
+ - 오디오 없음
 
  3. leftHD: 좌측 카메라 (HD, 1280×720, 30fps, 4 Mbps)
-    - 4채널 이상 블랙박스
+ - 4채널 이상 블랙박스
 
  4. rightHD: 우측 카메라 (HD, 1280×720, 30fps, 4 Mbps)
-    - 4채널 이상 블랙박스
+ - 4채널 이상 블랙박스
 
  5. interiorHD: 실내 카메라 (HD, 1280×720, 30fps, 4 Mbps)
-    - 택시, 승차 공유용
+ - 택시, 승차 공유용
 
  【실제 블랙박스 해상도 구성 예시】
 
  2채널 일반형:
-   - 전방: Full HD (1920×1080)
-   - 후방: HD (1280×720)
+ - 전방: Full HD (1920×1080)
+ - 후방: HD (1280×720)
 
  2채널 고급형:
-   - 전방: 4K (3840×2160)
-   - 후방: Full HD (1920×1080)
+ - 전방: 4K (3840×2160)
+ - 후방: Full HD (1920×1080)
 
  4채널:
-   - 전방: Full HD (1920×1080)
-   - 후방/좌측/우측: HD (1280×720)
+ - 전방: Full HD (1920×1080)
+ - 후방/좌측/우측: HD (1280×720)
 
  【사용 예시】
 
  SwiftUI 프리뷰:
  ```swift
  struct ChannelView_Previews: PreviewProvider {
-     static var previews: some View {
-         Group {
-             ChannelView(channel: .frontHD)
-                 .previewDisplayName("Front Camera")
+ static var previews: some View {
+ Group {
+ ChannelView(channel: .frontHD)
+ .previewDisplayName("Front Camera")
 
-             ChannelView(channel: .rearHD)
-                 .previewDisplayName("Rear Camera")
-         }
-     }
+ ChannelView(channel: .rearHD)
+ .previewDisplayName("Rear Camera")
+ }
+ }
  }
  ```
 
  단위 테스트:
  ```swift
  func testChannelValidation() {
-     XCTAssertTrue(ChannelInfo.frontHD.isValid)
-     XCTAssertTrue(ChannelInfo.frontHD.isHighResolution)
-     XCTAssertTrue(ChannelInfo.frontHD.hasAudio)
+ XCTAssertTrue(ChannelInfo.frontHD.isValid)
+ XCTAssertTrue(ChannelInfo.frontHD.isHighResolution)
+ XCTAssertTrue(ChannelInfo.frontHD.hasAudio)
  }
 
  func testResolutionNames() {
-     XCTAssertEqual(ChannelInfo.frontHD.resolutionName, "Full HD")
-     XCTAssertEqual(ChannelInfo.rearHD.resolutionName, "HD")
+ XCTAssertEqual(ChannelInfo.frontHD.resolutionName, "Full HD")
+ XCTAssertEqual(ChannelInfo.rearHD.resolutionName, "HD")
  }
  ```
 

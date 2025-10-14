@@ -42,10 +42,10 @@
  메뉴 시스템을 구성합니다.
 
  📌 주요 역할:
-    1) 앱 시작점 정의 (@main 어노테이션)
-    2) 메인 윈도우 구성 (WindowGroup)
-    3) 메뉴 커스터마이징 (Commands)
-    4) 키보드 단축키 정의
+ 1) 앱 시작점 정의 (@main 어노테이션)
+ 2) 메인 윈도우 구성 (WindowGroup)
+ 3) 메뉴 커스터마이징 (Commands)
+ 4) 키보드 단축키 정의
 
 
  🚀 @main 어노테이션이란?
@@ -53,26 +53,26 @@
  Swift의 @main 어노테이션은 프로그램의 진입점(Entry Point)을 표시합니다.
 
  📌 기본 개념:
-    모든 실행 가능한 프로그램은 시작점이 필요합니다.
-    C/C++의 main() 함수처럼, Swift도 어디서 시작할지 지정해야 합니다.
+ 모든 실행 가능한 프로그램은 시작점이 필요합니다.
+ C/C++의 main() 함수처럼, Swift도 어디서 시작할지 지정해야 합니다.
 
  📌 @main의 역할:
-    • 이 타입을 앱의 시작점으로 지정
-    • 시스템이 앱을 실행하면 이 타입의 인스턴스를 생성
-    • App 프로토콜을 채택한 타입에만 사용 가능
-    • 프로젝트 전체에 단 하나만 존재해야 함
+ • 이 타입을 앱의 시작점으로 지정
+ • 시스템이 앱을 실행하면 이 타입의 인스턴스를 생성
+ • App 프로토콜을 채택한 타입에만 사용 가능
+ • 프로젝트 전체에 단 하나만 존재해야 함
 
  📌 UIKit과의 비교:
-    UIKit 시대 (복잡):
-    - AppDelegate.swift (앱 생명주기)
-    - SceneDelegate.swift (화면 생명주기)
-    - main.swift 또는 @UIApplicationMain
-    → 3개 파일로 분산된 구조
+ UIKit 시대 (복잡):
+ - AppDelegate.swift (앱 생명주기)
+ - SceneDelegate.swift (화면 생명주기)
+ - main.swift 또는 @UIApplicationMain
+ → 3개 파일로 분산된 구조
 
-    SwiftUI 시대 (단순):
-    - @main 어노테이션 하나로 통합
-    - 선언적(Declarative) 방식
-    → 1개 파일로 완결
+ SwiftUI 시대 (단순):
+ - @main 어노테이션 하나로 통합
+ - 선언적(Declarative) 방식
+ → 1개 파일로 완결
 
 
  📱 App 프로토콜이란?
@@ -80,28 +80,28 @@
  SwiftUI의 App 프로토콜은 앱의 구조와 동작을 정의합니다.
 
  📌 필수 요구사항:
-    protocol App {
-        associatedtype Body: Scene
-        var body: Self.Body { get }
-    }
+ protocol App {
+ associatedtype Body: Scene
+ var body: Self.Body { get }
+ }
 
-    • body 프로퍼티 구현 필수
-    • body는 Scene 타입을 반환 (View가 아님!)
-    • Scene은 앱의 UI 계층 구조를 나타냄
+ • body 프로퍼티 구현 필수
+ • body는 Scene 타입을 반환 (View가 아님!)
+ • Scene은 앱의 UI 계층 구조를 나타냄
 
  📌 App vs View:
-    App (최상위):
-    - 앱 전체의 구조 정의
-    - Scene들의 컨테이너
-    - 생명주기 관리
+ App (최상위):
+ - 앱 전체의 구조 정의
+ - Scene들의 컨테이너
+ - 생명주기 관리
 
-    Scene (중간):
-    - WindowGroup, DocumentGroup 등
-    - 플랫폼별 창/화면 단위
+ Scene (중간):
+ - WindowGroup, DocumentGroup 등
+ - 플랫폼별 창/화면 단위
 
-    View (하위):
-    - UI 컴포넌트
-    - Button, Text, ContentView 등
+ View (하위):
+ - UI 컴포넌트
+ - Button, Text, ContentView 등
 
 
  🪟 Scene과 WindowGroup이란?
@@ -109,28 +109,28 @@
  Scene은 앱의 사용자 인터페이스 인스턴스를 나타냅니다.
 
  📌 Scene의 종류:
-    1) WindowGroup
-       - 하나 이상의 윈도우를 관리
-       - macOS: 여러 윈도우 인스턴스 가능 (Cmd+N으로 새 윈도우)
-       - iOS/iPadOS: 멀티 윈도우 지원 (iPadOS)
+ 1) WindowGroup
+ - 하나 이상의 윈도우를 관리
+ - macOS: 여러 윈도우 인스턴스 가능 (Cmd+N으로 새 윈도우)
+ - iOS/iPadOS: 멀티 윈도우 지원 (iPadOS)
 
-    2) DocumentGroup
-       - 문서 기반 앱 (예: Pages, Keynote)
-       - 파일 시스템 통합
+ 2) DocumentGroup
+ - 문서 기반 앱 (예: Pages, Keynote)
+ - 파일 시스템 통합
 
-    3) Settings (macOS only)
-       - 설정 윈도우 전용
+ 3) Settings (macOS only)
+ - 설정 윈도우 전용
 
  📌 WindowGroup의 특징:
-    • 동일한 View 계층을 여러 윈도우로 표시
-    • macOS: Cmd+N으로 새 윈도우 생성 가능
-    • 각 윈도우는 독립적인 상태 유지 가능
-    • 자동으로 Window 메뉴 항목 추가
+ • 동일한 View 계층을 여러 윈도우로 표시
+ • macOS: Cmd+N으로 새 윈도우 생성 가능
+ • 각 윈도우는 독립적인 상태 유지 가능
+ • 자동으로 Window 메뉴 항목 추가
 
  📌 이 프로젝트의 WindowGroup:
-    WindowGroup { ContentView() }
-    → ContentView를 루트로 하는 윈도우 생성
-    → 사용자가 여러 블랙박스 영상을 동시에 볼 수 있도록 다중 윈도우 지원
+ WindowGroup { ContentView() }
+ → ContentView를 루트로 하는 윈도우 생성
+ → 사용자가 여러 블랙박스 영상을 동시에 볼 수 있도록 다중 윈도우 지원
 
 
  🎨 windowStyle Modifier란?
@@ -138,20 +138,20 @@
  windowStyle은 윈도우의 외형을 커스터마이징하는 modifier입니다.
 
  📌 .hiddenTitleBar:
-    • 타이틀 바(제목 표시줄)를 숨김
-    • 더 넓은 콘텐츠 영역 확보
-    • 현대적이고 미니멀한 디자인
-    • 닫기/최소화/최대화 버튼은 유지
+ • 타이틀 바(제목 표시줄)를 숨김
+ • 더 넓은 콘텐츠 영역 확보
+ • 현대적이고 미니멀한 디자인
+ • 닫기/최소화/최대화 버튼은 유지
 
  📌 다른 windowStyle 옵션:
-    • .automatic: 기본 스타일 (타이틀 바 표시)
-    • .titleBar: 명시적으로 타이틀 바 표시
-    • .hiddenTitleBar: 타이틀 바 숨김
+ • .automatic: 기본 스타일 (타이틀 바 표시)
+ • .titleBar: 명시적으로 타이틀 바 표시
+ • .hiddenTitleBar: 타이틀 바 숨김
 
  📌 왜 hiddenTitleBar를 사용하나요?
-    블랙박스 영상 플레이어는 영상 콘텐츠가 주요 초점이므로
-    타이틀 바를 숨겨 화면 공간을 최대한 활용합니다.
-    (YouTube, Netflix 같은 비디오 플레이어와 유사한 UX)
+ 블랙박스 영상 플레이어는 영상 콘텐츠가 주요 초점이므로
+ 타이틀 바를 숨겨 화면 공간을 최대한 활용합니다.
+ (YouTube, Netflix 같은 비디오 플레이어와 유사한 UX)
 
 
  ⌨️ Commands 시스템이란?
@@ -159,55 +159,55 @@
  Commands는 macOS 메뉴 바의 메뉴 항목을 커스터마이징하는 시스템입니다.
 
  📌 기본 개념:
-    SwiftUI는 기본 메뉴를 자동으로 생성하지만, Commands를 통해
-    메뉴를 추가/수정/대체할 수 있습니다.
+ SwiftUI는 기본 메뉴를 자동으로 생성하지만, Commands를 통해
+ 메뉴를 추가/수정/대체할 수 있습니다.
 
  📌 Commands의 종류:
 
-    1) CommandGroup(replacing:)
-       - 기존 메뉴 그룹을 완전히 대체
-       - .newItem, .appInfo 등 표준 그룹 대체 가능
+ 1) CommandGroup(replacing:)
+ - 기존 메뉴 그룹을 완전히 대체
+ - .newItem, .appInfo 등 표준 그룹 대체 가능
 
-    2) CommandGroup(after:) / CommandGroup(before:)
-       - 기존 메뉴 그룹 앞/뒤에 새 항목 추가
-       - .sidebar, .toolbar 등 기준점 지정
+ 2) CommandGroup(after:) / CommandGroup(before:)
+ - 기존 메뉴 그룹 앞/뒤에 새 항목 추가
+ - .sidebar, .toolbar 등 기준점 지정
 
-    3) CommandMenu("이름")
-       - 완전히 새로운 메뉴 생성
-       - 메뉴 바에 새 탭 추가
+ 3) CommandMenu("이름")
+ - 완전히 새로운 메뉴 생성
+ - 메뉴 바에 새 탭 추가
 
  📌 표준 CommandGroupPlacement:
-    • .newItem: File > New
-    • .saveItem: File > Save
-    • .sidebar: View > Sidebar 관련
-    • .toolbar: View > Toolbar 관련
-    • .appInfo: App > About
+ • .newItem: File > New
+ • .saveItem: File > Save
+ • .sidebar: View > Sidebar 관련
+ • .toolbar: View > Toolbar 관련
+ • .appInfo: App > About
 
 
  🎮 이 프로젝트의 메뉴 구조
  ════════════════════════════════════════════════════════════════════════════════
 
  1. File 메뉴 (CommandGroup replacing .newItem)
-    - Open Folder... (⌘O): 블랙박스 영상 폴더 열기
-    - Refresh File List (⌘R): 파일 목록 새로고침
+ - Open Folder... (⌘O): 블랙박스 영상 폴더 열기
+ - Refresh File List (⌘R): 파일 목록 새로고침
 
  2. View 메뉴 (CommandGroup after .sidebar)
-    - Toggle Sidebar (⌥⌘S): 사이드바 표시/숨김
-    - Toggle Metadata Overlay (⌘1): 메타데이터 오버레이
-    - Toggle Map Overlay (⌘2): GPS 지도 오버레이
-    - Toggle Graph Overlay (⌘3): G-센서 그래프 오버레이
+ - Toggle Sidebar (⌥⌘S): 사이드바 표시/숨김
+ - Toggle Metadata Overlay (⌘1): 메타데이터 오버레이
+ - Toggle Map Overlay (⌘2): GPS 지도 오버레이
+ - Toggle Graph Overlay (⌘3): G-센서 그래프 오버레이
 
  3. Playback 메뉴 (새로운 CommandMenu)
-    - Play/Pause (Space): 재생/일시정지
-    - Step Forward (⌘→): 프레임 단위 앞으로
-    - Step Backward (⌘←): 프레임 단위 뒤로
-    - Increase Speed (⌘]): 재생 속도 증가
-    - Decrease Speed (⌘[): 재생 속도 감소
-    - Normal Speed (⌘0): 정상 속도로 복귀
+ - Play/Pause (Space): 재생/일시정지
+ - Step Forward (⌘→): 프레임 단위 앞으로
+ - Step Backward (⌘←): 프레임 단위 뒤로
+ - Increase Speed (⌘]): 재생 속도 증가
+ - Decrease Speed (⌘[): 재생 속도 감소
+ - Normal Speed (⌘0): 정상 속도로 복귀
 
  4. Help 메뉴 (CommandGroup replacing .appInfo)
-    - About BlackboxPlayer: 앱 정보 표시
-    - BlackboxPlayer Help (⌘?): 도움말 표시
+ - About BlackboxPlayer: 앱 정보 표시
+ - BlackboxPlayer Help (⌘?): 도움말 표시
 
 
  ⌨️ keyboardShortcut Modifier란?
@@ -215,31 +215,31 @@
  키보드 단축키를 Button이나 메뉴 항목에 할당하는 modifier입니다.
 
  📌 사용 방법:
-    .keyboardShortcut(key, modifiers: [modifiers])
+ .keyboardShortcut(key, modifiers: [modifiers])
 
-    • key: KeyEquivalent 타입 (문자, 화살표 등)
-    • modifiers: EventModifiers (command, option, shift, control)
+ • key: KeyEquivalent 타입 (문자, 화살표 등)
+ • modifiers: EventModifiers (command, option, shift, control)
 
  📌 KeyEquivalent 종류:
-    1) 문자: "o", "r", "s", "0", "1", "2", "3"
-    2) 기호: "[", "]", "?", "/"
-    3) 특수키: .space, .escape, .return, .delete
-    4) 화살표: .leftArrow, .rightArrow, .upArrow, .downArrow
+ 1) 문자: "o", "r", "s", "0", "1", "2", "3"
+ 2) 기호: "[", "]", "?", "/"
+ 3) 특수키: .space, .escape, .return, .delete
+ 4) 화살표: .leftArrow, .rightArrow, .upArrow, .downArrow
 
  📌 EventModifiers 조합:
-    • .command (⌘): Command 키
-    • .option (⌥): Option(Alt) 키
-    • .shift (⇧): Shift 키
-    • .control (⌃): Control 키
-    • 배열로 조합 가능: [.command, .option]
+ • .command (⌘): Command 키
+ • .option (⌥): Option(Alt) 키
+ • .shift (⇧): Shift 키
+ • .control (⌃): Control 키
+ • 배열로 조합 가능: [.command, .option]
 
  📌 이 프로젝트의 단축키 철학:
-    • ⌘O: Open (표준 macOS 관례)
-    • ⌘R: Refresh (표준 macOS 관례)
-    • ⌘1/2/3: 오버레이 토글 (숫자 키로 빠른 전환)
-    • Space: 재생/일시정지 (비디오 플레이어 표준)
-    • ⌘←/→: 프레임 이동 (타임라인 탐색)
-    • ⌘[/]: 속도 조절 (대괄호로 증감)
+ • ⌘O: Open (표준 macOS 관례)
+ • ⌘R: Refresh (표준 macOS 관례)
+ • ⌘1/2/3: 오버레이 토글 (숫자 키로 빠른 전환)
+ • Space: 재생/일시정지 (비디오 플레이어 표준)
+ • ⌘←/→: 프레임 이동 (타임라인 탐색)
+ • ⌘[/]: 속도 조절 (대괄호로 증감)
 
 
  💡 TODO 항목에 대하여
@@ -247,30 +247,30 @@
  현재 모든 버튼 액션에 TODO 주석이 있습니다.
 
  📌 TODO의 의미:
-    이 파일은 앱의 구조(Structure)를 정의하는 역할만 합니다.
-    실제 기능 구현은 별도의 ViewModel이나 Service에서 처리됩니다.
+ 이 파일은 앱의 구조(Structure)를 정의하는 역할만 합니다.
+ 실제 기능 구현은 별도의 ViewModel이나 Service에서 처리됩니다.
 
  📌 향후 구현 방향:
-    1) ViewModel 또는 AppState 생성
-       @StateObject var appState = AppState()
+ 1) ViewModel 또는 AppState 생성
+ @StateObject var appState = AppState()
 
-    2) 환경 객체로 전달
-       .environmentObject(appState)
+ 2) 환경 객체로 전달
+ .environmentObject(appState)
 
-    3) 버튼 액션에서 호출
-       Button("Open Folder...") {
-           appState.openFolderPicker()
-       }
+ 3) 버튼 액션에서 호출
+ Button("Open Folder...") {
+ appState.openFolderPicker()
+ }
 
  📌 SwiftUI 아키텍처 패턴:
-    App (구조 정의)
-      → Scene (윈도우 관리)
-        → View (UI 표현)
-          → ViewModel (비즈니스 로직)
-            → Service (데이터/기능)
+ App (구조 정의)
+ → Scene (윈도우 관리)
+ → View (UI 표현)
+ → ViewModel (비즈니스 로직)
+ → Service (데이터/기능)
 
-    이 파일은 최상위 "구조 정의" 역할만 수행하며,
-    세부 기능은 하위 계층에서 구현됩니다.
+ 이 파일은 최상위 "구조 정의" 역할만 수행하며,
+ 세부 기능은 하위 계층에서 구현됩니다.
 
 
  ═══════════════════════════════════════════════════════════════════════════════

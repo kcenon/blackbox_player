@@ -29,7 +29,7 @@
  ├── Parking/             ← 주차 모드
  │   └── ...
  └── GPS/                 ← 별도 GPS 로그 (선택적)
-     └── 20240115.nmea
+ └── 20240115.nmea
  ```
 
  【스캔 프로세스】
@@ -84,20 +84,20 @@ import Foundation
  let sdCardURL = URL(fileURLWithPath: "/Volumes/BlackboxSD")
 
  do {
-     let groups = try scanner.scanDirectory(sdCardURL)
-     print("\(groups.count)개 녹화 그룹 발견")
+ let groups = try scanner.scanDirectory(sdCardURL)
+ print("\(groups.count)개 녹화 그룹 발견")
 
-     for group in groups {
-         print("[\(group.timestamp)] \(group.channelCount)채널, \(group.totalFileSize) bytes")
-         if group.hasChannel(.front) {
-             print("  - 전방 카메라: \(group.file(for: .front)!.lastPathComponent)")
-         }
-         if group.hasChannel(.rear) {
-             print("  - 후방 카메라: \(group.file(for: .rear)!.lastPathComponent)")
-         }
-     }
+ for group in groups {
+ print("[\(group.timestamp)] \(group.channelCount)채널, \(group.totalFileSize) bytes")
+ if group.hasChannel(.front) {
+ print("  - 전방 카메라: \(group.file(for: .front)!.lastPathComponent)")
+ }
+ if group.hasChannel(.rear) {
+ print("  - 후방 카메라: \(group.file(for: .rear)!.lastPathComponent)")
+ }
+ }
  } catch {
-     print("스캔 실패: \(error)")
+ print("스캔 실패: \(error)")
  }
  ```
 
@@ -118,7 +118,7 @@ import Foundation
  // 특정 날짜 필터링
  let calendar = Calendar.current
  let todayGroups = groups.filter {
-     calendar.isDateInToday($0.timestamp)
+ calendar.isDateInToday($0.timestamp)
  }
 
  // 2채널 녹화만 필터링
@@ -206,13 +206,13 @@ class FileScanner {
 
      【매칭 예시】
      ✓ "20240115_143025_F.mp4"
-       그룹 1: "20240115" (날짜)
-       그룹 2: "143025" (시간)
-       그룹 3: "F" (전방)
-       그룹 4: "mp4" (확장자)
+     그룹 1: "20240115" (날짜)
+     그룹 2: "143025" (시간)
+     그룹 3: "F" (전방)
+     그룹 4: "mp4" (확장자)
 
      ✓ "20240115_143025_RF.mp4"  (후방+전방 듀얼)
-       그룹 3: "RF"
+     그룹 3: "RF"
 
      ✗ "video.mp4"               (패턴 불일치)
      ✗ "2024_01_15_14_30_25.mp4" (구분자 다름)
@@ -308,9 +308,9 @@ class FileScanner {
 
      ```swift
      let enumerator = fileManager.enumerator(
-         at: directoryURL,
-         includingPropertiesForKeys: [.isRegularFileKey, ...],
-         options: [.skipsHiddenFiles]
+     at: directoryURL,
+     includingPropertiesForKeys: [.isRegularFileKey, ...],
+     options: [.skipsHiddenFiles]
      )
      ```
 
@@ -457,14 +457,14 @@ class FileScanner {
 
      【사용 시나리오】
      1. 진행률 표시:
-        "전체 파일 개수: 1000개"
-        "스캔 중... (500/1000)"
+     "전체 파일 개수: 1000개"
+     "스캔 중... (500/1000)"
 
      2. 빠른 확인:
-        "SD 카드에 비디오 파일이 있나요?"
+     "SD 카드에 비디오 파일이 있나요?"
 
      3. 메모리 절약:
-        개수만 필요하고 상세 정보는 불필요할 때
+     개수만 필요하고 상세 정보는 불필요할 때
 
      【scanDirectory()와의 차이】
      scanDirectory():
@@ -489,9 +489,9 @@ class FileScanner {
      ```swift
      let count = scanner.countVideoFiles(in: url)
      if count == 0 {
-         print("비디오 파일을 찾을 수 없습니다")
+     print("비디오 파일을 찾을 수 없습니다")
      } else {
-         print("\(count)개 파일 발견")
+     print("\(count)개 파일 발견")
      }
      ```
      ───────────────────────────────────────────────────────────────────────
@@ -584,22 +584,22 @@ class FileScanner {
      입력: "20240115_143025_F.mp4"
 
      1. 정규식 매칭:
-        그룹 1: "20240115" (날짜)
-        그룹 2: "143025" (시간)
-        그룹 3: "F" (카메라 위치)
-        그룹 4: "mp4" (확장자)
+     그룹 1: "20240115" (날짜)
+     그룹 2: "143025" (시간)
+     그룹 3: "F" (카메라 위치)
+     그룹 4: "mp4" (확장자)
 
      2. 타임스탬프 변환:
-        "20240115143025" → Date(2024-01-15 14:30:25 +0900)
+     "20240115143025" → Date(2024-01-15 14:30:25 +0900)
 
      3. 카메라 위치 감지:
-        "F" → CameraPosition.front
+     "F" → CameraPosition.front
 
      4. 이벤트 타입 감지:
-        경로에서 "Event" 포함 → EventType.event
+     경로에서 "Event" 포함 → EventType.event
 
      5. 기본 파일명 생성:
-        "20240115_143025" (카메라 위치 코드 제외)
+     "20240115_143025" (카메라 위치 코드 제외)
 
      출력: VideoFileInfo(...)
 
@@ -736,34 +736,34 @@ class FileScanner {
      입력 (개별 파일):
      ```
      [
-       VideoFileInfo(baseFilename: "20240115_143025", position: .front, eventType: .normal),
-       VideoFileInfo(baseFilename: "20240115_143025", position: .rear, eventType: .normal),
-       VideoFileInfo(baseFilename: "20240115_143125", position: .front, eventType: .event),
+     VideoFileInfo(baseFilename: "20240115_143025", position: .front, eventType: .normal),
+     VideoFileInfo(baseFilename: "20240115_143025", position: .rear, eventType: .normal),
+     VideoFileInfo(baseFilename: "20240115_143125", position: .front, eventType: .event),
      ]
      ```
 
      Dictionary 그룹화:
      ```
      {
-       "20240115_143025_normal": [Front, Rear],
-       "20240115_143125_event": [Front]
+     "20240115_143025_normal": [Front, Rear],
+     "20240115_143125_event": [Front]
      }
      ```
 
      출력 (그룹):
      ```
      [
-       VideoFileGroup(files: [Front, Rear], timestamp: 2024-01-15 14:30:25),
-       VideoFileGroup(files: [Front], timestamp: 2024-01-15 14:31:25)
+     VideoFileGroup(files: [Front, Rear], timestamp: 2024-01-15 14:30:25),
+     VideoFileGroup(files: [Front], timestamp: 2024-01-15 14:31:25)
      ]
      ```
 
      【정렬】
      1. 그룹 내 파일 정렬:
-        displayPriority로 정렬 (Front → Rear → Left → Interior)
+     displayPriority로 정렬 (Front → Rear → Left → Interior)
 
      2. 그룹 정렬:
-        timestamp 내림차순 (최신순)
+     timestamp 내림차순 (최신순)
 
      【Dictionary 사용】
      ```swift
@@ -775,7 +775,7 @@ class FileScanner {
      또는:
      ```swift
      if groups[key] == nil {
-         groups[key] = []
+     groups[key] = []
      }
      groups[key]?.append(file)
      ```
@@ -866,12 +866,12 @@ class FileScanner {
  【사용 시나리오】
  ```swift
  let fileInfo = VideoFileInfo(
-     url: URL(fileURLWithPath: "/Videos/20240115_143025_F.mp4"),
-     timestamp: Date(),
-     position: .front,
-     eventType: .normal,
-     fileSize: 104857600,  // 100 MB
-     baseFilename: "20240115_143025"
+ url: URL(fileURLWithPath: "/Videos/20240115_143025_F.mp4"),
+ timestamp: Date(),
+ position: .front,
+ eventType: .normal,
+ fileSize: 104857600,  // 100 MB
+ baseFilename: "20240115_143025"
  )
 
  print(fileInfo.url.lastPathComponent)  // "20240115_143025_F.mp4"
@@ -1011,11 +1011,11 @@ struct VideoFileInfo {
  print(group.totalFileSize)       // 200000000 (200 MB)
 
  if let frontURL = group.file(for: .front) {
-     print(frontURL.lastPathComponent)  // "20240115_143025_F.mp4"
+ print(frontURL.lastPathComponent)  // "20240115_143025_F.mp4"
  }
 
  if group.hasChannel(.rear) {
-     print("후방 카메라 녹화 있음")
+ print("후방 카메라 녹화 있음")
  }
  ```
  ───────────────────────────────────────────────────────────────────────────
@@ -1235,23 +1235,23 @@ struct VideoFileGroup {
  사용자 친화적인 오류 메시지 제공:
  ```swift
  do {
-     let groups = try scanner.scanDirectory(url)
+ let groups = try scanner.scanDirectory(url)
  } catch {
-     print(error.localizedDescription)  // "Directory not found: /path"
+ print(error.localizedDescription)  // "Directory not found: /path"
  }
  ```
 
  【사용 패턴】
  ```swift
  do {
-     let groups = try scanner.scanDirectory(sdCardURL)
-     // 성공 처리
+ let groups = try scanner.scanDirectory(sdCardURL)
+ // 성공 처리
  } catch FileScannerError.directoryNotFound(let path) {
-     showAlert("디렉토리를 찾을 수 없습니다: \(path)")
+ showAlert("디렉토리를 찾을 수 없습니다: \(path)")
  } catch FileScannerError.cannotEnumerateDirectory(let path) {
-     showAlert("디렉토리를 읽을 수 없습니다: \(path)")
+ showAlert("디렉토리를 읽을 수 없습니다: \(path)")
  } catch {
-     showAlert("알 수 없는 오류: \(error)")
+ showAlert("알 수 없는 오류: \(error)")
  }
  ```
  ───────────────────────────────────────────────────────────────────────────
@@ -1319,29 +1319,29 @@ extension FileScannerError: LocalizedError {
  let sdCardURL = URL(fileURLWithPath: "/Volumes/BlackboxSD")
 
  do {
-     let groups = try scanner.scanDirectory(sdCardURL)
-     print("\(groups.count)개 녹화 그룹 발견")
+ let groups = try scanner.scanDirectory(sdCardURL)
+ print("\(groups.count)개 녹화 그룹 발견")
 
-     for group in groups {
-         let dateFormatter = DateFormatter()
-         dateFormatter.dateStyle = .short
-         dateFormatter.timeStyle = .short
+ for group in groups {
+ let dateFormatter = DateFormatter()
+ dateFormatter.dateStyle = .short
+ dateFormatter.timeStyle = .short
 
-         print("[\(dateFormatter.string(from: group.timestamp))]")
-         print("  채널: \(group.channelCount)")
-         print("  타입: \(group.eventType)")
-         print("  크기: \(group.totalFileSize / 1_000_000) MB")
+ print("[\(dateFormatter.string(from: group.timestamp))]")
+ print("  채널: \(group.channelCount)")
+ print("  타입: \(group.eventType)")
+ print("  크기: \(group.totalFileSize / 1_000_000) MB")
 
-         if let frontURL = group.file(for: .front) {
-             print("  전방: \(frontURL.lastPathComponent)")
-         }
-         if let rearURL = group.file(for: .rear) {
-             print("  후방: \(rearURL.lastPathComponent)")
-         }
-         print()
-     }
+ if let frontURL = group.file(for: .front) {
+ print("  전방: \(frontURL.lastPathComponent)")
+ }
+ if let rearURL = group.file(for: .rear) {
+ print("  후방: \(rearURL.lastPathComponent)")
+ }
+ print()
+ }
  } catch {
-     print("스캔 실패: \(error.localizedDescription)")
+ print("스캔 실패: \(error.localizedDescription)")
  }
  ```
 
@@ -1357,14 +1357,14 @@ extension FileScannerError: LocalizedError {
  // 오늘 녹화만 필터링
  let calendar = Calendar.current
  let todayGroups = groups.filter {
-     calendar.isDateInToday($0.timestamp)
+ calendar.isDateInToday($0.timestamp)
  }
  print("오늘 녹화: \(todayGroups.count)개")
 
  // 특정 날짜 범위 필터링
  let startDate = Date(timeIntervalSinceNow: -7 * 24 * 3600)  // 7일 전
  let recentGroups = groups.filter {
-     $0.timestamp > startDate
+ $0.timestamp > startDate
  }
  print("최근 7일: \(recentGroups.count)개")
 
@@ -1382,56 +1382,56 @@ extension FileScannerError: LocalizedError {
  ```swift
  @MainActor
  class ScanViewModel: ObservableObject {
-     @Published var progress: Double = 0.0
-     @Published var statusMessage: String = ""
-     @Published var groups: [VideoFileGroup] = []
+ @Published var progress: Double = 0.0
+ @Published var statusMessage: String = ""
+ @Published var groups: [VideoFileGroup] = []
 
-     func scanDirectory(_ url: URL) async {
-         let scanner = FileScanner()
+ func scanDirectory(_ url: URL) async {
+ let scanner = FileScanner()
 
-         // 1단계: 빠른 카운트
-         statusMessage = "파일 개수 확인 중..."
-         let totalCount = await Task.detached {
-             scanner.countVideoFiles(in: url)
-         }.value
+ // 1단계: 빠른 카운트
+ statusMessage = "파일 개수 확인 중..."
+ let totalCount = await Task.detached {
+ scanner.countVideoFiles(in: url)
+ }.value
 
-         if totalCount == 0 {
-             statusMessage = "비디오 파일을 찾을 수 없습니다"
-             return
-         }
+ if totalCount == 0 {
+ statusMessage = "비디오 파일을 찾을 수 없습니다"
+ return
+ }
 
-         statusMessage = "\(totalCount)개 파일 스캔 중..."
-         progress = 0.0
+ statusMessage = "\(totalCount)개 파일 스캔 중..."
+ progress = 0.0
 
-         // 2단계: 전체 스캔
-         do {
-             groups = try await Task.detached {
-                 try scanner.scanDirectory(url)
-             }.value
+ // 2단계: 전체 스캔
+ do {
+ groups = try await Task.detached {
+ try scanner.scanDirectory(url)
+ }.value
 
-             statusMessage = "스캔 완료: \(groups.count)개 녹화"
-             progress = 1.0
-         } catch {
-             statusMessage = "스캔 실패: \(error.localizedDescription)"
-         }
-     }
+ statusMessage = "스캔 완료: \(groups.count)개 녹화"
+ progress = 1.0
+ } catch {
+ statusMessage = "스캔 실패: \(error.localizedDescription)"
+ }
+ }
  }
 
  // SwiftUI에서 사용
  struct ScanView: View {
-     @StateObject private var viewModel = ScanViewModel()
+ @StateObject private var viewModel = ScanViewModel()
 
-     var body: some View {
-         VStack {
-             Text(viewModel.statusMessage)
-             ProgressView(value: viewModel.progress)
-             Button("스캔 시작") {
-                 Task {
-                     await viewModel.scanDirectory(sdCardURL)
-                 }
-             }
-         }
-     }
+ var body: some View {
+ VStack {
+ Text(viewModel.statusMessage)
+ ProgressView(value: viewModel.progress)
+ Button("스캔 시작") {
+ Task {
+ await viewModel.scanDirectory(sdCardURL)
+ }
+ }
+ }
+ }
  }
  ```
 
@@ -1439,58 +1439,58 @@ extension FileScannerError: LocalizedError {
 
  ```swift
  struct VideoListView: View {
-     let groups: [VideoFileGroup]
+ let groups: [VideoFileGroup]
 
-     var body: some View {
-         List(groups, id: \.baseFilename) { group in
-             VideoGroupRow(group: group)
-         }
-     }
+ var body: some View {
+ List(groups, id: \.baseFilename) { group in
+ VideoGroupRow(group: group)
+ }
+ }
  }
 
  struct VideoGroupRow: View {
-     let group: VideoFileGroup
+ let group: VideoFileGroup
 
-     var body: some View {
-         HStack {
-             // 이벤트 아이콘
-             if group.eventType == .event {
-                 Image(systemName: "exclamationmark.triangle.fill")
-                     .foregroundColor(.red)
-             }
+ var body: some View {
+ HStack {
+ // 이벤트 아이콘
+ if group.eventType == .event {
+ Image(systemName: "exclamationmark.triangle.fill")
+ .foregroundColor(.red)
+ }
 
-             VStack(alignment: .leading) {
-                 // 날짜/시간
-                 Text(group.timestamp, style: .date)
-                 Text(group.timestamp, style: .time)
-                     .font(.caption)
-                     .foregroundColor(.secondary)
-             }
+ VStack(alignment: .leading) {
+ // 날짜/시간
+ Text(group.timestamp, style: .date)
+ Text(group.timestamp, style: .time)
+ .font(.caption)
+ .foregroundColor(.secondary)
+ }
 
-             Spacer()
+ Spacer()
 
-             // 채널 표시
-             HStack(spacing: 4) {
-                 if group.hasChannel(.front) {
-                     Image(systemName: "camera.fill")
-                 }
-                 if group.hasChannel(.rear) {
-                     Image(systemName: "camera.fill")
-                         .rotationEffect(.degrees(180))
-                 }
-             }
+ // 채널 표시
+ HStack(spacing: 4) {
+ if group.hasChannel(.front) {
+ Image(systemName: "camera.fill")
+ }
+ if group.hasChannel(.rear) {
+ Image(systemName: "camera.fill")
+ .rotationEffect(.degrees(180))
+ }
+ }
 
-             // 파일 크기
-             Text(formatFileSize(group.totalFileSize))
-                 .font(.caption)
-                 .foregroundColor(.secondary)
-         }
-     }
+ // 파일 크기
+ Text(formatFileSize(group.totalFileSize))
+ .font(.caption)
+ .foregroundColor(.secondary)
+ }
+ }
 
-     func formatFileSize(_ bytes: UInt64) -> String {
-         let mb = Double(bytes) / 1_000_000
-         return String(format: "%.1f MB", mb)
-     }
+ func formatFileSize(_ bytes: UInt64) -> String {
+ let mb = Double(bytes) / 1_000_000
+ return String(format: "%.1f MB", mb)
+ }
  }
  ```
 
@@ -1498,36 +1498,36 @@ extension FileScannerError: LocalizedError {
 
  ```swift
  func handleScan(_ url: URL) {
-     let scanner = FileScanner()
+ let scanner = FileScanner()
 
-     do {
-         let groups = try scanner.scanDirectory(url)
+ do {
+ let groups = try scanner.scanDirectory(url)
 
-         if groups.isEmpty {
-             showWarning("비디오 파일을 찾을 수 없습니다")
-         } else {
-             showSuccess("\(groups.count)개 녹화 발견")
-             displayGroups(groups)
-         }
+ if groups.isEmpty {
+ showWarning("비디오 파일을 찾을 수 없습니다")
+ } else {
+ showSuccess("\(groups.count)개 녹화 발견")
+ displayGroups(groups)
+ }
 
-     } catch FileScannerError.directoryNotFound(let path) {
-         showAlert(
-             title: "디렉토리를 찾을 수 없습니다",
-             message: "경로: \(path)\n\nSD 카드가 마운트되었는지 확인하세요."
-         )
+ } catch FileScannerError.directoryNotFound(let path) {
+ showAlert(
+ title: "디렉토리를 찾을 수 없습니다",
+ message: "경로: \(path)\n\nSD 카드가 마운트되었는지 확인하세요."
+ )
 
-     } catch FileScannerError.cannotEnumerateDirectory(let path) {
-         showAlert(
-             title: "디렉토리를 읽을 수 없습니다",
-             message: "경로: \(path)\n\n읽기 권한을 확인하세요."
-         )
+ } catch FileScannerError.cannotEnumerateDirectory(let path) {
+ showAlert(
+ title: "디렉토리를 읽을 수 없습니다",
+ message: "경로: \(path)\n\n읽기 권한을 확인하세요."
+ )
 
-     } catch {
-         showAlert(
-             title: "스캔 실패",
-             message: error.localizedDescription
-         )
-     }
+ } catch {
+ showAlert(
+ title: "스캔 실패",
+ message: error.localizedDescription
+ )
+ }
  }
  ```
 
@@ -1535,44 +1535,44 @@ extension FileScannerError: LocalizedError {
 
  ```swift
  class FileScannerTests: XCTestCase {
-     var scanner: FileScanner!
-     var testURL: URL!
+ var scanner: FileScanner!
+ var testURL: URL!
 
-     override func setUp() {
-         scanner = FileScanner()
-         testURL = createTestDirectory()
-     }
+ override func setUp() {
+ scanner = FileScanner()
+ testURL = createTestDirectory()
+ }
 
-     func testScanDirectory() throws {
-         // 테스트 파일 생성
-         createTestFile("20240115_143025_F.mp4")
-         createTestFile("20240115_143025_R.mp4")
-         createTestFile("20240115_143125_F.mp4")
+ func testScanDirectory() throws {
+ // 테스트 파일 생성
+ createTestFile("20240115_143025_F.mp4")
+ createTestFile("20240115_143025_R.mp4")
+ createTestFile("20240115_143125_F.mp4")
 
-         // 스캔
-         let groups = try scanner.scanDirectory(testURL)
+ // 스캔
+ let groups = try scanner.scanDirectory(testURL)
 
-         // 검증
-         XCTAssertEqual(groups.count, 2)
-         XCTAssertEqual(groups[0].channelCount, 2)  // 전방 + 후방
-         XCTAssertEqual(groups[1].channelCount, 1)  // 전방만
-     }
+ // 검증
+ XCTAssertEqual(groups.count, 2)
+ XCTAssertEqual(groups[0].channelCount, 2)  // 전방 + 후방
+ XCTAssertEqual(groups[1].channelCount, 1)  // 전방만
+ }
 
-     func testCountVideoFiles() {
-         createTestFile("20240115_143025_F.mp4")
-         createTestFile("20240115_143025_R.mp4")
-         createTestFile("README.txt")  // 비비디오 파일
+ func testCountVideoFiles() {
+ createTestFile("20240115_143025_F.mp4")
+ createTestFile("20240115_143025_R.mp4")
+ createTestFile("README.txt")  // 비비디오 파일
 
-         let count = scanner.countVideoFiles(in: testURL)
-         XCTAssertEqual(count, 2)  // 비디오 파일만 카운트
-     }
+ let count = scanner.countVideoFiles(in: testURL)
+ XCTAssertEqual(count, 2)  // 비디오 파일만 카운트
+ }
 
-     func testDirectoryNotFound() {
-         let invalidURL = URL(fileURLWithPath: "/nonexistent")
-         XCTAssertThrowsError(try scanner.scanDirectory(invalidURL)) { error in
-             XCTAssertTrue(error is FileScannerError)
-         }
-     }
+ func testDirectoryNotFound() {
+ let invalidURL = URL(fileURLWithPath: "/nonexistent")
+ XCTAssertThrowsError(try scanner.scanDirectory(invalidURL)) { error in
+ XCTAssertTrue(error is FileScannerError)
+ }
+ }
  }
  ```
 

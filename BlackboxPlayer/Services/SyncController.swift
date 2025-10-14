@@ -12,80 +12,80 @@ import QuartzCore
 /// @brief 멀티 채널 동기화 재생 컨트롤러 클래스
 /// @details 여러 비디오 채널을 동기화하여 재생하는 컨트롤러입니다.
 
- ## 동기화(Synchronization)란?
- - 여러 개의 영상(전방, 후방, 좌측, 우측 카메라)을 같은 시간에 재생하는 것
- - 예: 5초 시점의 전방 영상과 5초 시점의 후방 영상을 동시에 표시
- - 마치 오케스트라 지휘자처럼 모든 악기(채널)의 박자를 맞춤
+## 동기화(Synchronization)란?
+- 여러 개의 영상(전방, 후방, 좌측, 우측 카메라)을 같은 시간에 재생하는 것
+- 예: 5초 시점의 전방 영상과 5초 시점의 후방 영상을 동시에 표시
+- 마치 오케스트라 지휘자처럼 모든 악기(채널)의 박자를 맞춤
 
- ## 마스터 클록(Master Clock)이란?
- - 모든 채널이 참조하는 공통의 시간 기준
- - 시스템 시간(CACurrentMediaTime)을 사용
- - 각 채널은 이 클록에 맞춰 프레임을 표시
+## 마스터 클록(Master Clock)이란?
+- 모든 채널이 참조하는 공통의 시간 기준
+- 시스템 시간(CACurrentMediaTime)을 사용
+- 각 채널은 이 클록에 맞춰 프레임을 표시
 
- ## 드리프트(Drift)란?
- - 채널 간의 시간 차이가 발생하는 현상
- - 예: 전방 카메라는 5.0초인데 후방 카메라는 5.1초
- - 원인: 디코딩 속도 차이, 버퍼링 지연 등
- - 해결: 드리프트가 50ms 이상이면 감지하여 보정
+## 드리프트(Drift)란?
+- 채널 간의 시간 차이가 발생하는 현상
+- 예: 전방 카메라는 5.0초인데 후방 카메라는 5.1초
+- 원인: 디코딩 속도 차이, 버퍼링 지연 등
+- 해결: 드리프트가 50ms 이상이면 감지하여 보정
 
- ## 주요 기능:
- 1. **멀티 채널 관리**: 여러 VideoChannel 객체를 생성하고 제어
- 2. **동기화 재생**: 모든 채널을 같은 시간에 재생
- 3. **마스터 클록**: CACurrentMediaTime()을 기준으로 시간 관리
- 4. **드리프트 보정**: 채널 간 시간 차이 감지 및 보정
- 5. **버퍼 모니터링**: 모든 채널의 버퍼 상태 확인
- 6. **GPS/G-센서 동기화**: 영상과 센서 데이터 시간 맞춤
- 7. **재생 제어**: 재생, 일시정지, 정지, 시크
+## 주요 기능:
+1. **멀티 채널 관리**: 여러 VideoChannel 객체를 생성하고 제어
+2. **동기화 재생**: 모든 채널을 같은 시간에 재생
+3. **마스터 클록**: CACurrentMediaTime()을 기준으로 시간 관리
+4. **드리프트 보정**: 채널 간 시간 차이 감지 및 보정
+5. **버퍼 모니터링**: 모든 채널의 버퍼 상태 확인
+6. **GPS/G-센서 동기화**: 영상과 센서 데이터 시간 맞춤
+7. **재생 제어**: 재생, 일시정지, 정지, 시크
 
- ## 사용 예제:
- ```swift
- // 1. 컨트롤러 생성
- let controller = SyncController()
+## 사용 예제:
+```swift
+// 1. 컨트롤러 생성
+let controller = SyncController()
 
- // 2. 비디오 파일 로드
- let videoFile = VideoFile(...)
- try controller.loadVideoFile(videoFile)
+// 2. 비디오 파일 로드
+let videoFile = VideoFile(...)
+try controller.loadVideoFile(videoFile)
 
- // 3. 재생 시작
- controller.play()
+// 3. 재생 시작
+controller.play()
 
- // 4. 동기화된 프레임 가져오기
- let frames = controller.getSynchronizedFrames()
- for (position, frame) in frames {
-     print("\(position.displayName): \(frame.timestamp)초")
- }
+// 4. 동기화된 프레임 가져오기
+let frames = controller.getSynchronizedFrames()
+for (position, frame) in frames {
+    print("\(position.displayName): \(frame.timestamp)초")
+}
 
- // 5. 시크
- controller.seekToTime(10.0)  // 10초로 이동
+// 5. 시크
+controller.seekToTime(10.0)  // 10초로 이동
 
- // 6. 일시정지
- controller.pause()
+// 6. 일시정지
+controller.pause()
 
- // 7. 정지
- controller.stop()
- ```
+// 7. 정지
+controller.stop()
+```
 
- ## 동기화 메커니즘:
- ```
- 마스터 클록 (시스템 시간)
-       ↓
- 현재 재생 시간 계산
-       ↓
- ┌─────┴─────┬─────────┬─────────┐
- ↓          ↓         ↓         ↓
- 전방 채널   후방 채널  좌측 채널  우측 채널
- 5.0초      4.98초    5.02초    5.01초
-   ↓          ↓         ↓         ↓
- 드리프트 감지 (0ms, 20ms, 20ms, 10ms)
-   ↓
- 50ms 이상이면 보정 필요
- ```
+## 동기화 메커니즘:
+```
+마스터 클록 (시스템 시간)
+↓
+현재 재생 시간 계산
+↓
+┌─────┴─────┬─────────┬─────────┐
+↓          ↓         ↓         ↓
+전방 채널   후방 채널  좌측 채널  우측 채널
+5.0초      4.98초    5.02초    5.01초
+↓          ↓         ↓         ↓
+드리프트 감지 (0ms, 20ms, 20ms, 10ms)
+↓
+50ms 이상이면 보정 필요
+```
 
- ## 스레드 안전성:
- - NSLock으로 channels 배열 보호
- - Timer는 메인 스레드에서 실행
- - 각 채널은 자체적으로 스레드 안전
- */
+## 스레드 안전성:
+- NSLock으로 channels 배열 보호
+- Timer는 메인 스레드에서 실행
+- 각 채널은 자체적으로 스레드 안전
+*/
 class SyncController: ObservableObject {
     /*
      ObservableObject란?
@@ -494,30 +494,30 @@ class SyncController: ObservableObject {
 
      파라미터:
      - videoFile: 로드할 비디오 파일
-       - channels: 채널 정보 배열
-       - duration: 총 재생 시간
-       - metadata: GPS, G-센서 데이터
-       - timestamp: 녹화 시작 시간
+     - channels: 채널 정보 배열
+     - duration: 총 재생 시간
+     - metadata: GPS, G-센서 데이터
+     - timestamp: 녹화 시작 시간
 
      사용 예:
      ```swift
      let videoFile = VideoFile(
-         name: "2025-01-12_14-30-00",
-         channels: [
-             ChannelInfo(position: .front, filePath: "front.mp4"),
-             ChannelInfo(position: .rear, filePath: "rear.mp4")
-         ],
-         duration: 60.0,
-         metadata: ...
+     name: "2025-01-12_14-30-00",
+     channels: [
+     ChannelInfo(position: .front, filePath: "front.mp4"),
+     ChannelInfo(position: .rear, filePath: "rear.mp4")
+     ],
+     duration: 60.0,
+     metadata: ...
      )
 
      do {
-         try controller.loadVideoFile(videoFile)
-         print("로드 성공!")
-         print("채널 수: \(controller.channelCount)")
-         print("재생 시간: \(controller.duration)초")
+     try controller.loadVideoFile(videoFile)
+     print("로드 성공!")
+     print("채널 수: \(controller.channelCount)")
+     print("재생 시간: \(controller.duration)초")
      } catch {
-         print("로드 실패: \(error)")
+     print("로드 실패: \(error)")
      }
      ```
 
@@ -932,9 +932,9 @@ class SyncController: ObservableObject {
      ```swift
      // Slider (진행 바)
      Slider(value: $seekPosition, in: 0...controller.duration)
-         .onChange(of: seekPosition) { newValue in
-             controller.seekToTime(newValue)
-         }
+     .onChange(of: seekPosition) { newValue in
+     controller.seekToTime(newValue)
+     }
      ```
 
      채널 시크:
@@ -1020,8 +1020,8 @@ class SyncController: ObservableObject {
 
      파라미터:
      - seconds: 이동할 초
-       - 양수: 앞으로 (빨리감기)
-       - 음수: 뒤로 (되감기)
+     - 양수: 앞으로 (빨리감기)
+     - 음수: 뒤로 (되감기)
 
      사용 예:
      ```swift
@@ -1066,26 +1066,26 @@ class SyncController: ObservableObject {
 
      // 전방 카메라 프레임
      if let frontFrame = frames[.front] {
-         print("전방: \(frontFrame.timestamp)초")
-         // frontFrame.pixelBuffer로 화면에 그리기
+     print("전방: \(frontFrame.timestamp)초")
+     // frontFrame.pixelBuffer로 화면에 그리기
      }
 
      // 모든 채널 순회
      for (position, frame) in frames {
-         print("\(position.displayName): \(frame.timestamp)초")
+     print("\(position.displayName): \(frame.timestamp)초")
      }
      ```
 
      렌더링 파이프라인:
      ```
      getSynchronizedFrames()
-       ↓
+     ↓
      [.front: Frame(5.0s), .rear: Frame(5.02s)]
-       ↓
+     ↓
      MultiChannelRenderer
-       ↓
+     ↓
      Metal 렌더링
-       ↓
+     ↓
      화면 표시
      ```
 
@@ -1149,17 +1149,17 @@ class SyncController: ObservableObject {
 
      // 전방 카메라 버퍼 상태
      if let frontStatus = status[.front] {
-         print("전방 버퍼: \(frontStatus.current)/\(frontStatus.max)")
-         print("채움율: \(frontStatus.fillPercentage * 100)%")
+     print("전방 버퍼: \(frontStatus.current)/\(frontStatus.max)")
+     print("채움율: \(frontStatus.fillPercentage * 100)%")
 
-         if frontStatus.fillPercentage < 0.2 {
-             print("버퍼 부족!")
-         }
+     if frontStatus.fillPercentage < 0.2 {
+     print("버퍼 부족!")
+     }
      }
 
      // 모든 채널 확인
      for (position, bufferStatus) in status {
-         print("\(position.displayName): \(Int(bufferStatus.fillPercentage * 100))%")
+     print("\(position.displayName): \(Int(bufferStatus.fillPercentage * 100))%")
      }
      ```
 

@@ -103,20 +103,20 @@
  XCTest는 iOS, macOS, watchOS, tvOS 앱을 테스트하기 위한 Apple의 공식 프레임워크입니다.
 
  • 단위 테스트 (Unit Test)
-   - 개별 함수나 메서드가 올바르게 작동하는지 검증
-   - 예: 특정 입력에 대해 예상된 출력이 나오는지 확인
+ - 개별 함수나 메서드가 올바르게 작동하는지 검증
+ - 예: 특정 입력에 대해 예상된 출력이 나오는지 확인
 
  • 통합 테스트 (Integration Test)
-   - 여러 컴포넌트가 함께 작동하는지 검증
-   - 예: 파일 스캔 → 파일 로딩 → 비디오 재생 전체 흐름 테스트
+ - 여러 컴포넌트가 함께 작동하는지 검증
+ - 예: 파일 스캔 → 파일 로딩 → 비디오 재생 전체 흐름 테스트
 
  • UI 테스트 (UI Test)
-   - 사용자 인터페이스가 올바르게 동작하는지 검증
-   - 예: 버튼 클릭, 화면 전환 등
+ - 사용자 인터페이스가 올바르게 동작하는지 검증
+ - 예: 버튼 클릭, 화면 전환 등
 
  • 성능 테스트 (Performance Test)
-   - 코드의 실행 속도를 측정
-   - 예: 1000개 파일 스캔 시간 측정
+ - 코드의 실행 속도를 측정
+ - 예: 1000개 파일 스캔 시간 측정
 
 
  ┌──────────────────────────────────────────────────────────────────────────────┐
@@ -124,22 +124,22 @@
  └──────────────────────────────────────────────────────────────────────────────┘
 
  1. FIRST 원칙:
-    F - Fast: 빠르게 실행되어야 함
-    I - Independent: 다른 테스트에 독립적이어야 함
-    R - Repeatable: 반복 실행 시 동일한 결과
-    S - Self-validating: 스스로 성공/실패 판단
-    T - Timely: 코드 작성과 동시에 테스트 작성
+ F - Fast: 빠르게 실행되어야 함
+ I - Independent: 다른 테스트에 독립적이어야 함
+ R - Repeatable: 반복 실행 시 동일한 결과
+ S - Self-validating: 스스로 성공/실패 판단
+ T - Timely: 코드 작성과 동시에 테스트 작성
 
  2. Given-When-Then 패턴:
-    Given (준비): 테스트에 필요한 상태 설정
-    When (실행): 테스트할 동작 수행
-    Then (검증): 결과가 예상과 일치하는지 확인
+ Given (준비): 테스트에 필요한 상태 설정
+ When (실행): 테스트할 동작 수행
+ Then (검증): 결과가 예상과 일치하는지 확인
 
  3. 테스트 명명 규칙:
-    - test로 시작해야 함 (필수)
-    - 무엇을 테스트하는지 명확히 표현
-    - 예: testLoginWithValidCredentials()
-    - 예: testParseGPSDataReturnsCorrectLatitude()
+ - test로 시작해야 함 (필수)
+ - 무엇을 테스트하는지 명확히 표현
+ - 예: testLoginWithValidCredentials()
+ - 예: testParseGPSDataReturnsCorrectLatitude()
 
 
  ┌──────────────────────────────────────────────────────────────────────────────┐
@@ -147,44 +147,44 @@
  └──────────────────────────────────────────────────────────────────────────────┘
 
  • XCTAssertTrue(condition)
-   조건이 true인지 확인
-   예: XCTAssertTrue(user.isLoggedIn)
+ 조건이 true인지 확인
+ 예: XCTAssertTrue(user.isLoggedIn)
 
  • XCTAssertFalse(condition)
-   조건이 false인지 확인
-   예: XCTAssertFalse(videoFile.isCorrupted)
+ 조건이 false인지 확인
+ 예: XCTAssertFalse(videoFile.isCorrupted)
 
  • XCTAssertEqual(value1, value2)
-   두 값이 같은지 확인
-   예: XCTAssertEqual(videoFile.channelCount, 5)
+ 두 값이 같은지 확인
+ 예: XCTAssertEqual(videoFile.channelCount, 5)
 
  • XCTAssertNotEqual(value1, value2)
-   두 값이 다른지 확인
-   예: XCTAssertNotEqual(id1, id2)
+ 두 값이 다른지 확인
+ 예: XCTAssertNotEqual(id1, id2)
 
  • XCTAssertNil(value)
-   값이 nil인지 확인
-   예: XCTAssertNil(decoder.error)
+ 값이 nil인지 확인
+ 예: XCTAssertNil(decoder.error)
 
  • XCTAssertNotNil(value)
-   값이 nil이 아닌지 확인
-   예: XCTAssertNotNil(decoder.videoInfo)
+ 값이 nil이 아닌지 확인
+ 예: XCTAssertNotNil(decoder.videoInfo)
 
  • XCTAssertGreaterThan(value1, value2)
-   value1이 value2보다 큰지 확인
-   예: XCTAssertGreaterThan(fileSize, 0)
+ value1이 value2보다 큰지 확인
+ 예: XCTAssertGreaterThan(fileSize, 0)
 
  • XCTAssertLessThan(value1, value2)
-   value1이 value2보다 작은지 확인
-   예: XCTAssertLessThan(latency, 0.1)
+ value1이 value2보다 작은지 확인
+ 예: XCTAssertLessThan(latency, 0.1)
 
  • XCTAssertThrowsError(expression)
-   코드가 에러를 던지는지 확인
-   예: XCTAssertThrowsError(try decoder.initialize())
+ 코드가 에러를 던지는지 확인
+ 예: XCTAssertThrowsError(try decoder.initialize())
 
  • XCTFail(message)
-   테스트를 무조건 실패시킴
-   예: XCTFail("Should not reach here")
+ 테스트를 무조건 실패시킴
+ 예: XCTFail("Should not reach here")
 
 
  ┌──────────────────────────────────────────────────────────────────────────────┐
@@ -192,20 +192,20 @@
  └──────────────────────────────────────────────────────────────────────────────┘
 
  1. Xcode에서:
-    • Cmd + U: 모든 테스트 실행
-    • Cmd + Ctrl + Option + U: 현재 테스트만 실행
-    • Test Navigator (Cmd + 6): 테스트 목록 보기
+ • Cmd + U: 모든 테스트 실행
+ • Cmd + Ctrl + Option + U: 현재 테스트만 실행
+ • Test Navigator (Cmd + 6): 테스트 목록 보기
 
  2. 터미널에서:
-    xcodebuild test -scheme BlackboxPlayer
+ xcodebuild test -scheme BlackboxPlayer
 
  3. 개별 테스트 실행:
-    줄 번호 옆의 다이아몬드 아이콘 클릭
+ 줄 번호 옆의 다이아몬드 아이콘 클릭
 
  4. 테스트 결과:
-    • ✓ 녹색: 성공
-    • ✗ 빨간색: 실패
-    • 실패 시 정확한 줄과 이유 표시
+ • ✓ 녹색: 성공
+ • ✗ 빨간색: 실패
+ • 실패 시 정확한 줄과 이유 표시
  */
 
 import XCTest
@@ -250,9 +250,9 @@ final class BlackboxPlayerTests: XCTestCase {
      XCTest는 각 테스트 메서드를 실행할 때 다음 순서를 따릅니다:
 
      1. setUpWithError() 호출
-        ↓
+     ↓
      2. 테스트 메서드 실행 (예: testExample())
-        ↓
+     ↓
      3. tearDownWithError() 호출
 
      이 과정이 각 테스트마다 반복됩니다!
@@ -271,13 +271,13 @@ final class BlackboxPlayerTests: XCTestCase {
      └──────────────────────────────────────────────────────────────────────────┘
 
      • setUp() - 구버전
-       - 에러를 던질 수 없음
-       - 간단한 초기화용
+     - 에러를 던질 수 없음
+     - 간단한 초기화용
 
      • setUpWithError() - 최신 버전 (권장)
-       - throws 키워드로 에러를 던질 수 있음
-       - 초기화 실패 시 테스트 자체를 건너뜀
-       - 예: 테스트 파일이 없으면 throw XCTSkip("파일 없음")
+     - throws 키워드로 에러를 던질 수 있음
+     - 초기화 실패 시 테스트 자체를 건너뜀
+     - 예: 테스트 파일이 없으면 throw XCTSkip("파일 없음")
      */
 
     /// 각 테스트 메서드 실행 전에 호출되는 설정 메서드
@@ -395,18 +395,18 @@ final class BlackboxPlayerTests: XCTestCase {
      예시:
      ```swift
      func testFileScanPerformance() throws {
-         let scanner = FileScanner()
-         let folder = URL(fileURLWithPath: "/test/folder")
+     let scanner = FileScanner()
+     let folder = URL(fileURLWithPath: "/test/folder")
 
-         // 10회 반복 실행하여 평균 시간 측정
-         measure {
-             _ = try? scanner.scanDirectory(folder)
-         }
+     // 10회 반복 실행하여 평균 시간 측정
+     measure {
+     _ = try? scanner.scanDirectory(folder)
+     }
 
-         // 결과 예시:
-         // Average: 0.523 sec
-         // Relative standard deviation: 2.5%
-         // Values: [0.520, 0.525, 0.518, 0.527, ...]
+     // 결과 예시:
+     // Average: 0.523 sec
+     // Relative standard deviation: 2.5%
+     // Values: [0.520, 0.525, 0.518, 0.527, ...]
      }
      ```
 

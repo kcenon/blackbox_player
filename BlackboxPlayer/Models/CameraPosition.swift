@@ -95,9 +95,9 @@
  - 모든 카메라가 동시에 녹화
  - 같은 타임스탬프로 파일 생성
  - 예:
-   2025_01_10_09_00_00_F.mp4  (전방)
-   2025_01_10_09_00_00_R.mp4  (후방)
-   → 같은 시각의 전방/후방 영상
+ 2025_01_10_09_00_00_F.mp4  (전방)
+ 2025_01_10_09_00_00_R.mp4  (후방)
+ → 같은 시각의 전방/후방 영상
 
  【Raw Value 코드】
 
@@ -380,8 +380,8 @@ enum CameraPosition: String, Codable, CaseIterable {
      처리 방법:
      ```swift
      if position == .unknown {
-         // 사용자에게 카메라 위치 선택 요청
-         showCameraPositionSelector()
+     // 사용자에게 카메라 위치 선택 요청
+     showCameraPositionSelector()
      }
      ```
      */
@@ -410,13 +410,13 @@ enum CameraPosition: String, Codable, CaseIterable {
 
      // 탭 제목
      TabView {
-         VideoView()
-             .tabItem { Text(position.displayName) }
+     VideoView()
+     .tabItem { Text(position.displayName) }
      }
 
      // 리스트 아이템
      List(positions) { position in
-         Text(position.displayName)
+     Text(position.displayName)
      }
      ```
 
@@ -461,16 +461,16 @@ enum CameraPosition: String, Codable, CaseIterable {
 
      // 아이콘 오버레이
      Text(position.shortName)
-         .font(.caption)
-         .foregroundColor(.white)
-         .padding(4)
-         .background(Color.blue)
+     .font(.caption)
+     .foregroundColor(.white)
+     .padding(4)
+     .background(Color.blue)
 
      // 작은 배지
      Circle()
-         .fill(Color.blue)
-         .overlay(Text(position.shortName))
-         .frame(width: 30, height: 30)
+     .fill(Color.blue)
+     .overlay(Text(position.shortName))
+     .frame(width: 30, height: 30)
 
      // 파일명 생성
      let filename = "\(timestamp)_\(position.shortName).mp4"
@@ -509,14 +509,14 @@ enum CameraPosition: String, Codable, CaseIterable {
 
      // 설정 화면
      Picker(position.fullName, selection: $selectedPosition) {
-         ForEach(CameraPosition.allCases, id: \.self) { pos in
-             Text(pos.fullName).tag(pos)
-         }
+     ForEach(CameraPosition.allCases, id: \.self) { pos in
+     Text(pos.fullName).tag(pos)
+     }
      }
 
      // 툴팁
      Button(action: {}) {
-         Image(systemName: "video")
+     Image(systemName: "video")
      }
      .help(position.fullName)  // "Front Camera" 툴팁 표시
      ```
@@ -573,24 +573,24 @@ enum CameraPosition: String, Codable, CaseIterable {
 
      // 2. 안전한 접근 (unknown 체크)
      if position.channelIndex >= 0 && position.channelIndex < channels.count {
-         let channel = channels[position.channelIndex]
+     let channel = channels[position.channelIndex]
      } else {
-         print("⚠️ 유효하지 않은 채널 인덱스")
+     print("⚠️ 유효하지 않은 채널 인덱스")
      }
 
      // 3. 채널 순회
      for position in CameraPosition.allCases {
-         guard position != .unknown else { continue }
-         let index = position.channelIndex
-         if index < channels.count {
-             let channel = channels[index]
-             print("\(position.displayName): \(channel.filePath)")
-         }
+     guard position != .unknown else { continue }
+     let index = position.channelIndex
+     if index < channels.count {
+     let channel = channels[index]
+     print("\(position.displayName): \(channel.filePath)")
+     }
      }
 
      // 4. 인덱스로 Position 찾기
      if let position = CameraPosition.from(channelIndex: 1) {
-         print(position.displayName)  // "Rear"
+     print(position.displayName)  // "Rear"
      }
      ```
 
@@ -651,10 +651,10 @@ enum CameraPosition: String, Codable, CaseIterable {
 
      // 3. 탭 순서
      TabView {
-         ForEach(CameraPosition.allCases.sorted(), id: \.self) { position in
-             VideoView(position: position)
-                 .tabItem { Text(position.displayName) }
-         }
+     ForEach(CameraPosition.allCases.sorted(), id: \.self) { position in
+     VideoView(position: position)
+     .tabItem { Text(position.displayName) }
+     }
      }
 
      // 4. 우선순위 필터링 (메인 카메라만)
@@ -706,7 +706,7 @@ enum CameraPosition: String, Codable, CaseIterable {
      파일명 형식:
      ```
      YYYY_MM_DD_HH_MM_SS_[Position].mp4
-                         └── F, R, L, Ri, I
+     └── F, R, L, Ri, I
      ```
 
      감지 알고리즘:
@@ -736,8 +736,8 @@ enum CameraPosition: String, Codable, CaseIterable {
      // 3. 파일 스캔 시 자동 분류
      let files = ["20250110_090000_F.mp4", "20250110_090000_R.mp4"]
      for filename in files {
-         let position = CameraPosition.detect(from: filename)
-         print("\(filename): \(position.displayName)")
+     let position = CameraPosition.detect(from: filename)
+     print("\(filename): \(position.displayName)")
      }
      // 출력:
      // 20250110_090000_F.mp4: Front
@@ -745,9 +745,9 @@ enum CameraPosition: String, Codable, CaseIterable {
 
      // 4. ChannelInfo 생성 시
      let channelInfo = ChannelInfo(
-         position: CameraPosition.detect(from: filename),
-         filePath: fullPath,
-         // ...
+     position: CameraPosition.detect(from: filename),
+     filePath: fullPath,
+     // ...
      )
      ```
 
@@ -819,35 +819,35 @@ enum CameraPosition: String, Codable, CaseIterable {
      ```swift
      // 1. 인덱스로 Position 찾기
      if let position = CameraPosition.from(channelIndex: 0) {
-         print(position.displayName)  // "Front"
+     print(position.displayName)  // "Front"
      }
 
      if let position = CameraPosition.from(channelIndex: 1) {
-         print(position.displayName)  // "Rear"
+     print(position.displayName)  // "Rear"
      }
 
      // 2. 유효하지 않은 인덱스
      if let position = CameraPosition.from(channelIndex: 10) {
-         print(position.displayName)
+     print(position.displayName)
      } else {
-         print("유효하지 않은 인덱스")  // 이것 출력
+     print("유효하지 않은 인덱스")  // 이것 출력
      }
 
      // 3. 채널 배열 순회
      for index in 0..<channels.count {
-         if let position = CameraPosition.from(channelIndex: index) {
-             let channel = channels[index]
-             print("\(position.displayName): \(channel.filePath)")
-         }
+     if let position = CameraPosition.from(channelIndex: index) {
+     let channel = channels[index]
+     print("\(position.displayName): \(channel.filePath)")
+     }
      }
 
      // 4. 안전한 배열 접근
      func getChannel(at index: Int) -> ChannelInfo? {
-         guard let position = CameraPosition.from(channelIndex: index),
-               index >= 0 && index < channels.count else {
-             return nil
-         }
-         return channels[index]
+     guard let position = CameraPosition.from(channelIndex: index),
+     index >= 0 && index < channels.count else {
+     return nil
+     }
+     return channels[index]
      }
      ```
 
@@ -897,7 +897,7 @@ enum CameraPosition: String, Codable, CaseIterable {
  let rear = CameraPosition.rear    // priority = 2
 
  if front < rear {  // true (1 < 2)
-     print("front가 우선순위 높음")
+ print("front가 우선순위 높음")
  }
 
  // 2. 배열 정렬 (오름차순 = 우선순위 높은 순)
@@ -915,8 +915,8 @@ enum CameraPosition: String, Codable, CaseIterable {
 
  // 5. 탭 순서
  ForEach(CameraPosition.allCases.sorted(), id: \.self) { position in
-     VideoPlayerView(position: position)
-         .tabItem { Text(position.displayName) }
+ VideoPlayerView(position: position)
+ .tabItem { Text(position.displayName) }
  }
  ```
 

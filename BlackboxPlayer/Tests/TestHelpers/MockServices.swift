@@ -35,7 +35,7 @@ class MockGPSService: GPSService {
     private var mockRoutePoints: [CLLocationCoordinate2D] = []
 
     /// 시작 시간
-    private var mockStartTime: Date = Date()
+    private var mockStartTime = Date()
 
     /// 로드 호출 횟수 (테스트 검증용)
     var loadCallCount: Int = 0
@@ -137,7 +137,7 @@ class MockGSensorService: GSensorService {
     private var mockAccelData: [AccelerationData] = []
 
     /// 시작 시간
-    private var mockStartTime: Date = Date()
+    private var mockStartTime = Date()
 
     /// 로드 호출 횟수
     var loadCallCount: Int = 0

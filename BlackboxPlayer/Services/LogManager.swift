@@ -76,20 +76,20 @@
  실제 사용 시나리오:
 
  1. 디버깅 (Debugging)
-    문제 발생 시 어디서 왜 발생했는지 추적
-    예: "Video decoding failed at frame 1523"
+ 문제 발생 시 어디서 왜 발생했는지 추적
+ 예: "Video decoding failed at frame 1523"
 
  2. 성능 모니터링
-    각 단계의 실행 시간 측정
-    예: "File scan completed in 2.3 seconds"
+ 각 단계의 실행 시간 측정
+ 예: "File scan completed in 2.3 seconds"
 
  3. 사용자 지원
-    사용자가 문제 발생 시 로그를 공유하여 원격 지원
-    예: 사용자가 "재생 안 됨" 보고 → 로그 확인 → "Codec not supported" 발견
+ 사용자가 문제 발생 시 로그를 공유하여 원격 지원
+ 예: 사용자가 "재생 안 됨" 보고 → 로그 확인 → "Codec not supported" 발견
 
  4. 감사 로그 (Audit Log)
-    중요한 작업 기록
-    예: "User deleted 10 files at 14:32:15"
+ 중요한 작업 기록
+ 예: "User deleted 10 files at 14:32:15"
 
 
  ┌──────────────────────────────────────────────────────────────────────────────┐
@@ -99,48 +99,48 @@
  로그는 중요도에 따라 4단계로 분류됩니다:
 
  1. DEBUG (디버그)
-    • 가장 상세한 정보
-    • 개발 중에만 사용
-    • 프로덕션에서는 비활성화
-    • 예: "Entered function parseGPSData()"
+ • 가장 상세한 정보
+ • 개발 중에만 사용
+ • 프로덕션에서는 비활성화
+ • 예: "Entered function parseGPSData()"
 
  2. INFO (정보)
-    • 일반적인 정보 메시지
-    • 정상 동작 확인용
-    • 프로덕션에서도 활성화
-    • 예: "Video file loaded successfully"
+ • 일반적인 정보 메시지
+ • 정상 동작 확인용
+ • 프로덕션에서도 활성화
+ • 예: "Video file loaded successfully"
 
  3. WARNING (경고)
-    • 잠재적 문제
-    • 동작은 계속되지만 주의 필요
-    • 예: "Low memory warning: 90% used"
+ • 잠재적 문제
+ • 동작은 계속되지만 주의 필요
+ • 예: "Low memory warning: 90% used"
 
  4. ERROR (오류)
-    • 심각한 문제
-    • 기능 동작 실패
-    • 즉시 해결 필요
-    • 예: "Failed to initialize decoder: file not found"
+ • 심각한 문제
+ • 기능 동작 실패
+ • 즉시 해결 필요
+ • 예: "Failed to initialize decoder: file not found"
 
 
  실제 사용 예:
  ```swift
  func loadVideoFile(_ path: String) throws {
-     debugLog("loadVideoFile() called with path: \(path)")
+ debugLog("loadVideoFile() called with path: \(path)")
 
-     guard FileManager.default.fileExists(atPath: path) else {
-         errorLog("File not found: \(path)")
-         throw FileError.notFound
-     }
+ guard FileManager.default.fileExists(atPath: path) else {
+ errorLog("File not found: \(path)")
+ throw FileError.notFound
+ }
 
-     infoLog("File found, starting to load...")
+ infoLog("File found, starting to load...")
 
-     if memoryUsage > 0.9 {
-         warningLog("High memory usage: \(memoryUsage * 100)%")
-     }
+ if memoryUsage > 0.9 {
+ warningLog("High memory usage: \(memoryUsage * 100)%")
+ }
 
-     // ... 로딩 로직 ...
+ // ... 로딩 로직 ...
 
-     infoLog("Video file loaded successfully")
+ infoLog("Video file loaded successfully")
  }
  ```
  */

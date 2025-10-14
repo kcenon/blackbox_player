@@ -19,9 +19,9 @@
  ### G-센서의 역할:
  ```
  차량 움직임 감지
-   ↓
+ ↓
  3축 가속도 측정 (X, Y, Z)
-   ↓
+ ↓
  충격/급정거/급가속 감지
  ```
 
@@ -60,14 +60,14 @@
 
  ### 좌표계:
  ```
-        Z (Up)
-        ↑
-        │
-        │
-        └────→ X (Right)
-       ╱
-      ╱
-     Y (Forward)
+ Z (Up)
+ ↑
+ │
+ │
+ └────→ X (Right)
+ ╱
+ ╱
+ Y (Forward)
  ```
 
  ### 정지 상태:
@@ -97,8 +97,8 @@
 
  예: X=2.0, Y=1.0, Z=0.5
  magnitude = √(4 + 1 + 0.25)
-           = √5.25
-           = 2.29 G
+ = √5.25
+ = 2.29 G
  ```
 
  ### 유클리드 거리:
@@ -122,27 +122,27 @@
 
  // 2. 영상 로드 시 G-센서 데이터 로드
  gsensorService.loadAccelerationData(
-     from: videoFile.metadata,
-     startTime: videoFile.timestamp
+ from: videoFile.metadata,
+ startTime: videoFile.timestamp
  )
 
  // 3. 재생 중 현재 가속도 조회
  if let accel = gsensorService.getCurrentAcceleration(at: currentTime) {
-     print("현재 가속도: \(accel.magnitude) G")
-     print("방향: \(accel.primaryDirection)")
+ print("현재 가속도: \(accel.magnitude) G")
+ print("방향: \(accel.primaryDirection)")
  }
 
  // 4. 충격 이벤트 찾기
  let impacts = gsensorService.getImpacts(
-     from: 0,
-     to: videoDuration,
-     minSeverity: .moderate
+ from: 0,
+ to: videoDuration,
+ minSeverity: .moderate
  )
  print("충격 이벤트: \(impacts.count)건")
 
  // 5. 충격 지점으로 이동
  if let nearest = gsensorService.nearestImpact(to: currentTime) {
-     seekToTime(nearest.impact.timestamp)
+ seekToTime(nearest.impact.timestamp)
  }
  ```
 
@@ -770,7 +770,7 @@ class GSensorService: ObservableObject {
             // 1. 시간 범위 내
             // 2. 심각도 >= minSeverity
             return offset >= startTime && offset <= endTime &&
-                   severityLevel(impact.impactSeverity) >= severityLevel(minSeverity)
+                severityLevel(impact.impactSeverity) >= severityLevel(minSeverity)
         }
     }
 
@@ -1447,48 +1447,48 @@ class GSensorService: ObservableObject {
 
  ```swift
  extension AccelerationData {
-     // 가속도 크기 계산 (벡터 크기)
-     var magnitude: Double {
-         return sqrt(x * x + y * y + z * z)
-     }
+ // 가속도 크기 계산 (벡터 크기)
+ var magnitude: Double {
+ return sqrt(x * x + y * y + z * z)
+ }
 
-     // 충격 여부 판정
-     var isImpact: Bool {
-         return magnitude > 1.5  // 1.5G 초과 → 충격
-     }
+ // 충격 여부 판정
+ var isImpact: Bool {
+ return magnitude > 1.5  // 1.5G 초과 → 충격
+ }
 
-     // 심각도 분류
-     var impactSeverity: ImpactSeverity {
-         if magnitude < 1.5 {
-             return .none
-         } else if magnitude < 2.5 {
-             return .low
-         } else if magnitude < 4.0 {
-             return .moderate
-         } else if magnitude < 6.0 {
-             return .high
-         } else {
-             return .severe
-         }
-     }
+ // 심각도 분류
+ var impactSeverity: ImpactSeverity {
+ if magnitude < 1.5 {
+ return .none
+ } else if magnitude < 2.5 {
+ return .low
+ } else if magnitude < 4.0 {
+ return .moderate
+ } else if magnitude < 6.0 {
+ return .high
+ } else {
+ return .severe
+ }
+ }
 
-     // 주요 충격 방향 결정
-     var primaryDirection: ImpactDirection {
-         let absX = abs(x)
-         let absY = abs(y)
-         let absZ = abs(z)
+ // 주요 충격 방향 결정
+ var primaryDirection: ImpactDirection {
+ let absX = abs(x)
+ let absY = abs(y)
+ let absZ = abs(z)
 
-         // 가장 큰 축 찾기
-         let maxAxis = max(absX, absY, absZ)
+ // 가장 큰 축 찾기
+ let maxAxis = max(absX, absY, absZ)
 
-         if maxAxis == absX {
-             return x > 0 ? .right : .left
-         } else if maxAxis == absY {
-             return y > 0 ? .front : .rear
-         } else {
-             return z > 0 ? .top : .bottom
-         }
-     }
+ if maxAxis == absX {
+ return x > 0 ? .right : .left
+ } else if maxAxis == absY {
+ return y > 0 ? .front : .rear
+ } else {
+ return z > 0 ? .top : .bottom
+ }
+ }
  }
  ```
 
@@ -1496,52 +1496,52 @@ class GSensorService: ObservableObject {
 
  ```swift
  struct GForceGaugeView: View {
-     @ObservedObject var gsensorService: GSensorService
+ @ObservedObject var gsensorService: GSensorService
 
-     var body: some View {
-         VStack {
-             // 원형 게이지
-             ZStack {
-                 // 배경 원
-                 Circle()
-                     .stroke(Color.gray.opacity(0.3), lineWidth: 20)
+ var body: some View {
+ VStack {
+ // 원형 게이지
+ ZStack {
+ // 배경 원
+ Circle()
+ .stroke(Color.gray.opacity(0.3), lineWidth: 20)
 
-                 // G-force 게이지
-                 Circle()
-                     .trim(from: 0, to: CGFloat(min(gsensorService.currentGForce / 5.0, 1.0)))
-                     .stroke(
-                         gforceColor(gsensorService.currentGForce),
-                         style: StrokeStyle(lineWidth: 20, lineCap: .round)
-                     )
-                     .rotationEffect(.degrees(-90))
+ // G-force 게이지
+ Circle()
+ .trim(from: 0, to: CGFloat(min(gsensorService.currentGForce / 5.0, 1.0)))
+ .stroke(
+ gforceColor(gsensorService.currentGForce),
+ style: StrokeStyle(lineWidth: 20, lineCap: .round)
+ )
+ .rotationEffect(.degrees(-90))
 
-                 // 수치 표시
-                 VStack {
-                     Text(String(format: "%.2f", gsensorService.currentGForce))
-                         .font(.system(size: 48, weight: .bold))
-                     Text("G")
-                         .font(.system(size: 24))
-                         .foregroundColor(.gray)
-                 }
-             }
-             .frame(width: 200, height: 200)
+ // 수치 표시
+ VStack {
+ Text(String(format: "%.2f", gsensorService.currentGForce))
+ .font(.system(size: 48, weight: .bold))
+ Text("G")
+ .font(.system(size: 24))
+ .foregroundColor(.gray)
+ }
+ }
+ .frame(width: 200, height: 200)
 
-             // 최대값
-             Text("Peak: \(String(format: "%.2f", gsensorService.peakGForce))G")
-                 .font(.caption)
-                 .foregroundColor(.secondary)
-         }
-     }
+ // 최대값
+ Text("Peak: \(String(format: "%.2f", gsensorService.peakGForce))G")
+ .font(.caption)
+ .foregroundColor(.secondary)
+ }
+ }
 
-     func gforceColor(_ gforce: Double) -> Color {
-         if gforce < 1.5 {
-             return .green
-         } else if gforce < 3.0 {
-             return .orange
-         } else {
-             return .red
-         }
-     }
+ func gforceColor(_ gforce: Double) -> Color {
+ if gforce < 1.5 {
+ return .green
+ } else if gforce < 3.0 {
+ return .orange
+ } else {
+ return .red
+ }
+ }
  }
  ```
 
@@ -1549,61 +1549,61 @@ class GSensorService: ObservableObject {
 
  ```swift
  struct AccelerationChartView: View {
-     @ObservedObject var gsensorService: GSensorService
-     let timeRange: ClosedRange<TimeInterval>
+ @ObservedObject var gsensorService: GSensorService
+ let timeRange: ClosedRange<TimeInterval>
 
-     var body: some View {
-         Chart {
-             // X축 (좌우)
-             ForEach(gsensorService.allData) { data in
-                 LineMark(
-                     x: .value("Time", data.timestamp),
-                     y: .value("X", data.x)
-                 )
-                 .foregroundStyle(.red)
-             }
+ var body: some View {
+ Chart {
+ // X축 (좌우)
+ ForEach(gsensorService.allData) { data in
+ LineMark(
+ x: .value("Time", data.timestamp),
+ y: .value("X", data.x)
+ )
+ .foregroundStyle(.red)
+ }
 
-             // Y축 (전후)
-             ForEach(gsensorService.allData) { data in
-                 LineMark(
-                     x: .value("Time", data.timestamp),
-                     y: .value("Y", data.y)
-                 )
-                 .foregroundStyle(.green)
-             }
+ // Y축 (전후)
+ ForEach(gsensorService.allData) { data in
+ LineMark(
+ x: .value("Time", data.timestamp),
+ y: .value("Y", data.y)
+ )
+ .foregroundStyle(.green)
+ }
 
-             // Z축 (상하)
-             ForEach(gsensorService.allData) { data in
-                 LineMark(
-                     x: .value("Time", data.timestamp),
-                     y: .value("Z", data.z)
-                 )
-                 .foregroundStyle(.blue)
-             }
+ // Z축 (상하)
+ ForEach(gsensorService.allData) { data in
+ LineMark(
+ x: .value("Time", data.timestamp),
+ y: .value("Z", data.z)
+ )
+ .foregroundStyle(.blue)
+ }
 
-             // 충격 이벤트 마커
-             ForEach(gsensorService.impactEvents) { impact in
-                 RuleMark(x: .value("Impact", impact.timestamp))
-                     .foregroundStyle(.red.opacity(0.5))
-                     .annotation(position: .top) {
-                         Image(systemName: "exclamationmark.triangle.fill")
-                             .foregroundColor(.red)
-                     }
-             }
-         }
-         .chartXScale(domain: timeRange)
-         .chartYScale(domain: -6...6)
-         .chartYAxis {
-             AxisMarks(position: .leading)
-         }
-         .chartLegend(position: .bottom) {
-             HStack {
-                 LegendItem(color: .red, label: "X (Left/Right)")
-                 LegendItem(color: .green, label: "Y (Forward/Backward)")
-                 LegendItem(color: .blue, label: "Z (Up/Down)")
-             }
-         }
-     }
+ // 충격 이벤트 마커
+ ForEach(gsensorService.impactEvents) { impact in
+ RuleMark(x: .value("Impact", impact.timestamp))
+ .foregroundStyle(.red.opacity(0.5))
+ .annotation(position: .top) {
+ Image(systemName: "exclamationmark.triangle.fill")
+ .foregroundColor(.red)
+ }
+ }
+ }
+ .chartXScale(domain: timeRange)
+ .chartYScale(domain: -6...6)
+ .chartYAxis {
+ AxisMarks(position: .leading)
+ }
+ .chartLegend(position: .bottom) {
+ HStack {
+ LegendItem(color: .red, label: "X (Left/Right)")
+ LegendItem(color: .green, label: "Y (Forward/Backward)")
+ LegendItem(color: .blue, label: "Z (Up/Down)")
+ }
+ }
+ }
  }
  ```
 
@@ -1611,96 +1611,96 @@ class GSensorService: ObservableObject {
 
  ```swift
  struct ImpactEventsListView: View {
-     @ObservedObject var gsensorService: GSensorService
-     let onSelectImpact: (AccelerationData) -> Void
+ @ObservedObject var gsensorService: GSensorService
+ let onSelectImpact: (AccelerationData) -> Void
 
-     var body: some View {
-         List {
-             // 심각도별 섹션
-             ForEach(ImpactSeverity.allCases, id: \.self) { severity in
-                 let impacts = gsensorService.impactsBySeverity()[severity] ?? []
+ var body: some View {
+ List {
+ // 심각도별 섹션
+ ForEach(ImpactSeverity.allCases, id: \.self) { severity in
+ let impacts = gsensorService.impactsBySeverity()[severity] ?? []
 
-                 if !impacts.isEmpty {
-                     Section(header: Text(severity.displayName)) {
-                         ForEach(impacts) { impact in
-                             ImpactRow(impact: impact)
-                                 .onTapGesture {
-                                     onSelectImpact(impact)
-                                 }
-                         }
-                     }
-                 }
-             }
-         }
-         .navigationTitle("충격 이벤트 (\(gsensorService.impactCount))")
-     }
+ if !impacts.isEmpty {
+ Section(header: Text(severity.displayName)) {
+ ForEach(impacts) { impact in
+ ImpactRow(impact: impact)
+ .onTapGesture {
+ onSelectImpact(impact)
+ }
+ }
+ }
+ }
+ }
+ }
+ .navigationTitle("충격 이벤트 (\(gsensorService.impactCount))")
+ }
  }
 
  struct ImpactRow: View {
-     let impact: AccelerationData
+ let impact: AccelerationData
 
-     var body: some View {
-         HStack {
-             // 심각도 아이콘
-             Image(systemName: severityIcon(impact.impactSeverity))
-                 .foregroundColor(severityColor(impact.impactSeverity))
+ var body: some View {
+ HStack {
+ // 심각도 아이콘
+ Image(systemName: severityIcon(impact.impactSeverity))
+ .foregroundColor(severityColor(impact.impactSeverity))
 
-             VStack(alignment: .leading) {
-                 // 시간
-                 Text(formatTime(impact.timestamp))
-                     .font(.headline)
+ VStack(alignment: .leading) {
+ // 시간
+ Text(formatTime(impact.timestamp))
+ .font(.headline)
 
-                 // 방향
-                 Text(directionText(impact.primaryDirection))
-                     .font(.caption)
-                     .foregroundColor(.secondary)
-             }
+ // 방향
+ Text(directionText(impact.primaryDirection))
+ .font(.caption)
+ .foregroundColor(.secondary)
+ }
 
-             Spacer()
+ Spacer()
 
-             // G-force
-             VStack(alignment: .trailing) {
-                 Text(String(format: "%.2f", impact.magnitude))
-                     .font(.title3)
-                     .bold()
-                 Text("G")
-                     .font(.caption)
-                     .foregroundColor(.secondary)
-             }
-         }
-     }
+ // G-force
+ VStack(alignment: .trailing) {
+ Text(String(format: "%.2f", impact.magnitude))
+ .font(.title3)
+ .bold()
+ Text("G")
+ .font(.caption)
+ .foregroundColor(.secondary)
+ }
+ }
+ }
 
-     func severityIcon(_ severity: ImpactSeverity) -> String {
-         switch severity {
-         case .none: return "checkmark.circle"
-         case .low: return "info.circle"
-         case .moderate: return "exclamationmark.circle"
-         case .high: return "exclamationmark.triangle"
-         case .severe: return "xmark.octagon"
-         }
-     }
+ func severityIcon(_ severity: ImpactSeverity) -> String {
+ switch severity {
+ case .none: return "checkmark.circle"
+ case .low: return "info.circle"
+ case .moderate: return "exclamationmark.circle"
+ case .high: return "exclamationmark.triangle"
+ case .severe: return "xmark.octagon"
+ }
+ }
 
-     func severityColor(_ severity: ImpactSeverity) -> Color {
-         switch severity {
-         case .none: return .green
-         case .low: return .blue
-         case .moderate: return .orange
-         case .high: return .red
-         case .severe: return .purple
-         }
-     }
+ func severityColor(_ severity: ImpactSeverity) -> Color {
+ switch severity {
+ case .none: return .green
+ case .low: return .blue
+ case .moderate: return .orange
+ case .high: return .red
+ case .severe: return .purple
+ }
+ }
 
-     func directionText(_ direction: ImpactDirection) -> String {
-         switch direction {
-         case .front: return "↑ 전방 충격"
-         case .rear: return "↓ 후방 충격"
-         case .left: return "← 좌측 충격"
-         case .right: return "→ 우측 충격"
-         case .top: return "⬆ 상단 충격"
-         case .bottom: return "⬇ 하단 충격"
-         case .multiple: return "⊕ 복합 충격"
-         }
-     }
+ func directionText(_ direction: ImpactDirection) -> String {
+ switch direction {
+ case .front: return "↑ 전방 충격"
+ case .rear: return "↓ 후방 충격"
+ case .left: return "← 좌측 충격"
+ case .right: return "→ 우측 충격"
+ case .top: return "⬆ 상단 충격"
+ case .bottom: return "⬇ 하단 충격"
+ case .multiple: return "⊕ 복합 충격"
+ }
+ }
  }
  ```
 
@@ -1708,37 +1708,37 @@ class GSensorService: ObservableObject {
 
  ```swift
  struct TimelineWithImpactsView: View {
-     @ObservedObject var gsensorService: GSensorService
-     @Binding var currentTime: TimeInterval
-     let duration: TimeInterval
+ @ObservedObject var gsensorService: GSensorService
+ @Binding var currentTime: TimeInterval
+ let duration: TimeInterval
 
-     var body: some View {
-         GeometryReader { geometry in
-             ZStack(alignment: .leading) {
-                 // 타임라인 배경
-                 Rectangle()
-                     .fill(Color.gray.opacity(0.3))
-                     .frame(height: 40)
+ var body: some View {
+ GeometryReader { geometry in
+ ZStack(alignment: .leading) {
+ // 타임라인 배경
+ Rectangle()
+ .fill(Color.gray.opacity(0.3))
+ .frame(height: 40)
 
-                 // 충격 마커
-                 ForEach(gsensorService.impactEvents) { impact in
-                     let offset = impact.timestamp.timeIntervalSince(videoStart)
-                     let x = (offset / duration) * geometry.size.width
+ // 충격 마커
+ ForEach(gsensorService.impactEvents) { impact in
+ let offset = impact.timestamp.timeIntervalSince(videoStart)
+ let x = (offset / duration) * geometry.size.width
 
-                     Rectangle()
-                         .fill(severityColor(impact.impactSeverity))
-                         .frame(width: 3, height: 40)
-                         .offset(x: x)
-                 }
+ Rectangle()
+ .fill(severityColor(impact.impactSeverity))
+ .frame(width: 3, height: 40)
+ .offset(x: x)
+ }
 
-                 // 재생 헤드
-                 Rectangle()
-                     .fill(Color.white)
-                     .frame(width: 2, height: 50)
-                     .offset(x: (currentTime / duration) * geometry.size.width)
-             }
-         }
-     }
+ // 재생 헤드
+ Rectangle()
+ .fill(Color.white)
+ .frame(width: 2, height: 50)
+ .offset(x: (currentTime / duration) * geometry.size.width)
+ }
+ }
+ }
  }
  ```
  */

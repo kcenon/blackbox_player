@@ -21,15 +21,15 @@ import Foundation
  메타데이터는 "데이터에 관한 데이터"를 의미합니다.
 
  비유:
-   - 책의 목차, 색인, ISBN 번호 → 책(데이터)에 대한 정보(메타데이터)
-   - 사진의 EXIF 정보 → 촬영 일시, 카메라 모델, GPS 위치 등
-   - 영상의 메타데이터 → 해상도, 길이, 코덱, GPS/센서 데이터 등
+ - 책의 목차, 색인, ISBN 번호 → 책(데이터)에 대한 정보(메타데이터)
+ - 사진의 EXIF 정보 → 촬영 일시, 카메라 모델, GPS 위치 등
+ - 영상의 메타데이터 → 해상도, 길이, 코덱, GPS/센서 데이터 등
 
  블랙박스에서의 메타데이터:
-   - 영상 파일(.mp4): 실제 동영상 데이터
-   - GPS 데이터: 주행 경로, 속도 정보
-   - G-센서 데이터: 충격, 급가속/급제동 정보
-   - 장치 정보: 블랙박스 모델, 펌웨어 버전
+ - 영상 파일(.mp4): 실제 동영상 데이터
+ - GPS 데이터: 주행 경로, 속도 정보
+ - G-센서 데이터: 충격, 급가속/급제동 정보
+ - 장치 정보: 블랙박스 모델, 펌웨어 버전
 
  【시계열 데이터(Time-Series Data)】
 
@@ -37,95 +37,95 @@ import Foundation
 
  타임라인 구조:
 
-   영상 시작                                                      영상 종료
-      ├────┼────┼────┼────┼────┼────┼────┼────┼────┼────┤
-      0초  5초  10초 15초 20초 25초 30초 35초 40초 45초 50초
+ 영상 시작                                                      영상 종료
+ ├────┼────┼────┼────┼────┼────┼────┼────┼────┼────┤
+ 0초  5초  10초 15초 20초 25초 30초 35초 40초 45초 50초
 
-   GPS:  ●    ●    ●    ●    ●    ●    ●    ●    ●    ●
-         (위치, 속도 기록 - 일반적으로 1초마다)
+ GPS:  ●    ●    ●    ●    ●    ●    ●    ●    ●    ●
+ (위치, 속도 기록 - 일반적으로 1초마다)
 
-   G센서: ●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●
-         (가속도 기록 - 일반적으로 0.1초마다, 10Hz)
+ G센서: ●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●●
+ (가속도 기록 - 일반적으로 0.1초마다, 10Hz)
 
  특징:
-   1. 시간 순서 보존 (먼저 기록된 것이 배열 앞에 위치)
-   2. 균일한 간격 또는 불균일한 간격 (GPS는 1초, 센서는 0.1초 등)
-   3. 시간 기반 검색 (특정 시점의 데이터 찾기)
-   4. 집계 연산 (평균, 최대값, 합계 등)
+ 1. 시간 순서 보존 (먼저 기록된 것이 배열 앞에 위치)
+ 2. 균일한 간격 또는 불균일한 간격 (GPS는 1초, 센서는 0.1초 등)
+ 3. 시간 기반 검색 (특정 시점의 데이터 찾기)
+ 4. 집계 연산 (평균, 최대값, 합계 등)
 
  【구조 다이어그램】
 
-   VideoMetadata
-   ├─ gpsPoints: [GPSPoint]           ← GPS 시계열 데이터
-   │   ├─ GPSPoint(timestamp: 0초, lat: 37.5, lon: 127.0, speed: 30)
-   │   ├─ GPSPoint(timestamp: 1초, lat: 37.501, lon: 127.001, speed: 35)
-   │   └─ GPSPoint(timestamp: 2초, lat: 37.502, lon: 127.002, speed: 40)
-   │
-   ├─ accelerationData: [AccelerationData] ← G-센서 시계열 데이터
-   │   ├─ AccelerationData(timestamp: 0.0초, x: 0, y: 0, z: 1)
-   │   ├─ AccelerationData(timestamp: 0.1초, x: 0.1, y: 0, z: 1)
-   │   └─ AccelerationData(timestamp: 0.2초, x: 0.2, y: -0.5, z: 1)
-   │
-   └─ deviceInfo: DeviceInfo?         ← 장치 정보
-       ├─ manufacturer: "BlackVue"
-       ├─ model: "DR900X-2CH"
-       └─ firmwareVersion: "1.010"
+ VideoMetadata
+ ├─ gpsPoints: [GPSPoint]           ← GPS 시계열 데이터
+ │   ├─ GPSPoint(timestamp: 0초, lat: 37.5, lon: 127.0, speed: 30)
+ │   ├─ GPSPoint(timestamp: 1초, lat: 37.501, lon: 127.001, speed: 35)
+ │   └─ GPSPoint(timestamp: 2초, lat: 37.502, lon: 127.002, speed: 40)
+ │
+ ├─ accelerationData: [AccelerationData] ← G-센서 시계열 데이터
+ │   ├─ AccelerationData(timestamp: 0.0초, x: 0, y: 0, z: 1)
+ │   ├─ AccelerationData(timestamp: 0.1초, x: 0.1, y: 0, z: 1)
+ │   └─ AccelerationData(timestamp: 0.2초, x: 0.2, y: -0.5, z: 1)
+ │
+ └─ deviceInfo: DeviceInfo?         ← 장치 정보
+ ├─ manufacturer: "BlackVue"
+ ├─ model: "DR900X-2CH"
+ └─ firmwareVersion: "1.010"
 
  【사용 예시】
 
  1. GPS 데이터 조회:
-    ```swift
-    let metadata = VideoMetadata.sample
+ ```swift
+ let metadata = VideoMetadata.sample
 
-    // 특정 시점의 위치 찾기
-    if let point = metadata.gpsPoint(at: 15.5) {
-        print("15.5초 시점 위치: \(point.latitude), \(point.longitude)")
-        print("속도: \(point.speedString)")
-    }
+ // 특정 시점의 위치 찾기
+ if let point = metadata.gpsPoint(at: 15.5) {
+ print("15.5초 시점 위치: \(point.latitude), \(point.longitude)")
+ print("속도: \(point.speedString)")
+ }
 
-    // 주행 거리 계산
-    print("총 주행 거리: \(metadata.summary.distanceString)")  // "2.5 km"
+ // 주행 거리 계산
+ print("총 주행 거리: \(metadata.summary.distanceString)")  // "2.5 km"
 
-    // 속도 통계
-    print("평균 속도: \(metadata.summary.averageSpeedString ?? "N/A")")  // "45.3 km/h"
-    print("최고 속도: \(metadata.summary.maximumSpeedString ?? "N/A")")  // "68.5 km/h"
-    ```
+ // 속도 통계
+ print("평균 속도: \(metadata.summary.averageSpeedString ?? "N/A")")  // "45.3 km/h"
+ print("최고 속도: \(metadata.summary.maximumSpeedString ?? "N/A")")  // "68.5 km/h"
+ ```
 
  2. 충격 이벤트 분석:
-    ```swift
-    let metadata = VideoMetadata.withImpact
+ ```swift
+ let metadata = VideoMetadata.withImpact
 
-    // 충격 이벤트 존재 여부
-    if metadata.hasImpactEvents {
-        print("⚠️ 충격 이벤트 감지됨!")
+ // 충격 이벤트 존재 여부
+ if metadata.hasImpactEvents {
+ print("⚠️ 충격 이벤트 감지됨!")
 
-        // 모든 충격 이벤트 조회
-        for event in metadata.impactEvents {
-            print("충격 시간: \(event.timestamp)")
-            print("충격 강도: \(String(format: "%.2f G", event.magnitude))")
-            print("충격 방향: \(event.primaryDirection.displayName)")
-            print("심각도: \(event.severity.displayName)")
-        }
-    }
+ // 모든 충격 이벤트 조회
+ for event in metadata.impactEvents {
+ print("충격 시간: \(event.timestamp)")
+ print("충격 강도: \(String(format: "%.2f G", event.magnitude))")
+ print("충격 방향: \(event.primaryDirection.displayName)")
+ print("심각도: \(event.severity.displayName)")
+ }
+ }
 
-    // 최대 G-Force
-    if let maxG = metadata.maximumGForce {
-        print("최대 충격: \(String(format: "%.2f G", maxG))")
-    }
-    ```
+ // 최대 G-Force
+ if let maxG = metadata.maximumGForce {
+ print("최대 충격: \(String(format: "%.2f G", maxG))")
+ }
+ ```
 
  3. 통합 요약 정보:
-    ```swift
-    let summary = metadata.summary
+ ```swift
+ let summary = metadata.summary
 
-    print("=== 메타데이터 요약 ===")
-    print("GPS 데이터: \(summary.hasGPS ? "있음" : "없음") (\(summary.gpsPointCount)개 포인트)")
-    print("주행 거리: \(summary.distanceString)")
-    print("평균 속도: \(summary.averageSpeedString ?? "N/A")")
-    print("가속도 데이터: \(summary.hasAcceleration ? "있음" : "없음") (\(summary.accelerationPointCount)개 포인트)")
-    print("충격 이벤트: \(summary.impactEventCount)회")
-    print("최대 G-Force: \(summary.maximumGForceString ?? "N/A")")
-    ```
+ print("=== 메타데이터 요약 ===")
+ print("GPS 데이터: \(summary.hasGPS ? "있음" : "없음") (\(summary.gpsPointCount)개 포인트)")
+ print("주행 거리: \(summary.distanceString)")
+ print("평균 속도: \(summary.averageSpeedString ?? "N/A")")
+ print("가속도 데이터: \(summary.hasAcceleration ? "있음" : "없음") (\(summary.accelerationPointCount)개 포인트)")
+ print("충격 이벤트: \(summary.impactEventCount)회")
+ print("최대 G-Force: \(summary.maximumGForceString ?? "N/A")")
+ ```
 
  【Codable 프로토콜】
 
@@ -134,27 +134,27 @@ import Foundation
  JSON 구조 예시:
  ```json
  {
-   "gpsPoints": [
-     {
-       "timestamp": "2025-10-12T14:30:00Z",
-       "latitude": 37.5665,
-       "longitude": 126.9780,
-       "speed": 45.5
-     }
-   ],
-   "accelerationData": [
-     {
-       "timestamp": "2025-10-12T14:30:00.0Z",
-       "x": 0.0,
-       "y": 0.0,
-       "z": 1.0
-     }
-   ],
-   "deviceInfo": {
-     "manufacturer": "BlackVue",
-     "model": "DR900X-2CH",
-     "firmwareVersion": "1.010"
-   }
+ "gpsPoints": [
+ {
+ "timestamp": "2025-10-12T14:30:00Z",
+ "latitude": 37.5665,
+ "longitude": 126.9780,
+ "speed": 45.5
+ }
+ ],
+ "accelerationData": [
+ {
+ "timestamp": "2025-10-12T14:30:00.0Z",
+ "x": 0.0,
+ "y": 0.0,
+ "z": 1.0
+ }
+ ],
+ "deviceInfo": {
+ "manufacturer": "BlackVue",
+ "model": "DR900X-2CH",
+ "firmwareVersion": "1.010"
+ }
  }
  ```
 
@@ -176,18 +176,18 @@ import Foundation
  【성능 고려사항】
 
  1. 메모리 사용량:
-    - GPS 데이터: 1시간 녹화 = 약 3,600개 포인트 (1초당 1개)
-    - G-센서 데이터: 1시간 녹화 = 약 36,000개 포인트 (10Hz 샘플링)
-    - 예상 메모리: GPS 약 500KB, 센서 약 2MB (1시간 기준)
+ - GPS 데이터: 1시간 녹화 = 약 3,600개 포인트 (1초당 1개)
+ - G-센서 데이터: 1시간 녹화 = 약 36,000개 포인트 (10Hz 샘플링)
+ - 예상 메모리: GPS 약 500KB, 센서 약 2MB (1시간 기준)
 
  2. 검색 최적화:
-    - gpsPoint(at:)와 accelerationData(at:)는 O(n) 선형 검색 사용
-    - 자주 조회하는 경우 이진 검색(Binary Search) 고려 가능
-    - 배열이 이미 시간순 정렬되어 있으므로 이진 검색 적용 가능
+ - gpsPoint(at:)와 accelerationData(at:)는 O(n) 선형 검색 사용
+ - 자주 조회하는 경우 이진 검색(Binary Search) 고려 가능
+ - 배열이 이미 시간순 정렬되어 있으므로 이진 검색 적용 가능
 
  3. 필터링 최적화:
-    - impactEvents는 매번 필터링하므로 캐싱 고려
-    - 큰 데이터셋의 경우 lazy 연산 사용
+ - impactEvents는 매번 필터링하므로 캐싱 고려
+ - 큰 데이터셋의 경우 lazy 연산 사용
 
  ═══════════════════════════════════════════════════════════════════════════════
  */
@@ -1294,31 +1294,31 @@ struct DeviceInfo: Codable, Equatable, Hashable {
  【포함 통계】
 
  GPS 통계:
-   - hasGPS: GPS 데이터 유무
-   - gpsPointCount: GPS 포인트 개수
-   - totalDistance: 총 주행 거리 (미터)
-   - averageSpeed: 평균 속도 (km/h)
-   - maximumSpeed: 최고 속도 (km/h)
+ - hasGPS: GPS 데이터 유무
+ - gpsPointCount: GPS 포인트 개수
+ - totalDistance: 총 주행 거리 (미터)
+ - averageSpeed: 평균 속도 (km/h)
+ - maximumSpeed: 최고 속도 (km/h)
 
  가속도 통계:
-   - hasAcceleration: G-센서 데이터 유무
-   - accelerationPointCount: 가속도 데이터 개수
-   - impactEventCount: 충격 이벤트 횟수 (2.5G 이상)
-   - maximumGForce: 최대 G-Force
+ - hasAcceleration: G-센서 데이터 유무
+ - accelerationPointCount: 가속도 데이터 개수
+ - impactEventCount: 충격 이벤트 횟수 (2.5G 이상)
+ - maximumGForce: 최대 G-Force
 
  【포맷팅 프로퍼티】
 
  - distanceString: 거리를 읽기 쉬운 형태로 변환
-   예: 450m → "450 m", 2500m → "2.5 km"
+ 예: 450m → "450 m", 2500m → "2.5 km"
 
  - averageSpeedString: 평균 속도를 문자열로 변환
-   예: 45.3 → "45.3 km/h"
+ 예: 45.3 → "45.3 km/h"
 
  - maximumSpeedString: 최고 속도를 문자열로 변환
-   예: 68.5 → "68.5 km/h"
+ 예: 68.5 → "68.5 km/h"
 
  - maximumGForceString: 최대 G-Force를 문자열로 변환
-   예: 3.85 → "3.85 G"
+ 예: 3.85 → "3.85 G"
 
  ───────────────────────────────────────────────────────────────────────────────
  */
@@ -1491,58 +1491,58 @@ struct MetadataSummary: Codable, Equatable {
  【샘플 종류】
 
  1. sample: 완전한 메타데이터
-    - GPS 데이터, 가속도 데이터, 장치 정보 모두 포함
-    - 일반적인 주행 시나리오
+ - GPS 데이터, 가속도 데이터, 장치 정보 모두 포함
+ - 일반적인 주행 시나리오
 
  2. empty: 빈 메타데이터
-    - 데이터 없음 상태 테스트
-    - UI의 "데이터 없음" 처리 확인
+ - 데이터 없음 상태 테스트
+ - UI의 "데이터 없음" 처리 확인
 
  3. gpsOnly: GPS만 있는 메타데이터
-    - G-센서 없는 구형 블랙박스 시뮬레이션
-    - GPS 전용 UI 테스트
+ - G-센서 없는 구형 블랙박스 시뮬레이션
+ - GPS 전용 UI 테스트
 
  4. accelerationOnly: G-센서만 있는 메타데이터
-    - GPS 수신 불가 환경 (터널, 지하 등) 시뮬레이션
-    - 충격 감지 전용 UI 테스트
+ - GPS 수신 불가 환경 (터널, 지하 등) 시뮬레이션
+ - 충격 감지 전용 UI 테스트
 
  5. withImpact: 충격 이벤트 포함 메타데이터
-    - 사고 영상 시뮬레이션
-    - 충격 감지 UI 테스트
+ - 사고 영상 시뮬레이션
+ - 충격 감지 UI 테스트
 
  【사용 예시】
 
  SwiftUI 프리뷰:
  ```swift
  struct MetadataView_Previews: PreviewProvider {
-     static var previews: some View {
-         Group {
-             MetadataView(metadata: .sample)
-                 .previewDisplayName("Full Data")
+ static var previews: some View {
+ Group {
+ MetadataView(metadata: .sample)
+ .previewDisplayName("Full Data")
 
-             MetadataView(metadata: .empty)
-                 .previewDisplayName("No Data")
+ MetadataView(metadata: .empty)
+ .previewDisplayName("No Data")
 
-             MetadataView(metadata: .withImpact)
-                 .previewDisplayName("With Impact")
-         }
-     }
+ MetadataView(metadata: .withImpact)
+ .previewDisplayName("With Impact")
+ }
+ }
  }
  ```
 
  단위 테스트:
  ```swift
  func testMetadataSummary() {
-     let summary = VideoMetadata.sample.summary
-     XCTAssertTrue(summary.hasGPS)
-     XCTAssertTrue(summary.hasAcceleration)
-     XCTAssertGreaterThan(summary.totalDistance, 0)
+ let summary = VideoMetadata.sample.summary
+ XCTAssertTrue(summary.hasGPS)
+ XCTAssertTrue(summary.hasAcceleration)
+ XCTAssertGreaterThan(summary.totalDistance, 0)
  }
 
  func testImpactDetection() {
-     let metadata = VideoMetadata.withImpact
-     XCTAssertTrue(metadata.hasImpactEvents)
-     XCTAssertGreaterThanOrEqual(metadata.impactEvents.count, 1)
+ let metadata = VideoMetadata.withImpact
+ XCTAssertTrue(metadata.hasImpactEvents)
+ XCTAssertGreaterThanOrEqual(metadata.impactEvents.count, 1)
  }
  ```
 

@@ -208,7 +208,7 @@ class GPSSensorIntegrationTests: XCTestCase {
         let baseDate = Date()
         let normalData = AccelerationData(timestamp: baseDate, x: 0.0, y: 0.0, z: 1.0)
         let impactData = AccelerationData(timestamp: baseDate.addingTimeInterval(1.0),
-                                         x: 5.0, y: 3.0, z: 2.0) // 강한 충격
+                                          x: 5.0, y: 3.0, z: 2.0) // 강한 충격
 
         let metadata = VideoMetadata(
             gpsPoints: [],
@@ -222,8 +222,8 @@ class GPSSensorIntegrationTests: XCTestCase {
         // 충격 강도 계산 검증
         let detectedImpact = impactEvents.first!
         let magnitude = sqrt(detectedImpact.x * detectedImpact.x +
-                           detectedImpact.y * detectedImpact.y +
-                           detectedImpact.z * detectedImpact.z)
+                                detectedImpact.y * detectedImpact.y +
+                                detectedImpact.z * detectedImpact.z)
         XCTAssertGreaterThan(magnitude, 3.0, "충격 강도가 임계값을 초과해야 함")
     }
 
@@ -300,13 +300,13 @@ class GPSSensorIntegrationTests: XCTestCase {
         if let location = interpolatedLocation {
             // 위도: (37.5000 + 37.5020) / 2 = 37.5010
             XCTAssertEqual(location.coordinate.latitude, 37.5010, accuracy: 0.0001,
-                          "위도가 선형 보간되어야 함")
+                           "위도가 선형 보간되어야 함")
             // 경도: (127.0000 + 127.0020) / 2 = 127.0010
             XCTAssertEqual(location.coordinate.longitude, 127.0010, accuracy: 0.0001,
-                          "경도가 선형 보간되어야 함")
+                           "경도가 선형 보간되어야 함")
             // 속도: (30.0 + 40.0) / 2 = 35.0
             XCTAssertEqual(location.speed, 35.0, accuracy: 0.1,
-                          "속도가 선형 보간되어야 함")
+                           "속도가 선형 보간되어야 함")
         }
     }
 
@@ -476,7 +476,7 @@ class GPSSensorIntegrationTests: XCTestCase {
         for i in 0..<10000 {
             let point = GPSPoint(
                 coordinate: CLLocationCoordinate2D(latitude: 37.5 + Double(i) * 0.0001,
-                                                  longitude: 127.0 + Double(i) * 0.0001),
+                                                   longitude: 127.0 + Double(i) * 0.0001),
                 timestamp: baseDate.addingTimeInterval(Double(i)),
                 speed: 30.0
             )

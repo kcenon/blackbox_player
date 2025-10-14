@@ -85,9 +85,9 @@
  기본 enum (Associated Values 없음):
  ```swift
  enum TrafficLight {
-     case red
-     case yellow
-     case green
+ case red
+ case yellow
+ case green
  }
  let light = TrafficLight.red  // 추가 정보 없음
  ```
@@ -95,8 +95,8 @@
  Associated Values 있는 enum:
  ```swift
  enum DecoderError: Error {
-     case cannotOpenFile(String)  // 파일 경로 저장
-     case readFrameError(Int32)   // 에러 코드 저장
+ case cannotOpenFile(String)  // 파일 경로 저장
+ case readFrameError(Int32)   // 에러 코드 저장
  }
 
  // 사용
@@ -106,11 +106,11 @@
  // 값 추출
  switch error1 {
  case .cannotOpenFile(let path):
-     print("Failed to open: \(path)")  // "Failed to open: /path/to/video.mp4"
+ print("Failed to open: \(path)")  // "Failed to open: /path/to/video.mp4"
  case .readFrameError(let code):
-     print("Error code: \(code)")
+ print("Error code: \(code)")
  default:
-     break
+ break
  }
  ```
 
@@ -202,11 +202,11 @@
  ```swift
  let ret = av_read_frame(formatContext, packet)
  if ret < 0 {
-     if ret == AVERROR_EOF {
-         throw DecoderError.endOfFile
-     } else {
-         throw DecoderError.readFrameError(ret)
-     }
+ if ret == AVERROR_EOF {
+ throw DecoderError.endOfFile
+ } else {
+ throw DecoderError.readFrameError(ret)
+ }
  }
  ```
  */
@@ -718,10 +718,10 @@ enum DecoderError: Error {
  프로토콜 정의:
  ```swift
  protocol LocalizedError : Error {
-     var errorDescription: String? { get }
-     var failureReason: String? { get }
-     var recoverySuggestion: String? { get }
-     var helpAnchor: String? { get }
+ var errorDescription: String? { get }
+ var failureReason: String? { get }
+ var recoverySuggestion: String? { get }
+ var helpAnchor: String? { get }
  }
  ```
 
@@ -731,11 +731,11 @@ enum DecoderError: Error {
  사용 예:
  ```swift
  do {
-     try decoder.initialize()
+ try decoder.initialize()
  } catch {
-     // error.localizedDescription이 자동으로 errorDescription 사용
-     print(error.localizedDescription)
-     // 출력: "Cannot open file: /path/to/video.mp4"
+ // error.localizedDescription이 자동으로 errorDescription 사용
+ print(error.localizedDescription)
+ // 출력: "Cannot open file: /path/to/video.mp4"
  }
  ```
 
@@ -856,52 +856,52 @@ extension DecoderError: LocalizedError {
  1. 기본 패턴:
  ```swift
  func decodeVideo() throws {
-     // 파일 열기
-     guard canOpen(file) else {
-         throw DecoderError.cannotOpenFile(filePath)
-     }
+ // 파일 열기
+ guard canOpen(file) else {
+ throw DecoderError.cannotOpenFile(filePath)
+ }
 
-     // 코덱 찾기
-     guard let codec = findCodec() else {
-         throw DecoderError.codecNotFound("H.264")
-     }
+ // 코덱 찾기
+ guard let codec = findCodec() else {
+ throw DecoderError.codecNotFound("H.264")
+ }
 
-     // 디코딩...
+ // 디코딩...
  }
 
  // 사용
  do {
-     try decodeVideo()
+ try decodeVideo()
  } catch DecoderError.cannotOpenFile(let path) {
-     print("File error: \(path)")
-     // 사용자에게 파일 선택 다시 요청
+ print("File error: \(path)")
+ // 사용자에게 파일 선택 다시 요청
  } catch DecoderError.codecNotFound(let name) {
-     print("Codec \(name) not supported")
-     // 사용자에게 다른 파일 요청
+ print("Codec \(name) not supported")
+ // 사용자에게 다른 파일 요청
  } catch {
-     print("Unexpected error: \(error)")
+ print("Unexpected error: \(error)")
  }
  ```
 
  2. Result 타입 사용:
  ```swift
  func decodeVideo() -> Result<VideoFrame, DecoderError> {
-     do {
-         let frame = try performDecode()
-         return .success(frame)
-     } catch let error as DecoderError {
-         return .failure(error)
-     } catch {
-         return .failure(.unknown(error.localizedDescription))
-     }
+ do {
+ let frame = try performDecode()
+ return .success(frame)
+ } catch let error as DecoderError {
+ return .failure(error)
+ } catch {
+ return .failure(.unknown(error.localizedDescription))
+ }
  }
 
  // 사용
  switch decodeVideo() {
  case .success(let frame):
-     display(frame)
+ display(frame)
  case .failure(let error):
-     handle(error)
+ handle(error)
  }
  ```
 
@@ -909,27 +909,27 @@ extension DecoderError: LocalizedError {
  ```swift
  let frame = try? decoder.decodeNextFrame()
  if frame == nil {
-     // 에러 발생 (상세 정보 없음)
+ // 에러 발생 (상세 정보 없음)
  }
  ```
 
  4. 에러 체이닝:
  ```swift
  func loadAndDecode(_ path: String) throws -> VideoFrame {
-     let data = try loadFile(path)  // FileError 발생 가능
-     let frame = try decode(data)   // DecoderError 발생 가능
-     return frame
+ let data = try loadFile(path)  // FileError 발생 가능
+ let frame = try decode(data)   // DecoderError 발생 가능
+ return frame
  }
 
  // 두 에러 타입 모두 처리
  do {
-     let frame = try loadAndDecode("/video.mp4")
+ let frame = try loadAndDecode("/video.mp4")
  } catch let error as FileError {
-     // 파일 에러 처리
+ // 파일 에러 처리
  } catch let error as DecoderError {
-     // 디코더 에러 처리
+ // 디코더 에러 처리
  } catch {
-     // 기타 에러
+ // 기타 에러
  }
  ```
  */
