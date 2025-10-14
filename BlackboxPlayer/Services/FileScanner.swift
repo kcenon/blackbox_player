@@ -139,51 +139,17 @@ import Foundation
 /// @class FileScanner
 /// @brief 디렉토리를 스캔하여 블랙박스 비디오 파일을 발견하고 조직화하는 서비스
 ///
-/// FileManager의 재귀적 enumerator를 사용하여 모든 하위 디렉토리를 탐색하고,
+/// FileSystemService를 사용하여 파일 시스템에 접근하고,
 /// 정규식으로 파일명을 파싱하여 메타데이터를 추출합니다.
 class FileScanner {
     // MARK: - Properties
 
-    /*
-     ───────────────────────────────────────────────────────────────────────
-     지원하는 비디오 확장자
-     ───────────────────────────────────────────────────────────────────────
-
-     【Set 사용 이유】
-     contains() 연산이 O(1)로 빠릅니다.
-
-     Array를 사용하면:
-     videoExtensions.contains("mp4")  // O(N) - 최악의 경우 모든 요소 확인
-
-     Set을 사용하면:
-     videoExtensions.contains("mp4")  // O(1) - 해시 테이블 조회
-
-     【소문자로 저장】
-     파일 확장자는 대소문자 구분 없이 매칭:
-     - video.MP4 → "mp4" (lowercased)
-     - video.Mp4 → "mp4"
-     - video.mp4 → "mp4"
-
-     【확장자 선택】
-     - mp4: H.264/H.265, 블랙박스 표준
-     - mov: QuickTime, 일부 고급 모델
-     - avi: 오래된 형식, 레거시 지원
-     - mkv: Matroska, 일부 제조사 사용
-     ───────────────────────────────────────────────────────────────────────
-     */
-
-    /// @var videoExtensions
-    /// @brief 지원하는 비디오 파일 확장자
+    /// @var fileSystemService
+    /// @brief 파일 시스템 접근을 담당하는 서비스
     ///
-    /// Set으로 저장하여 O(1) 시간에 포함 여부 확인 가능합니다.
-    /// 모든 확장자는 소문자로 저장되어 대소문자 구분 없이 매칭됩니다.
-    ///
-    /// 지원 형식:
-    /// - mp4: 가장 일반적인 블랙박스 형식
-    /// - mov: QuickTime 형식 (일부 고급 모델)
-    /// - avi: 레거시 형식 지원
-    /// - mkv: Matroska 컨테이너
-    private let videoExtensions: Set<String> = ["mp4", "mov", "avi", "mkv"]
+    /// 파일 목록 조회, 파일 정보 읽기 등 저수준 파일 작업을 수행합니다.
+    /// 의존성 주입을 통해 테스트 용이성을 향상시킵니다.
+    private let fileSystemService: FileSystemService
 
     /*
      ───────────────────────────────────────────────────────────────────────
@@ -287,9 +253,16 @@ class FileScanner {
 
     /// @brief FileScanner 초기화
     ///
+    /// @param fileSystemService 파일 시스템 접근 서비스 (기본값: 새 인스턴스)
+    ///
     /// 정규식 패턴을 컴파일하여 성능을 최적화합니다.
     /// 컴파일 실패 시 filenameRegex는 nil이 되며, 모든 파일이 스킵됩니다.
-    init() {
+    ///
+    /// 의존성 주입 패턴:
+    /// - 프로덕션: FileScanner() - 기본 FileSystemService 사용
+    /// - 테스트: FileScanner(fileSystemService: mockService) - 모킹된 서비스 사용
+    init(fileSystemService: FileSystemService = FileSystemService()) {
+        self.fileSystemService = fileSystemService
         self.filenameRegex = try? NSRegularExpression(pattern: filenamePattern, options: [])
     }
 
@@ -394,53 +367,26 @@ class FileScanner {
     /// - 메모리: O(M) - M은 비디오 파일 수
     /// - 일반적인 SD 카드 (1000개 파일): 약 100-200ms
     func scanDirectory(_ directoryURL: URL) throws -> [VideoFileGroup] {
-        let fileManager = FileManager.default
-
-        // 1단계: 디렉토리 존재 확인
-        guard fileManager.fileExists(atPath: directoryURL.path) else {
+        // 1단계: FileSystemService를 사용하여 비디오 파일 목록 가져오기
+        // FileSystemService가 디렉토리 존재 확인, 재귀적 탐색, 비디오 확장자 필터링을 모두 수행
+        let videoFileURLs: [URL]
+        do {
+            videoFileURLs = try fileSystemService.listVideoFiles(at: directoryURL)
+        } catch FileSystemError.fileNotFound {
             throw FileScannerError.directoryNotFound(directoryURL.path)
-        }
-
-        // 2단계: 재귀적 enumerator 생성
-        // includingPropertiesForKeys: 미리 로드할 파일 속성
-        //   - .isRegularFileKey: 일반 파일 여부 (디렉토리 제외)
-        //   - .fileSizeKey: 파일 크기
-        //   - .contentModificationDateKey: 수정 날짜
-        // options: .skipsHiddenFiles - 숨김 파일 제외 (.DS_Store 등)
-        guard let enumerator = fileManager.enumerator(
-            at: directoryURL,
-            includingPropertiesForKeys: [.isRegularFileKey, .fileSizeKey, .contentModificationDateKey],
-            options: [.skipsHiddenFiles]
-        ) else {
+        } catch FileSystemError.accessDenied {
             throw FileScannerError.cannotEnumerateDirectory(directoryURL.path)
         }
 
+        // 2단계: 각 파일 파싱하여 VideoFileInfo 생성
         var videoFiles: [VideoFileInfo] = []
-
-        // 3단계: 모든 파일 순회
-        for case let fileURL as URL in enumerator {
-            // 3-1: 일반 파일인지 확인 (디렉토리, 심볼릭 링크 제외)
-            guard let resourceValues = try? fileURL.resourceValues(forKeys: [.isRegularFileKey]),
-                  let isRegularFile = resourceValues.isRegularFile,
-                  isRegularFile else {
-                continue
-            }
-
-            // 3-2: 비디오 확장자 확인
-            // pathExtension: URL에서 확장자 추출 (예: "mp4")
-            // lowercased(): 대소문자 구분 없이 매칭
-            let fileExtension = fileURL.pathExtension.lowercased()
-            guard videoExtensions.contains(fileExtension) else {
-                continue
-            }
-
-            // 3-3: 파일명 파싱 및 VideoFileInfo 생성
+        for fileURL in videoFileURLs {
             if let fileInfo = parseVideoFile(fileURL) {
                 videoFiles.append(fileInfo)
             }
         }
 
-        // 4단계: 멀티채널 그룹화
+        // 3단계: 멀티채널 그룹화
         // 같은 시각의 전방/후방 영상을 하나의 그룹으로 통합
         let groups = groupVideoFiles(videoFiles)
 
@@ -537,30 +483,13 @@ class FileScanner {
     /// - 파일명 파싱 생략으로 scanDirectory()보다 빠름
     /// - 메모리 사용: O(1) - count 변수만
     func countVideoFiles(in directoryURL: URL) -> Int {
-        let fileManager = FileManager.default
-
-        // 디렉토리 존재 확인 및 enumerator 생성
-        // 실패 시 0 반환 (guard 바인딩)
-        guard fileManager.fileExists(atPath: directoryURL.path),
-              let enumerator = fileManager.enumerator(
-                at: directoryURL,
-                includingPropertiesForKeys: [.isRegularFileKey],
-                options: [.skipsHiddenFiles]
-              ) else {
+        // FileSystemService를 사용하여 비디오 파일 목록 가져오기
+        // 오류 발생 시 0 반환 (파일이 없거나 접근 불가)
+        guard let videoFileURLs = try? fileSystemService.listVideoFiles(at: directoryURL) else {
             return 0
         }
 
-        var count = 0
-
-        // 모든 파일 순회하며 비디오 확장자만 카운트
-        for case let fileURL as URL in enumerator {
-            let fileExtension = fileURL.pathExtension.lowercased()
-            if videoExtensions.contains(fileExtension) {
-                count += 1
-            }
-        }
-
-        return count
+        return videoFileURLs.count
     }
 
     // MARK: - Private Methods
@@ -699,9 +628,8 @@ class FileScanner {
         let eventType = EventType.detect(from: pathString)
 
         // 파일 크기 조회
-        // FileManager.attributesOfItem으로 파일 속성 읽기
-        // .size 키로 UInt64 값 추출
-        let fileSize = (try? FileManager.default.attributesOfItem(atPath: pathString)[.size] as? UInt64) ?? 0
+        // FileSystemService.getFileInfo()로 파일 정보 읽기
+        let fileSize = (try? fileSystemService.getFileInfo(at: fileURL).size) ?? 0
 
         // 기본 파일명 생성 (카메라 위치 코드 제외)
         // "20240115_143025_F" → "20240115_143025"
