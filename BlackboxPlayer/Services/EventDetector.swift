@@ -307,7 +307,7 @@ class EventDetector {
         }
 
         var filteredEvents: [EventMarker] = []
-        var lastEventByType: [EventType: EventMarker] = [:]
+        var lastEventByType: [DrivingEventType: EventMarker] = [:]
 
         for event in events.sorted() {
             // 같은 종류의 이전 이벤트 확인

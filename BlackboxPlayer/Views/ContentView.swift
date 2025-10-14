@@ -654,6 +654,24 @@ struct ContentView: View {
     // MARK: - Body
 
     var body: some View {
+        content
+            .notificationHandlers(
+                selectedVideoFile: $selectedVideoFile,
+                showSidebar: $showSidebar,
+                showMetadataOverlay: $showMetadataOverlay,
+                showMapOverlay: $showMapOverlay,
+                showGraphOverlay: $showGraphOverlay,
+                isPlaying: $isPlaying,
+                playbackSpeed: $playbackSpeed,
+                showAboutWindow: $showAboutWindow,
+                showHelpWindow: $showHelpWindow,
+                openFolder: openFolder,
+                refreshFileList: refreshFileList,
+                seekBy: seekBy
+            )
+    }
+
+    private var content: some View {
         NavigationView {
             // Sidebar: File list
             if showSidebar {
@@ -711,58 +729,6 @@ struct ContentView: View {
                     .padding()
                     .transition(.move(edge: .bottom))
             }
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .openFolderRequested)) { _ in
-            openFolder()
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .refreshFileListRequested)) { _ in
-            refreshFileList()
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .toggleSidebarRequested)) { _ in
-            showSidebar.toggle()
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .toggleMetadataOverlayRequested)) { _ in
-            showMetadataOverlay.toggle()
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .toggleMapOverlayRequested)) { _ in
-            showMapOverlay.toggle()
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .toggleGraphOverlayRequested)) { _ in
-            showGraphOverlay.toggle()
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .playPauseRequested)) { _ in
-            isPlaying.toggle()
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .stepForwardRequested)) { _ in
-            guard let videoFile = selectedVideoFile else { return }
-            seekBy(5, in: videoFile)
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .stepBackwardRequested)) { _ in
-            guard let videoFile = selectedVideoFile else { return }
-            seekBy(-5, in: videoFile)
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .increaseSpeedRequested)) { _ in
-            let speeds: [Double] = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 4.0]
-            if let currentIndex = speeds.firstIndex(of: playbackSpeed),
-               currentIndex < speeds.count - 1 {
-                playbackSpeed = speeds[currentIndex + 1]
-            }
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .decreaseSpeedRequested)) { _ in
-            let speeds: [Double] = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 4.0]
-            if let currentIndex = speeds.firstIndex(of: playbackSpeed),
-               currentIndex > 0 {
-                playbackSpeed = speeds[currentIndex - 1]
-            }
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .normalSpeedRequested)) { _ in
-            playbackSpeed = 1.0
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .showAboutRequested)) { _ in
-            showAboutWindow = true
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .showHelpRequested)) { _ in
-            showHelpWindow = true
         }
         .sheet(isPresented: $showAboutWindow) {
             AboutWindow()
@@ -1814,6 +1780,84 @@ struct HelpWindow: View {
                 .font(.body)
             Spacer()
         }
+    }
+}
+
+// MARK: - View Extensions
+
+extension View {
+    /// @brief Notification handlers view modifier
+    ///
+    /// @details
+    /// Attaches all NotificationCenter handlers to the view.
+    /// This extension helps reduce type-checking complexity in ContentView.body.
+    func notificationHandlers(
+        selectedVideoFile: Binding<VideoFile?>,
+        showSidebar: Binding<Bool>,
+        showMetadataOverlay: Binding<Bool>,
+        showMapOverlay: Binding<Bool>,
+        showGraphOverlay: Binding<Bool>,
+        isPlaying: Binding<Bool>,
+        playbackSpeed: Binding<Double>,
+        showAboutWindow: Binding<Bool>,
+        showHelpWindow: Binding<Bool>,
+        openFolder: @escaping () -> Void,
+        refreshFileList: @escaping () -> Void,
+        seekBy: @escaping (Double, VideoFile) -> Void
+    ) -> some View {
+        self
+            .onReceive(NotificationCenter.default.publisher(for: .openFolderRequested)) { _ in
+                openFolder()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .refreshFileListRequested)) { _ in
+                refreshFileList()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .toggleSidebarRequested)) { _ in
+                showSidebar.wrappedValue.toggle()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .toggleMetadataOverlayRequested)) { _ in
+                showMetadataOverlay.wrappedValue.toggle()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .toggleMapOverlayRequested)) { _ in
+                showMapOverlay.wrappedValue.toggle()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .toggleGraphOverlayRequested)) { _ in
+                showGraphOverlay.wrappedValue.toggle()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .playPauseRequested)) { _ in
+                isPlaying.wrappedValue.toggle()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .stepForwardRequested)) { _ in
+                guard let videoFile = selectedVideoFile.wrappedValue else { return }
+                seekBy(5, videoFile)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .stepBackwardRequested)) { _ in
+                guard let videoFile = selectedVideoFile.wrappedValue else { return }
+                seekBy(-5, videoFile)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .increaseSpeedRequested)) { _ in
+                let speeds: [Double] = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 4.0]
+                if let currentIndex = speeds.firstIndex(of: playbackSpeed.wrappedValue),
+                   currentIndex < speeds.count - 1 {
+                    playbackSpeed.wrappedValue = speeds[currentIndex + 1]
+                }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .decreaseSpeedRequested)) { _ in
+                let speeds: [Double] = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 4.0]
+                if let currentIndex = speeds.firstIndex(of: playbackSpeed.wrappedValue),
+                   currentIndex > 0 {
+                    playbackSpeed.wrappedValue = speeds[currentIndex - 1]
+                }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .normalSpeedRequested)) { _ in
+                playbackSpeed.wrappedValue = 1.0
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .showAboutRequested)) { _ in
+                showAboutWindow.wrappedValue = true
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .showHelpRequested)) { _ in
+                showHelpWindow.wrappedValue = true
+            }
     }
 }
 

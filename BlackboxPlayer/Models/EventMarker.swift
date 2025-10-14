@@ -7,11 +7,11 @@
 
 import Foundation
 
-/// @enum EventType
-/// @brief 이벤트 유형
+/// @enum DrivingEventType
+/// @brief 주행 이벤트 유형
 ///
 /// @details
-/// GPS 데이터 분석으로 감지 가능한 이벤트 유형입니다.
+/// GPS 데이터 분석으로 감지 가능한 주행 이벤트 유형입니다.
 ///
 /// ## 감지 기준
 /// - **hardBraking**: 0.5초 내 20km/h 이상 감속 (충격 위험)
@@ -22,7 +22,7 @@ import Foundation
 /// - hardBraking → 빨간색 (위험)
 /// - rapidAcceleration → 주황색 (경고)
 /// - sharpTurn → 노란색 (주의)
-enum EventType: String, Codable {
+enum DrivingEventType: String, Codable {
     /// 급감속 (급정거)
     case hardBraking = "hard_braking"
 
@@ -110,7 +110,7 @@ struct EventMarker: Identifiable, Codable {
 
     /// @var type
     /// @brief 이벤트 유형
-    let type: EventType
+    let type: DrivingEventType
 
     /// @var magnitude
     /// @brief 이벤트 강도 (0.0 ~ 1.0)
@@ -155,7 +155,7 @@ struct EventMarker: Identifiable, Codable {
     /// @param metadata 추가 메타데이터 (선택사항)
     init(
         timestamp: TimeInterval,
-        type: EventType,
+        type: DrivingEventType,
         magnitude: Double,
         metadata: [String: Double]? = nil
     ) {

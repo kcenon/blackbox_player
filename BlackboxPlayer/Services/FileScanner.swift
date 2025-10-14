@@ -629,7 +629,7 @@ class FileScanner {
 
         // 파일 크기 조회
         // FileSystemService.getFileInfo()로 파일 정보 읽기
-        let fileSize = (try? fileSystemService.getFileInfo(at: fileURL).size) ?? 0
+        let fileSize = UInt64((try? fileSystemService.getFileInfo(at: fileURL).size) ?? 0)
 
         // 기본 파일명 생성 (카메라 위치 코드 제외)
         // "20240115_143025_F" → "20240115_143025"

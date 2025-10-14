@@ -34,8 +34,8 @@ targets:
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         COMBINE_HIDPI_IMAGES: YES
         SWIFT_OBJC_BRIDGING_HEADER: BlackboxPlayer/Utilities/BridgingHeader.h
-        HEADER_SEARCH_PATHS: /opt/homebrew/Cellar/ffmpeg/8.0_1/include
-        LIBRARY_SEARCH_PATHS: /opt/homebrew/Cellar/ffmpeg/8.0_1/lib
+        HEADER_SEARCH_PATHS: /opt/homebrew/opt/ffmpeg/include
+        LIBRARY_SEARCH_PATHS: /opt/homebrew/opt/ffmpeg/lib
         OTHER_LDFLAGS: -lavformat -lavcodec -lswscale -lavutil -lswresample
         SWIFT_ACTIVE_COMPILATION_CONDITIONS: DEBUG
       configs:
@@ -59,8 +59,8 @@ targets:
         CODE_SIGN_STYLE: Automatic
         GENERATE_INFOPLIST_FILE: YES
         SWIFT_OBJC_BRIDGING_HEADER: BlackboxPlayer/Utilities/BridgingHeader.h
-        HEADER_SEARCH_PATHS: /opt/homebrew/Cellar/ffmpeg/8.0_1/include
-        LIBRARY_SEARCH_PATHS: /opt/homebrew/Cellar/ffmpeg/8.0_1/lib
+        HEADER_SEARCH_PATHS: /opt/homebrew/opt/ffmpeg/include
+        LIBRARY_SEARCH_PATHS: /opt/homebrew/opt/ffmpeg/lib
     dependencies:
       - target: BlackboxPlayer
 
