@@ -59,10 +59,6 @@
 - [ ] CI/CD 파이프라인 설정 (GitHub Actions)
 
 #### 3. 라이브러리 통합
-- [ ] EXT4 라이브러리 통합:
-  - Objective-C++ 브리징 헤더 생성
-  - 기본 읽기/쓰기 작업 테스트
-  - macOS 호환성 확인
 - [ ] FFmpeg 통합:
   - FFmpeg 라이브러리 링크
   - Swift 래퍼 생성
@@ -86,19 +82,19 @@
 - [ ] 영상 사양 문서화 (해상도, 코덱, 비트레이트)
 
 #### 5. 개념 증명
-- [ ] 최소한의 EXT4 읽기 데모 생성
+- [ ] 최소한의 파일 시스템 액세스 데모 생성
 - [ ] 최소한의 FFmpeg 디코딩 데모 생성
 - [ ] 하드웨어 성능 검증 (5개 스트림 디코딩)
 
 ### 산출물
 - ✅ 기본 구조를 갖춘 작동하는 Xcode 프로젝트
-- ✅ EXT4 라이브러리 성공적으로 통합
+- ✅ 파일 시스템 액세스 작동
 - ✅ FFmpeg 디코딩 작동
 - ✅ 샘플 데이터 문서화
 - ✅ 기술적 실현 가능성 확인
 
 ### 성공 기준
-- EXT4 포맷 SD 카드에서 파일 읽기 가능
+- SD 카드에서 파일 읽기 가능
 - FFmpeg으로 H.264 영상 디코딩 가능
 - SwiftUI에서 단일 영상 프레임 표시 가능
 - 프로젝트가 오류 없이 빌드됨
@@ -108,36 +104,35 @@
 ## 단계 1: 파일 시스템 및 데이터 계층 (2-3주)
 
 ### 목표
-- EXT4 파일 시스템 액세스 구현
+- 파일 시스템 액세스 구현
 - 블랙박스 메타데이터 파싱
 - 파일 관리 기반 구축
 
 ### 작업
 
-#### 1주차: EXT4 통합
+#### 1주차: 파일 시스템 통합
 
-**1. EXT4 브리지 구현**
+**1. 파일 시스템 서비스 구현**
 ```swift
 // Swift 인터페이스
-class EXT4FileSystem {
-    func mount(device: String) throws
-    func unmount()
-    func listFiles(at path: String) throws -> [FileInfo]
-    func readFile(at path: String) throws -> Data
-    func writeFile(data: Data, to path: String) throws
+class FileSystemService {
+    func listVideoFiles(at url: URL) throws -> [URL]
+    func readFile(at url: URL) throws -> Data
+    func getFileInfo(at url: URL) throws -> FileInfo
+    func detectSDCards() -> [URL]
 }
 ```
 
-- [ ] Objective-C++ 래퍼 구현
-- [ ] Swift 브리지 인터페이스 생성
+- [ ] FileManager 기반 파일 액세스 구현
+- [ ] IOKit을 사용한 USB 장치 감지
 - [ ] 오류 처리 추가
 - [ ] 파일 열거 구현
 - [ ] 파일 읽기 구현
-- [ ] 파일 쓰기 구현 (설정용)
+- [ ] 파일 정보 조회 구현
 - [ ] 단위 테스트 추가
 
 **2. 장치 감지**
-- [ ] 연결된 USB 장치 감지
+- [ ] 마운트된 볼륨 감지
 - [ ] 블랙박스 SD 카드 식별
 - [ ] 여러 SD 카드 처리
 - [ ] 장치 선택 UI 추가
@@ -194,13 +189,13 @@ class FileManagerService {
 - [ ] 선택 메커니즘 구현
 
 ### 산출물
-- ✅ EXT4 파일 시스템 완전 액세스 가능
+- ✅ 파일 시스템 완전 액세스 가능
 - ✅ UI에 파일 목록 표시
 - ✅ 메타데이터 파싱 작동
 - ✅ 이벤트 유형 분류 구현
 
 ### 성공 기준
-- SD 카드를 마운트하고 모든 파일 나열 가능
+- SD 카드에서 모든 파일 나열 가능
 - 영상 파일 데이터 읽기 가능
 - GPS 및 G-센서 메타데이터 파싱 가능
 - 이벤트 유형과 함께 파일 목록 올바르게 표시
@@ -212,7 +207,7 @@ class FileManagerService {
 ./run_tests.sh FileManagerServiceTests
 
 # 통합 테스트
-./run_tests.sh EXT4IntegrationTests
+./run_tests.sh FileSystemIntegrationTests
 ```
 
 ---
@@ -866,7 +861,6 @@ xcrun stapler staple BlackboxPlayer.app
 
 | 리스크 | 확률 | 영향 | 완화 |
 |------|------|------|------|
-| EXT4 라이브러리 비호환성 | 중간 | 높음 | 단계 0에서 조기 POC; 대안 연구 (libext4) |
 | 5채널 성능 문제 | 중간 | 중간 | Metal 최적화; 품질 설정 제공 |
 | 공증 거부 | 낮음 | 높음 | Apple 가이드라인 엄격히 준수; 조기 테스트 |
 | GPS/G-센서 포맷 미상 | 중간 | 중간 | Windows 뷰어에서 리버스 엔지니어링 |
@@ -886,7 +880,7 @@ xcodebuild test -scheme BlackboxPlayer -destination 'platform=macOS'
 ```
 
 **통합 테스트:**
-- 실제 SD 카드로 EXT4 읽기/쓰기
+- 실제 SD 카드에서 파일 읽기
 - 샘플 영상으로 다채널 재생
 - 다양한 영상 조합으로 내보내기
 
@@ -1005,7 +999,7 @@ jobs:
 | 카테고리 | 개수 | 우선순위 | 예상 작업 기간 | 주요 파일 |
 |----------|------|----------|---------------|-----------|
 | **UI/메뉴 액션** | 14 | 🔴 높음 | 5-7일 | BlackboxPlayerApp.swift |
-| **EXT4 통합** | 10 | 🔴 높음 | 10-15일 | EXT4Bridge.swift |
+| **파일 시스템 통합** | 8 | 🔴 높음 | 7-10일 | FileSystemService.swift |
 | **영상 재생** | 8 | 🟠 중간 | 7-10일 | VideoDecoder.swift, SyncController.swift |
 | **테스트** | 14 | 🟡 낮음 | 3-5일 | MultiChannelRendererTests.swift |
 | **UI 컴포넌트** | 13 | 🟠 중간 | 5-7일 | FileListView.swift, FileRow.swift |
@@ -1016,20 +1010,20 @@ jobs:
 
 다음 항목들은 다른 기능들을 블로킹하므로 최우선으로 완료해야 합니다:
 
-1. **TODO #15** (EXT4Bridge.swift:298): EXT4 장치 마운트 - **모든 파일 작업의 블로커**
-2. **TODO #16** (EXT4Bridge.swift:548): 디렉토리 목록 조회 - 파일 탐색에 필수
-3. **TODO #18** (EXT4Bridge.swift:781): 파일 읽기 - 영상 재생에 필수
-4. **TODO #24** (EXT4Bridge.swift:1352): 장치 언마운트 - 안전한 종료에 필수
-5. **TODO #1** (BlackboxPlayerApp.swift:463): 폴더 선택 대화상자 - 메인 UI 진입점
-6. **TODO #7** (BlackboxPlayerApp.swift:681): 재생/일시정지 - 핵심 재생 제어
+1. **TODO #1** (BlackboxPlayerApp.swift:463): 폴더 선택 대화상자 - 메인 UI 진입점
+2. **TODO #2** (FileSystemService.swift): SD 카드 볼륨 감지 - 파일 탐색에 필수
+3. **TODO #3** (FileSystemService.swift): 비디오 파일 목록 조회 - 파일 탐색에 필수
+4. **TODO #4** (FileSystemService.swift): 파일 읽기 - 영상 재생에 필수
+5. **TODO #7** (BlackboxPlayerApp.swift:681): 재생/일시정지 - 핵심 재생 제어
+6. **TODO #8** (VideoDecoder.swift): 영상 디코딩 - 재생에 필수
 
 ### 구현 로드맵 (8주)
 
 #### Phase 1: 최우선 경로 (1-2주차)
-- EXT4 마운트/언마운트 (#15, #24)
-- 디렉토리 목록 (#16)
+- SD 카드 볼륨 감지 (#2)
+- 디렉토리 목록 (#3)
 - 폴더 선택 대화상자 (#1)
-- 파일 읽기 (#18)
+- 파일 읽기 (#4)
 - 재생/일시정지 (#7)
 
 #### Phase 2: 핵심 기능 (3-4주차)
@@ -1053,27 +1047,27 @@ jobs:
 ### 주요 의존성
 
 ```
-EXT4 마운트 (#15)
-  ├─→ 디렉토리 목록 (#16)
-  ├─→ 파일 읽기 (#18)
-  └─→ 파일 정보 조회 (#17)
-      ├─→ 메타데이터 로드 (#27)
-      │   ├─→ GPS 파싱 (#25)
-      │   └─→ 타임스탬프 동기화 (#26)
-      │       ├─→ 재생/일시정지 (#7)
-      │       └─→ 오버레이 토글 (#4, #5, #6)
+SD 카드 감지 (#2)
+  ├─→ 디렉토리 목록 (#3)
+  ├─→ 파일 읽기 (#4)
+  └─→ 파일 정보 조회 (#5)
+      ├─→ 메타데이터 로드 (#6)
+      │   ├─→ GPS 파싱 (#7)
+      │   └─→ 타임스탬프 동기화 (#8)
+      │       ├─→ 재생/일시정지 (#9)
+      │       └─→ 오버레이 토글 (#10, #11, #12)
       └─→ 폴더 열기 (#1)
-          └─→ 파일 목록 새로고침 (#2)
+          └─→ 파일 목록 새로고침 (#13)
 ```
 
 ### 리스크 평가
 
 | 리스크 | 영향 | 완화 방안 |
 |--------|------|----------|
-| EXT4 C 라이브러리 통합 실패 | 🔴 치명적 | FUSE 대체안 또는 읽기 전용 접근 사용 |
 | FFmpeg 호환성 문제 | 🟠 높음 | 샘플 파일로 광범위한 코덱 테스트 |
 | Intel Mac에서 Metal 성능 문제 | 🟡 중간 | 셰이더 최적화, 품질 설정 제공 |
 | GPS 메타데이터 포맷 미상 | 🟠 높음 | 샘플 데이터에서 리버스 엔지니어링 |
+| SD 카드 호환성 문제 | 🟡 중간 | 다양한 SD 카드로 테스트, FAT32/exFAT 지원 |
 
 ### 진행 상황 추적
 
@@ -1082,8 +1076,8 @@ EXT4 마운트 (#15)
 **미시작**: 59/59 (100%)
 
 #### 마일스톤 1: MVP (1-4주차)
-- [ ] EXT4 마운트/언마운트 작동
-- [ ] EXT4에서 파일 목록 로드
+- [ ] SD 카드 볼륨 감지 작동
+- [ ] SD 카드에서 파일 목록 로드
 - [ ] 단일 채널 영상 재생
 - [ ] 기본 재생 제어
 

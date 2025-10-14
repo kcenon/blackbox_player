@@ -8,244 +8,134 @@ This document outlines the major technical challenges for the macOS Blackbox Pla
 
 ---
 
-## Challenge 1: EXT4 File System Access on macOS
+## Challenge 1: SD Card File System Access on macOS
 
 ### Problem Statement
 
-**Severity:** 🔴 Critical
-**Complexity:** High
-**Impact:** High - Project blocker if unsolved
+**Severity:** 🟡 Medium
+**Complexity:** Medium
+**Impact:** Medium - Manageable with native APIs
 
-macOS does not natively support EXT4 file systems. The dashcam SD cards are formatted with EXT4, making them unreadable by default on macOS. We must implement block-level I/O using a provided C/C++ library.
+The dashcam SD cards need to be accessed efficiently for reading video files and metadata. We must implement reliable file system access using macOS native APIs (FileManager and IOKit) while handling USB device detection and file permissions properly.
 
 ### Technical Details
 
 1. **macOS File System Support:**
    - Native: APFS, HFS+, FAT32, exFAT
-   - No native EXT4 support
-   - Cannot mount EXT4 volumes without kernel extensions or FUSE
+   - SD cards typically formatted as FAT32 or exFAT
+   - Direct support through FileManager
 
 2. **Sandbox Restrictions:**
    - macOS sandboxed apps have limited device access
    - Need specific entitlements for USB device access
-   - Block device access requires elevated privileges
+   - User must grant permission through file picker or drag-and-drop
 
-3. **Library Integration:**
-   - Provided library likely written in C/C++
-   - Need to bridge to Swift
-   - Must handle different architectures (Intel vs Apple Silicon)
+3. **Native API Integration:**
+   - FileManager for file operations
+   - IOKit for USB device detection
+   - Pure Swift implementation - no bridging required
+   - Native support for both Intel and Apple Silicon
 
 ### Solution Strategy
 
-#### Option 1: Direct Library Integration (Recommended)
+#### Option 1: FileManager + IOKit Integration (Recommended)
 
 **Architecture:**
 ```
 Swift (UI & Business Logic)
-    ↕ Bridging Header
-Objective-C++ Wrapper
-    ↕ C++ Interop
-EXT4 Library (C/C++)
-    ↕ Block I/O
-SD Card Hardware
+    ↕ Native Swift API
+FileSystemService
+    ↕ Foundation Framework
+FileManager + IOKit
+    ↕ macOS Kernel
+SD Card Hardware (FAT32/exFAT)
 ```
 
 **Implementation:**
 
-**Step 1: Create Objective-C++ Wrapper**
-
-```objc
-// EXT4Wrapper.h
-#import <Foundation/Foundation.h>
-
-@interface EXT4Wrapper : NSObject
-
-- (BOOL)mountDevice:(NSString *)devicePath error:(NSError **)error;
-- (void)unmount;
-- (NSData *)readFileAtPath:(NSString *)path error:(NSError **)error;
-- (BOOL)writeData:(NSData *)data toPath:(NSString *)path error:(NSError **)error;
-- (NSArray<NSDictionary *> *)listDirectoryAtPath:(NSString *)path error:(NSError **)error;
-
-@end
-```
-
-```cpp
-// EXT4Wrapper.mm (Objective-C++)
-#import "EXT4Wrapper.h"
-#include "ext4.h" // Provided C/C++ library
-#include <iostream>
-
-@implementation EXT4Wrapper {
-    ext4_fs *filesystem;
-    ext4_device device;
-}
-
-- (BOOL)mountDevice:(NSString *)devicePath error:(NSError **)error {
-    const char *path = [devicePath UTF8String];
-
-    // Initialize block device
-    if (ext4_device_init(&device, path) != 0) {
-        if (error) {
-            *error = [NSError errorWithDomain:@"EXT4ErrorDomain"
-                                         code:1001
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to initialize device"}];
-        }
-        return NO;
-    }
-
-    // Mount filesystem
-    if (ext4_mount(&device, "/", false) != 0) {
-        if (error) {
-            *error = [NSError errorWithDomain:@"EXT4ErrorDomain"
-                                         code:1002
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to mount filesystem"}];
-        }
-        return NO;
-    }
-
-    return YES;
-}
-
-- (void)unmount {
-    if (filesystem) {
-        ext4_umount("/");
-        ext4_device_fini(&device);
-        filesystem = nullptr;
-    }
-}
-
-- (NSData *)readFileAtPath:(NSString *)path error:(NSError **)error {
-    const char *filepath = [path UTF8String];
-
-    ext4_file file;
-    if (ext4_fopen(&file, filepath, "rb") != 0) {
-        if (error) {
-            *error = [NSError errorWithDomain:@"EXT4ErrorDomain"
-                                         code:2001
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to open file"}];
-        }
-        return nil;
-    }
-
-    // Get file size
-    ext4_fseek(&file, 0, SEEK_END);
-    size_t fileSize = ext4_ftell(&file);
-    ext4_fseek(&file, 0, SEEK_SET);
-
-    // Read data
-    void *buffer = malloc(fileSize);
-    size_t bytesRead;
-    ext4_fread(&file, buffer, fileSize, &bytesRead);
-    ext4_fclose(&file);
-
-    NSData *data = [NSData dataWithBytesNoCopy:buffer length:bytesRead freeWhenDone:YES];
-    return data;
-}
-
-- (NSArray<NSDictionary *> *)listDirectoryAtPath:(NSString *)path error:(NSError **)error {
-    const char *dirpath = [path UTF8String];
-
-    ext4_dir dir;
-    if (ext4_dir_open(&dir, dirpath) != 0) {
-        if (error) {
-            *error = [NSError errorWithDomain:@"EXT4ErrorDomain"
-                                         code:3001
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to open directory"}];
-        }
-        return nil;
-    }
-
-    NSMutableArray *files = [NSMutableArray array];
-    const ext4_direntry *entry;
-
-    while ((entry = ext4_dir_entry_next(&dir)) != NULL) {
-        NSString *name = [NSString stringWithUTF8String:(const char *)entry->name];
-
-        NSDictionary *fileInfo = @{
-            @"name": name,
-            @"size": @(entry->inode_size),
-            @"isDirectory": @(entry->inode_type == EXT4_DE_DIR)
-        };
-
-        [files addObject:fileInfo];
-    }
-
-    ext4_dir_close(&dir);
-    return files;
-}
-
-@end
-```
-
-**Step 2: Create Swift Bridge**
+**Step 1: Create FileSystemService**
 
 ```swift
-// EXT4Bridge.swift
+// FileSystemService.swift
 import Foundation
 
-enum EXT4Error: Error {
-    case mountFailed(String)
-    case unmountFailed
+enum FileSystemError: Error {
+    case accessDenied
     case readFailed(String)
     case writeFailed(String)
     case listFailed(String)
     case deviceNotFound
     case permissionDenied
+    case fileNotFound
 }
 
-class EXT4FileSystem {
-    private let wrapper = EXT4Wrapper()
-    private var isMounted = false
-    private var currentDevice: String?
+class FileSystemService {
+    private let fileManager: FileManager
 
-    func mount(device: String) throws {
-        var error: NSError?
-        let success = wrapper.mountDevice(device, error: &error)
-
-        if !success {
-            throw EXT4Error.mountFailed(error?.localizedDescription ?? "Unknown error")
-        }
-
-        isMounted = true
-        currentDevice = device
+    init() {
+        self.fileManager = FileManager.default
     }
 
-    func unmount() {
-        wrapper.unmount()
-        isMounted = false
-        currentDevice = nil
+    func listVideoFiles(at url: URL) throws -> [URL] {
+        guard fileManager.fileExists(atPath: url.path) else {
+            throw FileSystemError.fileNotFound
+        }
+
+        guard let enumerator = fileManager.enumerator(
+            at: url,
+            includingPropertiesForKeys: [.isRegularFileKey, .fileSizeKey, .creationDateKey],
+            options: [.skipsHiddenFiles]
+        ) else {
+            throw FileSystemError.accessDenied
+        }
+
+        return enumerator.compactMap { $0 as? URL }
+            .filter { url in
+                let ext = url.pathExtension.lowercased()
+                return ext == "mp4" || ext == "h264" || ext == "avi"
+            }
     }
 
-    func readFile(at path: String) throws -> Data {
-        guard isMounted else {
-            throw EXT4Error.readFailed("Filesystem not mounted")
+    func readFile(at url: URL) throws -> Data {
+        guard fileManager.isReadableFile(atPath: url.path) else {
+            throw FileSystemError.accessDenied
         }
 
-        var error: NSError?
-        guard let data = wrapper.readFile(atPath: path, error: &error) else {
-            throw EXT4Error.readFailed(error?.localizedDescription ?? "Unknown error")
+        do {
+            return try Data(contentsOf: url)
+        } catch {
+            throw FileSystemError.readFailed(error.localizedDescription)
         }
-
-        return data
     }
 
-    func listDirectory(at path: String) throws -> [FileInfo] {
-        guard isMounted else {
-            throw EXT4Error.listFailed("Filesystem not mounted")
+    func getFileInfo(at url: URL) throws -> FileInfo {
+        guard fileManager.fileExists(atPath: url.path) else {
+            throw FileSystemError.fileNotFound
         }
 
-        var error: NSError?
-        guard let list = wrapper.listDirectory(atPath: path, error: &error) else {
-            throw EXT4Error.listFailed(error?.localizedDescription ?? "Unknown error")
-        }
+        do {
+            let attributes = try fileManager.attributesOfItem(atPath: url.path)
 
-        return list.map { dict in
-            FileInfo(
-                name: dict["name"] as! String,
-                size: dict["size"] as! Int64,
-                isDirectory: dict["isDirectory"] as! Bool,
-                path: "\(path)/\(dict["name"] as! String)"
+            return FileInfo(
+                name: url.lastPathComponent,
+                size: attributes[.size] as? Int64 ?? 0,
+                isDirectory: (attributes[.type] as? FileAttributeType) == .typeDirectory,
+                path: url.path,
+                creationDate: attributes[.creationDate] as? Date,
+                modificationDate: attributes[.modificationDate] as? Date
             )
+        } catch {
+            throw FileSystemError.readFailed(error.localizedDescription)
+        }
+    }
+
+    func deleteFiles(_ urls: [URL]) throws {
+        for url in urls {
+            do {
+                try fileManager.removeItem(at: url)
+            } catch {
+                throw FileSystemError.writeFailed("Failed to delete \(url.lastPathComponent): \(error.localizedDescription)")
+            }
         }
     }
 }
@@ -255,53 +145,92 @@ struct FileInfo {
     let size: Int64
     let isDirectory: Bool
     let path: String
+    let creationDate: Date?
+    let modificationDate: Date?
 }
 ```
 
-**Step 3: Device Detection**
+**Step 2: Device Detection with IOKit**
 
 ```swift
 import IOKit
 import IOKit.storage
+import DiskArbitration
 
 class DeviceDetector {
-    func detectSDCards() -> [String] {
-        var devices: [String] = []
+    func detectSDCards() -> [URL] {
+        var mountedVolumes: [URL] = []
 
-        // Get all block devices
-        let matching = IOServiceMatching(kIOMediaClass)
-        var iterator: io_iterator_t = 0
+        // Get all mounted volumes
+        if let urls = FileManager.default.mountedVolumeURLs(
+            includingResourceValuesForKeys: [.volumeIsRemovableKey, .volumeIsEjectableKey],
+            options: [.skipHiddenVolumes]
+        ) {
+            for url in urls {
+                do {
+                    let resourceValues = try url.resourceValues(forKeys: [.volumeIsRemovableKey, .volumeIsEjectableKey])
 
-        let result = IOServiceGetMatchingServices(kIOMainPortDefault, matching, &iterator)
-        guard result == KERN_SUCCESS else { return devices }
-
-        defer { IOObjectRelease(iterator) }
-
-        var device: io_object_t = IOIteratorNext(iterator)
-        while device != 0 {
-            defer {
-                IOObjectRelease(device)
-                device = IOIteratorNext(iterator)
-            }
-
-            // Get device properties
-            var properties: Unmanaged<CFMutableDictionary>?
-            let kr = IORegistryEntryCreateCFProperties(device, &properties, kCFAllocatorDefault, 0)
-
-            guard kr == KERN_SUCCESS,
-                  let props = properties?.takeRetainedValue() as? [String: Any] else {
-                continue
-            }
-
-            // Check if it's a removable device
-            if let removable = props["Removable"] as? Bool,
-               removable,
-               let bsdName = props["BSD Name"] as? String {
-                devices.append("/dev/\(bsdName)")
+                    // Check if it's a removable device (like SD card)
+                    if let isRemovable = resourceValues.volumeIsRemovable,
+                       let isEjectable = resourceValues.volumeIsEjectable,
+                       isRemovable && isEjectable {
+                        mountedVolumes.append(url)
+                    }
+                } catch {
+                    print("Error checking volume properties: \(error)")
+                }
             }
         }
 
-        return devices
+        return mountedVolumes
+    }
+
+    func monitorDeviceChanges(onConnect: @escaping (URL) -> Void, onDisconnect: @escaping (URL) -> Void) {
+        // Monitor volume mount/unmount notifications
+        NotificationCenter.default.addObserver(
+            forName: NSWorkspace.didMountNotification,
+            object: nil,
+            queue: .main
+        ) { notification in
+            if let volume = notification.userInfo?[NSWorkspace.volumeURLUserInfoKey] as? URL {
+                onConnect(volume)
+            }
+        }
+
+        NotificationCenter.default.addObserver(
+            forName: NSWorkspace.didUnmountNotification,
+            object: nil,
+            queue: .main
+        ) { notification in
+            if let volume = notification.userInfo?[NSWorkspace.volumeURLUserInfoKey] as? URL {
+                onDisconnect(volume)
+            }
+        }
+    }
+}
+```
+
+**Step 3: File Picker Integration**
+
+```swift
+import SwiftUI
+import AppKit
+
+struct FilePicker: View {
+    @Binding var selectedFolder: URL?
+
+    var body: some View {
+        Button("Select SD Card Folder") {
+            let panel = NSOpenPanel()
+            panel.canChooseFiles = false
+            panel.canChooseDirectories = true
+            panel.allowsMultipleSelection = false
+            panel.message = "Select the dashcam SD card folder"
+
+            if panel.runModal() == .OK {
+                selectedFolder = panel.url
+            }
+        }
     }
 }
 ```
@@ -322,68 +251,60 @@ class DeviceDetector {
     <key>com.apple.security.files.user-selected.read-write</key>
     <true/>
 
-    <!-- Disable App Sandbox for development (enable for production with proper entitlements) -->
+    <!-- Allow read/write access to removable volumes -->
+    <key>com.apple.security.files.downloads.read-write</key>
+    <true/>
+
+    <!-- Enable App Sandbox -->
     <key>com.apple.security.app-sandbox</key>
-    <false/>
+    <true/>
 </dict>
 </plist>
-```
-
-#### Option 2: FUSE-based Approach (Alternative)
-
-Use macFUSE to mount EXT4 as a user-space filesystem.
-
-**Pros:**
-- Simpler implementation
-- Standard file APIs work
-
-**Cons:**
-- Requires external dependency (macFUSE)
-- User must install macFUSE separately
-- System extension required (security concerns)
-- Slower than direct block access
-
-**Implementation:**
-```bash
-# Install macFUSE
-brew install macfuse
-
-# Use fuse-ext2
-brew install fuse-ext2
-
-# Mount SD card
-fuse-ext2 /dev/disk2s1 /Volumes/SDCard -o ro
 ```
 
 ### Testing Strategy
 
 ```swift
-class EXT4IntegrationTests: XCTestCase {
-    var fileSystem: EXT4FileSystem!
+class FileSystemIntegrationTests: XCTestCase {
+    var fileSystemService: FileSystemService!
+    var testVolumeURL: URL!
 
     override func setUp() {
         super.setUp()
-        fileSystem = EXT4FileSystem()
+        fileSystemService = FileSystemService()
+
+        // Use a test SD card or mock volume
+        testVolumeURL = URL(fileURLWithPath: "/Volumes/TEST_SD")
     }
 
-    func testMountSDCard() throws {
-        // Requires actual SD card connected
-        try fileSystem.mount(device: "/dev/disk2s1")
-        XCTAssertTrue(fileSystem.isMounted)
-    }
-
-    func testListRootDirectory() throws {
-        try fileSystem.mount(device: "/dev/disk2s1")
-
-        let files = try fileSystem.listDirectory(at: "/")
+    func testListVideoFiles() throws {
+        let files = try fileSystemService.listVideoFiles(at: testVolumeURL)
         XCTAssertFalse(files.isEmpty)
-        XCTAssertTrue(files.contains { $0.name == "DCIM" })
+        XCTAssertTrue(files.allSatisfy { url in
+            ["mp4", "h264", "avi"].contains(url.pathExtension.lowercased())
+        })
+    }
+
+    func testGetFileInfo() throws {
+        let files = try fileSystemService.listVideoFiles(at: testVolumeURL)
+        guard let firstFile = files.first else {
+            XCTFail("No files found")
+            return
+        }
+
+        let fileInfo = try fileSystemService.getFileInfo(at: firstFile)
+        XCTAssertEqual(fileInfo.name, firstFile.lastPathComponent)
+        XCTAssertGreaterThan(fileInfo.size, 0)
     }
 
     func testReadVideoFile() throws {
-        try fileSystem.mount(device: "/dev/disk2s1")
+        let files = try fileSystemService.listVideoFiles(at: testVolumeURL)
+        guard let videoFile = files.first else {
+            XCTFail("No video files found")
+            return
+        }
 
-        let data = try fileSystem.readFile(at: "/DCIM/video.h264")
+        let data = try fileSystemService.readFile(at: videoFile)
         XCTAssertGreaterThan(data.count, 0)
     }
 }
@@ -391,21 +312,22 @@ class EXT4IntegrationTests: XCTestCase {
 
 ### Fallback Plan
 
-If provided EXT4 library is incompatible:
+If SD card file system is incompatible or inaccessible:
 
-1. **Use libext4fs:** Open-source alternative
-   - GitHub: https://github.com/lwext4/lwext4
-   - MIT License
-   - Well-maintained
+1. **Manual Folder Selection:** Primary fallback
+   - Use NSOpenPanel to let users select folder
+   - Works with any mounted volume
+   - No special permissions required
 
-2. **ext4fuse:** FUSE-based solution
-   - GitHub: https://github.com/gerard/ext4fuse
-   - Read-only support
+2. **Drag and Drop Support:** User-friendly alternative
+   - Allow users to drag SD card folder into app
+   - Automatic file system access
+   - Intuitive UX
 
-3. **Request Windows SMB Share:** As last resort
-   - Mount SD card on Windows PC
-   - Share over network
-   - Access from Mac via SMB
+3. **Network Share Access:** For remote scenarios
+   - Support SMB/AFP network shares
+   - Access SD card mounted on another computer
+   - Useful for team environments
 
 ---
 
@@ -1371,7 +1293,7 @@ spctl --assess --type open --context context:primary-signature -v "$DMG_PATH"
 These challenges represent the core technical hurdles of the project. By addressing them systematically with the provided solutions, we can build a robust and performant macOS dashcam viewer application.
 
 **Priority Order:**
-1. ✅ EXT4 integration (Phase 0-1) - Make or break
-2. ✅ Video decoding (Phase 2) - Foundation for all features
-3. ✅ Multi-channel sync (Phase 3) - Core differentiator
+1. ✅ File system integration (Phase 0-1) - Foundation for file access
+2. ✅ Video decoding (Phase 2) - Core functionality
+3. ✅ Multi-channel sync (Phase 3) - Key differentiator
 4. ✅ Code signing (Phase 6) - Required for distribution

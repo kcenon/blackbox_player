@@ -11,7 +11,7 @@ The BlackboxPlayer project maintains comprehensive test coverage to ensure relia
   - Multi-channel synchronization (SyncController)
   - Video decoding and rendering (VideoDecoder, Metal renderer)
   - Data parsing (GPS, G-sensor, VideoMetadata)
-  - File system access (EXT4 integration)
+  - File system access (FileSystemService)
 
 ## Running Tests
 
@@ -58,7 +58,7 @@ xcodebuild test -project BlackboxPlayer.xcodeproj \
 | **VideoDecoderTests.swift** | - | FFmpeg Decoding | Multiple |
 | **VideoChannelTests.swift** | - | Channel Management | Multiple |
 | **DataModelsTests.swift** | - | Data Models | Multiple |
-| **EXT4FileSystemTests.swift** | - | File System Access | Multiple |
+| **FileSystemServiceTests.swift** | - | File System Access | Multiple |
 | **MultiChannelRendererTests.swift** | - | Metal Rendering | Multiple |
 | **BlackboxPlayerTests.swift** | - | General App Tests | Multiple |
 

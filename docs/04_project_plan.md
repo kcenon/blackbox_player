@@ -59,10 +59,10 @@ Total Estimated Duration: 12-16 weeks (3-4 months)
 - [ ] Set up CI/CD pipeline (GitHub Actions)
 
 #### 3. Library Integration
-- [ ] Integrate EXT4 library:
-  - Create Objective-C++ bridging header
-  - Test basic read/write operations
-  - Verify macOS compatibility
+- [ ] Set up FileManager integration:
+  - Test SD card mounting and access
+  - Verify file system permissions
+  - Test IOKit USB device detection
 - [ ] Integrate FFmpeg:
   - Link FFmpeg libraries
   - Create Swift wrapper
@@ -86,19 +86,19 @@ Total Estimated Duration: 12-16 weeks (3-4 months)
 - [ ] Document video specifications (resolution, codec, bitrate)
 
 #### 5. Proof of Concept
-- [ ] Create minimal EXT4 read demo
+- [ ] Create minimal file system access demo
 - [ ] Create minimal FFmpeg decode demo
 - [ ] Validate hardware performance (decode 5 streams)
 
 ### Deliverables
 - ✅ Working Xcode project with basic structure
-- ✅ EXT4 library successfully integrated
+- ✅ FileManager integration successfully tested
 - ✅ FFmpeg decoding working
 - ✅ Sample data documented
 - ✅ Technical feasibility confirmed
 
 ### Success Criteria
-- Can read files from EXT4-formatted SD card
+- Can read files from SD card using FileManager
 - Can decode H.264 video with FFmpeg
 - Can display single video frame in SwiftUI
 - Project builds without errors
@@ -108,37 +108,38 @@ Total Estimated Duration: 12-16 weeks (3-4 months)
 ## Phase 1: File System & Data Layer (2-3 weeks)
 
 ### Objectives
-- Implement EXT4 file system access
+- Implement file system access with FileManager
 - Parse dashcam metadata
 - Build file management foundation
 
 ### Tasks
 
-#### Week 1: EXT4 Integration
+#### Week 1: File System Integration
 
-**1. EXT4 Bridge Implementation**
+**1. FileSystemService Implementation**
 ```swift
 // Swift interface
-class EXT4FileSystem {
-    func mount(device: String) throws
-    func unmount()
-    func listFiles(at path: String) throws -> [FileInfo]
-    func readFile(at path: String) throws -> Data
-    func writeFile(data: Data, to path: String) throws
+class FileSystemService {
+    private let fileManager: FileManager
+
+    func listVideoFiles(at url: URL) throws -> [URL]
+    func readFile(at url: URL) throws -> Data
+    func getFileInfo(at url: URL) throws -> FileInfo
+    func deleteFiles(_ urls: [URL]) throws
 }
 ```
 
-- [ ] Implement Objective-C++ wrapper
-- [ ] Create Swift bridge interface
+- [ ] Implement FileSystemService
+- [ ] Create FileInfo model
 - [ ] Add error handling
 - [ ] Implement file enumeration
 - [ ] Implement file reading
-- [ ] Implement file writing (for settings)
+- [ ] Implement metadata access
 - [ ] Add unit tests
 
 **2. Device Detection**
-- [ ] Detect connected USB devices
-- [ ] Identify dashcam SD card
+- [ ] Detect connected USB devices with IOKit
+- [ ] Identify dashcam SD card mount point
 - [ ] Handle multiple SD cards
 - [ ] Add UI for device selection
 
@@ -194,13 +195,13 @@ class FileManagerService {
 - [ ] Implement selection mechanism
 
 ### Deliverables
-- ✅ EXT4 file system fully accessible
+- ✅ File system access fully functional
 - ✅ File list displayed in UI
 - ✅ Metadata parsing working
 - ✅ Event type categorization implemented
 
 ### Success Criteria
-- Can mount SD card and list all files
+- Can access SD card and list all files
 - Can read video file data
 - Can parse GPS and G-Sensor metadata
 - File list displays correctly with event types
@@ -212,7 +213,7 @@ class FileManagerService {
 ./run_tests.sh FileManagerServiceTests
 
 # Integration tests
-./run_tests.sh EXT4IntegrationTests
+./run_tests.sh FileSystemIntegrationTests
 ```
 
 ---
@@ -866,7 +867,7 @@ xcrun stapler staple BlackboxPlayer.app
 
 | Risk | Probability | Impact | Mitigation |
 |------|------------|--------|------------|
-| EXT4 library incompatibility | Medium | High | Early POC in Phase 0; research alternatives (libext4) |
+| SD card access permissions | Low | Medium | Request proper permissions; guide users on setup |
 | 5-channel performance issues | Medium | Medium | Metal optimization; offer quality settings |
 | Notarization rejection | Low | High | Follow Apple guidelines strictly; test early |
 | GPS/G-Sensor format unknown | Medium | Medium | Reverse engineer from Windows viewer |
@@ -886,7 +887,7 @@ xcodebuild test -scheme BlackboxPlayer -destination 'platform=macOS'
 ```
 
 **Integration Tests:**
-- EXT4 read/write with real SD card
+- File reading with real SD card
 - Multi-channel playback with sample videos
 - Export with various video combinations
 
@@ -1005,28 +1006,28 @@ jobs:
 | Category | Count | Priority | Estimated Effort | Key Files |
 |----------|-------|----------|------------------|-----------|
 | **UI/Menu Actions** | 14 | 🔴 High | 5-7 days | BlackboxPlayerApp.swift |
-| **EXT4 Integration** | 10 | 🔴 High | 10-15 days | EXT4Bridge.swift |
+| **File System Integration** | 10 | 🔴 High | 7-10 days | FileSystemService.swift |
 | **Video Playback** | 8 | 🟠 Medium | 7-10 days | VideoDecoder.swift, SyncController.swift |
 | **Testing** | 14 | 🟡 Low | 3-5 days | MultiChannelRendererTests.swift |
 | **UI Components** | 13 | 🟠 Medium | 5-7 days | FileListView.swift, FileRow.swift |
 
-**Total Estimated Effort**: 30-44 days (6-9 weeks)
+**Total Estimated Effort**: 27-41 days (5-8 weeks)
 
 ### Critical Path Items (P0 Priority)
 
 These items must be completed first as they block other features:
 
-1. **TODO #15** (EXT4Bridge.swift:298): Mount EXT4 device - **BLOCKER** for all file operations
-2. **TODO #16** (EXT4Bridge.swift:548): List Directory - Required for file browsing
-3. **TODO #18** (EXT4Bridge.swift:781): Read File - Required for video playback
-4. **TODO #24** (EXT4Bridge.swift:1352): Unmount Device - Required for safe cleanup
+1. **TODO #15** (FileSystemService.swift): Access SD card - **BLOCKER** for all file operations
+2. **TODO #16** (FileSystemService.swift): List files in directory - Required for file browsing
+3. **TODO #18** (FileSystemService.swift): Read file data - Required for video playback
+4. **TODO #24** (FileSystemService.swift): Handle device unmounting - Required for safe cleanup
 5. **TODO #1** (BlackboxPlayerApp.swift:463): Open Folder Picker - Main UI entry point
 6. **TODO #7** (BlackboxPlayerApp.swift:681): Play/Pause - Core playback control
 
 ### Implementation Roadmap (8 weeks)
 
 #### Phase 1: Critical Path (Weeks 1-2)
-- EXT4 Mount/Unmount (#15, #24)
+- File System Access Setup (#15, #24)
 - List Directory (#16)
 - Open Folder Picker (#1)
 - Read File (#18)
@@ -1053,7 +1054,7 @@ These items must be completed first as they block other features:
 ### Key Dependencies
 
 ```
-EXT4 Mount (#15)
+File System Access (#15)
   ├─→ List Directory (#16)
   ├─→ Read File (#18)
   └─→ Get File Info (#17)
@@ -1070,7 +1071,7 @@ EXT4 Mount (#15)
 
 | Risk | Impact | Mitigation |
 |------|--------|------------|
-| EXT4 C library integration failure | 🔴 Critical | Use FUSE fallback or read-only access |
+| SD card access permissions | 🟡 Medium | Request proper permissions, provide user guidance |
 | FFmpeg compatibility issues | 🟠 High | Extensive codec testing with sample files |
 | Metal performance on Intel Macs | 🟡 Medium | Optimize shaders, provide quality settings |
 | GPS metadata format unknown | 🟠 High | Reverse engineer from sample data |
@@ -1082,8 +1083,8 @@ EXT4 Mount (#15)
 **Not Started**: 59/59 (100%)
 
 #### Milestone 1: MVP (Weeks 1-4)
-- [ ] EXT4 mount/unmount working
-- [ ] File list loading from EXT4
+- [ ] File system access working
+- [ ] File list loading from SD card
 - [ ] Single channel video playback
 - [ ] Basic playback controls
 

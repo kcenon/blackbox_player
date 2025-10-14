@@ -43,8 +43,8 @@
 │  │(FFmpeg)      │ │(FFmpeg)      │ │                 │  │
 │  └──────────────┘ └──────────────┘ └─────────────────┘  │
 │  ┌─────────────────────────────────────────────────┐    │
-│  │        EXT4 파일 시스템 액세스 계층              │    │
-│  │     (Swift와 연결된 C/C++ 라이브러리 브리지)      │    │
+│  │          파일 시스템 액세스 계층                 │    │
+│  │          (FileManager + IOKit)                  │    │
 │  └─────────────────────────────────────────────────┘    │
 └──────────────────────────────────────────────────────────┘
 ```
@@ -268,7 +268,7 @@ protocol FileManagerServiceProtocol {
 }
 
 class FileManagerService: FileManagerServiceProtocol {
-    private let ext4Bridge: EXT4Bridge
+    private let fileManager: FileManager
 
     // 구현...
 }
@@ -394,87 +394,59 @@ struct DashcamSettings: Codable {
 }
 ```
 
-#### EXT4 브리지
+#### 파일 시스템 서비스
 
 ```swift
-// Swift 인터페이스
-class EXT4Bridge {
-    private let wrapper: EXT4Wrapper
+// FileManager 기반 파일 시스템 액세스
+class FileSystemService {
+    private let fileManager: FileManager
 
-    func mount(device: String) throws {
-        guard wrapper.mount(device) else {
-            throw EXT4Error.mountFailed
+    init(fileManager: FileManager = .default) {
+        self.fileManager = fileManager
+    }
+
+    func listVideoFiles(at url: URL) throws -> [URL] {
+        guard let enumerator = fileManager.enumerator(
+            at: url,
+            includingPropertiesForKeys: [.isRegularFileKey, .fileSizeKey, .creationDateKey]
+        ) else {
+            throw FileSystemError.accessDenied
         }
+
+        return enumerator.compactMap { $0 as? URL }
+            .filter { $0.pathExtension == "mp4" || $0.pathExtension == "avi" }
     }
 
-    func readFile(at path: String) throws -> Data {
-        guard let data = wrapper.readFile(atPath: path) else {
-            throw EXT4Error.readFailed
+    func readFile(at url: URL) throws -> Data {
+        guard fileManager.isReadableFile(atPath: url.path) else {
+            throw FileSystemError.readFailed
         }
-        return data
+        return try Data(contentsOf: url)
     }
 
-    func listDirectory(at path: String) throws -> [FileInfo] {
-        guard let list = wrapper.listDirectory(atPath: path) else {
-            throw EXT4Error.listFailed
-        }
-        return list.map { FileInfo(from: $0) }
+    func getFileInfo(at url: URL) throws -> FileInfo {
+        let attributes = try fileManager.attributesOfItem(atPath: url.path)
+        return FileInfo(
+            path: url.path,
+            size: attributes[.size] as? Int64 ?? 0,
+            createdAt: attributes[.creationDate] as? Date ?? Date()
+        )
     }
 }
 
-enum EXT4Error: Error {
-    case mountFailed    // 마운트 실패
-    case readFailed     // 읽기 실패
-    case writeFailed    // 쓰기 실패
-    case listFailed     // 목록 실패
-    case invalidPath    // 잘못된 경로
-}
-```
-
-```objc
-// Objective-C++ 래퍼 (EXT4Wrapper.h)
-@interface EXT4Wrapper : NSObject
-
-- (BOOL)mount:(NSString *)devicePath;
-- (NSData *)readFileAtPath:(NSString *)path;
-- (BOOL)writeData:(NSData *)data toPath:(NSString *)path;
-- (NSArray<NSDictionary *> *)listDirectoryAtPath:(NSString *)path;
-- (void)unmount;
-
-@end
-```
-
-```cpp
-// C++ 구현 (EXT4Wrapper.mm)
-#import "EXT4Wrapper.h"
-#include "ext4_library.hpp"
-
-@implementation EXT4Wrapper {
-    ext4_fs* filesystem;
+enum FileSystemError: Error {
+    case accessDenied       // 접근 거부
+    case readFailed         // 읽기 실패
+    case writeFailed        // 쓰기 실패
+    case invalidPath        // 잘못된 경로
+    case deviceNotFound     // 장치를 찾을 수 없음
 }
 
-- (BOOL)mount:(NSString *)devicePath {
-    const char* path = [devicePath UTF8String];
-    filesystem = ext4_mount(path);
-    return filesystem != nullptr;
+struct FileInfo {
+    let path: String
+    let size: Int64
+    let createdAt: Date
 }
-
-- (NSData *)readFileAtPath:(NSString *)path {
-    const char* filepath = [path UTF8String];
-
-    void* buffer;
-    size_t size;
-
-    if (ext4_read_file(filesystem, filepath, &buffer, &size) == 0) {
-        return [NSData dataWithBytesNoCopy:buffer length:size];
-    }
-
-    return nil;
-}
-
-// ... 기타 메서드
-
-@end
 ```
 
 #### FFmpeg 래퍼
@@ -532,7 +504,7 @@ class FFmpegWrapper {
     │   └── 채널 5 디코더
     │
     ├── 파일 I/O 큐
-    │   └── EXT4 작업
+    │   └── 파일 시스템 작업
     │
     ├── 내보내기 큐
     │   └── MP4 인코딩
@@ -683,11 +655,11 @@ enum PlayerError: Error {
     case insufficientMemory     // 메모리 부족
 }
 
-enum EXT4Error: Error {
-    case mountFailed            // 마운트 실패
+enum FileSystemError: Error {
+    case accessDenied           // 접근 거부
     case readFailed             // 읽기 실패
     case writeFailed            // 쓰기 실패
-    case corruptedFileSystem    // 손상된 파일 시스템
+    case deviceNotFound         // 장치를 찾을 수 없음
 }
 
 enum ExportError: Error {
@@ -706,7 +678,7 @@ class VideoPlayerService {
             let data = try await fileService.readFile(at: url.path)
             let frames = try await decoder.decode(data)
             // ...
-        } catch EXT4Error.readFailed {
+        } catch FileSystemError.readFailed {
             // 오류 로그 기록
             logger.error("파일 읽기 실패: \(url)")
             // 복구 시도
@@ -799,16 +771,16 @@ class VideoPlayerServiceTests: XCTestCase {
 ### 통합 테스트
 
 ```swift
-class EXT4IntegrationTests: XCTestCase {
+class FileSystemIntegrationTests: XCTestCase {
     func testReadFromActualSDCard() throws {
         // 통합 테스트를 위해 실제 SD 카드 필요
-        let bridge = EXT4Bridge()
-        try bridge.mount(device: "/dev/disk2s1")
+        let fileService = FileSystemService()
+        let mountPoint = URL(fileURLWithPath: "/Volumes/DASHCAM")
 
-        let files = try bridge.listDirectory(at: "/DCIM")
+        let files = try fileService.listVideoFiles(at: mountPoint.appendingPathComponent("DCIM"))
         XCTAssertFalse(files.isEmpty)
 
-        let data = try bridge.readFile(at: files[0].path)
+        let data = try fileService.readFile(at: files[0])
         XCTAssertFalse(data.isEmpty)
     }
 }

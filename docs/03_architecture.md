@@ -43,8 +43,8 @@
 │  │(FFmpeg)      │ │(FFmpeg)      │ │                 │  │
 │  └──────────────┘ └──────────────┘ └─────────────────┘  │
 │  ┌─────────────────────────────────────────────────┐    │
-│  │        EXT4 File System Access Layer            │    │
-│  │     (C/C++ Library Bridge to Swift)             │    │
+│  │          File System Access Layer               │    │
+│  │          (FileManager + IOKit)                  │    │
 │  └─────────────────────────────────────────────────┘    │
 └──────────────────────────────────────────────────────────┘
 ```
@@ -268,7 +268,7 @@ protocol FileManagerServiceProtocol {
 }
 
 class FileManagerService: FileManagerServiceProtocol {
-    private let ext4Bridge: EXT4Bridge
+    private let fileManager: FileManager
 
     // Implementation...
 }
@@ -394,87 +394,59 @@ struct DashcamSettings: Codable {
 }
 ```
 
-#### EXT4 Bridge
+#### File System Service
 
 ```swift
-// Swift Interface
-class EXT4Bridge {
-    private let wrapper: EXT4Wrapper
+// FileManager-based file system access
+class FileSystemService {
+    private let fileManager: FileManager
 
-    func mount(device: String) throws {
-        guard wrapper.mount(device) else {
-            throw EXT4Error.mountFailed
-        }
+    init(fileManager: FileManager = .default) {
+        self.fileManager = fileManager
     }
 
-    func readFile(at path: String) throws -> Data {
-        guard let data = wrapper.readFile(atPath: path) else {
-            throw EXT4Error.readFailed
+    func listVideoFiles(at url: URL) throws -> [URL] {
+        guard let enumerator = fileManager.enumerator(
+            at: url,
+            includingPropertiesForKeys: [.isRegularFileKey, .fileSizeKey, .creationDateKey]
+        ) else {
+            throw FileSystemError.accessDenied
         }
-        return data
+
+        return enumerator.compactMap { $0 as? URL }
+            .filter { $0.pathExtension == "mp4" || $0.pathExtension == "avi" }
     }
 
-    func listDirectory(at path: String) throws -> [FileInfo] {
-        guard let list = wrapper.listDirectory(atPath: path) else {
-            throw EXT4Error.listFailed
+    func readFile(at url: URL) throws -> Data {
+        guard fileManager.isReadableFile(atPath: url.path) else {
+            throw FileSystemError.readFailed
         }
-        return list.map { FileInfo(from: $0) }
+        return try Data(contentsOf: url)
+    }
+
+    func getFileInfo(at url: URL) throws -> FileInfo {
+        let attributes = try fileManager.attributesOfItem(atPath: url.path)
+        return FileInfo(
+            path: url.path,
+            size: attributes[.size] as? Int64 ?? 0,
+            createdAt: attributes[.creationDate] as? Date ?? Date()
+        )
     }
 }
 
-enum EXT4Error: Error {
-    case mountFailed
+enum FileSystemError: Error {
+    case accessDenied
     case readFailed
     case writeFailed
-    case listFailed
     case invalidPath
-}
-```
-
-```objc
-// Objective-C++ Wrapper (EXT4Wrapper.h)
-@interface EXT4Wrapper : NSObject
-
-- (BOOL)mount:(NSString *)devicePath;
-- (NSData *)readFileAtPath:(NSString *)path;
-- (BOOL)writeData:(NSData *)data toPath:(NSString *)path;
-- (NSArray<NSDictionary *> *)listDirectoryAtPath:(NSString *)path;
-- (void)unmount;
-
-@end
-```
-
-```cpp
-// C++ Implementation (EXT4Wrapper.mm)
-#import "EXT4Wrapper.h"
-#include "ext4_library.hpp"
-
-@implementation EXT4Wrapper {
-    ext4_fs* filesystem;
+    case deviceNotFound
 }
 
-- (BOOL)mount:(NSString *)devicePath {
-    const char* path = [devicePath UTF8String];
-    filesystem = ext4_mount(path);
-    return filesystem != nullptr;
+struct FileInfo {
+    let path: String
+    let size: Int64
+    let createdAt: Date
 }
-
-- (NSData *)readFileAtPath:(NSString *)path {
-    const char* filepath = [path UTF8String];
-
-    void* buffer;
-    size_t size;
-
-    if (ext4_read_file(filesystem, filepath, &buffer, &size) == 0) {
-        return [NSData dataWithBytesNoCopy:buffer length:size];
-    }
-
-    return nil;
-}
-
-// ... other methods
-
-@end
 ```
 
 #### FFmpeg Wrapper
@@ -532,7 +504,7 @@ Background Threads
     │   └── Channel 5 Decoder
     │
     ├── File I/O Queue
-    │   └── EXT4 Operations
+    │   └── File System Operations
     │
     ├── Export Queue
     │   └── MP4 Encoding
@@ -683,11 +655,11 @@ enum PlayerError: Error {
     case insufficientMemory
 }
 
-enum EXT4Error: Error {
-    case mountFailed
+enum FileSystemError: Error {
+    case accessDenied
     case readFailed
     case writeFailed
-    case corruptedFileSystem
+    case deviceNotFound
 }
 
 enum ExportError: Error {
@@ -706,7 +678,7 @@ class VideoPlayerService {
             let data = try await fileService.readFile(at: url.path)
             let frames = try await decoder.decode(data)
             // ...
-        } catch EXT4Error.readFailed {
+        } catch FileSystemError.readFailed {
             // Log error
             logger.error("Failed to read file: \(url)")
             // Attempt recovery
@@ -799,16 +771,16 @@ class VideoPlayerServiceTests: XCTestCase {
 ### Integration Tests
 
 ```swift
-class EXT4IntegrationTests: XCTestCase {
+class FileSystemIntegrationTests: XCTestCase {
     func testReadFromActualSDCard() throws {
         // Requires actual SD card for integration testing
-        let bridge = EXT4Bridge()
-        try bridge.mount(device: "/dev/disk2s1")
+        let fileService = FileSystemService()
+        let mountPoint = URL(fileURLWithPath: "/Volumes/DASHCAM")
 
-        let files = try bridge.listDirectory(at: "/DCIM")
+        let files = try fileService.listVideoFiles(at: mountPoint.appendingPathComponent("DCIM"))
         XCTAssertFalse(files.isEmpty)
 
-        let data = try bridge.readFile(at: files[0].path)
+        let data = try fileService.readFile(at: files[0])
         XCTAssertFalse(data.isEmpty)
     }
 }

@@ -84,7 +84,6 @@ This SRS conforms to **ISO/IEC/IEEE 29148:2018** standard for requirements engin
 |------|------------|
 | **Dashcam** | Dashboard camera; a video recording device mounted in vehicles |
 | **SD Card** | Secure Digital memory card used for data storage |
-| **EXT4** | Fourth extended filesystem; a journaling file system for Linux |
 | **Channel** | Individual video stream from a specific camera position |
 | **G-Sensor** | Gravitational sensor; measures acceleration forces |
 | **GPS** | Global Positioning System |
@@ -124,7 +123,7 @@ This document is organized according to ISO/IEC/IEEE 29148:2018 structure:
 
 The Blackbox Player for macOS is a new product that replaces the need for Windows-based dashcam viewers on macOS platform. It is a standalone application that:
 
-- Reads data directly from EXT4-formatted SD cards
+- Reads data directly from SD cards
 - Operates independently without cloud services
 - Integrates with macOS system services (Maps, storage)
 - Does not require external dependencies beyond system libraries
@@ -143,7 +142,7 @@ The Blackbox Player for macOS is a new product that replaces the need for Window
 │  │  └─────────┘  └─────────┘  └─────────┘ │  │
 │  │                                          │  │
 │  │  ┌────────────────────────────────────┐ │  │
-│  │  │     EXT4 File System Bridge        │ │  │
+│  │  │     File System Access             │ │  │
 │  │  └────────────────────────────────────┘ │  │
 │  └──────────────────────────────────────────┘  │
 │                     ↕                           │
@@ -156,7 +155,7 @@ The Blackbox Player for macOS is a new product that replaces the need for Window
 └─────────────────────────────────────────────────┘
                       ↕
     ┌────────────────────────────────┐
-    │   SD Card (EXT4 Format)        │
+    │   SD Card                      │
     │  • Video files (H.264)         │
     │  • Audio files (MP3)           │
     │  • Metadata (GPS, G-Sensor)    │
@@ -205,22 +204,17 @@ The major functions of the Blackbox Player include:
 - Minimum 8GB RAM for basic operation, 16GB recommended for 5-channel playback
 - Justification: Video decoding and rendering memory requirements
 
-**CON-003: File System Constraint**
-- Must support EXT4 filesystem through provided C/C++ library
-- Cannot modify or replace the EXT4 library
-- Justification: Client-provided proprietary implementation
-
-**CON-004: Video Format Constraint**
+**CON-003: Video Format Constraint**
 - Input: H.264 video, MP3 audio
 - Output: MP4 container format
 - Justification: Dashcam hardware specifications
 
-**CON-005: Regulatory Constraint**
+**CON-004: Regulatory Constraint**
 - Must comply with Apple App Store guidelines if distributed through store
 - Must pass Apple notarization process
 - Justification: macOS security requirements
 
-**CON-006: Development Constraint**
+**CON-005: Development Constraint**
 - Must use Swift as primary language
 - Must use SwiftUI for UI components
 - Justification: Client requirement for modern, maintainable codebase
@@ -235,11 +229,10 @@ The major functions of the Blackbox Player include:
 5. macOS security settings allow USB device access
 
 **Dependencies:**
-1. **DEP-001**: EXT4 library provided by client must be compatible with macOS
-2. **DEP-002**: FFmpeg library for video decoding (LGPL licensed)
-3. **DEP-003**: MapKit or Google Maps SDK for GPS visualization
-4. **DEP-004**: Apple Developer Program membership for code signing
-5. **DEP-005**: Xcode 15+ for building the application
+1. **DEP-001**: FFmpeg library for video decoding (LGPL licensed)
+2. **DEP-002**: MapKit or Google Maps SDK for GPS visualization
+3. **DEP-003**: Apple Developer Program membership for code signing
+4. **DEP-004**: Xcode 15+ for building the application
 
 ### 2.6 Apportioning of Requirements
 
@@ -607,20 +600,20 @@ Each requirement includes:
 **Priority:** High (2)
 
 #### REQ-FUNC-017: File System Access
-**Description:** The system shall access files on EXT4-formatted SD cards using provided EXT4 library.
+**Description:** The system shall access files on SD cards connected via USB card readers.
 
-**Rationale:** Dashcam SD cards use EXT4 format not natively supported by macOS.
+**Rationale:** Users need to access dashcam recordings stored on SD cards.
 
 **Verification:** Test - Mount SD card and list files
 
 **Acceptance Criteria:**
 - Detects connected USB SD card readers
-- Mounts EXT4 volume successfully
+- Accesses mounted volumes successfully
 - Lists all files and directories
 - Reads file metadata (size, date, permissions)
-- Handles mount failures gracefully with error message
+- Handles access failures gracefully with error message
 
-**Source:** Technical requirement (critical constraint)
+**Source:** Technical requirement
 
 **Dependencies:** None (foundational requirement)
 
@@ -1041,21 +1034,7 @@ Each requirement includes:
 
 ### 5.3 Software Interfaces
 
-**REQ-SW-001: EXT4 Library Interface**
-**Description:** The system shall interface with client-provided EXT4 library through Objective-C++ bridge.
-
-**Verification:** Test - Call all required library functions
-
-**Acceptance Criteria:**
-- Mount/unmount operations
-- File enumeration
-- File read operations
-- File write operations (for settings)
-- Error handling for library failures
-
----
-
-**REQ-SW-002: FFmpeg Library Interface**
+**REQ-SW-001: FFmpeg Library Interface**
 **Description:** The system shall use FFmpeg library for video/audio decoding and encoding.
 
 **Verification:** Test - Decode and encode various formats
@@ -1069,7 +1048,7 @@ Each requirement includes:
 
 ---
 
-**REQ-SW-003: Map Service Interface**
+**REQ-SW-002: Map Service Interface**
 **Description:** The system shall interface with either MapKit or Google Maps SDK for map display.
 
 **Verification:** Test - Display map and route
@@ -1485,20 +1464,6 @@ Each requirement includes:
 
 ---
 
-**REQ-COMPAT-002: File System Compatibility**
-**Description:** The system shall work with EXT4 filesystem versions 2, 3, and 4.
-
-**Verification:** Test - Access SD cards formatted with each version
-
-**Acceptance Criteria:**
-- EXT2 readable
-- EXT3 readable
-- EXT4 readable
-- Detects filesystem version
-
-**Priority:** High (2)
-
----
 
 ## 7. Other Requirements
 
@@ -1566,7 +1531,7 @@ Covered under REQ-FUNC-033.
 | REQ-FUNC-014 | High (2) | 4 | TEST-FUNC-014 | GSensorService |
 | REQ-FUNC-015 | High (2) | 4 | TEST-FUNC-015 | GSensorChartView |
 | REQ-FUNC-016 | High (2) | 4 | TEST-FUNC-016 | GSensorService |
-| REQ-FUNC-017 | Critical (1) | 1 | TEST-FUNC-017 | EXT4FileSystem |
+| REQ-FUNC-017 | Critical (1) | 1 | TEST-FUNC-017 | FileManagerService |
 | REQ-FUNC-018 | High (2) | 1 | TEST-FUNC-018 | FileListViewModel |
 | REQ-FUNC-019 | High (2) | 1 | TEST-FUNC-019 | FileManagerService |
 | REQ-FUNC-020 | High (2) | 1 | TEST-FUNC-020 | FileListViewModel |
@@ -1605,8 +1570,8 @@ Covered under REQ-FUNC-033.
 | **Performance Efficiency** | Time behavior | REQ-PERF-001, REQ-PERF-002, REQ-PERF-003 |
 | | Resource utilization | REQ-PERF-005, REQ-PERF-006 |
 | | Capacity | REQ-FUNC-001 (5 channels) |
-| **Compatibility** | Co-existence | REQ-COMPAT-001, REQ-COMPAT-002 |
-| | Interoperability | REQ-SW-001, REQ-SW-002, REQ-SW-003 |
+| **Compatibility** | Co-existence | REQ-COMPAT-001 |
+| | Interoperability | REQ-SW-001, REQ-SW-002 |
 | **Usability** | Appropriateness recognizability | REQ-USAB-001 |
 | | Learnability | REQ-USAB-001 |
 | | Operability | REQ-FUNC-032, REQ-USAB-002 |

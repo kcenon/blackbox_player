@@ -84,7 +84,6 @@
 |------|------|
 | **블랙박스(Dashcam)** | 차량용 영상 기록 장치 |
 | **SD 카드** | 데이터 저장용 보안 디지털 메모리 카드 |
-| **EXT4** | Linux용 저널링 파일 시스템 |
 | **채널(Channel)** | 특정 카메라 위치의 개별 영상 스트림 |
 | **G-센서** | 가속도 센서; 가속력 측정 |
 | **GPS** | 위성 위치 확인 시스템 |
@@ -124,7 +123,7 @@
 
 macOS용 블랙박스 플레이어는 macOS 플랫폼에서 Windows 기반 블랙박스 뷰어의 필요성을 대체하는 새로운 제품입니다. 다음과 같은 독립형 애플리케이션입니다:
 
-- EXT4 포맷의 SD 카드에서 직접 데이터 읽기
+- SD 카드에서 직접 데이터 읽기
 - 클라우드 서비스 없이 독립적으로 작동
 - macOS 시스템 서비스와 통합(지도, 저장소)
 - 시스템 라이브러리 외 외부 의존성 불필요
@@ -143,7 +142,7 @@ macOS용 블랙박스 플레이어는 macOS 플랫폼에서 Windows 기반 블�
 │  │  └─────────┘  └─────────┘  └─────────┘ │  │
 │  │                                          │  │
 │  │  ┌────────────────────────────────────┐ │  │
-│  │  │     EXT4 파일 시스템 브리지        │ │  │
+│  │  │     파일 시스템 액세스 계층        │ │  │
 │  │  └────────────────────────────────────┘ │  │
 │  └──────────────────────────────────────────┘  │
 │                     ↕                           │
@@ -156,7 +155,7 @@ macOS용 블랙박스 플레이어는 macOS 플랫폼에서 Windows 기반 블�
 └─────────────────────────────────────────────────┘
                       ↕
     ┌────────────────────────────────┐
-    │   SD 카드 (EXT4 포맷)          │
+    │   SD 카드                      │
     │  • 영상 파일 (H.264)           │
     │  • 음성 파일 (MP3)             │
     │  • 메타데이터 (GPS, G-센서)    │
@@ -205,22 +204,17 @@ macOS용 블랙박스 플레이어는 macOS 플랫폼에서 Windows 기반 블�
 - 기본 작동에 최소 8GB RAM, 5채널 재생에 16GB 권장
 - 근거: 영상 디코딩 및 렌더링 메모리 요구사항
 
-**CON-003: 파일 시스템 제약**
-- 제공된 C/C++ 라이브러리를 통한 EXT4 파일 시스템 지원 필수
-- EXT4 라이브러리를 수정하거나 교체할 수 없음
-- 근거: 고객 제공 독점 구현
-
-**CON-004: 영상 포맷 제약**
+**CON-003: 영상 포맷 제약**
 - 입력: H.264 영상, MP3 음성
 - 출력: MP4 컨테이너 포맷
 - 근거: 블랙박스 하드웨어 사양
 
-**CON-005: 규제 제약**
+**CON-004: 규제 제약**
 - App Store를 통해 배포 시 Apple App Store 가이드라인 준수 필수
 - Apple 공증(notarization) 프로세스 통과 필수
 - 근거: macOS 보안 요구사항
 
-**CON-006: 개발 제약**
+**CON-005: 개발 제약**
 - 주 프로그래밍 언어로 Swift 사용 필수
 - UI 컴포넌트에 SwiftUI 사용 필수
 - 근거: 최신의 유지보수 가능한 코드베이스에 대한 고객 요구사항
@@ -235,11 +229,10 @@ macOS용 블랙박스 플레이어는 macOS 플랫폼에서 Windows 기반 블�
 5. macOS 보안 설정이 USB 장치 접근 허용
 
 **의존성:**
-1. **DEP-001**: 고객이 제공한 EXT4 라이브러리가 macOS와 호환 가능해야 함
-2. **DEP-002**: 영상 디코딩을 위한 FFmpeg 라이브러리(LGPL 라이선스)
-3. **DEP-003**: GPS 시각화를 위한 MapKit 또는 Google Maps SDK
-4. **DEP-004**: 코드 서명을 위한 Apple Developer Program 멤버십
-5. **DEP-005**: 애플리케이션 빌드를 위한 Xcode 15+
+1. **DEP-001**: 영상 디코딩을 위한 FFmpeg 라이브러리(LGPL 라이선스)
+2. **DEP-002**: GPS 시각화를 위한 MapKit 또는 Google Maps SDK
+3. **DEP-003**: 코드 서명을 위한 Apple Developer Program 멤버십
+4. **DEP-004**: 애플리케이션 빌드를 위한 Xcode 15+
 
 ### 2.6 요구사항 배분
 
@@ -662,7 +655,7 @@ macOS용 블랙박스 플레이어는 macOS 플랫폼에서 Windows 기반 블�
 | REQ-FUNC-001 | Critical(1) | 3 | TEST-FUNC-001 | MultiChannelPlayer |
 | REQ-FUNC-002 | Critical(1) | 3 | TEST-FUNC-002 | SyncController |
 | REQ-FUNC-003 | Critical(1) | 2 | TEST-FUNC-003 | PlayerViewModel |
-| REQ-FUNC-017 | Critical(1) | 1 | TEST-FUNC-017 | EXT4FileSystem |
+| REQ-FUNC-017 | Critical(1) | 1 | TEST-FUNC-017 | FileSystemService |
 | REQ-PERF-001 | Critical(1) | 3 | TEST-PERF-001 | MultiChannelPlayer |
 | REQ-PERF-005 | Critical(1) | 3 | TEST-PERF-005 | Memory Management |
 | REQ-SEC-004 | Critical(1) | 6 | TEST-SEC-004 | Build System |

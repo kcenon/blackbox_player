@@ -15,8 +15,8 @@
 │ 그래픽       : Metal                   │
 │ 지도         : MapKit / Google Maps    │
 │ 차트         : Core Graphics           │
-│ 파일 시스템  : EXT4 Library (C/C++)    │
-│ 빌드         : Xcode + CMake (hybrid)  │
+│ 파일 시스템  : FileManager + IOKit     │
+│ 빌드         : Xcode + XcodeGen        │
 └─────────────────────────────────────────┘
 ```
 
@@ -136,29 +136,42 @@ class VideoPlayer {
 
 ### 3. 파일 시스템 계층
 
-#### 제공된 EXT4 라이브러리 (C/C++)
+#### FileManager + IOKit
 
 **통합 전략:**
-- C/C++ 라이브러리를 Objective-C++로 래핑
-- 브리징 헤더를 통해 Swift에 노출
-- 블록 수준 I/O 작업 처리
+- macOS 네이티브 FileManager 사용
+- IOKit을 통한 USB 장치 감지
+- 마운트된 볼륨 접근
 
 **아키텍처:**
 ```
 Swift 계층
-    ↕ (브리징 헤더)
-Objective-C++ 래퍼
-    ↕ (C++ 상호운용)
-EXT4 라이브러리 (C/C++)
-    ↕ (블록 장치)
+    ↕
+FileManager (Foundation)
+    ↕
+IOKit (USB 장치 관리)
+    ↕
 SD 카드 하드웨어
 ```
 
-#### 선택사항: macOS용 FUSE
+**코드 예제:**
+```swift
+import Foundation
+import IOKit
 
-**목적:** 테스팅 및 개발
-**설치:** `brew install macfuse`
-**사용 사례:** EXT4를 사용자 공간 파일 시스템으로 마운트
+class FileSystemService {
+    func listVideoFiles(at url: URL) -> [URL] {
+        let fileManager = FileManager.default
+        guard let enumerator = fileManager.enumerator(at: url,
+                                                       includingPropertiesForKeys: [.isRegularFileKey]) else {
+            return []
+        }
+
+        return enumerator.compactMap { $0 as? URL }
+            .filter { $0.pathExtension == "mp4" || $0.pathExtension == "avi" }
+    }
+}
+```
 
 ---
 
@@ -344,24 +357,30 @@ struct GSensorChartView: View {
 - Swift 버전: 5.9+
 - 빌드 시스템: 새 빌드 시스템
 
-#### CMake (C/C++ 컴포넌트용)
+#### XcodeGen
 
-**목적:** EXT4 라이브러리 및 FFmpeg 통합 빌드
+**목적:** Xcode 프로젝트 파일 생성
 
-**CMakeLists.txt 예제:**
-```cmake
-cmake_minimum_required(VERSION 3.20)
-project(EXT4Bridge)
+**설치:**
+```bash
+brew install xcodegen
+```
 
-add_library(ext4bridge STATIC
-    ext4_wrapper.mm
-    ext4_library.cpp
-)
-
-target_link_libraries(ext4bridge
-    "-framework Foundation"
-    ext4_library
-)
+**project.yml 예제:**
+```yaml
+name: BlackboxPlayer
+options:
+  deploymentTarget:
+    macOS: "12.0"
+targets:
+  BlackboxPlayer:
+    type: application
+    platform: macOS
+    sources:
+      - BlackboxPlayer
+    dependencies:
+      - framework: AVFoundation.framework
+      - framework: Metal.framework
 ```
 
 #### create-dmg
@@ -488,11 +507,11 @@ end
 - **활발한 개발:** 정기적인 업데이트 및 보안 패치
 - **허용적 라이선스:** LGPL은 동적 링킹 시 상업적 사용 허용
 
-### EXT4 라이브러리 통합을 선택한 이유는?
-- **대안 없음:** macOS는 네이티브로 EXT4에 액세스할 수 없음
-- **직접 액세스:** 블록 수준 I/O가 완전한 제어 제공
-- **성능:** FUSE 기반 솔루션보다 빠름
-- **신뢰성:** 벤더 제공 라이브러리가 블랙박스 포맷과의 호환성 보장
+### FileManager를 선택한 이유는?
+- **네이티브 통합:** macOS 기본 파일 시스템 API 활용
+- **신뢰성:** Apple이 검증한 안정적인 파일 액세스
+- **단순성:** 추가 라이브러리 의존성 없음
+- **호환성:** 모든 macOS 파일 시스템 지원
 
 ---
 
@@ -532,10 +551,10 @@ end
 
 ## 다음 단계
 
-1. **EXT4 라이브러리 호환성 확인**
-   - 제공된 라이브러리 API 검토
-   - macOS 12+에서 테스트
-   - Swift 브리징 헤더 생성
+1. **파일 시스템 액세스 테스트**
+   - SD 카드 마운트 확인
+   - FileManager로 파일 목록 읽기 테스트
+   - IOKit USB 장치 감지 구현
 
 2. **개발 환경 설정**
    - Xcode 15+ 설치
@@ -543,6 +562,6 @@ end
    - 코드 서명 구성
 
 3. **개념 증명 생성**
-   - EXT4 읽기/쓰기 테스트
+   - 파일 시스템 접근 테스트
    - FFmpeg으로 단일 영상 재생
    - Metal 렌더링 테스트

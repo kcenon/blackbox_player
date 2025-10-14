@@ -15,7 +15,7 @@
 │ Graphics      : Metal                   │
 │ Maps          : MapKit / Google Maps    │
 │ Charts        : Core Graphics           │
-│ File System   : EXT4 Library (C/C++)    │
+│ File System   : FileManager + IOKit     │
 │ Build         : Xcode + CMake (hybrid)  │
 └─────────────────────────────────────────┘
 ```
@@ -136,29 +136,42 @@ class VideoPlayer {
 
 ### 3. File System Layer
 
-#### Provided EXT4 Library (C/C++)
+#### FileManager + IOKit
 
 **Integration Strategy:**
-- Wrap C/C++ library with Objective-C++
-- Expose to Swift via bridging header
-- Handle block-level I/O operations
+- Use macOS native FileManager for file access
+- IOKit for USB device detection
+- Access mounted volumes
 
 **Architecture:**
 ```
 Swift Layer
-    ↕ (Bridging Header)
-Objective-C++ Wrapper
-    ↕ (C++ Interop)
-EXT4 Library (C/C++)
-    ↕ (Block Device)
+    ↕
+FileManager (Foundation)
+    ↕
+IOKit (USB Device Management)
+    ↕
 SD Card Hardware
 ```
 
-#### Optional: FUSE for macOS
+**Code Example:**
+```swift
+import Foundation
+import IOKit
 
-**Purpose:** Testing and development
-**Installation:** `brew install macfuse`
-**Use Case:** Mount EXT4 as user-space file system
+class FileSystemService {
+    func listVideoFiles(at url: URL) -> [URL] {
+        let fileManager = FileManager.default
+        guard let enumerator = fileManager.enumerator(at: url,
+                                                       includingPropertiesForKeys: [.isRegularFileKey]) else {
+            return []
+        }
+
+        return enumerator.compactMap { $0 as? URL }
+            .filter { $0.pathExtension == "mp4" || $0.pathExtension == "avi" }
+    }
+}
+```
 
 ---
 
@@ -344,24 +357,30 @@ struct GSensorChartView: View {
 - Swift Version: 5.9+
 - Build System: New Build System
 
-#### CMake (For C/C++ Components)
+#### XcodeGen
 
-**Purpose:** Build EXT4 library and FFmpeg integration
+**Purpose:** Generate Xcode project from YAML configuration
 
-**Example CMakeLists.txt:**
-```cmake
-cmake_minimum_required(VERSION 3.20)
-project(EXT4Bridge)
+**Installation:**
+```bash
+brew install xcodegen
+```
 
-add_library(ext4bridge STATIC
-    ext4_wrapper.mm
-    ext4_library.cpp
-)
-
-target_link_libraries(ext4bridge
-    "-framework Foundation"
-    ext4_library
-)
+**Example project.yml:**
+```yaml
+name: BlackboxPlayer
+options:
+  deploymentTarget:
+    macOS: "12.0"
+targets:
+  BlackboxPlayer:
+    type: application
+    platform: macOS
+    sources:
+      - BlackboxPlayer
+    dependencies:
+      - framework: AVFoundation.framework
+      - framework: Metal.framework
 ```
 
 #### create-dmg
@@ -488,11 +507,11 @@ end
 - **Active Development:** Regular updates and security patches
 - **Permissive License:** LGPL allows commercial use with dynamic linking
 
-### Why EXT4 Library Integration?
-- **No Alternative:** macOS cannot natively access EXT4
-- **Direct Access:** Block-level I/O provides full control
-- **Performance:** Faster than FUSE-based solutions
-- **Reliability:** Vendor-provided library ensures compatibility with dashcam format
+### Why FileManager?
+- **Native Integration:** Leverages macOS built-in file system API
+- **Reliability:** Apple-tested stable file access
+- **Simplicity:** No additional library dependencies
+- **Compatibility:** Supports all macOS file systems
 
 ---
 
@@ -532,10 +551,10 @@ end
 
 ## Next Steps
 
-1. **Verify EXT4 Library Compatibility**
-   - Review provided library API
-   - Test on macOS 12+
-   - Create Swift bridging header
+1. **Test File System Access**
+   - Verify SD card mounting
+   - Test file enumeration with FileManager
+   - Implement IOKit USB device detection
 
 2. **Set Up Development Environment**
    - Install Xcode 15+
@@ -543,6 +562,6 @@ end
    - Configure code signing
 
 3. **Create Proof of Concept**
-   - EXT4 read/write test
+   - File system access test
    - Single video playback with FFmpeg
    - Metal rendering test

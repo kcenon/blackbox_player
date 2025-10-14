@@ -8,244 +8,134 @@
 
 ---
 
-## 과제 1: macOS에서 EXT4 파일 시스템 액세스
+## 과제 1: macOS에서 SD 카드 파일 시스템 액세스
 
 ### 문제 설명
 
-**심각도:** 🔴 Critical (치명적)
-**복잡도:** High (높음)
-**영향:** High - 해결되지 않으면 프로젝트 차단
+**심각도:** 🟡 Medium (중간)
+**복잡도:** Medium (중간)
+**영향:** Medium - 네이티브 API로 관리 가능
 
-macOS는 기본적으로 EXT4 파일 시스템을 지원하지 않습니다. 블랙박스 SD 카드는 EXT4로 포맷되어 있어 기본적으로 macOS에서 읽을 수 없습니다. 제공된 C/C++ 라이브러리를 사용하여 블록 수준 I/O를 구현해야 합니다.
+블랙박스 SD 카드에 효율적으로 액세스하여 영상 파일과 메타데이터를 읽어야 합니다. USB 장치 감지 및 파일 권한을 올바르게 처리하면서 macOS 네이티브 API (FileManager 및 IOKit)를 사용하여 안정적인 파일 시스템 액세스를 구현해야 합니다.
 
 ### 기술적 세부사항
 
 1. **macOS 파일 시스템 지원:**
    - 네이티브: APFS, HFS+, FAT32, exFAT
-   - EXT4 네이티브 지원 없음
-   - 커널 확장 또는 FUSE 없이는 EXT4 볼륨을 마운트할 수 없음
+   - SD 카드는 일반적으로 FAT32 또는 exFAT으로 포맷됨
+   - FileManager를 통한 직접 지원
 
 2. **샌드박스 제한:**
    - macOS 샌드박스 앱은 장치 액세스가 제한됨
    - USB 장치 액세스를 위한 특정 권한 필요
-   - 블록 장치 액세스에는 상승된 권한 필요
+   - 사용자는 파일 선택기 또는 드래그 앤 드롭을 통해 권한을 부여해야 함
 
-3. **라이브러리 통합:**
-   - 제공된 라이브러리는 C/C++로 작성되었을 가능성이 높음
-   - Swift로 브리징 필요
-   - 다양한 아키텍처 처리 필요 (Intel vs Apple Silicon)
+3. **네이티브 API 통합:**
+   - 파일 작업을 위한 FileManager
+   - USB 장치 감지를 위한 IOKit
+   - 순수 Swift 구현 - 브리징 불필요
+   - Intel 및 Apple Silicon 모두 네이티브 지원
 
 ### 솔루션 전략
 
-#### 옵션 1: 직접 라이브러리 통합 (권장)
+#### 옵션 1: FileManager + IOKit 통합 (권장)
 
 **아키텍처:**
 ```
 Swift (UI 및 비즈니스 로직)
-    ↕ 브리징 헤더
-Objective-C++ 래퍼
-    ↕ C++ 상호운용
-EXT4 라이브러리 (C/C++)
-    ↕ 블록 I/O
-SD 카드 하드웨어
+    ↕ 네이티브 Swift API
+FileSystemService
+    ↕ Foundation 프레임워크
+FileManager + IOKit
+    ↕ macOS 커널
+SD 카드 하드웨어 (FAT32/exFAT)
 ```
 
 **구현:**
 
-**단계 1: Objective-C++ 래퍼 생성**
-
-```objc
-// EXT4Wrapper.h
-#import <Foundation/Foundation.h>
-
-@interface EXT4Wrapper : NSObject
-
-- (BOOL)mountDevice:(NSString *)devicePath error:(NSError **)error;
-- (void)unmount;
-- (NSData *)readFileAtPath:(NSString *)path error:(NSError **)error;
-- (BOOL)writeData:(NSData *)data toPath:(NSString *)path error:(NSError **)error;
-- (NSArray<NSDictionary *> *)listDirectoryAtPath:(NSString *)path error:(NSError **)error;
-
-@end
-```
-
-```cpp
-// EXT4Wrapper.mm (Objective-C++)
-#import "EXT4Wrapper.h"
-#include "ext4.h" // 제공된 C/C++ 라이브러리
-#include <iostream>
-
-@implementation EXT4Wrapper {
-    ext4_fs *filesystem;
-    ext4_device device;
-}
-
-- (BOOL)mountDevice:(NSString *)devicePath error:(NSError **)error {
-    const char *path = [devicePath UTF8String];
-
-    // 블록 장치 초기화
-    if (ext4_device_init(&device, path) != 0) {
-        if (error) {
-            *error = [NSError errorWithDomain:@"EXT4ErrorDomain"
-                                         code:1001
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to initialize device"}];
-        }
-        return NO;
-    }
-
-    // 파일 시스템 마운트
-    if (ext4_mount(&device, "/", false) != 0) {
-        if (error) {
-            *error = [NSError errorWithDomain:@"EXT4ErrorDomain"
-                                         code:1002
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to mount filesystem"}];
-        }
-        return NO;
-    }
-
-    return YES;
-}
-
-- (void)unmount {
-    if (filesystem) {
-        ext4_umount("/");
-        ext4_device_fini(&device);
-        filesystem = nullptr;
-    }
-}
-
-- (NSData *)readFileAtPath:(NSString *)path error:(NSError **)error {
-    const char *filepath = [path UTF8String];
-
-    ext4_file file;
-    if (ext4_fopen(&file, filepath, "rb") != 0) {
-        if (error) {
-            *error = [NSError errorWithDomain:@"EXT4ErrorDomain"
-                                         code:2001
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to open file"}];
-        }
-        return nil;
-    }
-
-    // 파일 크기 가져오기
-    ext4_fseek(&file, 0, SEEK_END);
-    size_t fileSize = ext4_ftell(&file);
-    ext4_fseek(&file, 0, SEEK_SET);
-
-    // 데이터 읽기
-    void *buffer = malloc(fileSize);
-    size_t bytesRead;
-    ext4_fread(&file, buffer, fileSize, &bytesRead);
-    ext4_fclose(&file);
-
-    NSData *data = [NSData dataWithBytesNoCopy:buffer length:bytesRead freeWhenDone:YES];
-    return data;
-}
-
-- (NSArray<NSDictionary *> *)listDirectoryAtPath:(NSString *)path error:(NSError **)error {
-    const char *dirpath = [path UTF8String];
-
-    ext4_dir dir;
-    if (ext4_dir_open(&dir, dirpath) != 0) {
-        if (error) {
-            *error = [NSError errorWithDomain:@"EXT4ErrorDomain"
-                                         code:3001
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to open directory"}];
-        }
-        return nil;
-    }
-
-    NSMutableArray *files = [NSMutableArray array];
-    const ext4_direntry *entry;
-
-    while ((entry = ext4_dir_entry_next(&dir)) != NULL) {
-        NSString *name = [NSString stringWithUTF8String:(const char *)entry->name];
-
-        NSDictionary *fileInfo = @{
-            @"name": name,
-            @"size": @(entry->inode_size),
-            @"isDirectory": @(entry->inode_type == EXT4_DE_DIR)
-        };
-
-        [files addObject:fileInfo];
-    }
-
-    ext4_dir_close(&dir);
-    return files;
-}
-
-@end
-```
-
-**단계 2: Swift 브리지 생성**
+**단계 1: FileSystemService 생성**
 
 ```swift
-// EXT4Bridge.swift
+// FileSystemService.swift
 import Foundation
 
-enum EXT4Error: Error {
-    case mountFailed(String)        // 마운트 실패
-    case unmountFailed              // 언마운트 실패
-    case readFailed(String)         // 읽기 실패
-    case writeFailed(String)        // 쓰기 실패
-    case listFailed(String)         // 목록 실패
-    case deviceNotFound             // 장치를 찾을 수 없음
-    case permissionDenied           // 권한 거부
+enum FileSystemError: Error {
+    case accessDenied           // 액세스 거부
+    case readFailed(String)     // 읽기 실패
+    case writeFailed(String)    // 쓰기 실패
+    case listFailed(String)     // 목록 실패
+    case deviceNotFound         // 장치를 찾을 수 없음
+    case permissionDenied       // 권한 거부
+    case fileNotFound           // 파일을 찾을 수 없음
 }
 
-class EXT4FileSystem {
-    private let wrapper = EXT4Wrapper()
-    private var isMounted = false
-    private var currentDevice: String?
+class FileSystemService {
+    private let fileManager: FileManager
 
-    func mount(device: String) throws {
-        var error: NSError?
-        let success = wrapper.mountDevice(device, error: &error)
-
-        if !success {
-            throw EXT4Error.mountFailed(error?.localizedDescription ?? "Unknown error")
-        }
-
-        isMounted = true
-        currentDevice = device
+    init() {
+        self.fileManager = FileManager.default
     }
 
-    func unmount() {
-        wrapper.unmount()
-        isMounted = false
-        currentDevice = nil
+    func listVideoFiles(at url: URL) throws -> [URL] {
+        guard fileManager.fileExists(atPath: url.path) else {
+            throw FileSystemError.fileNotFound
+        }
+
+        guard let enumerator = fileManager.enumerator(
+            at: url,
+            includingPropertiesForKeys: [.isRegularFileKey, .fileSizeKey, .creationDateKey],
+            options: [.skipsHiddenFiles]
+        ) else {
+            throw FileSystemError.accessDenied
+        }
+
+        return enumerator.compactMap { $0 as? URL }
+            .filter { url in
+                let ext = url.pathExtension.lowercased()
+                return ext == "mp4" || ext == "h264" || ext == "avi"
+            }
     }
 
-    func readFile(at path: String) throws -> Data {
-        guard isMounted else {
-            throw EXT4Error.readFailed("Filesystem not mounted")
+    func readFile(at url: URL) throws -> Data {
+        guard fileManager.isReadableFile(atPath: url.path) else {
+            throw FileSystemError.accessDenied
         }
 
-        var error: NSError?
-        guard let data = wrapper.readFile(atPath: path, error: &error) else {
-            throw EXT4Error.readFailed(error?.localizedDescription ?? "Unknown error")
+        do {
+            return try Data(contentsOf: url)
+        } catch {
+            throw FileSystemError.readFailed(error.localizedDescription)
         }
-
-        return data
     }
 
-    func listDirectory(at path: String) throws -> [FileInfo] {
-        guard isMounted else {
-            throw EXT4Error.listFailed("Filesystem not mounted")
+    func getFileInfo(at url: URL) throws -> FileInfo {
+        guard fileManager.fileExists(atPath: url.path) else {
+            throw FileSystemError.fileNotFound
         }
 
-        var error: NSError?
-        guard let list = wrapper.listDirectory(atPath: path, error: &error) else {
-            throw EXT4Error.listFailed(error?.localizedDescription ?? "Unknown error")
-        }
+        do {
+            let attributes = try fileManager.attributesOfItem(atPath: url.path)
 
-        return list.map { dict in
-            FileInfo(
-                name: dict["name"] as! String,
-                size: dict["size"] as! Int64,
-                isDirectory: dict["isDirectory"] as! Bool,
-                path: "\(path)/\(dict["name"] as! String)"
+            return FileInfo(
+                name: url.lastPathComponent,
+                size: attributes[.size] as? Int64 ?? 0,
+                isDirectory: (attributes[.type] as? FileAttributeType) == .typeDirectory,
+                path: url.path,
+                creationDate: attributes[.creationDate] as? Date,
+                modificationDate: attributes[.modificationDate] as? Date
             )
+        } catch {
+            throw FileSystemError.readFailed(error.localizedDescription)
+        }
+    }
+
+    func deleteFiles(_ urls: [URL]) throws {
+        for url in urls {
+            do {
+                try fileManager.removeItem(at: url)
+            } catch {
+                throw FileSystemError.writeFailed("\(url.lastPathComponent) 삭제 실패: \(error.localizedDescription)")
+            }
         }
     }
 }
@@ -255,53 +145,92 @@ struct FileInfo {
     let size: Int64
     let isDirectory: Bool
     let path: String
+    let creationDate: Date?
+    let modificationDate: Date?
 }
 ```
 
-**단계 3: 장치 감지**
+**단계 2: IOKit을 사용한 장치 감지**
 
 ```swift
 import IOKit
 import IOKit.storage
+import DiskArbitration
 
 class DeviceDetector {
-    func detectSDCards() -> [String] {
-        var devices: [String] = []
+    func detectSDCards() -> [URL] {
+        var mountedVolumes: [URL] = []
 
-        // 모든 블록 장치 가져오기
-        let matching = IOServiceMatching(kIOMediaClass)
-        var iterator: io_iterator_t = 0
+        // 마운트된 모든 볼륨 가져오기
+        if let urls = FileManager.default.mountedVolumeURLs(
+            includingResourceValuesForKeys: [.volumeIsRemovableKey, .volumeIsEjectableKey],
+            options: [.skipHiddenVolumes]
+        ) {
+            for url in urls {
+                do {
+                    let resourceValues = try url.resourceValues(forKeys: [.volumeIsRemovableKey, .volumeIsEjectableKey])
 
-        let result = IOServiceGetMatchingServices(kIOMainPortDefault, matching, &iterator)
-        guard result == KERN_SUCCESS else { return devices }
-
-        defer { IOObjectRelease(iterator) }
-
-        var device: io_object_t = IOIteratorNext(iterator)
-        while device != 0 {
-            defer {
-                IOObjectRelease(device)
-                device = IOIteratorNext(iterator)
-            }
-
-            // 장치 속성 가져오기
-            var properties: Unmanaged<CFMutableDictionary>?
-            let kr = IORegistryEntryCreateCFProperties(device, &properties, kCFAllocatorDefault, 0)
-
-            guard kr == KERN_SUCCESS,
-                  let props = properties?.takeRetainedValue() as? [String: Any] else {
-                continue
-            }
-
-            // 이동식 장치인지 확인
-            if let removable = props["Removable"] as? Bool,
-               removable,
-               let bsdName = props["BSD Name"] as? String {
-                devices.append("/dev/\(bsdName)")
+                    // 이동식 장치(SD 카드 등)인지 확인
+                    if let isRemovable = resourceValues.volumeIsRemovable,
+                       let isEjectable = resourceValues.volumeIsEjectable,
+                       isRemovable && isEjectable {
+                        mountedVolumes.append(url)
+                    }
+                } catch {
+                    print("볼륨 속성 확인 오류: \(error)")
+                }
             }
         }
 
-        return devices
+        return mountedVolumes
+    }
+
+    func monitorDeviceChanges(onConnect: @escaping (URL) -> Void, onDisconnect: @escaping (URL) -> Void) {
+        // 볼륨 마운트/언마운트 알림 모니터링
+        NotificationCenter.default.addObserver(
+            forName: NSWorkspace.didMountNotification,
+            object: nil,
+            queue: .main
+        ) { notification in
+            if let volume = notification.userInfo?[NSWorkspace.volumeURLUserInfoKey] as? URL {
+                onConnect(volume)
+            }
+        }
+
+        NotificationCenter.default.addObserver(
+            forName: NSWorkspace.didUnmountNotification,
+            object: nil,
+            queue: .main
+        ) { notification in
+            if let volume = notification.userInfo?[NSWorkspace.volumeURLUserInfoKey] as? URL {
+                onDisconnect(volume)
+            }
+        }
+    }
+}
+```
+
+**단계 3: 파일 선택기 통합**
+
+```swift
+import SwiftUI
+import AppKit
+
+struct FilePicker: View {
+    @Binding var selectedFolder: URL?
+
+    var body: some View {
+        Button("SD 카드 폴더 선택") {
+            let panel = NSOpenPanel()
+            panel.canChooseFiles = false
+            panel.canChooseDirectories = true
+            panel.allowsMultipleSelection = false
+            panel.message = "블랙박스 SD 카드 폴더를 선택하세요"
+
+            if panel.runModal() == .OK {
+                selectedFolder = panel.url
+            }
+        }
     }
 }
 ```
@@ -322,68 +251,60 @@ class DeviceDetector {
     <key>com.apple.security.files.user-selected.read-write</key>
     <true/>
 
-    <!-- 개발용 앱 샌드박스 비활성화 (프로덕션에서는 적절한 권한과 함께 활성화) -->
+    <!-- 이동식 볼륨 읽기/쓰기 액세스 허용 -->
+    <key>com.apple.security.files.downloads.read-write</key>
+    <true/>
+
+    <!-- 앱 샌드박스 활성화 -->
     <key>com.apple.security.app-sandbox</key>
-    <false/>
+    <true/>
 </dict>
 </plist>
-```
-
-#### 옵션 2: FUSE 기반 접근 방식 (대안)
-
-macFUSE를 사용하여 EXT4를 사용자 공간 파일 시스템으로 마운트합니다.
-
-**장점:**
-- 더 간단한 구현
-- 표준 파일 API 작동
-
-**단점:**
-- 외부 의존성 필요 (macFUSE)
-- 사용자가 macFUSE를 별도로 설치해야 함
-- 시스템 확장 필요 (보안 문제)
-- 직접 블록 액세스보다 느림
-
-**구현:**
-```bash
-# macFUSE 설치
-brew install macfuse
-
-# fuse-ext2 사용
-brew install fuse-ext2
-
-# SD 카드 마운트
-fuse-ext2 /dev/disk2s1 /Volumes/SDCard -o ro
 ```
 
 ### 테스트 전략
 
 ```swift
-class EXT4IntegrationTests: XCTestCase {
-    var fileSystem: EXT4FileSystem!
+class FileSystemIntegrationTests: XCTestCase {
+    var fileSystemService: FileSystemService!
+    var testVolumeURL: URL!
 
     override func setUp() {
         super.setUp()
-        fileSystem = EXT4FileSystem()
+        fileSystemService = FileSystemService()
+
+        // 테스트 SD 카드 또는 모의 볼륨 사용
+        testVolumeURL = URL(fileURLWithPath: "/Volumes/TEST_SD")
     }
 
-    func testMountSDCard() throws {
-        // 실제 SD 카드가 연결되어 있어야 함
-        try fileSystem.mount(device: "/dev/disk2s1")
-        XCTAssertTrue(fileSystem.isMounted)
-    }
-
-    func testListRootDirectory() throws {
-        try fileSystem.mount(device: "/dev/disk2s1")
-
-        let files = try fileSystem.listDirectory(at: "/")
+    func testListVideoFiles() throws {
+        let files = try fileSystemService.listVideoFiles(at: testVolumeURL)
         XCTAssertFalse(files.isEmpty)
-        XCTAssertTrue(files.contains { $0.name == "DCIM" })
+        XCTAssertTrue(files.allSatisfy { url in
+            ["mp4", "h264", "avi"].contains(url.pathExtension.lowercased())
+        })
+    }
+
+    func testGetFileInfo() throws {
+        let files = try fileSystemService.listVideoFiles(at: testVolumeURL)
+        guard let firstFile = files.first else {
+            XCTFail("파일을 찾을 수 없음")
+            return
+        }
+
+        let fileInfo = try fileSystemService.getFileInfo(at: firstFile)
+        XCTAssertEqual(fileInfo.name, firstFile.lastPathComponent)
+        XCTAssertGreaterThan(fileInfo.size, 0)
     }
 
     func testReadVideoFile() throws {
-        try fileSystem.mount(device: "/dev/disk2s1")
+        let files = try fileSystemService.listVideoFiles(at: testVolumeURL)
+        guard let videoFile = files.first else {
+            XCTFail("영상 파일을 찾을 수 없음")
+            return
+        }
 
-        let data = try fileSystem.readFile(at: "/DCIM/video.h264")
+        let data = try fileSystemService.readFile(at: videoFile)
         XCTAssertGreaterThan(data.count, 0)
     }
 }
@@ -391,21 +312,22 @@ class EXT4IntegrationTests: XCTestCase {
 
 ### 대체 계획
 
-제공된 EXT4 라이브러리가 호환되지 않는 경우:
+SD 카드 파일 시스템이 호환되지 않거나 액세스할 수 없는 경우:
 
-1. **libext4fs 사용:** 오픈소스 대안
-   - GitHub: https://github.com/lwext4/lwext4
-   - MIT 라이선스
-   - 잘 유지 관리됨
+1. **수동 폴더 선택:** 주요 대체 방법
+   - NSOpenPanel을 사용하여 사용자가 폴더 선택
+   - 마운트된 모든 볼륨에서 작동
+   - 특별한 권한 불필요
 
-2. **ext4fuse:** FUSE 기반 솔루션
-   - GitHub: https://github.com/gerard/ext4fuse
-   - 읽기 전용 지원
+2. **드래그 앤 드롭 지원:** 사용자 친화적 대안
+   - 사용자가 SD 카드 폴더를 앱으로 드래그
+   - 자동 파일 시스템 액세스
+   - 직관적인 UX
 
-3. **Windows SMB 공유 요청:** 최후의 수단
-   - Windows PC에 SD 카드 마운트
-   - 네트워크로 공유
-   - SMB를 통해 Mac에서 액세스
+3. **네트워크 공유 액세스:** 원격 시나리오용
+   - SMB/AFP 네트워크 공유 지원
+   - 다른 컴퓨터에 마운트된 SD 카드 액세스
+   - 팀 환경에 유용
 
 ---
 
@@ -1371,7 +1293,7 @@ spctl --assess --type open --context context:primary-signature -v "$DMG_PATH"
 이러한 과제는 프로젝트의 핵심 기술적 장애물을 나타냅니다. 제공된 솔루션으로 체계적으로 대처함으로써 강력하고 고성능의 macOS 블랙박스 뷰어 애플리케이션을 구축할 수 있습니다.
 
 **우선순위:**
-1. ✅ EXT4 통합 (단계 0-1) - 성공 또는 실패
-2. ✅ 영상 디코딩 (단계 2) - 모든 기능의 기반
-3. ✅ 다채널 동기화 (단계 3) - 핵심 차별화 요소
+1. ✅ 파일 시스템 통합 (단계 0-1) - 파일 액세스 기반
+2. ✅ 영상 디코딩 (단계 2) - 핵심 기능
+3. ✅ 다채널 동기화 (단계 3) - 주요 차별화 요소
 4. ✅ 코드 서명 (단계 6) - 배포에 필요

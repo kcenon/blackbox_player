@@ -210,7 +210,6 @@ The test suite is organized into functional categories:
 | **VideoDecoderTests.swift** | Video Decoding | Multiple | FFmpeg H.264/MP3 decoding and frame extraction |
 | **VideoChannelTests.swift** | Channel Management | Multiple | Individual video channel lifecycle and state management |
 | **DataModelsTests.swift** | Data Models | Multiple | VideoFile, VideoMetadata, GPSPoint, AccelerationData |
-| **EXT4FileSystemTests.swift** | File System | Multiple | EXT4 SD card access and file enumeration |
 | **MultiChannelRendererTests.swift** | Metal Rendering | Multiple | GPU-accelerated multi-texture rendering |
 
 ### GPS/G-Sensor Integration Tests
@@ -444,7 +443,6 @@ type(scope): description
 - Project structure created
 - CI/CD pipeline configured
 - FFmpeg integration complete
-- EXT4 interface ready (mock implementation)
 
 ✅ **Phase 2: Single Channel Playback** - 18/22 tasks (82%)
 - FFmpeg H.264/MP3 decoder implemented

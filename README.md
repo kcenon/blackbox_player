@@ -27,7 +27,7 @@ The Blackbox Player for macOS is a native application designed to bring the dash
 
 ### Background
 
-Modern dashcams record video from multiple cameras simultaneously (front, rear, left, right, interior) and store the footage on SD cards formatted with the EXT4 file system. macOS does not natively support EXT4, making it impossible for Mac users to access their dashcam footage without third-party solutions. This project addresses that gap by providing a fully-featured, native macOS application.
+Modern dashcams record video from multiple cameras simultaneously (front, rear, left, right, interior) and store the footage on SD cards. This project provides a fully-featured, native macOS application to view and manage dashcam footage on Mac.
 
 ### Project Goals
 
@@ -114,8 +114,8 @@ Modern dashcams record video from multiple cameras simultaneously (front, rear, 
 │ Graphics      : Metal                   │
 │ Maps          : MapKit / Google Maps    │
 │ Charts        : Core Graphics           │
-│ File System   : EXT4 Library (C/C++)    │
-│ Build         : Xcode + CMake           │
+│ File System   : FileManager + IOKit     │
+│ Build         : Xcode + XcodeGen        │
 └─────────────────────────────────────────┘
 ```
 
@@ -155,7 +155,7 @@ The application follows a clean **MVVM (Model-View-ViewModel)** architecture wit
                         ↕
 ┌──────────────────────────────────────────────────────┐
 │                    Data Layer                         │
-│         FFmpeg Decoders • EXT4 File System           │
+│         FFmpeg Decoders • File System Access         │
 └──────────────────────────────────────────────────────┘
 ```
 
@@ -211,8 +211,8 @@ Comprehensive documentation is available in the `docs/` directory:
 - **Metal**: GPU-accelerated rendering and image processing
 
 **File System:**
-- **Custom EXT4 Library**: C/C++ library for EXT4 access
-- **Objective-C++**: Bridge layer between Swift and C++
+- **FileManager**: Native file system access
+- **IOKit**: USB device detection and management
 
 **Mapping:**
 - **MapKit**: Apple's native mapping framework (recommended)
@@ -281,7 +281,7 @@ Comprehensive documentation is available in the `docs/` directory:
 ### Milestones
 
 **Milestone 1: MVP** (End of Phase 3)
-- EXT4 SD card access working
+- File system access working
 - Multi-channel synchronized playback functional
 - Basic playback controls implemented
 
@@ -296,6 +296,47 @@ Comprehensive documentation is available in the `docs/` directory:
 - Code signed and notarized
 - DMG installer created
 - Documentation complete
+
+---
+
+## ⚠️ Current Implementation Status
+
+This project is under active development. The following summarizes the implementation progress:
+
+### ✅ Fully Implemented Features
+- **Multi-Channel Video Playback**: 5-channel simultaneous playback with ±50ms synchronization
+- **FFmpeg Video Decoding**: H.264/MP3 decoding with frame caching (LRU, 30 frames)
+- **Metal GPU Rendering**: Hardware-accelerated rendering with real-time transformations
+- **GPS Integration**: Real-time GPS route display with MapKit
+- **G-Sensor Visualization**: 3-axis acceleration data graphing with event detection
+- **Playback Controls**: Play, pause, seek, speed control (0.5x-2x)
+- **Image Processing**: Screen capture, digital zoom, flip, brightness adjustment
+- **File Management**: Browse, filter, and organize dashcam recordings
+
+### 🟡 Partially Implemented
+- **MP4 Export**: Basic export functionality complete; batch operations UI in progress
+- **File List UI**: Core functionality working; advanced filters (date range, event type) pending
+- **App Menu Actions**: 17 TODO items remaining in `BlackboxPlayerApp.swift`
+
+### ⚠️ Not Yet Implemented
+- **Video Repair**: Automatic recovery of corrupted video files
+  - **Workaround**: Use external tools (e.g., FFmpeg CLI)
+  - **Status**: Planned for Phase 5 (Weeks 13-14)
+
+- **Dashcam Settings Management**: Read/modify/save dashcam configuration
+  - **Workaround**: Modify settings directly on dashcam device
+  - **Status**: Planned for Phase 5 (Weeks 13-14)
+
+- **Multi-Language Support**: Currently English only
+  - **Status**: Phase 6 (Korean and Japanese localization planned)
+
+### 📊 Overall Progress
+- **Phase 0-3**: 73-82% complete (Core playback features)
+- **Phase 4**: 53% complete (GPS/G-Sensor features)
+- **Phase 5-6**: 0% complete (Export, Settings, Localization)
+- **Overall**: ~44% complete (69/156 tasks)
+
+For detailed implementation status, see [IMPLEMENTATION_CHECKLIST.md](IMPLEMENTATION_CHECKLIST.md).
 
 ---
 
@@ -371,7 +412,6 @@ xcodebuild test -project BlackboxPlayer.xcodeproj -scheme BlackboxPlayer
 | **VideoDecoderTests** | Video Decoding | FFmpeg H.264/MP3 decoding validation |
 | **VideoChannelTests** | Channel Management | Individual video channel functionality |
 | **DataModelsTests** | Data Models | VideoFile, VideoMetadata, GPSPoint, AccelerationData |
-| **EXT4FileSystemTests** | File System Access | EXT4 SD card reading and file enumeration |
 | **MultiChannelRendererTests** | Metal Rendering | GPU-accelerated multi-channel rendering |
 
 **GPS/G-Sensor Integration Tests** (`GPSSensorIntegrationTests.swift`):
@@ -435,21 +475,15 @@ blackbox_player/
 │   │   ├── GPSPoint.swift
 │   │   └── AccelerationData.swift
 │   ├── Utilities/
-│   │   ├── EXT4Bridge.swift
 │   │   ├── FFmpegWrapper.swift
 │   │   └── MetalRenderer.swift
 │   ├── Resources/
 │   │   ├── Assets.xcassets
 │   │   ├── Localizable.strings
 │   │   └── Info.plist
-│   └── EXT4Library/            # C/C++ library integration
-│       ├── EXT4Wrapper.h
-│       ├── EXT4Wrapper.mm
-│       └── ext4/               # Vendor library
 ├── Tests/
 │   ├── BlackboxPlayerTests.swift
 │   ├── DataModelsTests.swift
-│   ├── EXT4FileSystemTests.swift
 │   ├── MultiChannelRendererTests.swift
 │   ├── SyncControllerTests.swift
 │   ├── VideoChannelTests.swift
@@ -470,17 +504,16 @@ blackbox_player/
 
 **Key Tasks:**
 - ✅ Xcode project setup
-- ✅ EXT4 library integration and testing
 - ✅ FFmpeg integration and testing
 - ✅ Sample data collection and analysis
 - ✅ Basic proof of concept
 
 ### Phase 1: File System & Data Layer (Weeks 2-4)
-**Goal:** Implement EXT4 file access and metadata parsing
+**Goal:** Implement file system access and metadata parsing
 
 **Key Tasks:**
-- EXT4 bridge implementation (Swift ↔ C++)
-- Device detection and mounting
+- File system service implementation
+- USB device detection and mounting
 - File enumeration and reading
 - GPS and G-Sensor metadata parsing
 - Basic file list UI
@@ -587,7 +620,6 @@ For questions or support, please contact:
 
 - **Apple Developer Documentation**: For comprehensive macOS development resources
 - **FFmpeg Team**: For the excellent video processing library
-- **lwext4 Project**: For EXT4 filesystem implementation reference
 
 ---
 
@@ -615,4 +647,4 @@ For questions or support, please contact:
 
 **Built with ❤️ for macOS**
 
-Last Updated: 2024-01-15
+Last Updated: 2025-10-14
