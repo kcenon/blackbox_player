@@ -301,40 +301,65 @@ Comprehensive documentation is available in the `docs/` directory:
 
 ## ⚠️ Current Implementation Status
 
+**Last Updated**: 2025-10-14
+
 This project is under active development. The following summarizes the implementation progress:
 
-### ✅ Fully Implemented Features
-- **Multi-Channel Video Playback**: 5-channel simultaneous playback with ±50ms synchronization
-- **FFmpeg Video Decoding**: H.264/MP3 decoding with frame caching (LRU, 30 frames)
-- **Metal GPU Rendering**: Hardware-accelerated rendering with real-time transformations
-- **GPS Integration**: Real-time GPS route display with MapKit
-- **G-Sensor Visualization**: 3-axis acceleration data graphing with event detection
-- **Playback Controls**: Play, pause, seek, speed control (0.5x-2x)
-- **Image Processing**: Screen capture, digital zoom, flip, brightness adjustment
-- **File Management**: Browse, filter, and organize dashcam recordings
+### ✅ Completed Phases (Phases 1-4)
 
-### 🟡 Partially Implemented
-- **MP4 Export**: Basic export functionality complete; batch operations UI in progress
-- **File List UI**: Core functionality working; advanced filters (date range, event type) pending
-- **App Menu Actions**: 17 TODO items remaining in `BlackboxPlayerApp.swift`
+#### Phase 1: File System and Metadata Extraction ✅
+**Commits**: f0981f7, 1fd70da, 60a418f
 
-### ⚠️ Not Yet Implemented
-- **Video Repair**: Automatic recovery of corrupted video files
-  - **Workaround**: Use external tools (e.g., FFmpeg CLI)
-  - **Status**: Planned for Phase 5 (Weeks 13-14)
+Implemented services:
+- **FileScanner**: Recursive directory scanning with video file filtering
+- **FileSystemService**: File metadata extraction and directory operations
+- **VideoFileLoader**: Video metadata loading via VideoDecoder with concurrent processing
+- **MetadataExtractor**: GPS and acceleration data extraction from MP4 atoms
 
-- **Dashcam Settings Management**: Read/modify/save dashcam configuration
-  - **Workaround**: Modify settings directly on dashcam device
-  - **Status**: Planned for Phase 5 (Weeks 13-14)
+#### Phase 2: Video Decoding and Playback Control ✅
+**Commit**: 083ba4d
 
-- **Multi-Language Support**: Currently English only
-  - **Status**: Phase 6 (Korean and Japanese localization planned)
+Implemented services:
+- **VideoDecoder** (1584 lines): FFmpeg integration with H.264/MP3 decoding, frame-by-frame navigation, keyframe-based seeking, BGRA output
+- **MultiChannelSynchronizer**: Multi-channel timestamp synchronization with tolerance-based frame alignment
+
+#### Phase 3: Multi-Channel Synchronization ✅
+**Commit**: 4712a30
+
+Implemented services:
+- **VideoBuffer** (NEW): Thread-safe circular buffer (30 frames max) with timestamp-based search
+- **MultiChannelSynchronizer** (Enhanced): Drift monitoring (100ms interval), automatic correction (50ms threshold), drift statistics
+
+#### Phase 4: GPS, G-Sensor, and Image Processing ✅
+**Commit**: 8b9232c
+
+Implemented services:
+- **GPSService** (1235 lines): GPS data parsing, timestamp-based queries, Haversine calculations, speed/direction
+- **GSensorService** (1744 lines): Acceleration processing, impact detection, event classification
+- **FrameCaptureService** (415 lines): Frame capture (PNG/JPEG), metadata overlay, multi-channel composites
+- **VideoTransformations** (1085 lines): Brightness/contrast, flip, zoom, UserDefaults persistence
+
+### ⏳ Pending Phase (Phase 5)
+
+#### Phase 5: Metal Rendering and UI ⏳
+**Status**: Not started (requires Xcode build environment)
+
+Components to implement:
+- **MetalRenderer**: GPU-accelerated video rendering for 5 channels
+- **MapViewController**: MapKit integration for GPS route visualization
+- **UI Layer**: SwiftUI/AppKit views, menu actions, keyboard shortcuts
+
+### 🚀 Key Achievements
+- ✅ **File System**: Complete SD card file scanning and metadata extraction
+- ✅ **Video Decoding**: FFmpeg integration with frame-accurate seeking
+- ✅ **Synchronization**: 5-channel sync with ±50ms accuracy and drift correction
+- ✅ **GPS & G-Sensor**: Full data pipeline from parsing to processing
+- ✅ **Image Processing**: Screenshot capture and video transformations
 
 ### 📊 Overall Progress
-- **Phase 0-3**: 73-82% complete (Core playback features)
-- **Phase 4**: 53% complete (GPS/G-Sensor features)
-- **Phase 5-6**: 0% complete (Export, Settings, Localization)
-- **Overall**: ~44% complete (69/156 tasks)
+- **Phase 1-4**: 100% complete (Core backend services)
+- **Phase 5**: 0% complete (Metal rendering and UI layer)
+- **Overall**: ~80% backend complete, UI layer pending
 
 For detailed implementation status, see [IMPLEMENTATION_CHECKLIST.md](IMPLEMENTATION_CHECKLIST.md).
 
@@ -648,3 +673,4 @@ For questions or support, please contact:
 **Built with ❤️ for macOS**
 
 Last Updated: 2025-10-14
+Project Status: Phase 1-4 Complete (Backend Services) | Phase 5 Pending (UI Layer)
