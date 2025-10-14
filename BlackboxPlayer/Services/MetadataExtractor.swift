@@ -366,19 +366,125 @@ class MetadataExtractor {
             return VideoMetadata.sample
         }
 
-        // TODO: Implement FFmpeg-based metadata extraction for real blackbox files
-        // Future implementation will:
-        // 1. Open MP4 file with avformat_open_input()
-        // 2. Extract GPS data from data streams or metadata dictionary
-        // 3. Extract acceleration data from data streams
-        // 4. Parse device information from metadata
+        // Extract metadata from separate files (.gps, .gsensor)
+        // 블랙박스 파일 구조:
+        //   2025_01_10_09_00_00_F.mp4  ← 비디오 파일
+        //   2025_01_10_09_00_00.gps    ← GPS 데이터 (NMEA 형식)
+        //   2025_01_10_09_00_00.gsensor ← 가속도 데이터 (Binary/CSV)
 
-        // For non-test files, return empty metadata
+        // 1. Get base date from filename
+        let baseDate = extractBaseDate(from: filePath) ?? Date()
+
+        // 2. Get base path without camera position suffix (_F, _R, _L, _Ri, _I)
+        let basePath = getBasePath(from: filePath)
+
+        // 3. Try to load GPS data from .gps file
+        var gpsPoints: [GPSPoint] = []
+        if let gpsData = loadDataFile(basePath: basePath, extension: "gps") {
+            gpsPoints = gpsParser.parseNMEA(data: gpsData, baseDate: baseDate)
+        }
+
+        // 4. Try to load acceleration data from .gsensor file
+        var accelerationData: [AccelerationData] = []
+        if let accelData = loadDataFile(basePath: basePath, extension: "gsensor") {
+            // Try binary format first
+            accelerationData = accelerationParser.parseAccelerationData(accelData, baseDate: baseDate)
+
+            // If binary parsing failed, try CSV format
+            if accelerationData.isEmpty {
+                accelerationData = accelerationParser.parseCSVData(accelData, baseDate: baseDate)
+            }
+        }
+
+        // 5. Return metadata (device info not available from separate files)
         return VideoMetadata(
-            gpsPoints: [],
-            accelerationData: [],
+            gpsPoints: gpsPoints,
+            accelerationData: accelerationData,
             deviceInfo: nil
         )
+    }
+
+    // MARK: - Private Methods
+
+    /// @brief Extract recording start time from filename
+    ///
+    /// @param filePath Video file path
+    /// @return Recording start date, nil if extraction fails
+    ///
+    /// @details
+    /// Blackbox filename patterns:
+    /// - "20240115_143025_F.mp4" (BlackVue)
+    /// - "20240115143025F.mp4" (Thinkware)
+    /// - "2024_0115_143025.mp4" (Garmin)
+    ///
+    /// Fallback to file creation/modification date if pattern matching fails.
+    private func extractBaseDate(from filePath: String) -> Date? {
+        let filename = (filePath as NSString).lastPathComponent
+
+        // Regex pattern: YYYYMMDD_HHMMSS or YYYYMMDD-HHMMSS
+        let pattern = #"(\d{8})[_-](\d{6})"#
+
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: []),
+              let match = regex.firstMatch(in: filename, options: [], range: NSRange(filename.startIndex..., in: filename)) else {
+            // Fallback: use file creation date
+            return try? FileManager.default.attributesOfItem(atPath: filePath)[.creationDate] as? Date
+        }
+
+        let dateString = (filename as NSString).substring(with: match.range(at: 1))
+        let timeString = (filename as NSString).substring(with: match.range(at: 2))
+
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyyMMddHHmmss"
+        dateFormatter.timeZone = TimeZone(identifier: "Asia/Seoul")
+
+        return dateFormatter.date(from: dateString + timeString)
+    }
+
+    /// @brief Get base path without camera position suffix
+    ///
+    /// @param filePath Video file path
+    /// @return Base path for metadata files
+    ///
+    /// @details
+    /// Removes camera position suffix (_F, _R, _L, _Ri, _I) from filename.
+    /// Example:
+    ///   Input:  "/Videos/2025_01_10_09_00_00_F.mp4"
+    ///   Output: "/Videos/2025_01_10_09_00_00"
+    private func getBasePath(from filePath: String) -> String {
+        let url = URL(fileURLWithPath: filePath)
+        let directory = url.deletingLastPathComponent().path
+        let filename = url.deletingPathExtension().lastPathComponent
+
+        // Remove camera position suffix: _F, _R, _L, _Ri, _I
+        let suffixPattern = #"(_F|_R|_L|_Ri|_I)$"#
+        guard let regex = try? NSRegularExpression(pattern: suffixPattern, options: []) else {
+            return "\(directory)/\(filename)"
+        }
+
+        let range = NSRange(filename.startIndex..., in: filename)
+        let baseName = regex.stringByReplacingMatches(in: filename, options: [], range: range, withTemplate: "")
+
+        return "\(directory)/\(baseName)"
+    }
+
+    /// @brief Load data from separate metadata file
+    ///
+    /// @param basePath Base path without extension
+    /// @param extension File extension (e.g., "gps", "gsensor")
+    /// @return File contents as Data, nil if file doesn't exist
+    ///
+    /// @details
+    /// Attempts to load data from files like:
+    /// - "2025_01_10_09_00_00.gps"
+    /// - "2025_01_10_09_00_00.gsensor"
+    private func loadDataFile(basePath: String, extension: String) -> Data? {
+        let filePath = "\(basePath).\(`extension`)"
+
+        guard FileManager.default.fileExists(atPath: filePath) else {
+            return nil
+        }
+
+        return try? Data(contentsOf: URL(fileURLWithPath: filePath))
     }
 
     // MARK: - Private Methods (Disabled - FFmpeg integration pending)
