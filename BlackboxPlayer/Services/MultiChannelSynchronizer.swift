@@ -68,6 +68,32 @@ class MultiChannelSynchronizer {
     /// - 기본값: 0.033초 (약 1프레임, 30fps 기준)
     private let tolerance: TimeInterval = 0.033
 
+    /// @var autoCorrectionThreshold
+    /// @brief 자동 수정 임계값 (초 단위)
+    /// @details
+    /// - 드리프트가 이 값을 초과하면 자동으로 수정
+    /// - 기본값: 0.050초 (50ms, 약 1.5프레임)
+    private let autoCorrectionThreshold: TimeInterval = 0.050
+
+    /// @var monitoringEnabled
+    /// @brief 드리프트 모니터링 활성화 여부
+    private var monitoringEnabled: Bool = false
+
+    /// @var monitoringTimer
+    /// @brief 드리프트 모니터링 타이머
+    private var monitoringTimer: Timer?
+
+    /// @var driftHistory
+    /// @brief 드리프트 히스토리 (통계용)
+    /// @details
+    /// - 최근 100개의 드리프트 값 저장
+    /// - 평균, 최대값 계산에 사용
+    private var driftHistory: [TimeInterval] = []
+
+    /// @var maxDriftHistorySize
+    /// @brief 드리프트 히스토리 최대 크기
+    private let maxDriftHistorySize = 100
+
     // MARK: - Initialization
 
     /// @brief 동기화 객체를 생성합니다.
@@ -280,6 +306,170 @@ class MultiChannelSynchronizer {
         }
 
         status += "Synchronized: \(isSynchronized())"
+
+        // 드리프트 통계 추가
+        if !driftHistory.isEmpty {
+            let avgDrift = driftHistory.reduce(0, +) / Double(driftHistory.count)
+            let maxDrift = driftHistory.max() ?? 0
+            status += "\nDrift Stats: Avg=\(String(format: "%.3f", avgDrift * 1000))ms, Max=\(String(format: "%.3f", maxDrift * 1000))ms"
+        }
+
         return status
+    }
+
+    // MARK: - Drift Monitoring
+
+    /// @brief 드리프트 모니터링을 시작합니다.
+    ///
+    /// @param interval 모니터링 간격 (초 단위), 기본값 0.1초 (100ms)
+    ///
+    /// @details
+    /// 주기적으로 채널 간 동기화 상태를 확인하고,
+    /// 드리프트가 임계값을 초과하면 자동으로 수정합니다.
+    ///
+    /// 동작 방식:
+    /// 1. 지정된 간격마다 타이머 실행
+    /// 2. 모든 채널의 타임스탬프 확인
+    /// 3. 최대 드리프트 계산
+    /// 4. 임계값 초과 시 자동 수정
+    /// 5. 드리프트 히스토리에 기록
+    func startMonitoring(interval: TimeInterval = 0.1) {
+        guard !monitoringEnabled else { return }
+
+        monitoringEnabled = true
+
+        // 메인 스레드에서 타이머 실행 (UI 업데이트 가능)
+        monitoringTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
+            self?.monitorSync()
+        }
+    }
+
+    /// @brief 드리프트 모니터링을 중지합니다.
+    func stopMonitoring() {
+        monitoringEnabled = false
+        monitoringTimer?.invalidate()
+        monitoringTimer = nil
+    }
+
+    /// @brief 동기화 상태를 모니터링하고 필요 시 수정합니다.
+    ///
+    /// @details
+    /// 모니터링 프로세스:
+    /// 1. 각 채널의 현재 타임스탬프 수집
+    /// 2. 마스터 타임스탬프와의 차이 계산
+    /// 3. 최대 드리프트 확인
+    /// 4. 임계값 초과 시 correctDrift() 호출
+    /// 5. 드리프트 히스토리에 기록
+    func monitorSync() {
+        guard !channels.isEmpty else { return }
+
+        // 모든 채널의 타임스탬프 수집
+        let timestamps = channels.values.map { $0.getCurrentTimestamp() }
+        guard let minTimestamp = timestamps.min(),
+              let maxTimestamp = timestamps.max() else {
+            return
+        }
+
+        // 최대 드리프트 계산
+        let maxDrift = maxTimestamp - minTimestamp
+
+        // 드리프트 히스토리에 기록
+        driftHistory.append(maxDrift)
+        if driftHistory.count > maxDriftHistorySize {
+            driftHistory.removeFirst()
+        }
+
+        // 임계값 초과 시 자동 수정
+        if maxDrift > autoCorrectionThreshold {
+            do {
+                try correctDrift(maxDrift: maxDrift)
+            } catch {
+                print("Drift correction failed: \(error)")
+            }
+        }
+    }
+
+    /// @brief 드리프트를 자동으로 수정합니다.
+    ///
+    /// @param maxDrift 현재 최대 드리프트
+    ///
+    /// @throws SyncError
+    ///
+    /// @details
+    /// 수정 전략:
+    /// 1. 가장 느린 채널 찾기 (타임스탬프가 가장 작은 채널)
+    /// 2. 가장 빠른 채널 찾기 (타임스탬프가 가장 큰 채널)
+    /// 3. 중간값을 목표 타임스탬프로 설정
+    /// 4. 모든 채널을 목표 타임스탬프로 seek
+    ///
+    /// 중간값 사용 이유:
+    /// - 모든 채널을 같은 양만큼 이동
+    /// - seek 횟수 최소화
+    /// - 재생 끊김 최소화
+    func correctDrift(maxDrift: TimeInterval) throws {
+        guard !channels.isEmpty else { return }
+
+        // 모든 채널의 타임스탬프 수집
+        var channelTimestamps: [(id: String, timestamp: TimeInterval)] = []
+        for (id, decoder) in channels {
+            let timestamp = decoder.getCurrentTimestamp()
+            channelTimestamps.append((id: id, timestamp: timestamp))
+        }
+
+        // 정렬
+        channelTimestamps.sort { $0.timestamp < $1.timestamp }
+
+        guard let slowest = channelTimestamps.first,
+              let fastest = channelTimestamps.last else {
+            return
+        }
+
+        // 중간값 계산
+        let targetTimestamp = (slowest.timestamp + fastest.timestamp) / 2.0
+
+        print("Correcting drift: \(String(format: "%.3f", maxDrift * 1000))ms -> Seeking to \(String(format: "%.3f", targetTimestamp))s")
+
+        // 모든 채널을 목표 타임스탬프로 이동
+        for (id, decoder) in channels {
+            let currentTimestamp = decoder.getCurrentTimestamp()
+            let diff = abs(currentTimestamp - targetTimestamp)
+
+            // 드리프트가 큰 채널만 수정 (작은 드리프트는 무시)
+            if diff > tolerance {
+                do {
+                    try decoder.seek(to: targetTimestamp)
+                } catch {
+                    throw SyncError.seekFailed("Failed to correct drift for channel '\(id)': \(error)")
+                }
+            }
+        }
+
+        // 마스터 타임스탬프 업데이트
+        masterTimestamp = targetTimestamp
+    }
+
+    /// @brief 드리프트 통계를 반환합니다.
+    ///
+    /// @return (평균 드리프트, 최대 드리프트, 히스토리 개수)
+    ///
+    /// @details
+    /// 통계 정보:
+    /// - average: 평균 드리프트 (초 단위)
+    /// - maximum: 최대 드리프트 (초 단위)
+    /// - count: 히스토리에 기록된 샘플 개수
+    func getDriftStatistics() -> (average: TimeInterval, maximum: TimeInterval, count: Int) {
+        guard !driftHistory.isEmpty else {
+            return (0, 0, 0)
+        }
+
+        let average = driftHistory.reduce(0, +) / Double(driftHistory.count)
+        let maximum = driftHistory.max() ?? 0
+
+        return (average, maximum, driftHistory.count)
+    }
+
+    /// @brief 드리프트 히스토리를 초기화합니다.
+    func clearDriftHistory() {
+        driftHistory.removeAll()
     }
 }
