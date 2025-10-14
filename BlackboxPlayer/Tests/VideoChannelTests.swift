@@ -1,3 +1,125 @@
+/**
+ * @file VideoChannelTests.swift
+ * @brief 비디오 채널 단위 테스트
+ * @author BlackboxPlayer Team
+ *
+ * @details
+ * 개별 비디오 채널(VideoChannel)의 디코딩, 버퍼링, 상태 관리를 검증하는
+ * 단위 테스트 모음입니다. 멀티채널 블랙박스 시스템에서 각 카메라 채널의
+ * 독립적인 동작을 테스트합니다.
+ *
+ * @section video_channel_overview VideoChannel이란?
+ *
+ * VideoChannel은 하나의 카메라 비디오를 디코딩하고 프레임을 버퍼링하는
+ * 컴포넌트입니다. 각 채널은 독립적으로 동작하며, 멀티스레드 환경에서
+ * 안전하게 접근할 수 있습니다.
+ *
+ * **주요 기능:**
+ *
+ * 1. **디코딩 관리**
+ *    - 백그라운드 스레드에서 비디오 디코딩
+ *    - FFmpeg VideoDecoder 래핑
+ *    - 비동기 프레임 생성
+ *
+ * 2. **프레임 버퍼링**
+ *    - 최근 30개 프레임 저장 (LRU 캐시)
+ *    - 빠른 프레임 조회 (O(1) 접근)
+ *    - 메모리 효율적 관리
+ *
+ * 3. **상태 관리**
+ *    - Idle → Ready → Decoding → Completed/Error
+ *    - Combine Publisher로 상태 변경 전파
+ *    - 상태 전환 이벤트 구독 가능
+ *
+ * 4. **스레드 안전성**
+ *    - 여러 스레드에서 동시 접근 가능
+ *    - 내부 락으로 데이터 보호
+ *    - 경쟁 조건 방지
+ *
+ * @section multichannel_structure 블랙박스 멀티채널 구조
+ *
+ * ```
+ * BlackboxPlayer
+ * ├── VideoChannel (전방)
+ * │   ├── VideoDecoder (FFmpeg)
+ * │   └── Frame Buffer [30개]
+ * ├── VideoChannel (후방)
+ * │   ├── VideoDecoder (FFmpeg)
+ * │   └── Frame Buffer [30개]
+ * ├── VideoChannel (좌측)
+ * │   ├── VideoDecoder (FFmpeg)
+ * │   └── Frame Buffer [30개]
+ * ├── VideoChannel (우측)
+ * │   ├── VideoDecoder (FFmpeg)
+ * │   └── Frame Buffer [30개]
+ * └── VideoChannel (실내)
+ *     ├── VideoDecoder (FFmpeg)
+ *     └── Frame Buffer [30개]
+ * ```
+ *
+ * @section test_scope 테스트 범위
+ *
+ * 1. **초기화 테스트**
+ *    - 채널 ID 할당
+ *    - 초기 상태 확인 (Idle)
+ *    - 버퍼 초기화
+ *
+ * 2. **디코딩 테스트**
+ *    - 비디오 파일 로드
+ *    - 프레임 디코딩
+ *    - 상태 전환 (Idle → Ready → Decoding)
+ *
+ * 3. **버퍼링 테스트**
+ *    - 프레임 저장
+ *    - 프레임 조회
+ *    - LRU 캐시 동작
+ *    - 버퍼 오버플로 처리
+ *
+ * 4. **상태 관리 테스트**
+ *    - 상태 전환 검증
+ *    - Combine Publisher 이벤트
+ *    - 에러 상태 처리
+ *
+ * 5. **스레드 안전성 테스트**
+ *    - 동시 접근 검증
+ *    - 경쟁 조건 테스트
+ *    - 데이터 레이스 감지
+ *
+ * 6. **성능 테스트**
+ *    - 프레임 조회 속도
+ *    - 버퍼 업데이트 성능
+ *    - 메모리 사용량
+ *
+ * @section combine_overview Combine 프레임워크
+ *
+ * Combine은 Apple의 reactive 프로그래밍 프레임워크로, 데이터의 변화를
+ * 자동으로 감지하고 반응하는 패턴을 제공합니다.
+ *
+ * **주요 개념:**
+ * - **Publisher**: 값을 발행하는 객체
+ * - **Subscriber**: 값을 구독하는 객체
+ * - **AnyCancellable**: 구독 취소를 위한 토큰
+ *
+ * **사용 예시:**
+ * ```swift
+ * channel.$state  // Publisher
+ *     .sink { state in  // Subscriber
+ *         print("State changed: \(state)")
+ *     }
+ *     .store(in: &cancellables)  // 구독 관리
+ * ```
+ *
+ * @section test_strategy 테스트 전략
+ *
+ * - Mock 데이터 사용으로 외부 의존성 제거
+ * - 비동기 테스트에 async/await 활용
+ * - XCTestExpectation으로 상태 변경 대기
+ * - Combine sink로 이벤트 스트림 검증
+ *
+ * @note 이 테스트는 실제 비디오 파일 없이 Mock 데이터로 실행됩니다.
+ * 통합 테스트에서 실제 파일 디코딩을 검증합니다.
+ */
+
 //
 //  ═══════════════════════════════════════════════════════════════════════════
 //  VideoChannelTests.swift

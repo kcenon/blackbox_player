@@ -1,9 +1,76 @@
-//
-//  BlackboxPlayerTests.swift
-//  BlackboxPlayerTests
-//
-//  Unit tests for BlackboxPlayer application
-//
+/**
+ * @file BlackboxPlayerTests.swift
+ * @brief 기본 테스트 클래스 및 XCTest 프레임워크 사용법 가이드
+ * @author BlackboxPlayer Team
+ *
+ * @details
+ * BlackboxPlayer 앱의 기본 테스트 설정과 XCTest 프레임워크 사용법을 제공하는
+ * 템플릿 테스트 클래스입니다. 실제 기능 테스트는 전문화된 테스트 클래스들에
+ * 구현되어 있습니다.
+ *
+ * @section purpose 목적
+ * - XCTest 프레임워크의 기본 사용법 제공
+ * - 테스트 생명주기(setUp/tearDown) 예제
+ * - 예제 테스트 메서드 및 성능 테스트 템플릿
+ * - 테스트 작성 가이드 및 베스트 프랙티스
+ *
+ * @section xctest_intro XCTest 프레임워크란?
+ * XCTest는 iOS, macOS, watchOS, tvOS 앱을 테스트하기 위한 Apple의 공식
+ * 프레임워크입니다.
+ *
+ * **테스트 종류:**
+ * - **단위 테스트 (Unit Test)**: 개별 함수/메서드의 정확성 검증
+ * - **통합 테스트 (Integration Test)**: 여러 컴포넌트의 협동 검증
+ * - **UI 테스트 (UI Test)**: 사용자 인터페이스 동작 검증
+ * - **성능 테스트 (Performance Test)**: 코드 실행 속도 측정
+ *
+ * @section test_principles 테스트 작성 원칙
+ *
+ * **FIRST 원칙:**
+ * - **F**ast: 빠르게 실행되어야 함
+ * - **I**ndependent: 다른 테스트에 독립적이어야 함
+ * - **R**epeatable: 반복 실행 시 동일한 결과
+ * - **S**elf-validating: 스스로 성공/실패 판단
+ * - **T**imely: 코드 작성과 동시에 테스트 작성
+ *
+ * **Given-When-Then 패턴:**
+ * - **Given** (준비): 테스트에 필요한 상태 설정
+ * - **When** (실행): 테스트할 동작 수행
+ * - **Then** (검증): 결과가 예상과 일치하는지 확인
+ *
+ * @section assert_functions XCTAssert 함수 종류
+ * - `XCTAssertTrue(condition)`: 조건이 true인지 확인
+ * - `XCTAssertFalse(condition)`: 조건이 false인지 확인
+ * - `XCTAssertEqual(value1, value2)`: 두 값이 같은지 확인
+ * - `XCTAssertNotEqual(value1, value2)`: 두 값이 다른지 확인
+ * - `XCTAssertNil(value)`: 값이 nil인지 확인
+ * - `XCTAssertNotNil(value)`: 값이 nil이 아닌지 확인
+ * - `XCTAssertGreaterThan(value1, value2)`: value1 > value2 확인
+ * - `XCTAssertLessThan(value1, value2)`: value1 < value2 확인
+ * - `XCTAssertThrowsError(expression)`: 코드가 에러를 던지는지 확인
+ *
+ * @section test_execution 테스트 실행 방법
+ *
+ * **Xcode에서:**
+ * - `Cmd + U`: 모든 테스트 실행
+ * - `Cmd + Ctrl + Option + U`: 현재 테스트만 실행
+ * - `Test Navigator (Cmd + 6)`: 테스트 목록 보기
+ *
+ * **터미널에서:**
+ * ```bash
+ * xcodebuild test -scheme BlackboxPlayer
+ * ```
+ *
+ * @section related_tests 관련 테스트 파일
+ * - `DataModelsTests.swift`: VideoFile, ChannelInfo, GPSPoint 등 모델 테스트
+ * - `VideoDecoderTests.swift`: FFmpeg 디코더 기능 테스트
+ * - `SyncControllerTests.swift`: 멀티채널 동기화 테스트
+ * - `VideoChannelTests.swift`: 개별 채널 버퍼링 테스트
+ * - `MultiChannelRendererTests.swift`: Metal GPU 렌더링 테스트
+ *
+ * @note 이 파일은 기본 템플릿으로, 실제 기능 테스트는 위의 전문화된 테스트
+ * 파일들에 구현되어 있습니다.
+ */
 
 /*
  ╔══════════════════════════════════════════════════════════════════════════════╗

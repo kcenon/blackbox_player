@@ -1,3 +1,89 @@
+/**
+ * @file DataModelsTests.swift
+ * @brief 데이터 모델 단위 테스트
+ * @author BlackboxPlayer Team
+ *
+ * @details
+ * BlackboxPlayer의 모든 데이터 모델을 체계적으로 테스트하는 단위 테스트 모음입니다.
+ * 비즈니스 로직, 데이터 무결성, 직렬화/역직렬화, 계산 프로퍼티의 정확성을 검증합니다.
+ *
+ * @section test_targets 테스트 대상 모델
+ *
+ * 1. **EventType** - 이벤트 유형
+ *    - 일반/충격/주차/수동/긴급 구분
+ *    - 파일 경로 기반 자동 감지
+ *    - 우선순위 비교
+ *
+ * 2. **CameraPosition** - 카메라 위치
+ *    - 전방/후방/좌측/우측/실내
+ *    - 파일명 접미사 기반 감지 (_F, _R, _L, _Ri, _I)
+ *    - 채널 인덱스 매핑
+ *
+ * 3. **GPSPoint** - GPS 위치 데이터
+ *    - 위도/경도 유효성 검증
+ *    - Haversine 공식 기반 거리 계산
+ *    - 신호 강도 판단
+ *
+ * 4. **AccelerationData** - 가속도 센서 데이터
+ *    - 3축 (X, Y, Z) 벡터 크기 계산
+ *    - 충격 감지 (2.5G 임계값)
+ *    - 충격 심각도 분류
+ *
+ * 5. **ChannelInfo** - 비디오 채널 정보
+ *    - 해상도 및 화면 비율
+ *    - 채널 유효성 검증
+ *
+ * 6. **VideoMetadata** - 비디오 메타데이터
+ *    - GPS 데이터 통계 (총 거리, 평균/최대 속도)
+ *    - 가속도 데이터 통계 (최대 G-force)
+ *    - 충격 이벤트 감지
+ *
+ * 7. **VideoFile** - 비디오 파일 모델
+ *    - 멀티채널 접근
+ *    - 파일 속성 (duration, size, timestamp)
+ *    - 즐겨찾기/메모 기능
+ *
+ * @section test_importance 데이터 모델 테스트의 중요성
+ *
+ * - **비즈니스 로직 정확성**: 도메인 규칙이 올바르게 구현되었는지 확인
+ * - **데이터 무결성**: 잘못된 데이터가 시스템에 유입되지 않도록 검증
+ * - **Codable 직렬화**: JSON 인코딩/디코딩이 데이터 손실 없이 동작하는지 확인
+ * - **계산 프로퍼티**: 파생 데이터가 정확히 계산되는지 검증
+ * - **성능**: 대량 데이터 처리 성능 측정 및 최적화
+ *
+ * @section test_strategy 테스트 전략
+ *
+ * **단위 테스트 특징:**
+ * - UI가 없어 밀리초 단위의 빠른 실행
+ * - Mock 데이터 사용으로 외부 의존성 제거
+ * - 독립적 실행 가능 (순서 무관)
+ * - 높은 커버리지 목표 (90%+)
+ *
+ * **Given-When-Then 패턴 사용:**
+ * ```swift
+ * func testEventTypeDetection() {
+ *     // Given: 파일 경로 준비
+ *     let normalPath = "normal/video.mp4"
+ *
+ *     // When: 이벤트 유형 감지
+ *     let eventType = EventType.detect(from: normalPath)
+ *
+ *     // Then: .normal 타입 검증
+ *     XCTAssertEqual(eventType, .normal)
+ * }
+ * ```
+ *
+ * @section performance_tests 성능 테스트
+ *
+ * - GPS 거리 계산 (Haversine 공식)
+ * - 비디오 메타데이터 요약 생성
+ * - measure { } 블록으로 10회 반복 측정
+ * - Baseline 설정으로 성능 퇴화 감지
+ *
+ * @note 이 테스트는 실제 파일 시스템이나 네트워크에 의존하지 않으므로
+ * 언제든지 빠르게 실행할 수 있습니다.
+ */
+
 // ============================================================================
 // DataModelsTests.swift
 // BlackboxPlayerTests

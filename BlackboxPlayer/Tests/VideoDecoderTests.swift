@@ -1,3 +1,128 @@
+/**
+ * @file VideoDecoderTests.swift
+ * @brief FFmpeg 기반 비디오 디코더 단위 테스트
+ * @author BlackboxPlayer Team
+ *
+ * @details
+ * FFmpeg 기반 비디오 디코더(VideoDecoder)의 기능을 검증하는 단위 테스트 모음입니다.
+ * 초기화, 프레임 디코딩, 시간 탐색, 에러 처리, 메모리 관리, 성능을 테스트합니다.
+ *
+ * @section video_decoder_overview 비디오 디코더란?
+ *
+ * VideoDecoder는 압축된 비디오 파일을 읽어서 화면에 표시할 수 있는
+ * 원본 이미지 프레임으로 변환하는 컴포넌트입니다.
+ *
+ * **디코딩 과정:**
+ * ```
+ * 압축된 비디오 파일 (.mp4, .avi, .mov 등)
+ *         ↓
+ * VideoDecoder (FFmpeg)
+ *         ↓
+ * 원본 프레임 (CVPixelBuffer 배열)
+ *         ↓
+ * Metal 렌더링 → 화면 표시
+ * ```
+ *
+ * @section ffmpeg_overview FFmpeg 프레임워크
+ *
+ * FFmpeg은 세계에서 가장 널리 사용되는 오픈소스 멀티미디어 프레임워크입니다.
+ *
+ * **주요 특징:**
+ * - **범용성**: 거의 모든 비디오/오디오 포맷 지원
+ * - **코덱 지원**: H.264, H.265 (HEVC), VP9, AV1 등
+ * - **플랫폼**: Linux, macOS, Windows, iOS, Android 모두 지원
+ * - **성능**: 하드웨어 가속 지원 (VideoToolbox, VAAPI, NVDEC)
+ * - **오픈소스**: LGPL/GPL 라이선스
+ *
+ * **FFmpeg 아키텍처:**
+ * ```
+ * libavformat  - 컨테이너 포맷 (MP4, AVI, MKV 등)
+ * libavcodec   - 코덱 (H.264, H.265, AAC 등)
+ * libavutil    - 유틸리티 함수
+ * libswscale   - 이미지 변환 (YUV → RGB)
+ * libswresample - 오디오 리샘플링
+ * ```
+ *
+ * @section test_scope 테스트 범위
+ *
+ * 1. **디코더 초기화**
+ *    - 파일 열기 및 스트림 정보 읽기
+ *    - 비디오/오디오 스트림 감지
+ *    - 코덱 초기화
+ *    - 에러 처리 (파일 없음, 손상된 파일 등)
+ *
+ * 2. **프레임 디코딩**
+ *    - 비디오 프레임 디코딩
+ *    - 오디오 프레임 디코딩
+ *    - Pixel format 변환 (YUV420p → BGRA)
+ *    - CVPixelBuffer 생성
+ *
+ * 3. **시간 탐색 (Seeking)**
+ *    - 특정 시간으로 점프
+ *    - 프레임 단위 탐색
+ *    - I-frame (키프레임) 탐색
+ *    - Seek 정확도 검증
+ *
+ * 4. **재생 시간 조회**
+ *    - Duration 읽기
+ *    - Frame rate 조회
+ *    - 비트레이트 확인
+ *
+ * 5. **에러 처리**
+ *    - 존재하지 않는 파일
+ *    - 손상된 비디오 파일
+ *    - 지원하지 않는 코덱
+ *    - 디코딩 에러 복구
+ *
+ * 6. **메모리 관리**
+ *    - AVFrame 해제
+ *    - AVPacket 해제
+ *    - Context 정리
+ *    - 메모리 누수 방지
+ *
+ * 7. **성능**
+ *    - 디코딩 속도 측정
+ *    - Seek 성능
+ *    - 메모리 사용량
+ *
+ * @section codec_support 지원 코덱
+ *
+ * **비디오 코덱:**
+ * - H.264 (AVC) - 가장 널리 사용
+ * - H.265 (HEVC) - 더 높은 압축률
+ * - VP9 - Google의 오픈소스 코덱
+ * - MJPEG - 모션 JPEG
+ *
+ * **오디오 코덱:**
+ * - AAC - Advanced Audio Coding
+ * - MP3 - MPEG-1/2 Audio Layer 3
+ * - PCM - 무손실 오디오
+ *
+ * @section test_limitations 테스트 제한사항
+ *
+ * **단위 테스트 (이 파일):**
+ * - Mock 데이터 사용
+ * - 실제 파일 불필요
+ * - 빠른 실행 (밀리초 단위)
+ * - 에러 경로 검증
+ * - 상태 관리 테스트
+ *
+ * **통합 테스트 (별도 파일):**
+ * - 실제 비디오 파일 필요
+ * - 실제 디코딩 검증
+ * - 느린 실행 (초 단위)
+ * - 정상 경로 검증
+ * - 엔드투엔드 시나리오
+ *
+ * @section test_strategy 테스트 전략
+ *
+ * 실제 비디오 파일 없이도 디코더의 상태 관리와 에러 처리가 올바른지 검증합니다.
+ * 이를 통해 CI/CD에서 빠르게 실행 가능한 테스트를 제공합니다.
+ *
+ * @note FFmpeg은 C 라이브러리이므로, Swift 래퍼 클래스(VideoDecoder)를 통해
+ * 안전하게 사용됩니다. 메모리 관리에 특히 주의가 필요합니다.
+ */
+
 //
 //  ═══════════════════════════════════════════════════════════════════════════
 //  VideoDecoderTests.swift

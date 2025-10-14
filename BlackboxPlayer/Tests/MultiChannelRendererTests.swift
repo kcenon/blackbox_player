@@ -1,3 +1,128 @@
+/**
+ * @file MultiChannelRendererTests.swift
+ * @brief 멀티채널 비디오 렌더러 단위 테스트
+ * @author BlackboxPlayer Team
+ *
+ * @details
+ * Metal 기반 멀티채널 비디오 렌더러(MultiChannelRenderer)의 모든 기능을 체계적으로
+ * 테스트합니다. GPU 가속 렌더링, 레이아웃 변경, 화면 캡처, 성능, 동시성을 검증합니다.
+ *
+ * @section test_scope 테스트 범위
+ *
+ * 1. **렌더러 초기화**
+ *    - Metal 디바이스 사용 가능 여부 확인
+ *    - Command Queue 생성 검증
+ *    - 초기 상태 확인
+ *
+ * 2. **레이아웃 모드**
+ *    - Grid: 채널을 격자 형태로 배치
+ *    - Focus: 하나의 채널을 전체 화면에 표시
+ *    - Horizontal: 채널을 가로로 나열
+ *
+ * 3. **포커스 위치 설정**
+ *    - 전방/후방/좌측/우측/실내 카메라 전환
+ *    - 포커스 모드에서 뷰포트 자동 조정
+ *
+ * 4. **뷰포트 계산**
+ *    - 1~5채널에 대응하는 뷰포트 자동 계산
+ *    - 화면 비율 유지 (aspect ratio)
+ *    - 여백 최소화
+ *
+ * 5. **화면 캡처**
+ *    - PNG/JPEG 포맷 지원
+ *    - 현재 프레임 스냅샷
+ *    - 파일 저장 및 검증
+ *
+ * 6. **성능 측정**
+ *    - 레이아웃 변경 속도 (measure 블록)
+ *    - 렌더링 FPS
+ *    - 메모리 사용량
+ *
+ * 7. **메모리 관리**
+ *    - Metal 리소스 해제 검증
+ *    - 메모리 누수 방지
+ *    - Texture 캐시 관리
+ *
+ * 8. **스레드 안전성**
+ *    - 동시성 테스트 (DispatchQueue.concurrentPerform)
+ *    - 경쟁 조건 (Race condition) 검증
+ *    - 데이터 보호 메커니즘 확인
+ *
+ * @section test_strategy 테스트 전략
+ *
+ * **단위 테스트:**
+ * - 개별 기능을 독립적으로 테스트
+ * - Mock Metal 디바이스 사용 (가능한 경우)
+ * - 빠른 실행 (밀리초 단위)
+ *
+ * **통합 테스트:**
+ * - 실제 렌더링 파이프라인 전체 테스트
+ * - 실제 Metal GPU 사용
+ * - 엔드투엔드 시나리오 검증
+ *
+ * **성능 테스트:**
+ * - `measure { }` 블록으로 10회 반복 측정
+ * - Baseline 설정으로 성능 퇴화 감지
+ * - CI에서 자동 실행
+ *
+ * **동시성 테스트:**
+ * - `DispatchQueue.concurrentPerform`로 병렬 접근
+ * - 경쟁 조건 재현 및 검증
+ * - Thread Sanitizer로 데이터 레이스 감지
+ *
+ * @section metal_overview Metal 렌더링 파이프라인
+ *
+ * ```
+ * 1. MTLDevice 생성 (GPU 선택)
+ *    ↓
+ * 2. MTLCommandQueue 생성 (명령 큐)
+ *    ↓
+ * 3. MTLCommandBuffer 생성 (명령 버퍼)
+ *    ↓
+ * 4. MTLRenderCommandEncoder 생성 (그리기 명령)
+ *    ↓
+ * 5. Draw 호출 (실제 렌더링)
+ *    ↓
+ * 6. Present (화면에 표시)
+ * ```
+ *
+ * **Metal 사용 이유:**
+ * - 하드웨어 가속으로 빠른 비디오 렌더링
+ * - 여러 채널을 동시에 화면에 그릴 수 있음
+ * - 회전, 크롭, 필터 등 실시간 변환 가능
+ * - OpenGL보다 약 10배 빠른 성능
+ *
+ * @section layout_modes 레이아웃 모드 설명
+ *
+ * **Grid 모드 (격자):**
+ * ```
+ * ┌──────┬──────┐
+ * │  F   │  R   │  F = Front, R = Rear
+ * ├──────┼──────┤
+ * │  L   │  Ri  │  L = Left, Ri = Right
+ * └──────┴──────┘
+ * ```
+ *
+ * **Focus 모드 (전체 화면):**
+ * ```
+ * ┌─────────────┐
+ * │             │
+ * │   Front     │  선택된 하나의 채널만 표시
+ * │             │
+ * └─────────────┘
+ * ```
+ *
+ * **Horizontal 모드 (가로 나열):**
+ * ```
+ * ┌───┬───┬───┬───┐
+ * │ F │ R │ L │Ri │  모든 채널을 가로로 나열
+ * └───┴───┴───┴───┘
+ * ```
+ *
+ * @note Metal이 지원되지 않는 환경에서는 일부 테스트가 자동으로 건너뛰어집니다
+ * (XCTSkip 사용).
+ */
+
 // ============================================================================
 // MultiChannelRendererTests.swift
 // BlackboxPlayerTests
