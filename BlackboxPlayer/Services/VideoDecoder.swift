@@ -128,7 +128,15 @@ class VideoDecoder {
     /// @details
     /// - 0부터 시작하여 1씩 증가
     /// - 디버깅 및 진행 상황 추적에 사용
-    private var frameNumber: Int = 0
+    /// - private(set): 외부에서 읽기는 가능, 수정은 불가
+    private(set) var frameNumber: Int = 0
+
+    /// @var currentTimestamp
+    /// @brief 현재 프레임의 타임스탬프 (초 단위)
+    /// @details
+    /// - 마지막으로 디코딩된 프레임의 시간
+    /// - seek 및 동기화에 사용
+    private(set) var currentTimestamp: TimeInterval = 0
 
     /// @var isInitialized
     /// @brief 디코더가 초기화되었는지 여부
@@ -478,6 +486,115 @@ class VideoDecoder {
         return Double(duration) / Double(AV_TIME_BASE)
     }
 
+    /// @brief 현재 프레임의 타임스탬프를 반환합니다.
+    ///
+    /// @return 현재 타임스탬프 (초 단위)
+    ///
+    /// @details
+    /// 사용 예:
+    /// ```swift
+    /// let currentTime = decoder.getCurrentTimestamp()
+    /// print("현재 재생 위치: \(currentTime)초")
+    /// ```
+    func getCurrentTimestamp() -> TimeInterval {
+        return currentTimestamp
+    }
+
+    /// @brief 특정 프레임 번호로 이동합니다.
+    ///
+    /// @param targetFrame 이동할 프레임 번호 (0부터 시작)
+    ///
+    /// @throws DecoderError
+    ///   - `.notInitialized`: 초기화 안 됨
+    ///   - `.unknown`: 시크 실패
+    ///
+    /// @details
+    /// 프레임 번호를 타임스탬프로 변환하여 seek합니다.
+    /// - 프레임 번호 = 타임스탬프 × 프레임레이트
+    /// - 예: 30fps 영상의 60번 프레임 = 2초
+    ///
+    /// 사용 예:
+    /// ```swift
+    /// try decoder.seekToFrame(120)  // 120번 프레임으로 이동
+    /// ```
+    func seekToFrame(_ targetFrame: Int) throws {
+        guard isInitialized, let videoInfo = videoInfo else {
+            throw DecoderError.notInitialized
+        }
+
+        // 프레임 번호를 타임스탬프로 변환
+        let timestamp = Double(targetFrame) / videoInfo.frameRate
+        try seek(to: timestamp)
+    }
+
+    /// @brief 다음 프레임으로 이동합니다.
+    ///
+    /// @return 디코딩된 비디오 프레임
+    ///
+    /// @throws DecoderError
+    ///   - `.notInitialized`: 초기화 안 됨
+    ///   - 기타 디코딩 관련 에러
+    ///
+    /// @details
+    /// 현재 위치에서 다음 비디오 프레임을 디코딩합니다.
+    /// 오디오 프레임은 건너뜁니다.
+    ///
+    /// 사용 예:
+    /// ```swift
+    /// if let frame = try decoder.stepForward() {
+    ///     print("다음 프레임: \(frame.timestamp)초")
+    /// }
+    /// ```
+    func stepForward() throws -> VideoFrame? {
+        // 비디오 프레임을 찾을 때까지 계속 디코딩
+        while let frames = try decodeNextFrame() {
+            if let videoFrame = frames.video {
+                return videoFrame
+            }
+            // 오디오 프레임은 건너뜀
+        }
+        return nil
+    }
+
+    /// @brief 이전 프레임으로 이동합니다.
+    ///
+    /// @throws DecoderError
+    ///   - `.notInitialized`: 초기화 안 됨
+    ///   - `.unknown`: 시크 실패
+    ///
+    /// @details
+    /// 프레임 단위로 뒤로 이동:
+    /// 1. 현재 타임스탬프에서 프레임 1개 시간만큼 뺌
+    /// 2. 해당 타임스탬프로 seek
+    /// 3. 0초 미만으로는 이동하지 않음
+    ///
+    /// 주의사항:
+    /// - seek는 키프레임 단위로 동작하므로 정확히 이전 프레임으로
+    ///   이동하지 않을 수 있습니다
+    /// - 정확한 프레임 탐색이 필요한 경우 seekToFrame()을 사용하세요
+    ///
+    /// 사용 예:
+    /// ```swift
+    /// try decoder.stepBackward()
+    /// if let frame = try decoder.stepForward() {
+    ///     print("이전 프레임: \(frame.timestamp)초")
+    /// }
+    /// ```
+    func stepBackward() throws {
+        guard isInitialized, let videoInfo = videoInfo else {
+            throw DecoderError.notInitialized
+        }
+
+        // 프레임 1개의 시간 계산
+        let frameDuration = 1.0 / videoInfo.frameRate
+
+        // 이전 프레임의 타임스탬프 계산 (0초 미만으로 가지 않음)
+        let previousTimestamp = max(0, currentTimestamp - frameDuration)
+
+        // 이전 타임스탬프로 seek
+        try seek(to: previousTimestamp)
+    }
+
     // MARK: - Private Methods (내부 메서드)
     // 클래스 내부에서만 사용하는 헬퍼 메서드들
 
@@ -795,6 +912,9 @@ class VideoDecoder {
         let pts = frame.pointee.pts
         let timeBase = videoInfo.timeBase
         let timestamp = Double(pts) * Double(timeBase.num) / Double(timeBase.den)
+
+        // currentTimestamp 업데이트 (동기화에 사용)
+        self.currentTimestamp = timestamp
 
         // 6. 키프레임 확인
         // AV_FRAME_FLAG_KEY: 이 프레임이 키프레임인지
