@@ -392,6 +392,20 @@ struct MultiChannelPlayerView: View {
     /// - 사용자가 다른 디스플레이 선택 가능
     @State private var selectedDisplay: NSScreen?
 
+    /// GPS 오버레이 표시 여부
+    ///
+    /// ## showGPSOverlay
+    /// - true: GPS HUD와 지도 표시
+    /// - false: GPS 정보 숨김
+    @State private var showGPSOverlay = true
+
+    /// 메타데이터 오버레이 표시 여부
+    ///
+    /// ## showMetadataOverlay
+    /// - true: 속도, 좌표 등 메타데이터 표시
+    /// - false: 메타데이터 숨김
+    @State private var showMetadataOverlay = true
+
     // MARK: - Body
 
     /// MultiChannelPlayerView의 메인 레이아웃
@@ -442,17 +456,32 @@ struct MultiChannelPlayerView: View {
                 onRendererCreated: { renderer = $0 }  // renderer 참조 저장
             )
 
-            /// GPS 지도 오버레이
+            /// GPS 지도 오버레이 (조건부 렌더링)
             ///
             /// ## MapOverlayView
             /// - 좌측 하단에 미니맵 표시
             /// - GPS 경로를 실시간으로 그림 (파란색 선)
             /// - 현재 위치를 표시 (빨간 점)
-            MapOverlayView(
-                gpsService: syncController.gpsService,
-                gsensorService: syncController.gsensorService,
-                currentTime: syncController.currentTime
-            )
+            /// - showGPSOverlay == true일 때만 표시
+            if showGPSOverlay {
+                MapOverlayView(
+                    gpsService: syncController.gpsService,
+                    gsensorService: syncController.gsensorService,
+                    currentTime: syncController.currentTime
+                )
+            }
+
+            /// 메타데이터 오버레이 (조건부 렌더링)
+            ///
+            /// ## MetadataOverlayView
+            /// - 좌측에 속도계, GPS 좌표, 고도 표시
+            /// - showMetadataOverlay == true일 때만 표시
+            if showMetadataOverlay {
+                MetadataOverlayView(
+                    videoFile: videoFile,
+                    currentTime: syncController.currentTime
+                )
+            }
 
             /// G-Sensor 그래프 오버레이
             ///
@@ -626,8 +655,58 @@ struct MultiChannelPlayerView: View {
                     Spacer()
                         .frame(width: 12)
 
+                    /// GPS 오버레이 토글 버튼
+                    ///
+                    /// ## 동작
+                    /// - 클릭 시 showGPSOverlay 토글
+                    /// - true: GPS HUD, 지도 오버레이 표시
+                    /// - false: GPS 정보 숨김
+                    Button(action: { showGPSOverlay.toggle() }) {
+                        Image(systemName: showGPSOverlay ? "location.fill" : "location")
+                            .font(.system(size: 18))
+                            .foregroundColor(showGPSOverlay ? .white : .white.opacity(0.6))
+                            .frame(width: 32, height: 32)
+                            .background(showGPSOverlay ? Color.accentColor : Color.clear)
+                            .cornerRadius(6)
+                    }
+                    .buttonStyle(.plain)
+                    .help("Toggle GPS Overlay")
+
+                    /// 메타데이터 오버레이 토글 버튼
+                    ///
+                    /// ## 동작
+                    /// - 클릭 시 showMetadataOverlay 토글
+                    /// - true: 속도계, 좌표 등 메타데이터 표시
+                    /// - false: 메타데이터 숨김
+                    Button(action: { showMetadataOverlay.toggle() }) {
+                        Image(systemName: showMetadataOverlay ? "gauge.with.needle.fill" : "gauge.with.needle")
+                            .font(.system(size: 18))
+                            .foregroundColor(showMetadataOverlay ? .white : .white.opacity(0.6))
+                            .frame(width: 32, height: 32)
+                            .background(showMetadataOverlay ? Color.accentColor : Color.clear)
+                            .cornerRadius(6)
+                    }
+                    .buttonStyle(.plain)
+                    .help("Toggle Metadata Overlay")
+
+                    Spacer()
+                        .frame(width: 12)
+
                     /// 채널 인디케이터 (F, R, L, R 버튼)
                     channelIndicators
+                }
+
+                /// GPS HUD (조건부 렌더링)
+                ///
+                /// ## GPSInfoHUD
+                /// - showGPSOverlay == true일 때만 표시
+                /// - 컴팩트한 GPS 정보 표시 (속도, 좌표, 고도, 위성)
+                /// - 디버그 정보 팝오버 포함
+                if showGPSOverlay {
+                    GPSInfoHUD(
+                        gpsService: syncController.gpsService,
+                        currentTime: syncController.currentTime
+                    )
                 }
 
                 /// 변환 컨트롤 (조건부 렌더링)
@@ -1805,7 +1884,9 @@ private struct MetalVideoView: NSViewRepresentable {
         /// - 윈도우 리사이즈, 전체화면 전환 시 호출
         /// - 필요 시 렌더링 리소스 재구성
         func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {
-            // Handle size changes if needed
+            debugLog("[MetalVideoView] Drawable size changed to: \(size.width) x \(size.height)")
+            // Renderer will automatically adapt to the new drawable size on next render
+            // No need to pause or stop playback
         }
 
         /// 렌더링 함수 (60 FPS 호출)

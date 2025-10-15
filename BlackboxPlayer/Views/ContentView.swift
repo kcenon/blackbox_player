@@ -580,7 +580,7 @@ struct ContentView: View {
 
     /// @var videoFiles
     /// @brief 전체 비디오 파일 목록
-    @State private var videoFiles: [VideoFile] = VideoFile.allTestFiles
+    @State private var videoFiles: [VideoFile] = []
 
     /// @var showSidebar
     /// @brief 사이드바 표시 여부
@@ -672,16 +672,22 @@ struct ContentView: View {
     }
 
     private var content: some View {
-        NavigationView {
-            // Sidebar: File list
+        Group {
             if showSidebar {
-                sidebar
-                    .frame(minWidth: 300, idealWidth: 350, maxWidth: 500)
-            }
+                NavigationView {
+                    // Sidebar: File list
+                    sidebar
+                        .frame(minWidth: 300, idealWidth: 350, maxWidth: 500)
 
-            // Main content
-            mainContent
-                .frame(minWidth: 600, minHeight: 400)
+                    // Main content
+                    mainContent
+                        .frame(minWidth: 600, minHeight: 400)
+                }
+            } else {
+                // Main content only (full width)
+                mainContent
+                    .frame(minWidth: 600, minHeight: 400)
+            }
         }
         .toolbar {
             ToolbarItemGroup(placement: .navigation) {
@@ -849,7 +855,7 @@ struct ContentView: View {
     private func videoThumbnail(for videoFile: VideoFile) -> some View {
         // Multi-channel video player
         MultiChannelPlayerView(videoFile: videoFile)
-            .id(videoFile.id)  // Force view recreation when video changes
+            .id("player-\(videoFile.id)")  // Stable ID to prevent recreation on layout changes
             .aspectRatio(16 / 9, contentMode: .fit)
             .cornerRadius(12)
             .shadow(radius: 4)
@@ -1400,12 +1406,10 @@ struct ContentView: View {
     /// @brief 현재 폴더에서 파일 목록 새로고침
     ///
     /// @details
-    /// currentFolderPath가 설정되어 있으면 해당 폴더를 다시 스캔하고,
-    /// 설정되어 있지 않으면 테스트 파일을 로드합니다.
+    /// currentFolderPath가 설정되어 있으면 해당 폴더를 다시 스캔합니다.
     private func refreshFileList() {
         guard let folderPath = currentFolderPath else {
-            // No folder selected, reload test files
-            videoFiles = VideoFile.allTestFiles
+            // No folder selected, do nothing
             return
         }
 
