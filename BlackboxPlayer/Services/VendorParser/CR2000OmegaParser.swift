@@ -170,10 +170,35 @@ class CR2000OmegaParser: VendorParserProtocol {
      * gJ 이후의 NMEA 0183 부분만 추출하여 GPSParser로 파싱합니다.
      */
     func extractGPSData(from fileURL: URL) -> [GPSPoint] {
-        // TODO: 가속도 + GPS 복합 형식 파싱
-        // "0.00,-0.01,0.00,gJ$GPRMC,..." 에서
-        // gJ$GPRMC 부분만 추출하여 GPSParser에 전달
-        return []
+        // MetadataStreamParser로 메타데이터 라인 추출
+        let parser = MetadataStreamParser()
+        let lines = parser.extractMetadataLines(from: fileURL, streamIndex: 2)
+
+        guard !lines.isEmpty else {
+            return []
+        }
+
+        // 파일명에서 baseDate 추출 (NMEA 시간과 결합용)
+        let baseDate = extractBaseDate(from: fileURL)
+
+        // GPSParser로 파싱
+        let gpsParser = GPSParser()
+        var gpsPoints: [GPSPoint] = []
+
+        for line in lines {
+            // "$GPRMC" NMEA 부분 추출 (바이너리 헤더 이미 제거됨)
+            if let nmeaStart = line.range(of: "$GPRMC") {
+                let nmea = String(line[nmeaStart.lowerBound...])
+
+                // NMEA 문자열을 Data로 변환
+                if let nmeaData = nmea.data(using: .ascii) {
+                    let points = gpsParser.parseNMEA(data: nmeaData, baseDate: baseDate)
+                    gpsPoints.append(contentsOf: points)
+                }
+            }
+        }
+
+        return gpsPoints
     }
 
     /**
@@ -186,10 +211,45 @@ class CR2000OmegaParser: VendorParserProtocol {
      * 앞부분의 X,Y,Z 값을 추출합니다.
      */
     func extractAccelerationData(from fileURL: URL) -> [AccelerationData] {
-        // TODO: 가속도 데이터 파싱
-        // "0.00,-0.01,0.00,gJ$GPRMC,..." 에서
-        // 앞 3개 값 (X,Y,Z) 추출
-        return []
+        // MetadataStreamParser로 메타데이터 라인 추출
+        let parser = MetadataStreamParser()
+        let lines = parser.extractMetadataLines(from: fileURL, streamIndex: 2)
+
+        guard !lines.isEmpty else {
+            return []
+        }
+
+        // 파일명에서 baseDate 추출
+        let baseDate = extractBaseDate(from: fileURL)
+
+        var accelerationData: [AccelerationData] = []
+        var timestamp: TimeInterval = 0.0
+
+        for line in lines {
+            // 라인 형식: "X,Y,Z,gJ$GPRMC,..."
+            // 앞 3개 값 (X, Y, Z) 추출
+            let components = line.split(separator: ",", maxSplits: 3)
+
+            guard components.count >= 3,
+                  let x = Double(components[0]),
+                  let y = Double(components[1]),
+                  let z = Double(components[2]) else {
+                continue
+            }
+
+            // AccelerationData 생성 (1초 간격)
+            let data = AccelerationData(
+                timestamp: baseDate.addingTimeInterval(timestamp),
+                x: x,
+                y: y,
+                z: z
+            )
+
+            accelerationData.append(data)
+            timestamp += 1.0  // 1초씩 증가
+        }
+
+        return accelerationData
     }
 
     /**
@@ -203,5 +263,48 @@ class CR2000OmegaParser: VendorParserProtocol {
             .parkingMode,
             .voiceRecording
         ]
+    }
+
+    // MARK: - Private Methods
+
+    /**
+     * @brief 파일 URL에서 녹화 시작 시각 추출
+     * @param fileURL 비디오 파일 URL
+     * @return 녹화 시작 Date
+     *
+     * @details
+     * 파일명 형식: "YYYY-MM-DD-HHh-MMm-SSs_X_type.mp4"
+     * 예: "2025-10-07-09h-11m-09s_F_normal.mp4"
+     * → Date(2025-10-07 09:11:09 +0900)
+     */
+    private func extractBaseDate(from fileURL: URL) -> Date {
+        let filename = fileURL.lastPathComponent
+
+        // 정규식 매칭
+        guard let regex = filenameRegex else {
+            return Date()
+        }
+
+        let range = NSRange(filename.startIndex..<filename.endIndex, in: filename)
+        guard let match = regex.firstMatch(in: filename, options: [], range: range),
+              match.numberOfRanges == 10 else {
+            return Date()
+        }
+
+        // 캡처 그룹 추출
+        let year = (filename as NSString).substring(with: match.range(at: 1))
+        let month = (filename as NSString).substring(with: match.range(at: 2))
+        let day = (filename as NSString).substring(with: match.range(at: 3))
+        let hour = (filename as NSString).substring(with: match.range(at: 4))
+        let minute = (filename as NSString).substring(with: match.range(at: 5))
+        let second = (filename as NSString).substring(with: match.range(at: 6))
+
+        // 타임스탬프 파싱
+        let timestampString = "\(year)\(month)\(day)\(hour)\(minute)\(second)"
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyyMMddHHmmss"
+        dateFormatter.timeZone = TimeZone(identifier: "Asia/Seoul")
+
+        return dateFormatter.date(from: timestampString) ?? Date()
     }
 }
