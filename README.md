@@ -80,6 +80,14 @@ Modern dashcams record video from multiple cameras simultaneously (front, rear, 
 - Multi-select for batch operations
 - Search and filter capabilities
 
+### 🔌 Multi-Vendor Support
+- **Automatic vendor detection**: Analyzes file naming patterns to identify dashcam manufacturer
+- **Extensible parser architecture**: Strategy pattern for vendor-specific parsers
+- **Supported vendors**:
+  - **CR-2000 OMEGA**: Full support with GPS and accelerometer extraction
+  - **BlackVue**: Complete filename parsing and event type detection
+- **Easy vendor addition**: Protocol-based design for adding new dashcam vendors
+
 ### ⚙️ Dashcam Configuration
 - Read settings from SD card
 - Modify dashcam options within the app
@@ -193,6 +201,7 @@ Comprehensive documentation is available in the `docs/` directory:
 | **[04_project_plan.md](docs/04_project_plan.md)** | Phase-by-phase development plan with timelines |
 | **[05_technical_challenges.md](docs/05_technical_challenges.md)** | Major technical challenges and detailed solutions |
 | **[TESTING.md](docs/TESTING.md)** | Comprehensive testing guide with test suite documentation |
+| **[VENDOR_PARSER.md](docs/VENDOR_PARSER.md)** | Multi-vendor parser architecture and implementation guide |
 
 ---
 
@@ -315,6 +324,10 @@ Implemented services:
 - **FileSystemService**: File metadata extraction and directory operations
 - **VideoFileLoader**: Video metadata loading via VideoDecoder with concurrent processing
 - **MetadataExtractor**: GPS and acceleration data extraction from MP4 atoms
+- **VendorParser**: Multi-vendor support with automatic detection
+  - **CR2000OmegaParser**: Filename parsing, GPS/accelerometer extraction from Stream #2
+  - **BlackVueParser**: Path-based event type detection
+  - **VendorDetector**: Auto-detection with caching (commit: 13983a4)
 
 #### Phase 2: Video Decoding and Playback Control ✅
 **Commit**: 083ba4d
@@ -493,7 +506,13 @@ blackbox_player/
 │   │   ├── FileManagerService.swift
 │   │   ├── ExportService.swift
 │   │   ├── GPSService.swift
-│   │   └── GSensorService.swift
+│   │   ├── GSensorService.swift
+│   │   └── VendorParser/
+│   │       ├── VendorParserProtocol.swift
+│   │       ├── VendorDetector.swift
+│   │       ├── CR2000OmegaParser.swift
+│   │       ├── BlackVueParser.swift
+│   │       └── MetadataStreamParser.swift
 │   ├── Models/
 │   │   ├── VideoFile.swift
 │   │   ├── VideoMetadata.swift
@@ -513,7 +532,8 @@ blackbox_player/
 │   ├── SyncControllerTests.swift
 │   ├── VideoChannelTests.swift
 │   ├── VideoDecoderTests.swift
-│   └── GPSSensorIntegrationTests.swift  # GPS/G-sensor visualization pipeline tests
+│   ├── GPSSensorIntegrationTests.swift  # GPS/G-sensor visualization pipeline tests
+│   └── VendorParserTests.swift          # Multi-vendor parser tests
 └── scripts/
     ├── build.sh
     ├── sign.sh
