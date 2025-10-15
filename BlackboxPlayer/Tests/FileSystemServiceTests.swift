@@ -632,40 +632,34 @@ final class FileSystemServiceTests: XCTestCase {
 
  【터미널에서 실행】
 
- ```bash
- # 전체 테스트
+ 전체 테스트:
  xcodebuild test -scheme BlackboxPlayer -destination 'platform=macOS'
 
- # 특정 테스트 클래스
+ 특정 테스트 클래스:
  xcodebuild test -scheme BlackboxPlayer \
    -destination 'platform=macOS' \
    -only-testing:BlackboxPlayerTests/FileSystemServiceTests
 
- # 특정 테스트 메서드
+ 특정 테스트 메서드:
  xcodebuild test -scheme BlackboxPlayer \
    -destination 'platform=macOS' \
    -only-testing:BlackboxPlayerTests/FileSystemServiceTests/testListVideoFiles_FiltersVideoFilesOnly
- ```
 
  【테스트 커버리지】
 
- ```bash
- # 커버리지 포함 테스트 실행
+ 커버리지 포함 테스트 실행:
  xcodebuild test -scheme BlackboxPlayer \
    -destination 'platform=macOS' \
    -enableCodeCoverage YES
 
- # 커버리지 리포트 확인
+ 커버리지 리포트 확인:
  open DerivedData/BlackboxPlayer/Logs/Test/*.xcresult
- ```
 
  【CI/CD 통합】
 
  GitHub Actions:
- ```yaml
  - name: Run Tests
    run: xcodebuild test -scheme BlackboxPlayer -destination 'platform=macOS'
- ```
 
  ═══════════════════════════════════════════════════════════════════════════
  */

@@ -140,7 +140,7 @@ import Foundation
 /// @brief 디렉토리를 스캔하여 블랙박스 비디오 파일을 발견하고 조직화하는 서비스
 ///
 /// FileSystemService를 사용하여 파일 시스템에 접근하고,
-/// 정규식으로 파일명을 파싱하여 메타데이터를 추출합니다.
+/// VendorDetector로 제조사를 자동 감지하여 파일명을 파싱합니다.
 class FileScanner {
     // MARK: - Properties
 
@@ -151,77 +151,18 @@ class FileScanner {
     /// 의존성 주입을 통해 테스트 용이성을 향상시킵니다.
     private let fileSystemService: FileSystemService
 
-    /*
-     ───────────────────────────────────────────────────────────────────────
-     파일명 패턴 정규식
-     ───────────────────────────────────────────────────────────────────────
-
-     【정규식 패턴】
-     #"^(\d{8})_(\d{6})_([FRLIi]+)\.(\w+)$"#
-
-     구성 요소:
-     - ^          : 문자열 시작
-     - (\d{8})    : 그룹 1 - 8자리 숫자 (YYYYMMDD)
-     - _          : 언더스코어
-     - (\d{6})    : 그룹 2 - 6자리 숫자 (HHMMSS)
-     - _          : 언더스코어
-     - ([FRLIi]+) : 그룹 3 - 카메라 위치 코드 (1글자 이상)
-     - \.         : 점 (이스케이프)
-     - (\w+)      : 그룹 4 - 파일 확장자 (알파벳/숫자)
-     - $          : 문자열 끝
-
-     【매칭 예시】
-     ✓ "20240115_143025_F.mp4"
-     그룹 1: "20240115" (날짜)
-     그룹 2: "143025" (시간)
-     그룹 3: "F" (전방)
-     그룹 4: "mp4" (확장자)
-
-     ✓ "20240115_143025_RF.mp4"  (후방+전방 듀얼)
-     그룹 3: "RF"
-
-     ✗ "video.mp4"               (패턴 불일치)
-     ✗ "2024_01_15_14_30_25.mp4" (구분자 다름)
-
-     【카메라 위치 코드】
-     - F: Front (전방)
-     - R: Rear (후방)
-     - L: Left (좌측)
-     - I/i: Interior (실내)
-
-     일부 제조사는 RF, FI 같은 조합 사용:
-     - RF: Rear + Front
-     - FI: Front + Interior
-
-     【NSRegularExpression】
-     Swift의 정규식 엔진입니다.
-     컴파일한 정규식을 재사용하여 성능 향상:
-     - 한 번 컴파일: init()에서
-     - 여러 번 사용: parseVideoFile()에서
-     ───────────────────────────────────────────────────────────────────────
-     */
-
-    /// @var filenamePattern
-    /// @brief BlackVue 형식 파일명 패턴 (YYYYMMDD_HHMMSS_X.mp4)
+    /// @var vendorDetector
+    /// @brief 블랙박스 제조사 자동 감지
     ///
-    /// 정규식 패턴:
-    /// - `(\d{8})`: 날짜 (YYYYMMDD)
-    /// - `(\d{6})`: 시간 (HHMMSS)
-    /// - `([FRLIi]+)`: 카메라 위치 (Front/Rear/Left/Interior)
-    /// - `(\w+)`: 파일 확장자
-    ///
-    /// 매칭 예시:
-    /// - "20240115_143025_F.mp4" → ✓ (전방 카메라)
-    /// - "20240115_143025_R.mp4" → ✓ (후방 카메라)
-    /// - "video.mp4" → ✗ (패턴 불일치)
-    private let filenamePattern = #"^(\d{8})_(\d{6})_([FRLIi]+)\.(\w+)$"#
+    /// 파일명 패턴을 분석하여 적절한 파서를 선택합니다.
+    private let vendorDetector: VendorDetector
 
-    /// @var filenameRegex
-    /// @brief 컴파일된 정규식 객체
+    /// @var currentParser
+    /// @brief 현재 사용 중인 파서
     ///
-    /// init()에서 한 번 컴파일하여 재사용함으로써 성능 향상.
-    /// 컴파일 실패 시 nil (패턴 오류).
-    private let filenameRegex: NSRegularExpression?
+    /// 감지된 제조사의 파서를 캐싱합니다.
+    private var currentParser: VendorParserProtocol?
+
 
     // MARK: - Initialization
 
@@ -230,24 +171,13 @@ class FileScanner {
      초기화
      ───────────────────────────────────────────────────────────────────────
 
-     【정규식 컴파일】
-     NSRegularExpression(pattern:options:)는 throws하지만, try?로 변환:
-     - 성공: filenameRegex에 저장
-     - 실패: nil (패턴 오류) → parseVideoFile()에서 nil 반환
+     【VendorDetector 초기화】
+     VendorDetector는 등록된 파서들(BlackVue, CR2000Omega 등)을 관리하며,
+     파일명 패턴을 분석하여 자동으로 제조사를 감지합니다.
 
-     정규식 컴파일 비용:
-     - 한 번: 약 0.1ms
-     - 매번: 약 0.1ms × N회 = 비효율적
-
-     따라서 init()에서 한 번만 컴파일합니다.
-
-     【options: []】
-     정규식 옵션을 지정하지 않음:
-     - .caseInsensitive: 대소문자 무시 (불필요 - 파일명은 보통 일관성 있음)
-     - .anchorsMatchLines: ^ $ 를 줄 단위로 매칭 (불필요 - 전체 문자열 매칭)
-     - .dotMatchesLineSeparators: . 이 개행 문자 매칭 (불필요)
-
-     빈 배열 []은 기본 옵션 = 정확한 매칭만 수행.
+     초기화 시 모든 파서가 자동 등록됩니다:
+     - BlackVueParser: YYYYMMDD_HHMMSS_X.mp4
+     - CR2000OmegaParser: YYYY-MM-DD-HHh-MMm-SSs_X_type.mp4
      ───────────────────────────────────────────────────────────────────────
      */
 
@@ -255,15 +185,14 @@ class FileScanner {
     ///
     /// @param fileSystemService 파일 시스템 접근 서비스 (기본값: 새 인스턴스)
     ///
-    /// 정규식 패턴을 컴파일하여 성능을 최적화합니다.
-    /// 컴파일 실패 시 filenameRegex는 nil이 되며, 모든 파일이 스킵됩니다.
+    /// VendorDetector를 초기화하여 제조사별 파서를 등록합니다.
     ///
     /// 의존성 주입 패턴:
     /// - 프로덕션: FileScanner() - 기본 FileSystemService 사용
     /// - 테스트: FileScanner(fileSystemService: mockService) - 모킹된 서비스 사용
     init(fileSystemService: FileSystemService = FileSystemService()) {
         self.fileSystemService = fileSystemService
-        self.filenameRegex = try? NSRegularExpression(pattern: filenamePattern, options: [])
+        self.vendorDetector = VendorDetector()
     }
 
     // MARK: - Public Methods
@@ -367,8 +296,13 @@ class FileScanner {
     /// - 메모리: O(M) - M은 비디오 파일 수
     /// - 일반적인 SD 카드 (1000개 파일): 약 100-200ms
     func scanDirectory(_ directoryURL: URL) throws -> [VideoFileGroup] {
-        // 1단계: FileSystemService를 사용하여 비디오 파일 목록 가져오기
-        // FileSystemService가 디렉토리 존재 확인, 재귀적 탐색, 비디오 확장자 필터링을 모두 수행
+        // 1단계: 제조사 자동 감지
+        guard let parser = vendorDetector.detectVendor(in: directoryURL) else {
+            throw FileScannerError.unsupportedVendor("Could not identify blackbox vendor from file patterns")
+        }
+        currentParser = parser
+
+        // 2단계: FileSystemService를 사용하여 비디오 파일 목록 가져오기
         let videoFileURLs: [URL]
         do {
             videoFileURLs = try fileSystemService.listVideoFiles(at: directoryURL)
@@ -378,16 +312,15 @@ class FileScanner {
             throw FileScannerError.cannotEnumerateDirectory(directoryURL.path)
         }
 
-        // 2단계: 각 파일 파싱하여 VideoFileInfo 생성
+        // 3단계: 감지된 파서로 각 파일 파싱하여 VideoFileInfo 생성
         var videoFiles: [VideoFileInfo] = []
         for fileURL in videoFileURLs {
-            if let fileInfo = parseVideoFile(fileURL) {
+            if let fileInfo = parser.parseVideoFile(fileURL) {
                 videoFiles.append(fileInfo)
             }
         }
 
-        // 3단계: 멀티채널 그룹화
-        // 같은 시각의 전방/후방 영상을 하나의 그룹으로 통합
+        // 4단계: 멀티채널 그룹화
         let groups = groupVideoFiles(videoFiles)
 
         return groups
@@ -494,157 +427,6 @@ class FileScanner {
 
     // MARK: - Private Methods
 
-    /*
-     ───────────────────────────────────────────────────────────────────────
-     메서드 3: parseVideoFile (Private)
-     ───────────────────────────────────────────────────────────────────────
-
-     【목적】
-     비디오 파일 URL에서 메타데이터 추출
-
-     【추출 정보】
-     1. timestamp: 녹화 시작 시각 (Date)
-     2. position: 카메라 위치 (CameraPosition enum)
-     3. eventType: 이벤트 타입 (EventType enum)
-     4. fileSize: 파일 크기 (UInt64)
-     5. baseFilename: 기본 파일명 (그룹화용)
-
-     【파일명 파싱 과정】
-     입력: "20240115_143025_F.mp4"
-
-     1. 정규식 매칭:
-     그룹 1: "20240115" (날짜)
-     그룹 2: "143025" (시간)
-     그룹 3: "F" (카메라 위치)
-     그룹 4: "mp4" (확장자)
-
-     2. 타임스탬프 변환:
-     "20240115143025" → Date(2024-01-15 14:30:25 +0900)
-
-     3. 카메라 위치 감지:
-     "F" → CameraPosition.front
-
-     4. 이벤트 타입 감지:
-     경로에서 "Event" 포함 → EventType.event
-
-     5. 기본 파일명 생성:
-     "20240115_143025" (카메라 위치 코드 제외)
-
-     출력: VideoFileInfo(...)
-
-     【DateFormatter】
-     문자열 → Date 변환:
-     ```swift
-     let dateFormatter = DateFormatter()
-     dateFormatter.dateFormat = "yyyyMMddHHmmss"
-     dateFormatter.timeZone = TimeZone(identifier: "Asia/Seoul")
-     let date = dateFormatter.date(from: "20240115143025")
-     ```
-
-     타임존 중요:
-     - 블랙박스는 한국 시각으로 녹화
-     - Asia/Seoul 지정하지 않으면 UTC로 해석
-     - 시차 9시간 오류 발생
-
-     【실패 케이스】
-     - 정규식 불일치 → nil 반환
-     - 날짜 형식 오류 → nil 반환
-     - 패턴 매치하지만 유효하지 않은 날짜 → nil 반환
-     ───────────────────────────────────────────────────────────────────────
-     */
-
-    /// @brief 비디오 파일 URL에서 메타데이터 파싱
-    ///
-    /// 파일명을 정규식으로 분석하여 날짜, 시간, 카메라 위치 등을 추출합니다.
-    ///
-    /// @param fileURL 비디오 파일의 URL
-    /// @return VideoFileInfo, 파싱 실패 시 nil
-    ///
-    /// 파싱 과정:
-    /// 1. 파일명 추출 (lastPathComponent)
-    /// 2. 정규식으로 패턴 매칭
-    /// 3. 날짜/시간 문자열 → Date 변환
-    /// 4. 카메라 위치 코드 → CameraPosition enum
-    /// 5. 경로에서 이벤트 타입 감지
-    /// 6. 파일 크기 조회
-    /// 7. VideoFileInfo 구조체 생성
-    ///
-    /// 입력 예시:
-    /// - "20240115_143025_F.mp4" → ✓ 파싱 성공
-    /// - "video.mp4" → ✗ nil 반환 (패턴 불일치)
-    ///
-    /// 참고:
-    /// - DateFormatter는 "Asia/Seoul" 타임존 사용
-    /// - baseFilename은 카메라 위치 코드 제외 ("20240115_143025")
-    /// - 파싱 실패 시 해당 파일은 무시됨
-    private func parseVideoFile(_ fileURL: URL) -> VideoFileInfo? {
-        let filename = fileURL.lastPathComponent
-        let pathString = fileURL.path
-
-        // 정규식 매칭 시도
-        guard let regex = filenameRegex else { return nil }
-
-        let range = NSRange(filename.startIndex..<filename.endIndex, in: filename)
-        guard let match = regex.firstMatch(in: filename, options: [], range: range) else {
-            // BlackVue 패턴이 아님 → 스킵
-            return nil
-        }
-
-        // 캡처 그룹 개수 확인
-        // numberOfRanges = 5: [전체, 날짜, 시간, 위치, 확장자]
-        guard match.numberOfRanges == 5 else { return nil }
-
-        // 캡처 그룹 추출
-        // match.range(at: 0): 전체 매칭 문자열
-        // match.range(at: 1): 날짜 (20240115)
-        // match.range(at: 2): 시간 (143025)
-        // match.range(at: 3): 카메라 위치 (F)
-        // match.range(at: 4): 확장자 (mp4)
-        let dateString = (filename as NSString).substring(with: match.range(at: 1))
-        let timeString = (filename as NSString).substring(with: match.range(at: 2))
-        let positionCode = (filename as NSString).substring(with: match.range(at: 3))
-        _ = (filename as NSString).substring(with: match.range(at: 4))
-
-        // 타임스탬프 파싱
-        // "20240115" + "143025" = "20240115143025"
-        let timestampString = dateString + timeString
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyyMMddHHmmss"  // YYYYMMDDHHMMSS
-        dateFormatter.timeZone = TimeZone(identifier: "Asia/Seoul")  // 한국 시간대
-
-        guard let timestamp = dateFormatter.date(from: timestampString) else {
-            // 날짜 형식 오류 → 스킵
-            return nil
-        }
-
-        // 카메라 위치 감지
-        // "F" → CameraPosition.front
-        // "R" → CameraPosition.rear
-        // "I" → CameraPosition.interior
-        let position = CameraPosition.detect(from: positionCode)
-
-        // 이벤트 타입 감지
-        // 경로에서 "Event", "Parking", "Normal" 등 감지
-        let eventType = EventType.detect(from: pathString)
-
-        // 파일 크기 조회
-        // FileSystemService.getFileInfo()로 파일 정보 읽기
-        let fileSize = UInt64((try? fileSystemService.getFileInfo(at: fileURL).size) ?? 0)
-
-        // 기본 파일명 생성 (카메라 위치 코드 제외)
-        // "20240115_143025_F" → "20240115_143025"
-        // 멀티채널 그룹화에 사용
-        let baseFilename = "\(dateString)_\(timeString)"
-
-        return VideoFileInfo(
-            url: fileURL,
-            timestamp: timestamp,
-            position: position,
-            eventType: eventType,
-            fileSize: fileSize,
-            baseFilename: baseFilename
-        )
-    }
 
     /*
      ───────────────────────────────────────────────────────────────────────
@@ -1214,6 +996,17 @@ enum FileScannerError: Error {
     /// 3. SD 카드 교체
     case cannotEnumerateDirectory(String)
 
+    /// @brief 지원하지 않는 블랙박스 제조사
+    ///
+    /// 발생 시나리오:
+    /// - 파일명 패턴이 등록된 제조사와 일치하지 않음
+    /// - 새로운 블랙박스 제조사의 SD 카드
+    ///
+    /// 복구 방법:
+    /// 1. 해당 제조사의 파서 구현 및 등록
+    /// 2. 다른 SD 카드 시도
+    case unsupportedVendor(String)
+
     /// @brief 잘못된 경로
     ///
     /// 향후 확장을 위한 예약 오류.
@@ -1229,6 +1022,8 @@ extension FileScannerError: LocalizedError {
             return "Directory not found: \(path)"
         case .cannotEnumerateDirectory(let path):
             return "Cannot enumerate directory: \(path)"
+        case .unsupportedVendor(let message):
+            return "Unsupported vendor: \(message)"
         case .invalidPath(let path):
             return "Invalid path: \(path)"
         }

@@ -31,9 +31,6 @@ class MockGPSService: GPSService {
     /// Mock GPS 포인트 저장소
     private var mockGPSPoints: [GPSPoint] = []
 
-    /// Mock 경로 포인트
-    private var mockRoutePoints: [CLLocationCoordinate2D] = []
-
     /// 시작 시간
     private var mockStartTime = Date()
 
@@ -53,8 +50,8 @@ class MockGPSService: GPSService {
         return mockGPSPoints.count
     }
 
-    override var routePoints: [CLLocationCoordinate2D] {
-        return mockRoutePoints
+    override var routePoints: [GPSPoint] {
+        return mockGPSPoints
     }
 
     // MARK: - Mock Methods
@@ -63,7 +60,6 @@ class MockGPSService: GPSService {
         loadCallCount += 1
         mockStartTime = startTime
         mockGPSPoints = metadata.gpsPoints
-        mockRoutePoints = metadata.gpsPoints.map { $0.coordinate }
     }
 
     override func getCurrentLocation(at time: TimeInterval) -> GPSPoint? {
@@ -106,7 +102,6 @@ class MockGPSService: GPSService {
 
     override func clear() {
         mockGPSPoints.removeAll()
-        mockRoutePoints.removeAll()
         loadCallCount = 0
         getCurrentLocationCallCount = 0
     }
@@ -116,7 +111,6 @@ class MockGPSService: GPSService {
     /// 테스트용 GPS 데이터 직접 설정
     func setMockData(points: [GPSPoint], startTime: Date) {
         mockGPSPoints = points
-        mockRoutePoints = points.map { $0.coordinate }
         mockStartTime = startTime
     }
 }
@@ -149,10 +143,6 @@ class MockGSensorService: GSensorService {
 
     override var hasData: Bool {
         return !mockAccelData.isEmpty
-    }
-
-    override var sampleCount: Int {
-        return mockAccelData.count
     }
 
     // MARK: - Mock Methods
