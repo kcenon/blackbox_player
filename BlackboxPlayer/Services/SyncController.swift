@@ -990,11 +990,11 @@ class SyncController: ObservableObject {
         // 예: 30초 / 60초 = 0.5 (50%)
 
         // 6. GPS, G-센서 데이터 업데이트
-        gpsService.getCurrentLocation(at: clampedTime)
+        _ = gpsService.getCurrentLocation(at: clampedTime)
         // 새 시간의 GPS 위치
         // 지도에 차량 위치 업데이트
 
-        gsensorService.getCurrentAcceleration(at: clampedTime)
+        _ = gsensorService.getCurrentAcceleration(at: clampedTime)
         // 새 시간의 가속도 값
         // G-센서 그래프 업데이트
 
@@ -1383,11 +1383,11 @@ class SyncController: ObservableObject {
         // @Published 속성: UI 자동 업데이트
 
         // 4. GPS, G-센서 데이터 업데이트
-        gpsService.getCurrentLocation(at: currentTime)
+        _ = gpsService.getCurrentLocation(at: currentTime)
         // 현재 시간의 GPS 위치
         // 지도에 차량 위치 업데이트
 
-        gsensorService.getCurrentAcceleration(at: currentTime)
+        _ = gsensorService.getCurrentAcceleration(at: currentTime)
         // 현재 시간의 가속도 값
         // G-센서 그래프 업데이트
 

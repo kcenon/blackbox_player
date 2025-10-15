@@ -537,7 +537,7 @@ class GPSParser {
             // (고도, 위성 개수, 정확도 정보)
             else if sentence.hasPrefix("$GPGGA") || sentence.hasPrefix("$GNGGA") {
                 // GPGGA 파싱 및 이전 RMC 확인
-                if let gga = parseGPGGA(sentence), let rmc = currentRMC {
+                if let gga = parseGPGGA(sentence), let _ = currentRMC {
                     // 마지막에 추가된 GPSPoint를 업데이트
                     if !gpsPoints.isEmpty {
                         let lastIndex = gpsPoints.count - 1

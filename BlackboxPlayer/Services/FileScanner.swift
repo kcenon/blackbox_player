@@ -603,7 +603,7 @@ class FileScanner {
         let dateString = (filename as NSString).substring(with: match.range(at: 1))
         let timeString = (filename as NSString).substring(with: match.range(at: 2))
         let positionCode = (filename as NSString).substring(with: match.range(at: 3))
-        let extensionString = (filename as NSString).substring(with: match.range(at: 4))
+        _ = (filename as NSString).substring(with: match.range(at: 4))
 
         // 타임스탬프 파싱
         // "20240115" + "143025" = "20240115143025"
