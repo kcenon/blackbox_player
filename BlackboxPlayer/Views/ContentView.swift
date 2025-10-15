@@ -584,7 +584,7 @@ struct ContentView: View {
 
     /// @var showSidebar
     /// @brief 사이드바 표시 여부
-    @State private var showSidebar = true
+    @State private var showSidebar = AppSettings.shared.showSidebarByDefault
 
     /// @var isPlaying
     /// @brief 재생 중 여부 (시뮬레이션)
@@ -596,11 +596,11 @@ struct ContentView: View {
 
     /// @var playbackSpeed
     /// @brief 재생 속도 (1.0 = 정상 속도)
-    @State private var playbackSpeed: Double = 1.0
+    @State private var playbackSpeed: Double = AppSettings.shared.defaultPlaybackSpeed
 
     /// @var volume
     /// @brief 볼륨 (0.0 ~ 1.0)
-    @State private var volume: Double = 0.8
+    @State private var volume: Double = AppSettings.shared.defaultVolume
 
     /// @var showControls
     /// @brief 컨트롤 표시 여부
@@ -624,7 +624,7 @@ struct ContentView: View {
 
     /// @var showDebugLog
     /// @brief 디버그 로그 표시 여부
-    @State private var showDebugLog = false
+    @State private var showDebugLog = AppSettings.shared.showDebugLogByDefault
 
     /// @var showAboutWindow
     /// @brief About 윈도우 표시 여부
@@ -636,15 +636,19 @@ struct ContentView: View {
 
     /// @var showMetadataOverlay
     /// @brief 메타데이터 오버레이 표시 여부
-    @State private var showMetadataOverlay = true
+    @State private var showMetadataOverlay = AppSettings.shared.showMetadataOverlayByDefault
 
     /// @var showMapOverlay
     /// @brief 지도 오버레이 표시 여부
-    @State private var showMapOverlay = true
+    @State private var showMapOverlay = AppSettings.shared.showMapOverlayByDefault
 
     /// @var showGraphOverlay
     /// @brief 그래프 오버레이 표시 여부
-    @State private var showGraphOverlay = true
+    @State private var showGraphOverlay = AppSettings.shared.showGraphOverlayByDefault
+
+    /// @var showSettings
+    /// @brief 설정 윈도우 표시 여부
+    @State private var showSettings = false
 
     // MARK: - Services
 
@@ -706,6 +710,11 @@ struct ContentView: View {
                     Image(systemName: showDebugLog ? "terminal.fill" : "terminal")
                 }
                 .help("Toggle debug log")
+
+                Button(action: { showSettings = true }) {
+                    Image(systemName: "gearshape")
+                }
+                .help("Settings")
             }
         }
         .alert("Error", isPresented: $showError) {
@@ -741,6 +750,9 @@ struct ContentView: View {
         }
         .sheet(isPresented: $showHelpWindow) {
             HelpWindow()
+        }
+        .sheet(isPresented: $showSettings) {
+            SettingsView()
         }
     }
 

@@ -164,6 +164,17 @@ class VideoDecoder {
     /// - AudioStreamInfo 구조체에는 샘플레이트, 채널 수 등이 담김
     private(set) var audioInfo: AudioStreamInfo?
 
+    // ============================================
+    // MARK: 스레드 안전성
+    // ============================================
+
+    /// @var decoderLock
+    /// @brief 디코더 작업의 스레드 안전성을 보장하는 락
+    /// @details
+    /// - 시크와 디코딩이 동시에 실행되면 EXC_BAD_ACCESS 발생 가능
+    /// - NSLock으로 동시 접근 방지
+    private let decoderLock = NSLock()
+
     // MARK: - Initialization (초기화)
 
     /// @brief 디코더 객체를 생성합니다.
@@ -343,6 +354,10 @@ class VideoDecoder {
     /// print("파일 끝")
     /// ```
     func decodeNextFrame() throws -> (video: VideoFrame?, audio: AudioFrame?)? {
+        // 락으로 동시 접근 방지
+        decoderLock.lock()
+        defer { decoderLock.unlock() }
+
         // 1. 초기화 확인
         guard isInitialized else {
             throw DecoderError.notInitialized
@@ -417,6 +432,10 @@ class VideoDecoder {
     /// try decoder.seek(to: 30.0)  // 30초 위치로 이동
     /// ```
     func seek(to timestamp: TimeInterval) throws {
+        // 락으로 동시 접근 방지 - seek와 decode가 동시에 실행되면 크래시 발생
+        decoderLock.lock()
+        defer { decoderLock.unlock() }
+
         guard isInitialized else {
             throw DecoderError.notInitialized
         }
@@ -443,10 +462,10 @@ class VideoDecoder {
         // 3. 코덱 버퍼 플러시
         // - 시크하면 기존에 디코딩 중이던 데이터는 버려야 함
         // - 버퍼를 비우고 새로운 위치에서 다시 디코딩 시작
-        if let videoCtx = videoCodecContext {
+        if let videoCtx = videoCodecContext, videoCtx.pointee.codec != nil {
             avcodec_flush_buffers(videoCtx)
         }
-        if let audioCtx = audioCodecContext {
+        if let audioCtx = audioCodecContext, audioCtx.pointee.codec != nil {
             avcodec_flush_buffers(audioCtx)
         }
 
@@ -735,6 +754,17 @@ class VideoDecoder {
     private func decodeVideoPacket(packet: UnsafeMutablePointer<AVPacket>) throws -> VideoFrame? {
         guard let codecCtx = videoCodecContext else {
             throw DecoderError.notInitialized
+        }
+
+        // Validate codec context before using it
+        guard codecCtx.pointee.codec != nil else {
+            throw DecoderError.notInitialized
+        }
+
+        // Validate packet before sending
+        guard packet.pointee.size > 0, packet.pointee.data != nil else {
+            // Empty or invalid packet, skip
+            return nil
         }
 
         // 1. 패킷을 디코더에 전송

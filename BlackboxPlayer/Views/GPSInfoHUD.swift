@@ -151,55 +151,48 @@ struct GPSInfoHUD: View {
             Divider()
 
             /// 전체 데이터 통계
-            Group {
-                debugRow(label: "Total Points", value: "\(gpsService.pointCount)")
-                debugRow(label: "Has Data", value: gpsService.hasData ? "Yes" : "No")
+            debugRow(label: "Total Points", value: "\(gpsService.pointCount)")
+            debugRow(label: "Has Data", value: gpsService.hasData ? "Yes" : "No")
 
-                if let summary = gpsService.summary {
-                    if let maxSpeed = summary.maximumSpeed {
-                        debugRow(label: "Max Speed", value: String(format: "%.1f km/h", maxSpeed))
-                    }
-                    if let avgSpeed = summary.averageSpeed {
-                        debugRow(label: "Avg Speed", value: String(format: "%.1f km/h", avgSpeed))
-                    }
-                    debugRow(label: "Total Distance", value: String(format: "%.2f km", summary.totalDistance / 1000))
+            if let summary = gpsService.summary {
+                if let maxSpeed = summary.maximumSpeed {
+                    debugRow(label: "Max Speed", value: String(format: "%.1f km/h", maxSpeed))
                 }
+                if let avgSpeed = summary.averageSpeed {
+                    debugRow(label: "Avg Speed", value: String(format: "%.1f km/h", avgSpeed))
+                }
+                debugRow(label: "Total Distance", value: String(format: "%.2f km", summary.totalDistance / 1000))
             }
 
             Divider()
 
             /// 현재 시간 데이터
-            Group {
-                debugRow(label: "Current Time", value: String(format: "%.2f s", currentTime))
+            debugRow(label: "Current Time", value: String(format: "%.2f s", currentTime))
 
-                if let gpsPoint = currentGPSPoint {
-                    debugRow(label: "Latitude", value: String(format: "%.6f°", gpsPoint.latitude))
-                    debugRow(label: "Longitude", value: String(format: "%.6f°", gpsPoint.longitude))
+            if let gpsPoint = currentGPSPoint {
+                debugRow(label: "Latitude", value: String(format: "%.6f°", gpsPoint.latitude))
+                debugRow(label: "Longitude", value: String(format: "%.6f°", gpsPoint.longitude))
 
-                    if let speed = gpsPoint.speed {
-                        debugRow(label: "Speed", value: String(format: "%.2f km/h", speed))
-                    }
-
-                    if let heading = gpsPoint.heading {
-                        debugRow(label: "Heading", value: String(format: "%.1f°", heading))
-                    }
-                } else {
-                    Text("No GPS data at current time")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                if let speed = gpsPoint.speed {
+                    debugRow(label: "Speed", value: String(format: "%.2f km/h", speed))
                 }
+
+                if let heading = gpsPoint.heading {
+                    debugRow(label: "Heading", value: String(format: "%.1f°", heading))
+                }
+            } else {
+                Text("No GPS data at current time")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
             }
 
             Divider()
 
             /// 거리 및 속도 정보
-            Group {
-                let distance = gpsService.distanceTraveled(at: currentTime)
-                debugRow(label: "Distance", value: String(format: "%.2f km", distance / 1000))
+            debugRow(label: "Distance", value: String(format: "%.2f km", gpsService.distanceTraveled(at: currentTime) / 1000))
 
-                if let avgSpeed = gpsService.averageSpeed(at: currentTime) {
-                    debugRow(label: "Avg Speed", value: String(format: "%.1f km/h", avgSpeed))
-                }
+            if let avgSpeed = gpsService.averageSpeed(at: currentTime) {
+                debugRow(label: "Avg Speed", value: String(format: "%.1f km/h", avgSpeed))
             }
         }
     }

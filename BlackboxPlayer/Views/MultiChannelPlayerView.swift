@@ -397,14 +397,14 @@ struct MultiChannelPlayerView: View {
     /// ## showGPSOverlay
     /// - true: GPS HUD와 지도 표시
     /// - false: GPS 정보 숨김
-    @State private var showGPSOverlay = true
+    @State private var showGPSOverlay = AppSettings.shared.showGPSOverlayByDefault
 
     /// 메타데이터 오버레이 표시 여부
     ///
     /// ## showMetadataOverlay
     /// - true: 속도, 좌표 등 메타데이터 표시
     /// - false: 메타데이터 숨김
-    @State private var showMetadataOverlay = true
+    @State private var showMetadataOverlay = AppSettings.shared.showMetadataOverlayByDefault
 
     // MARK: - Body
 
@@ -1157,6 +1157,14 @@ struct MultiChannelPlayerView: View {
                 .gesture(
                     DragGesture(minimumDistance: 0)
                         .onChanged { value in
+                            // Validate before seeking to prevent EXC_BAD_ACCESS
+                            guard syncController.channelCount > 0,
+                                  syncController.duration > 0,
+                                  geometry.size.width > 0 else {
+                                debugLog("[MultiChannelPlayerView] Skipping timeline seek: invalid state (channelCount=\(syncController.channelCount), duration=\(syncController.duration), width=\(geometry.size.width))")
+                                return
+                            }
+
                             let position = Double(value.location.x / geometry.size.width)
                             let time = position * syncController.duration
                             syncController.seekToTime(time)
