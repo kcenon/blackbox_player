@@ -448,7 +448,12 @@ class VideoDecoder {
         // Time Base: 스트림마다 다른 시간 단위
         // - 예: 1/30000 (30fps 영상의 경우)
         // - PTS(Presentation Time Stamp) = 실제 시간 / time_base
-        let timeBase = formatCtx.pointee.streams[videoStreamIndex]!.pointee.time_base
+        guard videoStreamIndex >= 0,
+              videoStreamIndex < formatCtx.pointee.nb_streams,
+              let stream = formatCtx.pointee.streams?[videoStreamIndex] else {
+            throw DecoderError.unknown("Invalid video stream index")
+        }
+        let timeBase = stream.pointee.time_base
         let targetPTS = Int64(timestamp * Double(timeBase.den) / Double(timeBase.num))
 
         // 2. 키프레임으로 시크
@@ -935,7 +940,11 @@ class VideoDecoder {
         // linesize: 한 줄의 바이트 수 (폭 × 픽셀당 바이트)
         let lineSize = Int(rgbFrame.pointee.linesize.0)
         let dataSize = lineSize * height
-        let data = Data(bytes: rgbFrame.pointee.data.0!, count: dataSize)
+
+        guard let dataPtr = rgbFrame.pointee.data.0 else {
+            throw DecoderError.unknown("Failed to get frame data pointer")
+        }
+        let data = Data(bytes: dataPtr, count: dataSize)
 
         // 5. 타임스탬프 계산
         // PTS (Presentation Time Stamp): 프레임을 표시할 시간

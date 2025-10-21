@@ -153,6 +153,8 @@ class AccelerationParser {
 
         // 바이너리 데이터를 unsafe pointer로 접근 (성능 최적화)
         data.withUnsafeBytes { (ptr: UnsafeRawBufferPointer) in
+            guard let baseAddress = ptr.baseAddress else { return }
+
             for i in 0..<sampleCount {
                 let offset = i * bytesPerSample
 
@@ -167,9 +169,9 @@ class AccelerationParser {
                 case .float32:
                     // Float32 파싱 (4바이트씩 읽기)
                     // [X: 4byte][Y: 4byte][Z: 4byte]
-                    let xPtr = ptr.baseAddress!.advanced(by: offset).assumingMemoryBound(to: Float.self)
-                    let yPtr = ptr.baseAddress!.advanced(by: offset + 4).assumingMemoryBound(to: Float.self)
-                    let zPtr = ptr.baseAddress!.advanced(by: offset + 8).assumingMemoryBound(to: Float.self)
+                    let xPtr = baseAddress.advanced(by: offset).assumingMemoryBound(to: Float.self)
+                    let yPtr = baseAddress.advanced(by: offset + 4).assumingMemoryBound(to: Float.self)
+                    let zPtr = baseAddress.advanced(by: offset + 8).assumingMemoryBound(to: Float.self)
                     x = Double(xPtr.pointee)
                     y = Double(yPtr.pointee)
                     z = Double(zPtr.pointee)
@@ -177,9 +179,9 @@ class AccelerationParser {
                 case .int16:
                     // Int16 파싱 (2바이트씩 읽기)
                     // [X: 2byte][Y: 2byte][Z: 2byte]
-                    let xPtr = ptr.baseAddress!.advanced(by: offset).assumingMemoryBound(to: Int16.self)
-                    let yPtr = ptr.baseAddress!.advanced(by: offset + 2).assumingMemoryBound(to: Int16.self)
-                    let zPtr = ptr.baseAddress!.advanced(by: offset + 4).assumingMemoryBound(to: Int16.self)
+                    let xPtr = baseAddress.advanced(by: offset).assumingMemoryBound(to: Int16.self)
+                    let yPtr = baseAddress.advanced(by: offset + 2).assumingMemoryBound(to: Int16.self)
+                    let zPtr = baseAddress.advanced(by: offset + 4).assumingMemoryBound(to: Int16.self)
 
                     // Int16 → G-force 변환
                     // ±2G 범위, 16비트 (-32768 ~ +32767)
@@ -328,9 +330,11 @@ class AccelerationParser {
 
         // Float32로 해석해서 합리적인 값인지 확인
         let isFloat = data.withUnsafeBytes { (ptr: UnsafeRawBufferPointer) -> Bool in
-            let x = ptr.baseAddress!.assumingMemoryBound(to: Float.self).pointee
-            let y = ptr.baseAddress!.advanced(by: 4).assumingMemoryBound(to: Float.self).pointee
-            let z = ptr.baseAddress!.advanced(by: 8).assumingMemoryBound(to: Float.self).pointee
+            guard let baseAddress = ptr.baseAddress else { return false }
+
+            let x = baseAddress.assumingMemoryBound(to: Float.self).pointee
+            let y = baseAddress.advanced(by: 4).assumingMemoryBound(to: Float.self).pointee
+            let z = baseAddress.advanced(by: 8).assumingMemoryBound(to: Float.self).pointee
 
             // 합리적인 G-force 범위 체크 (-20 ~ +20G)
             // 일반 주행: -2 ~ +2G

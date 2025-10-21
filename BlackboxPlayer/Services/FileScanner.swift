@@ -89,11 +89,11 @@ import Foundation
 
  for group in groups {
  print("[\(group.timestamp)] \(group.channelCount)채널, \(group.totalFileSize) bytes")
- if group.hasChannel(.front) {
- print("  - 전방 카메라: \(group.file(for: .front)!.lastPathComponent)")
+ if group.hasChannel(.front), let frontFile = group.file(for: .front) {
+ print("  - 전방 카메라: \(frontFile.lastPathComponent)")
  }
- if group.hasChannel(.rear) {
- print("  - 후방 카메라: \(group.file(for: .rear)!.lastPathComponent)")
+ if group.hasChannel(.rear), let rearFile = group.file(for: .rear) {
+ print("  - 후방 카메라: \(rearFile.lastPathComponent)")
  }
  }
  } catch {

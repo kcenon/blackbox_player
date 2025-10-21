@@ -1490,7 +1490,11 @@ class FileManagerService {
 
             // cachedAt 기준으로 키 정렬 (오래된 순)
             let sortedKeys = fileCache.keys.sorted { key1, key2 in
-                fileCache[key1]!.cachedAt < fileCache[key2]!.cachedAt
+                guard let cache1 = fileCache[key1],
+                      let cache2 = fileCache[key2] else {
+                    return false
+                }
+                return cache1.cachedAt < cache2.cachedAt
             }
 
             // Remove oldest 20% of cache
