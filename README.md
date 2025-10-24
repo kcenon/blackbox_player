@@ -200,6 +200,7 @@ Comprehensive documentation is available in the `docs/` directory:
 | **[03_architecture.md](docs/03_architecture.md)** | System architecture, design patterns, and module structure |
 | **[04_project_plan.md](docs/04_project_plan.md)** | Phase-by-phase development plan with timelines |
 | **[05_technical_challenges.md](docs/05_technical_challenges.md)** | Major technical challenges and detailed solutions |
+| **[06_improvement_roadmap.md](docs/06_improvement_roadmap.md)** | 🆕 **Improvement roadmap for Phase 6 and beyond** |
 | **[TESTING.md](docs/TESTING.md)** | Comprehensive testing guide with test suite documentation |
 | **[VENDOR_PARSER.md](docs/VENDOR_PARSER.md)** | Multi-vendor parser architecture and implementation guide |
 
