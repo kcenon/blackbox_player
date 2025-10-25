@@ -1,113 +1,113 @@
 /**
  * @file DataModelsTests.swift
- * @brief 데이터 모델 단위 테스트
+ * @brief Data Model Unit Tests
  * @author BlackboxPlayer Team
  *
  * @details
- * BlackboxPlayer의 모든 데이터 모델을 체계적으로 테스트하는 단위 테스트 모음입니다.
- * 비즈니스 로직, 데이터 무결성, 직렬화/역직렬화, 계산 프로퍼티의 정확성을 검증합니다.
+ * A comprehensive unit test suite that systematically tests all data models in BlackboxPlayer.
+ * Verifies business logic, data integrity, serialization/deserialization, and computed property accuracy.
  *
- * @section test_targets 테스트 대상 모델
+ * @section test_targets Target Models for Testing
  *
- * 1. **EventType** - 이벤트 유형
- *    - 일반/충격/주차/수동/긴급 구분
- *    - 파일 경로 기반 자동 감지
- *    - 우선순위 비교
+ * 1. **EventType** - Event Types
+ *    - Normal/Impact/Parking/Manual/Emergency classification
+ *    - Automatic detection based on file path
+ *    - Priority comparison
  *
- * 2. **CameraPosition** - 카메라 위치
- *    - 전방/후방/좌측/우측/실내
- *    - 파일명 접미사 기반 감지 (_F, _R, _L, _Ri, _I)
- *    - 채널 인덱스 매핑
+ * 2. **CameraPosition** - Camera Position
+ *    - Front/Rear/Left/Right/Interior
+ *    - Detection based on filename suffix (_F, _R, _L, _Ri, _I)
+ *    - Channel index mapping
  *
- * 3. **GPSPoint** - GPS 위치 데이터
- *    - 위도/경도 유효성 검증
- *    - Haversine 공식 기반 거리 계산
- *    - 신호 강도 판단
+ * 3. **GPSPoint** - GPS Location Data
+ *    - Latitude/longitude validation
+ *    - Distance calculation based on Haversine formula
+ *    - Signal strength determination
  *
- * 4. **AccelerationData** - 가속도 센서 데이터
- *    - 3축 (X, Y, Z) 벡터 크기 계산
- *    - 충격 감지 (2.5G 임계값)
- *    - 충격 심각도 분류
+ * 4. **AccelerationData** - Acceleration Sensor Data
+ *    - 3-axis (X, Y, Z) vector magnitude calculation
+ *    - Impact detection (2.5G threshold)
+ *    - Impact severity classification
  *
- * 5. **ChannelInfo** - 비디오 채널 정보
- *    - 해상도 및 화면 비율
- *    - 채널 유효성 검증
+ * 5. **ChannelInfo** - Video Channel Information
+ *    - Resolution and aspect ratio
+ *    - Channel validity verification
  *
- * 6. **VideoMetadata** - 비디오 메타데이터
- *    - GPS 데이터 통계 (총 거리, 평균/최대 속도)
- *    - 가속도 데이터 통계 (최대 G-force)
- *    - 충격 이벤트 감지
+ * 6. **VideoMetadata** - Video Metadata
+ *    - GPS data statistics (total distance, average/maximum speed)
+ *    - Acceleration data statistics (maximum G-force)
+ *    - Impact event detection
  *
- * 7. **VideoFile** - 비디오 파일 모델
- *    - 멀티채널 접근
- *    - 파일 속성 (duration, size, timestamp)
- *    - 즐겨찾기/메모 기능
+ * 7. **VideoFile** - Video File Model
+ *    - Multi-channel access
+ *    - File properties (duration, size, timestamp)
+ *    - Favorite/memo features
  *
- * @section test_importance 데이터 모델 테스트의 중요성
+ * @section test_importance Importance of Data Model Testing
  *
- * - **비즈니스 로직 정확성**: 도메인 규칙이 올바르게 구현되었는지 확인
- * - **데이터 무결성**: 잘못된 데이터가 시스템에 유입되지 않도록 검증
- * - **Codable 직렬화**: JSON 인코딩/디코딩이 데이터 손실 없이 동작하는지 확인
- * - **계산 프로퍼티**: 파생 데이터가 정확히 계산되는지 검증
- * - **성능**: 대량 데이터 처리 성능 측정 및 최적화
+ * - **Business Logic Accuracy**: Verify domain rules are correctly implemented
+ * - **Data Integrity**: Ensure invalid data doesn't enter the system
+ * - **Codable Serialization**: Verify JSON encoding/decoding works without data loss
+ * - **Computed Properties**: Validate that derived data is calculated correctly
+ * - **Performance**: Measure and optimize bulk data processing performance
  *
- * @section test_strategy 테스트 전략
+ * @section test_strategy Testing Strategy
  *
- * **단위 테스트 특징:**
- * - UI가 없어 밀리초 단위의 빠른 실행
- * - Mock 데이터 사용으로 외부 의존성 제거
- * - 독립적 실행 가능 (순서 무관)
- * - 높은 커버리지 목표 (90%+)
+ * **Unit Test Characteristics:**
+ * - Fast execution in milliseconds without UI
+ * - Remove external dependencies using Mock data
+ * - Independent execution (order-independent)
+ * - High coverage goal (90%+)
  *
- * **Given-When-Then 패턴 사용:**
+ * **Using Given-When-Then Pattern:**
  * ```swift
  * func testEventTypeDetection() {
- *     // Given: 파일 경로 준비
+ *     // Given: Prepare file path
  *     let normalPath = "normal/video.mp4"
  *
- *     // When: 이벤트 유형 감지
+ *     // When: Detect event type
  *     let eventType = EventType.detect(from: normalPath)
  *
- *     // Then: .normal 타입 검증
+ *     // Then: Verify .normal type
  *     XCTAssertEqual(eventType, .normal)
  * }
  * ```
  *
- * @section performance_tests 성능 테스트
+ * @section performance_tests Performance Tests
  *
- * - GPS 거리 계산 (Haversine 공식)
- * - 비디오 메타데이터 요약 생성
- * - measure { } 블록으로 10회 반복 측정
- * - Baseline 설정으로 성능 퇴화 감지
+ * - GPS distance calculation (Haversine formula)
+ * - Video metadata summary generation
+ * - 10 repeated measurements with measure { } block
+ * - Performance regression detection with Baseline setting
  *
- * @note 이 테스트는 실제 파일 시스템이나 네트워크에 의존하지 않으므로
- * 언제든지 빠르게 실행할 수 있습니다.
+ * @note These tests don't depend on actual file system or network,
+ * so they can be executed quickly at any time.
  */
 
 // ============================================================================
 // DataModelsTests.swift
 // BlackboxPlayerTests
 //
-// 데이터 모델 단위 테스트
+// Data Model Unit Tests
 // ============================================================================
 //
-// 📖 이 파일의 목적:
-//    BlackboxPlayer의 모든 데이터 모델을 체계적으로 테스트합니다.
+// Purpose of this file:
+//    Systematically test all data models in BlackboxPlayer.
 //
-// 🎯 테스트 대상 모델:
-//    1. EventType        - 이벤트 유형 (일반/충격/주차/수동/긴급)
-//    2. CameraPosition   - 카메라 위치 (전방/후방/좌측/우측/실내)
-//    3. GPSPoint         - GPS 위치 데이터
-//    4. AccelerationData - 가속도 센서 데이터
-//    5. ChannelInfo      - 비디오 채널 정보
-//    6. VideoMetadata    - 비디오 메타데이터
-//    7. VideoFile        - 비디오 파일 모델
+// Target Models:
+//    1. EventType        - Event types (Normal/Impact/Parking/Manual/Emergency)
+//    2. CameraPosition   - Camera position (Front/Rear/Left/Right/Interior)
+//    3. GPSPoint         - GPS location data
+//    4. AccelerationData - Acceleration sensor data
+//    5. ChannelInfo      - Video channel information
+//    6. VideoMetadata    - Video metadata
+//    7. VideoFile        - Video file model
 //
-// 💡 데이터 모델 테스트의 중요성:
-//    - 비즈니스 로직의 정확성 보장
-//    - 데이터 무결성 검증
-//    - Codable 직렬화/역직렬화 확인
-//    - 계산 프로퍼티 정확성 검증
+// Importance of Data Model Testing:
+//    - Ensure business logic accuracy
+//    - Verify data integrity
+//    - Confirm Codable serialization/deserialization
+//    - Validate computed property accuracy
 //
 // ============================================================================
 
@@ -115,68 +115,68 @@ import XCTest
 @testable import BlackboxPlayer
 
 // ═════════════════════════════════════════════════════════════════════════
-// MARK: - DataModelsTests (데이터 모델 테스트 클래스)
+// MARK: - DataModelsTests (Data Model Test Class)
 // ═════════════════════════════════════════════════════════════════════════
 
-/// 데이터 모델 단위 테스트 클래스
+/// Data model unit test class
 ///
-/// 모든 데이터 모델의 기능을 검증합니다.
+/// Verifies functionality of all data models.
 ///
-/// 🎯 테스트 범위:
-/// - 초기화 및 기본값
-/// - 계산 프로퍼티
-/// - 메서드 동작
-/// - 데이터 변환
-/// - 직렬화/역직렬화
-/// - 성능
+/// Test Scope:
+/// - Initialization and default values
+/// - Computed properties
+/// - Method behavior
+/// - Data conversion
+/// - Serialization/deserialization
+/// - Performance
 ///
-/// 💡 모델 테스트의 특징:
-/// - UI가 없어 빠른 실행 (밀리초 단위)
-/// - Mock 데이터 사용
-/// - 독립적 실행 가능
-/// - 높은 커버리지 목표 (90%+)
+/// Model Test Characteristics:
+/// - Fast execution without UI (millisecond level)
+/// - Use Mock data
+/// - Independent execution possible
+/// - High coverage goal (90%+)
 final class DataModelsTests: XCTestCase {
 
     // ─────────────────────────────────────────────────────────────────────
-    // MARK: - EventType Tests (이벤트 유형 테스트)
+    // MARK: - EventType Tests
     // ─────────────────────────────────────────────────────────────────────
 
     /**
-     * 이벤트 유형 감지 테스트
+     * Event type detection test
      */
     /**
-     * 파일 경로에서 이벤트 유형을 올바르게 감지하는지 확인합니다.
-     */
-    /**
-     *
-     * @section _____ 🎯 검증 항목
-     * - "normal" 경로 → .normal
-     * - "event" 경로 → .impact
-     * - "parking" 경로 → .parking
-     * - "manual" 경로 → .manual
-     * - "emergency" 경로 → .emergency
-     * - 알 수 없는 경로 → .unknown
+     * Verify that event types are correctly detected from file paths.
      */
     /**
      *
-     * @section ________ 💡 파일 경로 패턴
+     * @section _____ 🎯 Verification Items
+     * - "normal" path → .normal
+     * - "event" path → .impact
+     * - "parking" path → .parking
+     * - "manual" path → .manual
+     * - "emergency" path → .emergency
+     * - Unknown path → .unknown
+     */
+    /**
+     *
+     * @section ________ 💡 File Path Pattern
      * @endcode
-     * 블랙박스 SD 카드 구조:
+     * Blackbox SD Card Structure:
      * /DCIM/
-     *   normal/    ← 일반 주행 영상
-     *   event/     ← 충격 감지 영상
-     *   parking/   ← 주차 모드 영상
-     *   manual/    ← 수동 녹화 영상
-     *   emergency/ ← 긴급 녹화 영상
+     *   normal/    ← Normal Driving Video
+     *   event/     ← Impact Detection Video
+     *   parking/   ← Parking Mode Video
+     *   manual/    ← Manual Recording Video
+     *   emergency/ ← Emergency Recording Video
      * @endcode
      */
     /**
      * @test testEventTypeDetection
-     * @brief 🔍 감지 알고리즘:
+     * @brief 🔍 Detection Algorithm:
      *
      * @details
      *
-     * @section _______ 🔍 감지 알고리즘
+     * @section _______ 🔍 Detection Algorithm
      * @endcode
      * extension EventType {
      *     static func detect(from path: String) -> EventType {
@@ -190,123 +190,123 @@ final class DataModelsTests: XCTestCase {
      */
     func testEventTypeDetection() {
         /**
-         * 일반 주행 영상 감지
+         * Normal driving video detection
          */
         /**
          *
-         * @section _normal____ 💡 .normal의 의미
-         * - 평소 운전 중 자동 녹화
-         * - 충격 감지 없음
-         * - 순환 녹화 대상 (오래된 파일 자동 삭제)
+         * @section _normal____ 💡 .normal's meaning
+         * - Automatic recording during normal driving
+         * - No impact detection
+         * - Subject to循环 recording (Old files automatically deleted)
          */
         XCTAssertEqual(EventType.detect(from: "normal/video.mp4"), .normal)
 
         /**
-         * 충격 감지 영상 감지
+         * Impact detection video detection
          */
         /**
          *
-         * @section _impact____ 💡 .impact의 의미
-         * - 충격 센서가 일정 G-force 이상 감지
-         * - 보호 녹화 (자동 삭제 안 됨)
-         * - 사고 증거로 중요
+         * @section _impact____ 💡 .impact's meaning
+         * - Impact sensor detects above certain G-force
+         * - Protected recording (Not automatically deleted)
+         * - Important as accident evidence
          */
         XCTAssertEqual(EventType.detect(from: "event/video.mp4"), .impact)
 
         /**
-         * 주차 모드 영상 감지
+         * Parking mode video detection
          */
         /**
          *
-         * @section _parking____ 💡 .parking의 의미
-         * - 차량 정차 중 녹화
-         * - 움직임 감지 시 녹화 시작
-         * - 배터리 보호를 위한 타임아웃
+         * @section _parking____ 💡 .parking's meaning
+         * - Recording while vehicle is parked
+         * - Start recording when motion detected
+         * - Timeout for battery protection
          */
         XCTAssertEqual(EventType.detect(from: "parking/video.mp4"), .parking)
 
         /**
-         * 수동 녹화 영상 감지
+         * Manual recording video detection
          */
         /**
          *
-         * @section _manual____ 💡 .manual의 의미
-         * - 사용자가 버튼을 눌러 수동 녹화
-         * - 특별한 순간 기록
-         * - 보호 녹화 (자동 삭제 안 됨)
+         * @section _manual____ 💡 .manual's meaning
+         * - User presses button for manual recording
+         * - Record special moments
+         * - Protected recording (Not automatically deleted)
          */
         XCTAssertEqual(EventType.detect(from: "manual/video.mp4"), .manual)
 
         /**
-         * 긴급 녹화 영상 감지
+         * Emergency recording video detection
          */
         /**
          *
-         * @section _emergency____ 💡 .emergency의 의미
-         * - 긴급 버튼 (SOS) 눌렀을 때
-         * - 최고 우선순위 보호
-         * - 자동 알림 전송 가능
+         * @section _emergency____ 💡 .emergency's meaning
+         * - Emergency button (SOS) when pressed
+         * - Highest priority protection
+         * - Can send automatic notifications
          */
         XCTAssertEqual(EventType.detect(from: "emergency/video.mp4"), .emergency)
 
         /**
-         * 알 수 없는 유형 감지
+         * Unknown type detection
          */
         /**
          *
-         * @section _unknown____ 💡 .unknown의 의미
-         * - 표준 경로 패턴이 아닌 경우
-         * - 사용자 정의 폴더
-         * - 수동으로 분류 필요
+         * @section _unknown____ 💡 .unknown's meaning
+         * - Not matching standard path pattern
+         * - Custom user folder
+         * - Needs manual classification
          */
         XCTAssertEqual(EventType.detect(from: "unknown/video.mp4"), .unknown)
     }
 
     /**
-     * 이벤트 유형 우선순위 테스트
+     * Event type priority test
      */
     /**
-     * 이벤트 유형 간 중요도 비교가 올바른지 확인합니다.
+     * Verify that importance comparison between event types is correct.
      */
     /**
      *
-     * @section _______ 🎯 우선순위 순서
+     * @section _______ 🎯 Priority Order
      * @endcode
      * emergency > impact > manual > parking > normal > unknown
-     *    (가장 중요)                           (가장 낮음)
+     *    (Most important)                           (Lowest)
      * @endcode
      */
     /**
      *
-     * @section ________ 💡 우선순위의 용도
-     * - 저장 공간 부족 시 삭제 순서 결정
-     * - UI에서 목록 정렬 순서
-     * - 알림 중요도 결정
+     * @section ________ 💡 Purpose of Priority
+     * - Determine deletion order when storage space is insufficient
+     * - UIlist sorting order in UI
+     * - Determine notification importance
      */
     /**
      *
-     * @section _____ 📊 사용 예시
+     * @section _____ 📊 Usage Example
      * @endcode
-     * // 저장 공간이 부족할 때
+     * // When storage space is insufficient
      * let videosToDelete = allVideos
-     *     .sorted { $0.eventType < $1.eventType }  // 우선순위 낮은 것부터
-     *     .prefix(10)  // 10개 선택
+     *     .sorted { $0.eventType < $1.eventType }  // Starting from lowest priority
+     *     .prefix(10)  // 10items selected
      */
     /**
      * @test testEventTypePriority
-     * @brief // emergency와 impact는 마지막에 삭제됨
+     * @brief // emergencyand impactthe Deleted last
      *
      * @details
-     * // emergency와 impact는 마지막에 삭제됨
+     * // emergencyand impactthe Deleted last
      * @endcode
      */
     func testEventTypePriority() {
         /**
-         * 긴급 > 충격
+         * Emergency > Impact
          */
         /**
          *
-         * @section _________ 💡 비교 연산자 구현
+         * @section _________ 💡 Comparison Operator Implementation
          * @endcode
          * extension EventType: Comparable {
          *     static func < (lhs: EventType, rhs: EventType) -> Bool {
@@ -318,53 +318,53 @@ final class DataModelsTests: XCTestCase {
         XCTAssertTrue(EventType.emergency > EventType.impact)
 
         /**
-         * 충격 > 일반
+         * Impact > Normal
          */
         /**
-         * 충격 감지 영상이 일반 주행 영상보다 중요합니다.
-         * - 충격 영상: 보호 필요
-         * - 일반 영상: 순환 녹화 대상
+         * Impact detection video is more important than normal driving video.
+         * - Impact video: Needs protection
+         * - Normal video: Subject to循环 recording
          */
         XCTAssertTrue(EventType.impact > EventType.normal)
 
         /**
-         * 일반 > 알 수 없음
+         * Normal > Unknown
          */
         /**
-         * 일반 주행 영상도 unknown보다는 중요합니다.
-         * - 일반: 정상적인 녹화
-         * - unknown: 분류 안 된 파일
+         * Normal driving video is still more important than unknown.
+         * - Normal: Normal recording
+         * - unknown: Unclassified file
          */
         XCTAssertTrue(EventType.normal > EventType.unknown)
     }
 
     /**
-     * 이벤트 유형 표시 이름 테스트
+     * Event type display name test
      */
     /**
-     * UI에 표시할 이름이 올바른지 확인합니다.
+     * UIVerify that display names are correct.
      */
     /**
      *
-     * @section _____ 🎯 검증 항목
+     * @section _____ 🎯 Verification Items
      * - .normal → "Normal"
      * - .impact → "Impact"
      * - .parking → "Parking"
      */
     /**
      *
-     * @section _________ 💡 표시 이름의 용도
+     * @section _________ 💡 Purpose of Display Names
      * @endcode
-     * // UI에서 사용
+     * // UIUsed in UI
      * List(videos) { video in
      *     HStack {
-     *         Text(video.eventType.displayName)  // "Impact", "Normal" 등
+     *         Text(video.eventType.displayName)  // "Impact", "Normal" etc
      *         Image(systemName: video.eventType.iconName)
      *     }
      * }
      */
     /**
-     * // 필터링 UI
+     * // Filtering UI
      * Picker("Event Type", selection: $selectedType) {
      *     ForEach(EventType.allCases) { type in
      *         Text(type.displayName).tag(type)
@@ -374,10 +374,10 @@ final class DataModelsTests: XCTestCase {
      */
     /**
      * @test testEventTypeDisplayNames
-     * @brief 🌍 다국어 지원:
+     * @brief 🌍 Multi-language Support:
      *
      * @details
-     * 🌍 다국어 지원:
+     * 🌍 Multi-language Support:
      * @endcode
      * extension EventType {
      *     var displayName: String {
@@ -394,155 +394,155 @@ final class DataModelsTests: XCTestCase {
      */
     func testEventTypeDisplayNames() {
         /**
-         * Normal 표시 이름 확인
+         * Normal Display Name Check
          */
         XCTAssertEqual(EventType.normal.displayName, "Normal")
 
         /**
-         * Impact 표시 이름 확인
+         * Impact Display Name Check
          */
         /**
          *
-         * @section ______ 💡 대안 이름들
+         * @section ______ 💡 Alternative Names
          * @endcode
-         * "Impact"    ✅ 선택됨 (간결하고 명확)
-         * "Shock"        (충격이지만 덜 구체적)
-         * "Accident"     (사고를 암시하여 부적절)
-         * "Event"        (너무 일반적)
+         * "Impact"    ✅ Selected (Concise and clear)
+         * "Shock"        (Impact but Less Specific)
+         * "Accident"     (Implies Accident Inappropriately)
+         * "Event"        (Too general)
          * @endcode
          */
         XCTAssertEqual(EventType.impact.displayName, "Impact")
 
         /**
-         * Parking 표시 이름 확인
+         * Parking Display Name Check
          */
         XCTAssertEqual(EventType.parking.displayName, "Parking")
     }
 
     // ─────────────────────────────────────────────────────────────────────
-    // MARK: - CameraPosition Tests (카메라 위치 테스트)
+    // MARK: - CameraPosition Tests (Camera Position Tests)
     // ─────────────────────────────────────────────────────────────────────
 
     /**
-     * 카메라 위치 감지 테스트
+     * Camera position detection test
      */
     /**
-     * 파일명에서 카메라 위치를 올바르게 감지하는지 확인합니다.
-     */
-    /**
-     *
-     * @section _____ 🎯 검증 항목
-     * - "_F" 접미사 → .front
-     * - "_R" 접미사 → .rear
-     * - "_L" 접미사 → .left
-     * - "_Ri" 접미사 → .right
-     * - "_I" 접미사 → .interior
+     * Verify that camera position is correctly detected from filename.
      */
     /**
      *
-     * @section ___________ 💡 블랙박스 파일명 규칙
+     * @section _____ 🎯 Verification Items
+     * - "_F" suffix → .front
+     * - "_R" suffix → .rear
+     * - "_L" suffix → .left
+     * - "_Ri" suffix → .right
+     * - "_I" suffix → .interior
+     */
+    /**
+     *
+     * @section ___________ 💡 Blackbox Filename Rules
      * @endcode
-     * 형식: YYYY_MM_DD_HH_MM_SS_[위치].mp4
-     * 예시: 2025_01_10_09_00_00_F.mp4
+     * Format: YYYY_MM_DD_HH_MM_SS_[Position].mp4
+     * Example: 2025_01_10_09_00_00_F.mp4
      *       └─────┬─────┘└──┬──┘ └┬┘
-     *           날짜       시간    위치
+     *           Date       Time    Position
      */
     /**
-     * F  = Front    (전방)
-     * R  = Rear     (후방)
-     * L  = Left     (좌측)
-     * Ri = Right    (우측)
-     * I  = Interior (실내)
+     * F  = Front    (Front)
+     * R  = Rear     (Rear)
+     * L  = Left     (Left)
+     * Ri = Right    (Right)
+     * I  = Interior (Interior)
      * @endcode
      */
     /**
-     * 🚗 카메라 배치:
+     * 🚗 Camera Placement:
      * @endcode
-     *        F (전방)
+     *        F (Front)
      *          ↑
      *    L ←  🚗  → Ri
      *          ↓
-     *        R (후방)
+     *        R (Rear)
      */
     /**
      * @test testCameraPositionDetection
-     * @brief I (실내): 운전석을 향함
+     * @brief I (Interior): Faces driver's seat
      *
      * @details
-     * I (실내): 운전석을 향함
+     * I (Interior): Faces driver's seat
      * @endcode
      */
     func testCameraPositionDetection() {
         /**
-         * 전방 카메라 감지
+         * Front camera Detection
          */
         /**
          *
-         * @section __f________ 💡 "_F" 접미사 패턴
-         * - Front의 약자
-         * - 가장 중요한 카메라
-         * - 대부분의 블랙박스에 필수
+         * @section __f________ 💡 "_F" Suffix Pattern
+         * - Abbreviation of Front
+         * - Most important camera
+         * - Required in most blackboxes
          */
         XCTAssertEqual(CameraPosition.detect(from: "2025_01_10_09_00_00_F.mp4"), .front)
 
         /**
-         * 후방 카메라 감지
+         * Rear camera Detection
          */
         /**
          *
-         * @section __r________ 💡 "_R" 접미사 패턴
-         * - Rear의 약자
-         * - 후방 추돌 확인
-         * - 2채널 블랙박스의 두 번째 카메라
+         * @section __r________ 💡 "_R" Suffix Pattern
+         * - Abbreviation of Rear
+         * - Rear collision detection
+         * - Second camera in 2-channel blackbox
          */
         XCTAssertEqual(CameraPosition.detect(from: "2025_01_10_09_00_00_R.mp4"), .rear)
 
         /**
-         * 좌측 카메라 감지
+         * Left camera Detection
          */
         /**
          *
-         * @section __l________ 💡 "_L" 접미사 패턴
-         * - Left의 약자
-         * - 사각지대 확인
-         * - 4채널 블랙박스에서 사용
+         * @section __l________ 💡 "_L" Suffix Pattern
+         * - Abbreviation of Left
+         * - Blind spot detection
+         * - Used in 4-channel blackbox
          */
         XCTAssertEqual(CameraPosition.detect(from: "2025_01_10_09_00_00_L.mp4"), .left)
 
         /**
-         * 우측 카메라 감지
+         * Right camera Detection
          */
         /**
          *
-         * @section __ri________ 💡 "_Ri" 접미사 패턴
-         * - Right의 약자
-         * - "R"은 Rear와 구분하기 위해 "Ri" 사용
-         * - 우측 사각지대 확인
+         * @section __ri________ 💡 "_Ri" Suffix Pattern
+         * - Abbreviation of Right
+         * - Use "Ri" to distinguish from Rear "R"
+         * - Right blind spot detection
          */
         XCTAssertEqual(CameraPosition.detect(from: "2025_01_10_09_00_00_Ri.mp4"), .right)
 
         /**
-         * 실내 카메라 감지
+         * Interior camera Detection
          */
         /**
          *
-         * @section __i________ 💡 "_I" 접미사 패턴
-         * - Interior의 약자
-         * - 택시, 우버 등에서 사용
-         * - 승객 및 운전자 확인
+         * @section __i________ 💡 "_I" Suffix Pattern
+         * - Abbreviation of Interior
+         * - Used in taxi, Uber, etc
+         * - Monitors passengers and driver
          */
         XCTAssertEqual(CameraPosition.detect(from: "2025_01_10_09_00_00_I.mp4"), .interior)
     }
 
     /**
-     * 카메라 위치의 채널 인덱스 테스트
+     * Camera Position Channel Index Test
      */
     /**
-     * 각 카메라 위치가 올바른 채널 번호를 가지는지 확인합니다.
+     * Verify that each camera position has the correct channel number.
      */
     /**
      *
-     * @section _____ 🎯 검증 항목
+     * @section _____ 🎯 Verification Items
      * - .front → 0
      * - .rear → 1
      * - .left → 2
@@ -551,103 +551,103 @@ final class DataModelsTests: XCTestCase {
      */
     /**
      *
-     * @section __________ 💡 채널 인덱스의 용도
+     * @section __________ 💡 Purpose of Channel Index
      * @endcode
-     * // FFmpeg에서 비디오 스트림 선택
+     * // Select video stream in FFmpeg
      * let streamIndex = cameraPosition.channelIndex
      * avformat_find_stream_info(formatContext, nil)
      * let stream = formatContext.streams[streamIndex]
      */
     /**
-     * // 렌더링 시 텍스처 배열 인덱스
+     * // Texture array index during rendering
      * textures[position.channelIndex] = newTexture
      */
     /**
-     * // UI에서 채널 선택
+     * // Channel selection in UI
      * let channel = channels[selectedPosition.channelIndex]
      * @endcode
      */
     /**
      * @test testCameraPositionChannelIndex
-     * @brief 📊 채널 순서의 중요성:
+     * @brief 📊 Importance of Channel Order:
      *
      * @details
      *
-     * @section __________ 📊 채널 순서의 중요성
-     * - 고정된 순서로 일관성 보장
-     * - 배열 인덱스로 빠른 접근
-     * - FFmpeg 스트림 순서와 매칭
+     * @section __________ 📊 Importance of Channel Order
+     * - Ensures consistency with fixed order
+     * - Fast access via array index
+     * - Matches FFmpeg stream order
      */
     func testCameraPositionChannelIndex() {
         /**
-         * 전방 카메라 = 채널 0
+         * Front camera = Channel 0
          */
         /**
          *
-         * @section 0_________ 💡 0번이 전방인 이유
-         * - 가장 중요한 카메라
-         * - 항상 존재하는 기본 채널
-         * - 배열의 첫 번째 요소
+         * @section 0_________ 💡 Reason why Front is Channel 0
+         * - Most important camera
+         * - Default channel that always exists
+         * - First element of array
          */
         XCTAssertEqual(CameraPosition.front.channelIndex, 0)
 
         /**
-         * 후방 카메라 = 채널 1
+         * Rear camera = Channel 1
          */
         /**
-         * 두 번째로 중요한 카메라
-         * 2채널 블랙박스의 표준
+         * Second most important camera
+         * Standard in 2-channel blackbox
          */
         XCTAssertEqual(CameraPosition.rear.channelIndex, 1)
 
         /**
-         * 좌측 카메라 = 채널 2
+         * Left camera = Channel 2
          */
         /**
-         * 4채널 블랙박스의 세 번째
+         * Third channel in 4-channel blackbox
          */
         XCTAssertEqual(CameraPosition.left.channelIndex, 2)
 
         /**
-         * 우측 카메라 = 채널 3
+         * Right camera = Channel 3
          */
         /**
-         * 4채널 블랙박스의 네 번째
+         * Fourth channel in 4-channel blackbox
          */
         XCTAssertEqual(CameraPosition.right.channelIndex, 3)
 
         /**
-         * 실내 카메라 = 채널 4
+         * Interior camera = Channel 4
          */
         /**
          *
-         * @section 5______________ 💡 5채널 블랙박스의 추가 채널
-         * - 선택적 기능
-         * - 택시/우버용
-         * - 마지막 인덱스
+         * @section 5______________ 💡 Additional Channel in 5-Channel Blackbox
+         * - Optional feature
+         * - For taxi/Uber
+         * - Last index
          */
         XCTAssertEqual(CameraPosition.interior.channelIndex, 4)
     }
 
     /**
-     * 채널 인덱스에서 카메라 위치 변환 테스트
+     * Convert Channel Index to Camera Position Test
      */
     /**
-     * 채널 번호로부터 카메라 위치를 올바르게 찾는지 확인합니다.
+     * Verify that camera position is correctly found from channel number.
      */
     /**
      *
-     * @section _____ 🎯 검증 항목
+     * @section _____ 🎯 Verification Items
      * - 0 → .front
      * - 1 → .rear
      * - 4 → .interior
-     * - 99 (잘못된 값) → nil
+     * - 99 (invalid value) → nil
      */
     /**
      *
-     * @section _____ 💡 사용 사례
+     * @section _____ 💡 Use Cases
      * @endcode
-     * // FFmpeg 스트림에서 위치 추출
+     * // Extract position from FFmpeg stream
      * for i in 0..<streamCount {
      *     if let position = CameraPosition.from(channelIndex: i) {
      *         channels[position] = decodeStream(at: i)
@@ -655,7 +655,7 @@ final class DataModelsTests: XCTestCase {
      * }
      */
     /**
-     * // UI 인덱스에서 위치 매핑
+     * // Map position from UI index
      * @State var selectedIndex = 0
      * var selectedPosition: CameraPosition? {
      *     CameraPosition.from(channelIndex: selectedIndex)
@@ -664,11 +664,11 @@ final class DataModelsTests: XCTestCase {
      */
     /**
      * @test testCameraPositionFromChannelIndex
-     * @brief 🔄 양방향 변환:
+     * @brief 🔄 Bidirectional Conversion:
      *
      * @details
      *
-     * @section ______ 🔄 양방향 변환
+     * @section ______ 🔄 Bidirectional Conversion
      * @endcode
      * let position: CameraPosition = .front
      * let index = position.channelIndex      // → 0
@@ -678,33 +678,33 @@ final class DataModelsTests: XCTestCase {
      */
     func testCameraPositionFromChannelIndex() {
         /**
-         * 채널 0 → 전방 카메라
+         * Channel 0 → Front camera
          */
         XCTAssertEqual(CameraPosition.from(channelIndex: 0), .front)
 
         /**
-         * 채널 1 → 후방 카메라
+         * Channel 1 → Rear camera
          */
         XCTAssertEqual(CameraPosition.from(channelIndex: 1), .rear)
 
         /**
-         * 채널 4 → 실내 카메라
+         * Channel 4 → Interior camera
          */
         XCTAssertEqual(CameraPosition.from(channelIndex: 4), .interior)
 
         /**
-         * 잘못된 채널 번호 → nil
+         * Invalid channel number → nil
          */
         /**
          *
-         * @section nil_______ 💡 nil 반환의 이유
-         * - 유효하지 않은 인덱스
-         * - 지원하지 않는 채널
-         * - Optional로 안전한 실패 처리
+         * @section nil_______ 💡 Reason for Returning nil
+         * - Invalid index
+         * - Unsupported channel
+         * - Safe failure handling with Optional
          */
         /**
          *
-         * @section _____ 🔍 사용 예시
+         * @section _____ 🔍 Usage Example
          * @endcode
          * guard let position = CameraPosition.from(channelIndex: 99) else {
          *     print("Invalid channel index")
@@ -716,42 +716,42 @@ final class DataModelsTests: XCTestCase {
     }
 
     // ─────────────────────────────────────────────────────────────────────
-    // MARK: - GPSPoint Tests (GPS 위치 데이터 테스트)
+    // MARK: - GPSPoint Tests (GPS Position Data Test)
     // ─────────────────────────────────────────────────────────────────────
 
     /**
-     * GPS 포인트 유효성 검증 테스트
+     * GPS Point Validation Test
      */
     /**
-     * 위도/경도 값이 유효한 범위 내에 있는지 확인합니다.
+     * Verify that latitude/longitude values are within valid range.
      */
     /**
      * @test testGPSPointValidation
-     * @brief 🌍 유효한 범위:
+     * @brief 🌍 Valid range:
      *
      * @details
-     * 🌍 유효한 범위:
-     * - 위도: -90° ~ 90° (북위/남위)
-     * - 경도: -180° ~ 180° (동경/서경)
+     * 🌍 Valid range:
+     * - Latitude: -90° ~ 90° (North/South latitude)
+     * - Longitude: -180° ~ 180° (East/West longitude)
      */
     func testGPSPointValidation() {
         /**
-         * 유효한 GPS 포인트
+         * Valid GPS point
          */
         /**
-         * 서울 시청 좌표: 37.5665°N, 126.9780°E
+         * Seoul City Hall coordinates: 37.5665°N, 126.9780°E
          */
         let valid = GPSPoint.sample
         XCTAssertTrue(valid.isValid)
 
         /**
-         * 잘못된 GPS 포인트
+         * Invalid GPS point
          */
         /**
          *
-         * @section latitude___91_0_________ 💡 latitude = 91.0은 유효하지 않음
-         * - 최대 위도는 90° (북극)
-         * - 91°는 지구상에 존재하지 않음
+         * @section latitude___91_0_________ 💡 latitude = 91.0 is invalid
+         * - Maximum latitude is 90° (North Pole)
+         * - 91° does not exist on Earth
          */
         let invalid = GPSPoint(
             timestamp: Date(),
@@ -762,30 +762,30 @@ final class DataModelsTests: XCTestCase {
     }
 
     /**
-     * GPS 포인트 간 거리 계산 테스트
+     * GPS Point Distance Calculation Test
      */
     /**
-     * Haversine 공식을 사용한 두 GPS 좌표 간 거리를 검증합니다.
+     * Verify distance between two GPS coordinates using Haversine Formula.
      */
     /**
      * @test testGPSPointDistance
-     * @brief 🌐 Haversine 공식:
+     * @brief 🌐 Haversine Formula:
      *
      * @details
      *
-     * @section haversine___ 🌐 Haversine 공식
-     * 구면 삼각법을 사용하여 지구 표면의 두 점 사이 최단 거리를 계산합니다.
+     * @section haversine___ 🌐 Haversine Formula
+     * Uses spherical trigonometry to calculate shortest distance between two points on Earth.
      */
     func testGPSPointDistance() {
         /**
-         * 서울 광화문 근처의 두 지점
+         * Two points near Seoul Gwanghwamun
          */
         /**
          * point1: 37.5665°N, 126.9780°E
          * point2: 37.5667°N, 126.9782°E
          */
         /**
-         * 약 25-30미터 거리
+         * Approximately 25-30meters distance
          */
         let point1 = GPSPoint(timestamp: Date(), latitude: 37.5665, longitude: 126.9780)
         let point2 = GPSPoint(timestamp: Date(), latitude: 37.5667, longitude: 126.9782)
@@ -793,37 +793,37 @@ final class DataModelsTests: XCTestCase {
         let distance = point1.distance(to: point2)
 
         /**
-         * 거리가 양수인지 확인
+         * Check that distance is positive
          */
         XCTAssertGreaterThan(distance, 0)
 
         /**
-         * 50미터 이내인지 확인
+         * Check that distance is within 50 meters
          */
         /**
          *
-         * @section 0_0002_______22__ 💡 0.0002도 차이 ≈ 22미터
+         * @section 0_0002_______22__ 💡 0.0002 degree difference ≈ 22 meters
          */
         XCTAssertLessThan(distance, 50)
     }
 
     /**
-     * GPS 신호 강도 테스트
+     * GPS Signal Strength Test
      */
     /**
      * @test testGPSPointSignalStrength
-     * @brief 정확도와 위성 수를 기반으로 신호 강도를 판단합니다.
+     * @brief Determines signal strength based on accuracy and satellite count.
      *
      * @details
-     * 정확도와 위성 수를 기반으로 신호 강도를 판단합니다.
+     * Determines signal strength based on accuracy and satellite count.
      */
     func testGPSPointSignalStrength() {
         /**
-         * 강한 GPS 신호
+         * Strong GPS signal
          */
         /**
          *
-         * @section _________ 💡 강한 신호의 조건
+         * @section _________ 💡 Conditions for strong signal
          * - horizontalAccuracy < 10m
          * - satelliteCount >= 7
          */
@@ -831,17 +831,17 @@ final class DataModelsTests: XCTestCase {
             timestamp: Date(),
             latitude: 37.5665,
             longitude: 126.9780,
-            horizontalAccuracy: 5.0,      // 5미터 오차
-            satelliteCount: 8             // 8개 위성
+            horizontalAccuracy: 5.0,      // 5 meter error
+            satelliteCount: 8             // 8 satellites
         )
         XCTAssertTrue(strongSignal.hasStrongSignal)
 
         /**
-         * 약한 GPS 신호
+         * Weak GPS signal
          */
         /**
          *
-         * @section _________ 💡 약한 신호의 조건
+         * @section _________ 💡 Conditions for weak signal
          * - horizontalAccuracy >= 10m
          * - satelliteCount < 7
          */
@@ -849,33 +849,33 @@ final class DataModelsTests: XCTestCase {
             timestamp: Date(),
             latitude: 37.5665,
             longitude: 126.9780,
-            horizontalAccuracy: 100.0,    // 100미터 오차
-            satelliteCount: 3             // 3개 위성만
+            horizontalAccuracy: 100.0,    // 100 meter error
+            satelliteCount: 3             // 3 satellites only
         )
         XCTAssertFalse(weakSignal.hasStrongSignal)
     }
 
     // ─────────────────────────────────────────────────────────────────────
-    // MARK: - AccelerationData Tests (가속도 센서 데이터 테스트)
+    // MARK: - AccelerationData Tests (Acceleration Sensor Data Test)
     // ─────────────────────────────────────────────────────────────────────
 
     /**
-     * 가속도 크기 계산 테스트
+     * Acceleration Magnitude Calculation Test
      */
     /**
-     * 3축 가속도의 벡터 크기를 계산합니다.
+     * Calculate vector magnitude of 3-axis acceleration.
      */
     /**
      * @test testAccelerationMagnitude
-     * @brief 📐 벡터 크기 공식:
+     * @brief 📐 Vector Magnitude Formula:
      *
      * @details
-     * 📐 벡터 크기 공식:
+     * 📐 Vector Magnitude Formula:
      * magnitude = √(x² + y² + z²)
      */
     func testAccelerationMagnitude() {
         /**
-         * 피타고라스 정리 검증: 3-4-5 삼각형
+         * Verify Pythagorean theorem: 3-4-5 Triangle
          */
         /**
          * x=3, y=4, z=0 → magnitude = 5
@@ -886,164 +886,164 @@ final class DataModelsTests: XCTestCase {
     }
 
     /**
-     * 충격 감지 테스트
+     * Impact Detection Test
      */
     /**
-     * 가속도 크기에 따라 충격 여부를 판단합니다.
+     * Determine impact occurrence based on acceleration magnitude.
      */
     /**
      * @test testAccelerationImpactDetection
-     * @brief 📊 충격 기준 (G-force):
+     * @brief 📊 Impact Criteria (G-force):
      *
      * @details
      *
-     * @section _______g_force_ 📊 충격 기준 (G-force)
-     * - 일반: < 1.5G
-     * - 급정거: 1.5G ~ 2.5G
-     * - 충격: 2.5G ~ 5G
-     * - 심각한 충격: > 5G
+     * @section _______g_force_ 📊 Impact Criteria (G-force)
+     * - Normal: < 1.5G
+     * - Hard braking: 1.5G ~ 2.5G
+     * - Impact: 2.5G ~ 5G
+     * - Severe impact: > 5G
      */
     func testAccelerationImpactDetection() {
         /**
-         * 일반 주행 (충격 아님)
+         * Normal driving (not impact)
          */
         XCTAssertFalse(AccelerationData.normal.isImpact)
 
         /**
-         * 급정거 (충격 아님)
+         * Hard braking (not impact)
          */
         XCTAssertFalse(AccelerationData.braking.isImpact)
 
         /**
-         * 충격 (충격 감지)
+         * Impact (impact detected)
          */
         XCTAssertTrue(AccelerationData.impact.isImpact)
 
         /**
-         * 심각한 충격 (심각한 충격 감지)
+         * Severe impact (severe impact detected)
          */
         XCTAssertTrue(AccelerationData.severeImpact.isSevereImpact)
     }
 
     /**
-     * 충격 심각도 분류 테스트
+     * Impact Severity Classification Test
      */
     /**
      * @test testAccelerationSeverity
-     * @brief 가속도 크기를 기반으로 4단계로 분류합니다.
+     * @brief Classify into 4 levels based on acceleration magnitude.
      *
      * @details
-     * 가속도 크기를 기반으로 4단계로 분류합니다.
+     * Classify into 4 levels based on acceleration magnitude.
      */
     func testAccelerationSeverity() {
         /**
-         * 일반 → 심각도 없음
+         * Normal → No severity
          */
         XCTAssertEqual(AccelerationData.normal.impactSeverity, .none)
 
         /**
-         * 급정거 → 중간 심각도
+         * Hard braking → Moderate severity
          */
         XCTAssertEqual(AccelerationData.braking.impactSeverity, .moderate)
 
         /**
-         * 충격 → 높은 심각도
+         * Impact → High severity
          */
         XCTAssertEqual(AccelerationData.impact.impactSeverity, .high)
 
         /**
-         * 심각한 충격 → 심각 수준
+         * Severe impact → Severe level
          */
         XCTAssertEqual(AccelerationData.severeImpact.impactSeverity, .severe)
     }
 
     /**
-     * 가속도 방향 테스트
+     * Acceleration Direction Test
      */
     /**
      * @test testAccelerationDirection
-     * @brief 가장 큰 가속도 축을 기반으로 주요 방향을 결정합니다.
+     * @brief Determine primary direction based on largest acceleration axis.
      *
      * @details
-     * 가장 큰 가속도 축을 기반으로 주요 방향을 결정합니다.
+     * Determine primary direction based on largest acceleration axis.
      */
     func testAccelerationDirection() {
         /**
-         * 좌회전 (X축이 가장 큼)
+         * Left turn (X axis is largest)
          */
         /**
-         * x=-2.0 (좌측으로 큰 가속도)
+         * x=-2.0 (large acceleration to the left)
          */
         let leftTurn = AccelerationData(timestamp: Date(), x: -2.0, y: 0.5, z: 1.0)
         XCTAssertEqual(leftTurn.primaryDirection, .left)
 
         /**
-         * 급정거 (Y축이 가장 큼)
+         * Hard braking (Y axis is largest)
          */
         /**
-         * y=-3.0 (후방으로 큰 가속도)
+         * y=-3.0 (large acceleration to the rear)
          */
         let braking = AccelerationData(timestamp: Date(), x: 0.0, y: -3.0, z: 1.0)
         XCTAssertEqual(braking.primaryDirection, .backward)
     }
 
     // ─────────────────────────────────────────────────────────────────────
-    // MARK: - ChannelInfo Tests (채널 정보 테스트)
+    // MARK: - ChannelInfo Tests (Channel Information Test)
     // ─────────────────────────────────────────────────────────────────────
 
     /**
-     * 채널 해상도 테스트
+     * Channel Resolution Test
      */
     /**
      * @test testChannelInfoResolution
-     * @brief 해상도 문자열과 이름을 올바르게 생성하는지 확인합니다.
+     * @brief Verify that resolution string and name are created correctly.
      *
      * @details
-     * 해상도 문자열과 이름을 올바르게 생성하는지 확인합니다.
+     * Verify that resolution string and name are created correctly.
      */
     func testChannelInfoResolution() {
         let hd = ChannelInfo.frontHD
 
         /**
-         * 해상도 문자열: "1920x1080"
+         * Resolution string: "1920x1080"
          */
         XCTAssertEqual(hd.resolutionString, "1920x1080")
 
         /**
-         * 해상도 이름: "Full HD"
+         * Resolution name: "Full HD"
          */
         XCTAssertEqual(hd.resolutionName, "Full HD")
 
         /**
-         * 고해상도 플래그
+         * High resolution flag
          */
         /**
          *
-         * @section ____________1920x1080 💡 고해상도 기준: >= 1920x1080
+         * @section ____________1920x1080 💡 High resolution criteria: >= 1920x1080
          */
         XCTAssertTrue(hd.isHighResolution)
     }
 
     /**
-     * 채널 화면 비율 테스트
+     * Channel Aspect Ratio Test
      */
     /**
      * @test testChannelInfoAspectRatio
-     * @brief 16:9, 4:3 등의 화면 비율을 계산합니다.
+     * @brief Calculate aspect ratio such as 16:9, 4:3, etc.
      *
      * @details
-     * 16:9, 4:3 등의 화면 비율을 계산합니다.
+     * Calculate aspect ratio such as 16:9, 4:3, etc.
      */
     func testChannelInfoAspectRatio() {
         let hd = ChannelInfo.frontHD
 
         /**
-         * 화면 비율 문자열: "16:9"
+         * Aspect ratio string: "16:9"
          */
         XCTAssertEqual(hd.aspectRatioString, "16:9")
 
         /**
-         * 화면 비율 소수: 1.777...
+         * Aspect ratio decimal: 1.777...
          */
         /**
          * 16 / 9 = 1.777...
@@ -1052,29 +1052,29 @@ final class DataModelsTests: XCTestCase {
     }
 
     /**
-     * 채널 유효성 검증 테스트
+     * Channel Validation Test
      */
     /**
      * @test testChannelInfoValidation
-     * @brief 필수 필드가 유효한 값을 가지는지 확인합니다.
+     * @brief Verify that required fields have valid values.
      *
      * @details
-     * 필수 필드가 유효한 값을 가지는지 확인합니다.
+     * Verify that required fields have valid values.
      */
     func testChannelInfoValidation() {
         /**
-         * 유효한 채널
+         * Valid channel
          */
         let valid = ChannelInfo.frontHD
         XCTAssertTrue(valid.isValid)
 
         /**
-         * 잘못된 채널
+         * Invalid channel
          */
         /**
          *
-         * @section ______ 💡 무효한 이유
-         * - filePath가 비어있음
+         * @section ______ 💡 Reasons for invalidity
+         * - filePath is empty
          * - width = 0
          * - height = 0
          * - frameRate = 0
@@ -1090,77 +1090,77 @@ final class DataModelsTests: XCTestCase {
     }
 
     // ─────────────────────────────────────────────────────────────────────
-    // MARK: - VideoMetadata Tests (비디오 메타데이터 테스트)
+    // MARK: - VideoMetadata Tests (Video Metadata Test)
     // ─────────────────────────────────────────────────────────────────────
 
     /**
      * @test testVideoMetadataGPSData
-     * @brief 비디오 메타데이터 GPS 데이터 테스트
+     * @brief Video Metadata GPS Data Test
      *
      * @details
-     * 비디오 메타데이터 GPS 데이터 테스트
+     * Video Metadata GPS Data Test
      */
     func testVideoMetadataGPSData() {
         let metadata = VideoMetadata.sample
 
         /**
-         * GPS 데이터 존재 여부
+         * GPS data presence
          */
         XCTAssertTrue(metadata.hasGPSData)
 
         /**
-         * 총 이동 거리 (미터)
+         * Total distance traveled (meters)
          */
         XCTAssertGreaterThan(metadata.totalDistance, 0)
 
         /**
-         * 평균 속도 (km/h)
+         * Average speed (km/h)
          */
         XCTAssertNotNil(metadata.averageSpeed)
 
         /**
-         * 최대 속도 (km/h)
+         * Maximum speed (km/h)
          */
         XCTAssertNotNil(metadata.maximumSpeed)
     }
 
     /**
      * @test testVideoMetadataAccelerationData
-     * @brief 비디오 메타데이터 가속도 데이터 테스트
+     * @brief Video Metadata Acceleration Data Test
      *
      * @details
-     * 비디오 메타데이터 가속도 데이터 테스트
+     * Video Metadata Acceleration Data Test
      */
     func testVideoMetadataAccelerationData() {
         let metadata = VideoMetadata.sample
 
         /**
-         * 가속도 데이터 존재 여부
+         * Acceleration data presence
          */
         XCTAssertTrue(metadata.hasAccelerationData)
 
         /**
-         * 최대 G-force
+         * Maximum G-force
          */
         XCTAssertNotNil(metadata.maximumGForce)
     }
 
     /**
      * @test testVideoMetadataImpactDetection
-     * @brief 비디오 메타데이터 충격 감지 테스트
+     * @brief Video Metadata Impact Detection Test
      *
      * @details
-     * 비디오 메타데이터 충격 감지 테스트
+     * Video Metadata Impact Detection Test
      */
     func testVideoMetadataImpactDetection() {
         /**
-         * GPS만 있는 메타데이터 (충격 없음)
+         * Metadata with GPS only (no impact)
          */
         let noImpact = VideoMetadata.gpsOnly
         XCTAssertFalse(noImpact.hasImpactEvents)
 
         /**
-         * 충격 이벤트가 있는 메타데이터
+         * Metadata with impact events
          */
         let withImpact = VideoMetadata.withImpact
         XCTAssertTrue(withImpact.hasImpactEvents)
@@ -1169,71 +1169,71 @@ final class DataModelsTests: XCTestCase {
 
     /**
      * @test testVideoMetadataPointRetrieval
-     * @brief 비디오 메타데이터 포인트 검색 테스트
+     * @brief Video Metadata Point Retrieval Test
      *
      * @details
-     * 비디오 메타데이터 포인트 검색 테스트
+     * Video Metadata Point Retrieval Test
      */
     func testVideoMetadataPointRetrieval() {
         let metadata = VideoMetadata.sample
 
         /**
-         * 특정 시간의 GPS 포인트 검색
+         * Retrieve GPS point at specific time
          */
         /**
          *
-         * @section 1_0______gps______ 💡 1.0초 시점의 GPS 좌표 조회
+         * @section 1_0______gps______ 💡 Retrieve GPS coordinates at 1.0 seconds
          */
         let gpsPoint = metadata.gpsPoint(at: 1.0)
         XCTAssertNotNil(gpsPoint)
 
         /**
-         * 특정 시간의 가속도 데이터 검색
+         * Retrieve acceleration data at specific time
          */
         /**
          *
-         * @section 1_0____________ 💡 1.0초 시점의 가속도 조회
+         * @section 1_0____________ 💡 Retrieve acceleration at 1.0 seconds
          */
         let accelData = metadata.accelerationData(at: 1.0)
         XCTAssertNotNil(accelData)
     }
 
     // ─────────────────────────────────────────────────────────────────────
-    // MARK: - VideoFile Tests (비디오 파일 테스트)
+    // MARK: - VideoFile Tests (Video File Test)
     // ─────────────────────────────────────────────────────────────────────
 
     /**
      * @test testVideoFileChannelAccess
-     * @brief 비디오 파일 채널 접근 테스트
+     * @brief Video File Channel Access Test
      *
      * @details
-     * 비디오 파일 채널 접근 테스트
+     * Video File Channel Access Test
      */
     func testVideoFileChannelAccess() {
         let video = VideoFile.normal5Channel
 
         /**
-         * 총 채널 수
+         * Total number of channels
          */
         XCTAssertEqual(video.channelCount, 5)
 
         /**
-         * 멀티 채널 여부 (2개 이상)
+         * Multi-channel status (2 or more)
          */
         XCTAssertTrue(video.isMultiChannel)
 
         /**
-         * 전방 채널 존재 확인
+         * Front channel existence check
          */
         XCTAssertNotNil(video.frontChannel)
 
         /**
-         * 후방 채널 존재 확인
+         * Rear channel existence check
          */
         XCTAssertNotNil(video.rearChannel)
 
         /**
-         * 특정 채널 존재 여부
+         * Specific channel existence check
          */
         XCTAssertTrue(video.hasChannel(.front))
         XCTAssertTrue(video.hasChannel(.rear))
@@ -1241,83 +1241,83 @@ final class DataModelsTests: XCTestCase {
 
     /**
      * @test testVideoFileProperties
-     * @brief 비디오 파일 속성 테스트
+     * @brief Video File Property Test
      *
      * @details
-     * 비디오 파일 속성 테스트
+     * Video File Property Test
      */
     func testVideoFileProperties() {
         let video = VideoFile.normal5Channel
 
         /**
-         * 이벤트 유형
+         * Event type
          */
         XCTAssertEqual(video.eventType, .normal)
 
         /**
-         * 재생 시간 (초)
+         * Playback duration (seconds)
          */
         XCTAssertEqual(video.duration, 60.0)
 
         /**
-         * 총 파일 크기 (바이트)
+         * Total file size (bytes)
          */
         XCTAssertGreaterThan(video.totalFileSize, 0)
 
         /**
-         * 즐겨찾기 상태 (기본값: false)
+         * Favorite status (Default value: false)
          */
         XCTAssertFalse(video.isFavorite)
     }
 
     /**
      * @test testVideoFileValidation
-     * @brief 비디오 파일 유효성 검증 테스트
+     * @brief Video File Validation Test
      *
      * @details
-     * 비디오 파일 유효성 검증 테스트
+     * Video File Validation Test
      */
     func testVideoFileValidation() {
         /**
-         * 유효한 비디오 파일
+         * Valid video file
          */
         let valid = VideoFile.normal5Channel
         XCTAssertTrue(valid.isValid)
         XCTAssertTrue(valid.isPlayable)
 
         /**
-         * 손상된 비디오 파일
+         * Corrupted video file
          */
         let corrupted = VideoFile.corruptedFile
         XCTAssertFalse(corrupted.isPlayable)
     }
 
     /**
-     * 비디오 파일 변경 테스트
+     * Video File Change Test
      */
     /**
      * @test testVideoFileMutations
-     * @brief 💡 struct의 불변성:
+     * @brief 💡 Struct Immutability:
      *
      * @details
      *
-     * @section struct_____ 💡 struct의 불변성
-     * - 원본은 변경되지 않음
-     * - 새로운 인스턴스 반환
+     * @section struct_____ 💡 Struct Immutability
+     * - Original is not changed
+     * - Returns new instance
      */
     func testVideoFileMutations() {
         let original = VideoFile.normal5Channel
         XCTAssertFalse(original.isFavorite)
 
         /**
-         * 즐겨찾기 추가
+         * Add to favorites
          */
         let favorited = original.withFavorite(true)
         XCTAssertTrue(favorited.isFavorite)
-        XCTAssertEqual(favorited.id, original.id)  // ID는 유지
+        XCTAssertEqual(favorited.id, original.id)  // ID is maintained
 
         /**
-         * 메모 추가
+         * Add memo
          */
         let withNotes = original.withNotes("Test note")
         XCTAssertEqual(withNotes.notes, "Test note")
@@ -1325,10 +1325,10 @@ final class DataModelsTests: XCTestCase {
 
     /**
      * @test testVideoFileMetadata
-     * @brief 비디오 파일 메타데이터 테스트
+     * @brief Video File Metadata Test
      *
      * @details
-     * 비디오 파일 메타데이터 테스트
+     * Video File Metadata Test
      */
     func testVideoFileMetadata() {
         let video = VideoFile.normal5Channel
@@ -1341,63 +1341,63 @@ final class DataModelsTests: XCTestCase {
 
     /**
      * @test testVideoFileFormatting
-     * @brief 비디오 파일 포맷팅 테스트
+     * @brief Video File Formatting Test
      *
      * @details
-     * 비디오 파일 포맷팅 테스트
+     * Video File Formatting Test
      */
     func testVideoFileFormatting() {
         let video = VideoFile.normal5Channel
 
         /**
-         * 재생 시간 문자열 (예: "01:00")
+         * Duration string (Example: "01:00")
          */
         XCTAssertFalse(video.durationString.isEmpty)
 
         /**
-         * 타임스탬프 문자열 (예: "2025-01-10 09:00:00")
+         * Timestamp string (Example: "2025-01-10 09:00:00")
          */
         XCTAssertFalse(video.timestampString.isEmpty)
 
         /**
-         * 파일 크기 문자열 (예: "125.5 MB")
+         * File size string (Example: "125.5 MB")
          */
         XCTAssertFalse(video.totalFileSizeString.isEmpty)
     }
 
     // ─────────────────────────────────────────────────────────────────────
-    // MARK: - Codable Tests (직렬화/역직렬화 테스트)
+    // MARK: - Codable Tests (Serialization/Deserialization Test)
     // ─────────────────────────────────────────────────────────────────────
 
     /**
-     * GPSPoint Codable 테스트
+     * GPSPoint Codable Test
      */
     /**
      * @test testGPSPointCodable
-     * @brief 💡 Codable 프로토콜:
+     * @brief 💡 Codable Protocol:
      *
      * @details
      *
-     * @section codable_____ 💡 Codable 프로토콜
-     * - JSON으로 인코딩
-     * - JSON에서 디코딩
-     * - 데이터 영속화 및 전송용
+     * @section codable_____ 💡 Codable Protocol
+     * - Encode to JSON
+     * - Decode from JSON
+     * - For data persistence and transmission
      */
     func testGPSPointCodable() throws {
         let original = GPSPoint.sample
 
         /**
-         * JSON 인코딩
+         * JSON encoding
          */
         let encoded = try JSONEncoder().encode(original)
 
         /**
-         * JSON 디코딩
+         * JSON decoding
          */
         let decoded = try JSONDecoder().decode(GPSPoint.self, from: encoded)
 
         /**
-         * 데이터 보존 검증
+         * Verify data preservation
          */
         XCTAssertEqual(decoded.latitude, original.latitude)
         XCTAssertEqual(decoded.longitude, original.longitude)
@@ -1405,26 +1405,26 @@ final class DataModelsTests: XCTestCase {
 
     /**
      * @test testAccelerationDataCodable
-     * @brief AccelerationData Codable 테스트
+     * @brief AccelerationData Codable Test
      *
      * @details
-     * AccelerationData Codable 테스트
+     * AccelerationData Codable Test
      */
     func testAccelerationDataCodable() throws {
         let original = AccelerationData.impact
 
         /**
-         * JSON 인코딩
+         * JSON encoding
          */
         let encoded = try JSONEncoder().encode(original)
 
         /**
-         * JSON 디코딩
+         * JSON decoding
          */
         let decoded = try JSONDecoder().decode(AccelerationData.self, from: encoded)
 
         /**
-         * 3축 데이터 보존 검증
+         * Verify 3-axis data preservation
          */
         XCTAssertEqual(decoded.x, original.x)
         XCTAssertEqual(decoded.y, original.y)
@@ -1433,26 +1433,26 @@ final class DataModelsTests: XCTestCase {
 
     /**
      * @test testVideoFileCodable
-     * @brief VideoFile Codable 테스트
+     * @brief VideoFile Codable Test
      *
      * @details
-     * VideoFile Codable 테스트
+     * VideoFile Codable Test
      */
     func testVideoFileCodable() throws {
         let original = VideoFile.normal5Channel
 
         /**
-         * JSON 인코딩
+         * JSON encoding
          */
         let encoded = try JSONEncoder().encode(original)
 
         /**
-         * JSON 디코딩
+         * JSON decoding
          */
         let decoded = try JSONDecoder().decode(VideoFile.self, from: encoded)
 
         /**
-         * 주요 속성 보존 검증
+         * Verify key property preservation
          */
         XCTAssertEqual(decoded.id, original.id)
         XCTAssertEqual(decoded.eventType, original.eventType)
@@ -1461,32 +1461,32 @@ final class DataModelsTests: XCTestCase {
     }
 
     // ─────────────────────────────────────────────────────────────────────
-    // MARK: - Performance Tests (성능 테스트)
+    // MARK: - Performance Tests (Performance Test)
     // ─────────────────────────────────────────────────────────────────────
 
     /**
-     * GPS 거리 계산 성능 테스트
+     * GPS Distance Calculation Performance Test
      */
     /**
      * @test testGPSDistanceCalculationPerformance
-     * @brief 💡 Haversine 공식의 성능:
+     * @brief 💡 Haversine Formula Performance:
      *
      * @details
      *
-     * @section haversine_______ 💡 Haversine 공식의 성능
-     * - 삼각함수 (sin, cos, asin) 사용
-     * - 부동소수점 연산 집약적
-     * - 많은 포인트 처리 시 최적화 필요
+     * @section haversine_______ 💡 Haversine Formula Performance
+     * - Uses trigonometric functions (sin, cos, asin)
+     * - Floating-point intensive operations
+     * - Optimization needed when processing many points
      */
     func testGPSDistanceCalculationPerformance() {
         let points = GPSPoint.sampleRoute
 
         /**
-         * 10회 반복 측정
+         * 10 repeated measurements
          */
         measure {
             /**
-             * 모든 연속된 포인트 쌍의 거리 계산
+             * Calculate distance for all consecutive point pairs
              */
             for i in 0..<(points.count - 1) {
                 _ = points[i].distance(to: points[i + 1])
@@ -1495,29 +1495,29 @@ final class DataModelsTests: XCTestCase {
     }
 
     /**
-     * 비디오 메타데이터 요약 생성 성능 테스트
+     * Video Metadata Summary Creation Performance Test
      */
     /**
      * @test testVideoMetadataSummaryPerformance
-     * @brief 💡 요약 생성 과정:
+     * @brief 💡 Summary Creation Definition:
      *
      * @details
      *
-     * @section ________ 💡 요약 생성 과정
-     * - 모든 GPS 포인트 처리
-     * - 모든 가속도 데이터 처리
-     * - 통계 계산 (평균, 최대, 최소)
-     * - 이벤트 분석
+     * @section ________ 💡 Summary Creation Definition
+     * - Process all GPS points
+     * - Process all acceleration data
+     * - Statistical calculation (Average, Maximum, Minimum)
+     * - Event analysis
      */
     func testVideoMetadataSummaryPerformance() {
         let metadata = VideoMetadata.sample
 
         /**
-         * 10회 반복 측정
+         * 10 repeated measurements
          */
         measure {
             /**
-             * 요약 문자열 생성
+             * Create summary string
              */
             _ = metadata.summary
         }

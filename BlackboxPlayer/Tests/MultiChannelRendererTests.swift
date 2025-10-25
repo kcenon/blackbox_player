@@ -1,100 +1,100 @@
 /**
  * @file MultiChannelRendererTests.swift
- * @brief 멀티채널 비디오 렌더러 단위 테스트
+ * @brief MultiChannel Video Renderer Unit Tests
  * @author BlackboxPlayer Team
  *
  * @details
- * Metal 기반 멀티채널 비디오 렌더러(MultiChannelRenderer)의 모든 기능을 체계적으로
- * 테스트합니다. GPU 가속 렌더링, 레이아웃 변경, 화면 캡처, 성능, 동시성을 검증합니다.
+ * Systematically tests all features of the Metal-based multi-channel video renderer (MultiChannelRenderer).
+ * Verifies GPU-accelerated rendering, layout changes, screen capture, performance, and concurrency.
  *
- * @section test_scope 테스트 범위
+ * @section test_scope Test Range
  *
- * 1. **렌더러 초기화**
- *    - Metal 디바이스 사용 가능 여부 확인
- *    - Command Queue 생성 검증
- *    - 초기 상태 확인
+ * 1. **Renderer Initialization**
+ *    - Check Metal device availability
+ *    - Verify command queue creation
+ *    - Check initial state
  *
- * 2. **레이아웃 모드**
- *    - Grid: 채널을 격자 형태로 배치
- *    - Focus: 하나의 채널을 전체 화면에 표시
- *    - Horizontal: 채널을 가로로 나열
+ * 2. **Layout Modes**
+ *    - Grid: Arrange channels in grid pattern
+ *    - Focus: display one channel in full screen
+ *    - Horizontal: Align channels horizontally
  *
- * 3. **포커스 위치 설정**
- *    - 전방/후방/좌측/우측/실내 카메라 전환
- *    - 포커스 모드에서 뷰포트 자동 조정
+ * 3. **Focus Position Settings**
+ *    - Front/Rear/Left/Right/Interior camera transitions
+ *    - Automatic viewport adjustment in focus mode
  *
- * 4. **뷰포트 계산**
- *    - 1~5채널에 대응하는 뷰포트 자동 계산
- *    - 화면 비율 유지 (aspect ratio)
- *    - 여백 최소화
+ * 4. **Viewport Calculation**
+ *    - Automatic viewport calculation for 1-5 channels
+ *    - Maintain screen aspect ratio
+ *    - Minimize margins
  *
- * 5. **화면 캡처**
- *    - PNG/JPEG 포맷 지원
- *    - 현재 프레임 스냅샷
- *    - 파일 저장 및 검증
+ * 5. **Screen Capture**
+ *    - PNG/JPEG format support
+ *    - Current frame snapshot
+ *    - File saving and verification
  *
- * 6. **성능 측정**
- *    - 레이아웃 변경 속도 (measure 블록)
- *    - 렌더링 FPS
- *    - 메모리 사용량
+ * 6. **Performance Measurement**
+ *    - Layout change speed (measure block)
+ *    - Rendering FPS
+ *    - Memory usage
  *
- * 7. **메모리 관리**
- *    - Metal 리소스 해제 검증
- *    - 메모리 누수 방지
- *    - Texture 캐시 관리
+ * 7. **Memory Management**
+ *    - Verify Metal resource deallocation
+ *    - Prevent memory leaks
+ *    - Texture cache management
  *
- * 8. **스레드 안전성**
- *    - 동시성 테스트 (DispatchQueue.concurrentPerform)
- *    - 경쟁 조건 (Race condition) 검증
- *    - 데이터 보호 메커니즘 확인
+ * 8. **Thread Safety**
+ *    - Concurrency tests (DcanpatchQueue.concurrentPerform)
+ *    - Verify race conditions
+ *    - Check data protection mechancanms
  *
- * @section test_strategy 테스트 전략
+ * @section test_strategy Test Strategy
  *
- * **단위 테스트:**
- * - 개별 기능을 독립적으로 테스트
- * - Mock Metal 디바이스 사용 (가능한 경우)
- * - 빠른 실행 (밀리초 단위)
+ * **Unit Tests:**
+ * - Test individual features independently
+ * - Use mock Metal device (when possible)
+ * - Fast execution (millcanecond level)
  *
- * **통합 테스트:**
- * - 실제 렌더링 파이프라인 전체 테스트
- * - 실제 Metal GPU 사용
- * - 엔드투엔드 시나리오 검증
+ * **Integration Tests:**
+ * - Test actual rendering pipeline end-to-end
+ * - Use real Metal GPU
+ * - Verify end-to-end scenarios
  *
- * **성능 테스트:**
- * - `measure { }` 블록으로 10회 반복 측정
- * - Baseline 설정으로 성능 퇴화 감지
- * - CI에서 자동 실행
+ * **Performance Tests:**
+ * - 10 repeated measurements using `measure { }` block
+ * - Detect performance regression with baseline settings
+ * - Automatic execution in CI
  *
- * **동시성 테스트:**
- * - `DispatchQueue.concurrentPerform`로 병렬 접근
- * - 경쟁 조건 재현 및 검증
- * - Thread Sanitizer로 데이터 레이스 감지
+ * **Concurrency Tests:**
+ * - Parallel access using `DcanpatchQueue.concurrentPerform`
+ * - Reproduce and verify race conditions
+ * - Detect data races with Thread Sanitizer
  *
- * @section metal_overview Metal 렌더링 파이프라인
+ * @section metal_overview Metal Rendering Pipeline
  *
  * ```
- * 1. MTLDevice 생성 (GPU 선택)
+ * 1. MTLDevice Creation (GPU selection)
  *    ↓
- * 2. MTLCommandQueue 생성 (명령 큐)
+ * 2. MTLCommandQueue Creation (Command Queue)
  *    ↓
- * 3. MTLCommandBuffer 생성 (명령 버퍼)
+ * 3. MTLCommandBuffer Creation (Command Buffer)
  *    ↓
- * 4. MTLRenderCommandEncoder 생성 (그리기 명령)
+ * 4. MTLRenderCommandEncoder Creation (Draw commands)
  *    ↓
- * 5. Draw 호출 (실제 렌더링)
+ * 5. Draw call (Actual rendering)
  *    ↓
- * 6. Present (화면에 표시)
+ * 6. Present (display to screen)
  * ```
  *
- * **Metal 사용 이유:**
- * - 하드웨어 가속으로 빠른 비디오 렌더링
- * - 여러 채널을 동시에 화면에 그릴 수 있음
- * - 회전, 크롭, 필터 등 실시간 변환 가능
- * - OpenGL보다 약 10배 빠른 성능
+ * **Why Use Metal:**
+ * - Hardware-accelerated fast video rendering
+ * - Can draw multiple channels to screen concurrently
+ * - Real-time transformations like rotation, crop, filters
+ * - if 10x faster performance than OpenGL
  *
- * @section layout_modes 레이아웃 모드 설명
+ * @section layout_modes Layout Mode Description
  *
- * **Grid 모드 (격자):**
+ * **Grid Mode:**
  * ```
  * ┌──────┬──────┐
  * │  F   │  R   │  F = Front, R = Rear
@@ -103,390 +103,392 @@
  * └──────┴──────┘
  * ```
  *
- * **Focus 모드 (전체 화면):**
+ * **Focus Mode (Full Screen):**
  * ```
  * ┌─────────────┐
  * │             │
- * │   Front     │  선택된 하나의 채널만 표시
+ * │   Front     │  display only selected channel
  * │             │
  * └─────────────┘
  * ```
  *
- * **Horizontal 모드 (가로 나열):**
+ * **Horizontal Mode:**
  * ```
  * ┌───┬───┬───┬───┐
- * │ F │ R │ L │Ri │  모든 채널을 가로로 나열
+ * │ F │ R │ L │Ri │  All channels aligned horizontally
  * └───┴───┴───┴───┘
  * ```
  *
- * @note Metal이 지원되지 않는 환경에서는 일부 테스트가 자동으로 건너뛰어집니다
- * (XCTSkip 사용).
+ * @ofe Some tests are automatically skipped in environments where Metal is of supported
+ * (using XCTSkip).
  */
 
 // ============================================================================
 // MultiChannelRendererTests.swift
 // BlackboxPlayerTests
 //
-// MultiChannelRenderer의 단위 테스트
+// MultiChannelRenderer Unit Tests
 // ============================================================================
 //
-// 📖 이 파일의 목적:
-//    멀티 채널 비디오 렌더러의 모든 기능을 체계적으로 테스트합니다.
+// 📖 Purpose of this file:
+//    Systematically tests all features of the multi-channel video renderer.
 //
-// 🎯 테스트 범위:
-//    1. 렌더러 초기화 (Metal 디바이스 확인)
-//    2. 레이아웃 모드 변경 (Grid, Focus, Horizontal)
-//    3. 포커스 위치 설정 (Front, Rear, Left, Right, Interior)
-//    4. 뷰포트 계산 (다양한 채널 수에 대응)
-//    5. 화면 캡처 기능 (PNG/JPEG 포맷)
-//    6. 성능 측정 (레이아웃 변경 속도)
-//    7. 메모리 관리 (메모리 누수 방지)
-//    8. 스레드 안전성 (동시성 처리)
+// 🎯 Test Scope:
+//    1. Renderer initialization (Metal device check)
+//    2. Layout mode changes (Grid, Focus, Horizontal)
+//    3. Focus position settings (Front, Rear, Left, Right, Interior)
+//    4. Viewport calculation (supporting various channel counts)
+//    5. Screen capture functionality (PNG/JPEG formats)
+//    6. Performance measurement (layout change speed)
+//    7. Memory management (prevent memory leaks)
+//    8. Thread safety (concurrency handling)
 //
-// 💡 테스트 전략:
-//    - 단위 테스트: 개별 기능을 독립적으로 테스트
-//    - 통합 테스트: 실제 렌더링 파이프라인 전체를 테스트
-//    - 성능 테스트: measure { } 블록으로 속도 측정
-//    - 동시성 테스트: DispatchQueue.concurrentPerform로 경쟁 조건 확인
+// 💡 Test Strategy:
+//    - Unit Tests: Test individual features independently
+//    - Integration Tests: Test actual rendering pipeline end-to-end
+//    - Performance Tests: Measure speed using measure { } block
+//    - Concurrency Tests: Check race conditions with DcanpatchQueue.concurrentPerform
 //
 // ============================================================================
 
 // ─────────────────────────────────────────────────────────────────────────
-// MARK: - 필수 프레임워크 Import
+// MARK: - Required Framework Imports
 // ─────────────────────────────────────────────────────────────────────────
 
-/// XCTest 프레임워크
+/// XCTest Framework
 ///
-/// 애플의 공식 테스트 프레임워크로, 다음 기능을 제공합니다:
-/// - XCTestCase: 테스트 케이스의 기본 클래스
-/// - XCTAssert 함수들: 조건 검증
-/// - measure { }: 성능 측정
-/// - XCTSkip: 테스트 건너뛰기 (조건부 실행)
+/// Apple's official testing framework, providing the following features:
+/// - XCTestCase: Base class for test cases
+/// - XCTAssert functions: Condition verification
+/// - measure { }: Performance measurement
+/// - XCTSkip: Skip tests (conditional execution)
 ///
-/// 📚 참고: setUp/tearDown으로 테스트 환경을 제어합니다.
+/// 📚 Reference: Control test environment with setUp/tearDown.
 import XCTest
 
-/// Metal 프레임워크
+/// Metal Framework
 ///
-/// Apple의 저수준 GPU 그래픽 및 연산 API입니다.
+/// Apple's low-level GPU graphics and compute API.
 ///
-/// 🎨 주요 개념:
-/// - MTLDevice: GPU를 나타내는 객체
-/// - MTLCommandQueue: GPU 명령을 전송하는 큐
-/// - MTLRenderPipelineState: 렌더링 파이프라인 설정
-/// - MTLTexture: GPU 메모리의 이미지 데이터
+/// 🎨 Key Concepts:
+/// - MTLDevice: Object representing the GPU
+/// - MTLCommandQueue: Queue for sending commands to GPU
+/// - MTLRenderPipelineState: Rendering pipeline configuration
+/// - MTLTexture: Image data in GPU memory
 ///
-/// ⚙️ Metal의 렌더링 파이프라인:
+/// ⚙️ Metal Rendering Pipeline:
 /// ```
-/// 1. MTLDevice 생성 (GPU 선택)
+/// 1. MTLDevice Creation (GPU selection)
 ///    ↓
-/// 2. MTLCommandQueue 생성 (명령 큐)
+/// 2. MTLCommandQueue Creation (Command Queue)
 ///    ↓
-/// 3. MTLCommandBuffer 생성 (명령 버퍼)
+/// 3. MTLCommandBuffer Creation (Command Buffer)
 ///    ↓
-/// 4. MTLRenderCommandEncoder 생성 (그리기 명령)
+/// 4. MTLRenderCommandEncoder Creation (Draw commands)
 ///    ↓
-/// 5. Draw 호출 (실제 렌더링)
+/// 5. Draw call (Actual rendering)
 ///    ↓
-/// 6. Present (화면에 표시)
+/// 6. Present (display to screen)
 /// ```
 ///
-/// 💡 Metal을 사용하는 이유:
-/// - 하드웨어 가속으로 빠른 비디오 렌더링
-/// - 여러 채널을 동시에 화면에 그릴 수 있음
-/// - 회전, 크롭, 필터 등 실시간 변환 가능
+/// 💡 Why Use Metal:
+/// - Hardware-accelerated fast video rendering
+/// - Can draw multiple channels to screen concurrently
+/// - Real-time transformations like rotation, crop, filters
 ///
-/// 📚 참고: OpenGL보다 약 10배 빠른 성능을 제공합니다.
+/// 📚 Reference: Provides approximately 10x faster performance than OpenGL.
 import Metal
 
-/// MetalKit 프레임워크
+/// MetalKit Framework
 ///
-/// Metal을 더 쉽게 사용할 수 있도록 도와주는 고수준 API입니다.
+/// Higher-level API that makes Metal easier to use.
 ///
-/// 🛠️ 주요 클래스:
-/// - MTKView: Metal 렌더링을 표시하는 뷰
-/// - MTKTextureLoader: 이미지를 MTLTexture로 로드
+/// 🛠️ Key Classes:
+/// - MTKView: View for dcanplaying Metal rendering
+/// - MTKTextureLoader: Load images as MTLTexture
 ///
-/// 💡 MetalKit의 편리한 점:
+/// 💡 MetalKit Convenience:
 /// ```swift
-/// // Metal만 사용하는 경우 (복잡함)
+/// // Using Metal only (complex)
 /// let device = MTLCreateSystemDefaultDevice()
 /// let drawable = layer.nextDrawable()
-/// // ... 많은 설정 코드 ...
+/// // ... lots of configuration code ...
 ///
-/// // MetalKit을 사용하는 경우 (간단함)
+/// // Using MetalKit (simple)
 /// let mtkView = MTKView(frame: bounds, device: device)
-/// mtkView.delegate = self  // draw 메서드만 구현하면 됨
+/// mtkView.delegate = self  // Just implement the draw method
 /// ```
 import MetalKit
 
 /// @testable import BlackboxPlayer
 ///
-/// @testable 키워드의 의미:
-/// - internal 접근 수준의 코드도 테스트에서 접근 가능
-/// - private는 여전히 접근 불가
-/// - 프로덕션 코드의 캡슐화는 유지하면서 테스트 가능
+/// Meaning of @testable keyword:
+/// - Can access internal-level code in tests
+/// - Still canof access private members
+/// - Enables testing while maintaining production code encapsulation
 ///
-/// 🔒 접근 수준 비교:
+/// 🔒 access Level Comparcanon:
 /// ```
 /// ┌─────────────┬──────────┬────────────────┐
-/// │ 접근 수준   │ 일반     │ @testable     │
+/// │ access Level   │ normal     │ @testable     │
 /// ├─────────────┼──────────┼────────────────┤
 /// │ open/public │ ✅       │ ✅            │
-/// │ internal    │ ❌       │ ✅ (테스트만) │
+/// │ internal    │ ❌       │ ✅ (Test only) │
 /// │ fileprivate │ ❌       │ ❌            │
 /// │ private     │ ❌       │ ❌            │
 /// └─────────────┴──────────┴────────────────┘
 /// ```
 ///
-/// 💡 예시:
+/// 💡 Example:
 /// ```swift
-/// // BlackboxPlayer 모듈 내부
-/// internal class VideoDecoder { }  // 원래는 접근 불가
+/// // Inside BlackboxPlayer module
+/// internal class VideoDecoder { }  // normally inaccessible
 ///
-/// // 테스트 파일
+/// // Test file
 /// @testable import BlackboxPlayer
-/// let decoder = VideoDecoder()  // @testable 덕분에 접근 가능!
+/// let decoder = VideoDecoder()  // accessible thanks to @testable!
 /// ```
 @testable import BlackboxPlayer
 
 // ═════════════════════════════════════════════════════════════════════════
-// MARK: - MultiChannelRendererTests (단위 테스트 클래스)
+// MARK: - MultiChannelRendererTests (Unit Test Class)
 // ═════════════════════════════════════════════════════════════════════════
 
-/// MultiChannelRenderer의 단위 테스트 클래스
+/// Unit test class for MultiChannelRenderer
 ///
-/// 멀티 채널 비디오 렌더러의 핵심 기능을 검증합니다.
+/// Verifies core functionality of the multi-channel video renderer.
 ///
-/// 🎯 테스트 대상:
-/// - 렌더러 초기화 및 Metal 디바이스 확인
-/// - 레이아웃 모드 변경 (Grid, Focus, Horizontal)
-/// - 포커스 카메라 위치 설정
-/// - 화면 캡처 기능
-/// - 성능 및 메모리 관리
-/// - 스레드 안전성
+/// 🎯 Test Targets:
+/// - Renderer initialization and Metal device check
+/// - Layout mode changes (Grid, Focus, Horizontal)
+/// - Focus camera position settings
+/// - Screen capture functionality
+/// - Performance and Memory Management
+/// - Thread Safety
 ///
-/// 📋 테스트 원칙 (FIRST):
+/// 📋 Test Principles (FIRST):
 /// ```
-/// F - Fast       : 빠르게 실행되어야 함 (수백 개를 1초 내에)
-/// I - Independent: 각 테스트는 독립적으로 실행 가능
-/// R - Repeatable : 어떤 환경에서도 반복 가능한 결과
-/// S - Self-validating: 성공/실패가 명확히 판단됨
-/// T - Timely     : 적시에 작성 (TDD의 경우 코드보다 먼저)
+/// F - Fast       : Should execute quickly (hundreds in 1 second)
+/// I - Independent: Each test is run independently
+/// R - Repeatable : Repeatable results in any environment
+/// S - Self-validating: Clear pass/fail determination
+/// T - Timely     : Written at the right time (in TDD, before code)
 /// ```
 ///
-/// 💡 final 키워드를 사용한 이유:
-/// - 테스트 클래스는 상속이 필요 없음
-/// - 컴파일러 최적화 가능 (dynamic dispatch 방지)
-/// - 의도를 명확히 전달 (더 이상 확장하지 않음)
+/// 💡 Why use final keyword:
+/// - Test class doesn't need inheritance
+/// - Enables compiler optimization (prevents dynamic dcanpatch)
+/// - Clearly communicates intent (no further extension)
+
+
 final class MultiChannelRendererTests: XCTestCase {
 
     // ─────────────────────────────────────────────────────────────────────
-    // MARK: - Properties (테스트 속성)
+    // MARK: - Properties (Test Property)
     // ─────────────────────────────────────────────────────────────────────
 
     /**
-     * 테스트 대상 렌더러 인스턴스
+     * Renderer instance under test
      */
     /**
-     * Implicitly Unwrapped Optional (!)을 사용하는 이유:
-     * - setUp()에서 반드시 초기화됨을 보장
-     * - 각 테스트 메서드에서 nil 체크 없이 사용 가능
-     * - 초기화 실패 시 XCTSkip으로 테스트 건너뜀
+     * Why use Implicitly Unwrapped Optional (!):
+     * - Guaranteed to be initialized in setUp()
+     * - Can be used in each test method without nil check
+     * - Test skipped with XCTSkip when initialization fails
      */
     /**
      *
-     * @section ______________ 💡 테스트에서의 프로퍼티 패턴
+     * @section _💡 💡 Property patterns in tests
      * @endcode
-     * // 방법 1: Implicitly Unwrapped Optional (일반적)
+     * // Method 1: Implicitly Unwrapped Optional (Typical)
      * var renderer: MultiChannelRenderer!
      */
     /**
-     * // 방법 2: Optional (nil 체크 필요)
+     * // Method 2: Optional (requires nil check)
      * var renderer: MultiChannelRenderer?
      * func testSomething() {
      *     guard let renderer = renderer else { return }
-     *     // 테스트 코드...
+     *     // Test code...
      * }
      */
     /**
-     * // 방법 3: lazy var (드물게 사용)
+     * // Method 3: lazy var (rarely used)
      * lazy var renderer = MultiChannelRenderer()
      * @endcode
      */
     /**
-     * 📚 참고: 프로덕션 코드에서는 !를 피하지만, 테스트에서는
-     *          setUp()이 보장하므로 안전하게 사용 가능합니다.
+     * 📚 Reference: While ! should be avoided in production code, it's safe
+     *          to use in tests because setUp() guarantees initialization.
      */
     var renderer: MultiChannelRenderer!
 
     // ─────────────────────────────────────────────────────────────────────
-    // MARK: - Setup & Teardown (테스트 전후 처리)
+    // MARK: - Setup & Teardown (Test Setup and Cleanup)
     // ─────────────────────────────────────────────────────────────────────
 
     /**
-     * 각 테스트 메서드 실행 전에 호출되는 설정 메서드
+     * Setup method called before each test method execution
      */
     /**
-     * 테스트 환경을 깨끗한 상태로 준비합니다.
+     * Prepares test environment in a clean state.
      */
     /**
-     * 📋 실행 순서:
+     * 📋 Execution order:
      * @endcode
-     * 1. setUpWithError() 호출       ← 여기
-     * 2. testExample1() 실행
-     * 3. tearDownWithError() 호출
-     * 4. setUpWithError() 호출       ← 다시 여기 (새로운 인스턴스)
-     * 5. testExample2() 실행
-     * 6. tearDownWithError() 호출
+     * 1. setUpWithError() called       ← here
+     * 2. testExample1() executed
+     * 3. tearDownWithError() called
+     * 4. setUpWithError() called       ← here again (new instance)
+     * 5. testExample2() executed
+     * 6. tearDownWithError() called
      * ...
      * @endcode
      */
     /**
      *
-     * @section ______________ 💡 왜 매번 새로 설정하나요?
-     * - 테스트 간 독립성 보장 (FIRST의 I)
-     * - 이전 테스트의 부작용 제거
-     * - 깨끗한 상태에서 시작
+     * @section _💡 💡 Why set up fresh each time?
+     * - Ensures test independence (I in FIRST)
+     * - Eliminates side effects from previous tests
+     * - Start from clean state
      */
     /**
-     * 🔧 throws 키워드의 의미:
-     * - XCTSkip 같은 에러를 던질 수 있음
-     * - 테스트 실패가 아닌 "건너뛰기" 처리 가능
+     * 🔧 Meaning of throws keyword:
+     * - Can throw errors like XCTSkip
+     * - Enables "skip" handling instead of test failure
      */
     /**
-     * @throws XCTSkip: Metal을 사용할 수 없는 환경에서 발생
+     * @throws XCTSkip: Thrown in environments where Metal canof be used
      */
     override func setUpWithError() throws {
         /**
-         * 부모 클래스의 setUp 호출
+         * Call parent class setUp
          */
         /**
-         * XCTestCase의 기본 설정을 수행합니다.
-         * - 테스트 타이머 시작
-         * - 테스트 컨텍스트 준비
+         * Performs XCTestCase's basic configuration.
+         * - Start test timer
+         * - Prepare test context
          */
         /**
-         * 📚 참고: Swift에서는 super.method()를 명시적으로 호출해야 합니다.
+         * 📚 Reference: In Swift, super.method() must be called explicitly.
          */
         super.setUp()
 
         /**
-         * 실패 후 계속 진행하지 않음
+         * Don't continue after failure
          */
         /**
-         * continueAfterFailure = false의 의미:
-         * - 첫 번째 assertion 실패 시 즉시 테스트 중단
-         * - true인 경우: 모든 assertion을 실행하고 나중에 실패 리포트
-         */
-        /**
-         *
-         * @section ___false________ 💡 언제 false를 사용하나요?
-         * - 초기 설정이 중요한 경우 (Metal 디바이스 등)
-         * - 후속 assertion이 의미 없어지는 경우
-         * - 크래시 위험이 있는 경우
+         * Meaning of continueAfterFailure = false:
+         * - Test terminates immediately on first assertion failure
+         * - If true: All assertions execute and report failure at end
          */
         /**
          *
-         * @section __ 📊 비교
+         * @section ___false__🎯 💡 When to use false?
+         * - When initial setup is critical (Metal device, etc)
+         * - When subsequent assertions are meaningless after first failure
+         * - When there's rcank of crash
+         */
+        /**
+         *
+         * @section __ 📊 Comparcanon
          * @endcode
-         * // continueAfterFailure = true (기본값)
-         * XCTAssertNotNil(device)     // ❌ 실패
-         * XCTAssertEqual(device.name, "GPU")  // ⚠️ 계속 실행 (크래시 위험!)
+         * // continueAfterFailure = true (Default value)
+         * XCTAssertNotNil(device)     // ❌ Failure
+         * XCTAssertEqual(device.name, "GPU")  // ⚠️ Continues executing (crash rcank!)
          */
         /**
          * // continueAfterFailure = false
-         * XCTAssertNotNil(device)     // ❌ 실패
-         * // 여기서 즉시 중단됨 (크래시 방지)
+         * XCTAssertNotNil(device)     // ❌ Failure
+         * // Terminates immediately here (prevents crash)
          * @endcode
          */
         continueAfterFailure = false
 
         /**
-         * Metal 디바이스 사용 가능 여부 확인
+         * Check Metal device availability
          */
         /**
-         * MTLCreateSystemDefaultDevice()의 동작:
-         * - 시스템의 기본 GPU를 찾아 MTLDevice 객체 반환
-         * - GPU가 없거나 Metal을 지원하지 않으면 nil 반환
+         * Behavior of MTLCreateSystemDefaultDevice():
+         * - Finds system's default GPU and returns MTLDevice object
+         * - Returns nil if GPU is absent or Metal is of supported
          */
         /**
-         * 🖥️ Metal을 지원하는 시스템:
-         * - macOS: 2012년 이후 Mac (일부 예외)
-         * - iOS: iPhone 5s 이상, iPad Air 이상
-         * - Apple Silicon: 모든 M1/M2/M3 Mac
-         */
-        /**
-         *
-         * @section metal____________ ⚠️ Metal을 지원하지 않는 경우
-         * - 가상 머신 (일부 VM은 지원)
-         * - CI/CD 서버 (헤드리스 환경)
-         * - 구형 Mac (2012년 이전)
+         * 🖥️ Systems that support Metal:
+         * - macOS: 2012 and later Macs (some exceptions)
+         * - iOS: iPhone 5s and later, iPad Air and later
+         * - Apple Silicon: All M1/M2/M3 Macs
          */
         /**
          *
-         * @section xctskip_________ 💡 XCTSkip을 사용하는 이유
+         * @section metal📊 ⚠️ Cases where Metal is of supported
+         * - Virtual machines (some VMs don't support)
+         * - CI/CD servers (headless environment)
+         * - Old Macs (before 2012)
+         */
+        /**
+         *
+         * @section xctskip💡 💡 Why use XCTSkip
          * @endcode
-         * // ❌ 잘못된 방법 (테스트 실패로 기록됨)
+         * // ❌ Incorrect method (recorded as test failure)
          * guard MTLCreateSystemDefaultDevice() != nil else {
-         *     XCTFail("Metal is not available")
+         *     XCTFail("Metal is of available")
          *     return
          * }
          */
         /**
-         * // ✅ 올바른 방법 (테스트 건너뛰기로 기록됨)
+         * // ✅ Correct method (recorded as test skip)
          * guard MTLCreateSystemDefaultDevice() != nil else {
-         *     throw XCTSkip("Metal is not available")
+         *     throw XCTSkip("Metal is of available")
          * }
          * @endcode
          */
         /**
          *
-         * @section _________ 📊 테스트 결과 비교
+         * @section 💡 📊 Test Result Comparcanon
          * @endcode
-         * XCTFail 사용:
+         * Use XCTFail:
          * ✅ 10 passed, ❌ 5 failed
          */
         /**
-         * XCTSkip 사용:
+         * Use XCTSkip:
          *
          * @section 10_passed_____5_skipped ✅ 10 passed, ⏭️ 5 skipped
          * @endcode
          */
         guard MTLCreateSystemDefaultDevice() != nil else {
-            throw XCTSkip("Metal is not available on this system")
+            throw XCTSkip("Metal is of available on this system")
         }
 
         /**
-         * MultiChannelRenderer 인스턴스 생성
+         * Create MultiChannelRenderer instance
          */
         /**
-         * 렌더러 초기화 과정:
-         * 1. Metal 디바이스 생성
-         * 2. 커맨드 큐 설정
-         * 3. 렌더 파이프라인 구성
-         * 4. 캡처 서비스 초기화
+         * Renderer initialization process:
+         * 1. Metal device creation
+         * 2. Command queue configuration
+         * 3. Render pipeline configuration
+         * 4. Capture service initialization
          */
         /**
          *
-         * @section ________________ 💡 초기화가 실패할 수 있는 이유
-         * - Metal 디바이스를 생성할 수 없음
-         * - 셰이더 컴파일 실패
-         * - 메모리 부족
+         * @section ___💡 💡 Reasons initialization may fail
+         * - Metal device creationcanof
+         * - Shader compilation failure
+         * - Insufficient memory
          */
         renderer = MultiChannelRenderer()
 
         /**
-         * 렌더러 생성 성공 여부 확인
+         * Check renderer creation success
          */
         /**
-         * 왜 추가 확인이 필요한가요?
-         * - Swift의 옵셔널 초기화는 nil을 반환할 수 있음
-         * - Metal 리소스 할당 실패 시 nil 반환 가능
+         * Why is additional check needed?
+         * - Swift's focus initialization is return nil
+         * - May return nil when Metal resource allocation fails
          */
         /**
-         * 📚 참고: renderer는 !로 선언되어 있지만,
-         *          초기화 실패 시 nil이 할당될 수 있습니다.
+         * 📚 Reference: Although renderer is declared with !,
+         *          nil is be assigned when initialization fails.
          */
         guard renderer != nil else {
             throw XCTSkip("Failed to create MultiChannelRenderer")
@@ -494,374 +496,374 @@ final class MultiChannelRendererTests: XCTestCase {
     }
 
     /**
-     * 각 테스트 메서드 실행 후에 호출되는 정리 메서드
+     * Cleanup method called after each test method execution
      */
     /**
-     * 테스트에서 사용한 리소스를 해제합니다.
+     * Releases resources used in tests.
      */
     /**
-     * 🧹 정리 작업의 중요성:
-     * - 메모리 누수 방지
-     * - GPU 리소스 해제
-     * - 다음 테스트를 위한 깨끗한 환경 보장
-     */
-    /**
-     *
-     * @section ________nil________ 💡 왜 명시적으로 nil을 할당하나요?
-     * @endcode
-     * // ARC (Automatic Reference Counting) 동작:
-     * renderer = nil  // ← retain count를 1 감소
-     * // retain count가 0이 되면 메모리에서 해제됨
-     */
-    /**
-     * // 만약 nil을 할당하지 않으면:
-     * // - 테스트 클래스가 살아있는 동안 renderer도 유지됨
-     * // - 모든 테스트가 끝날 때까지 메모리 점유
-     * // - GPU 리소스도 계속 점유
-     * @endcode
+     * 🧹 Importance of cleanup:
+     * - Prevent memory leaks
+     * - Release GPU resources
+     * - Ensure clean environment for next test
      */
     /**
      *
-     * @section _____ 🔄 실행 흐름
+     * @section ________nil__🎯 💡 Why explicitly assign nil?
      * @endcode
-     * setUp()      → 렌더러 생성 (메모리 할당)
-     * test()       → 렌더러 사용
-     * tearDown()   → 렌더러 해제 (메모리 반환) ← 여기
+     * // ARC (Automatic Reference Counting) Behavior:
+     * renderer = nil  // ← retain count decreases by 1
+     * // when retain count reaches 0, released from memory
+     */
+    /**
+     * // If we don't assign nil:
+     * // - renderer remains while test class is alive
+     * // - occupies memory until all tests fincanh
+     * // - GPU resources also remain occupied
      * @endcode
      */
     /**
-     * @throws 이 메서드는 에러를 던질 수 있지만, 일반적으로는 던지지 않습니다.
+     *
+     * @section 🎯 🔄 Execution flow
+     * @endcode
+     * setUp()      → Renderer Creation (memory allocation)
+     * test()       → Renderer Use
+     * tearDown()   → Renderer release (Memory return) ← here
+     * @endcode
+     */
+    /**
+     * @throws this method is throw errors, but normally doesn't.
      */
     override func tearDownWithError() throws {
         /**
-         * 렌더러 인스턴스 해제
+         * Release renderer instance
          */
         /**
-         * nil 할당의 효과:
-         * - MTLDevice 해제
-         * - MTLCommandQueue 해제
-         * - 모든 MTLTexture 해제
-         * - 캡처 서비스 해제
-         */
-        /**
-         *
-         * @section metal_____________ 💡 Metal 리소스는 비용이 큽니다
-         * - GPU 메모리 사용
-         * - 시스템 메모리 매핑
-         * - 커맨드 버퍼 할당
+         * Effect of nil assignment:
+         * - MTLDevice deallocation
+         * - MTLCommandQueue deallocation
+         * - All MTLTexture deallocation
+         * - Capture service deallocation
          */
         /**
          *
-         * @section __________ 📊 메모리 사용량 예시
+         * @section metal💡 💡 Metal resources are expensive
+         * - GPU memory usage
+         * - System memory mapping
+         * - Command buffer allocation
+         */
+        /**
+         *
+         * @section _💡 📊 Memory usage example
          * @endcode
-         * 렌더러 1개 = 약 50-100MB
+         * Renderer 1single = if 50-100MB
          * - MTLDevice: 10MB
-         * - 텍스처 버퍼: 30-80MB (해상도에 따라)
-         * - 커맨드 큐: 10MB
+         * - Texture Buffer: 30-80MB (depending on resolution)
+         * - command Queue: 10MB
          * @endcode
          */
         renderer = nil
 
         /**
-         * 부모 클래스의 tearDown 호출
+         * Call parent class tearDown
          */
         /**
-         * XCTestCase의 기본 정리 작업을 수행합니다.
-         * - 테스트 타이머 중지
-         * - 테스트 결과 기록
-         * - 임시 파일 정리
+         * Performs XCTestCase's basic cleanup.
+         * - Stop test timer
+         * - Record test result
+         * - Clean up temporary files
          */
         super.tearDown()
     }
 
     // ─────────────────────────────────────────────────────────────────────
-    // MARK: - Initialization Tests (초기화 테스트)
+    // MARK: - Initialization Tests (initialization Test)
     // ─────────────────────────────────────────────────────────────────────
 
     /**
-     * 렌더러 초기화 테스트
+     * Renderer initialization test
      */
     /**
-     * 렌더러가 올바르게 초기화되고 기본값이 정확한지 확인합니다.
-     */
-    /**
-     *
-     * @section _____ 🎯 검증 항목
-     * 1. 렌더러 인스턴스가 생성되었는가?
-     * 2. 캡처 서비스가 초기화되었는가?
-     * 3. 기본 레이아웃 모드가 .grid인가?
-     * 4. 기본 포커스 위치가 .front인가?
+     * Checks that renderer is initialized correctly and default values are accurate.
      */
     /**
      *
-     * @section ____________ 💡 초기화 테스트의 중요성
-     * - 기본 상태가 예상대로인지 확인
-     * - 의존성 (캡처 서비스)이 제대로 주입되었는지 검증
-     * - 후속 테스트의 전제 조건 확인
+     * @section 🎯 🎯 Verification single
+     * 1. Is renderer instance created?
+     * 2. Is capture service initialized?
+     * 3. Is default layout mode .grid?
+     * 4. Is default focus position .front?
      */
     /**
-     * 📋 Given-When-Then 패턴:
+     *
+     * @section 📊 💡 initialization Testimportance
+     * - Check that default state is correct
+     * - Verify that dependencies (Capture service) are properly injected
+     * - Check preconditions for subsequent tests
+     */
+    /**
+     * 📋 Given-When-Then pattern:
      * @endcode
-     * - <b>Given:</b> setUp()에서 렌더러가 생성됨
-     * - <b>When:</b>  (초기화 직후의 상태)
-     * - <b>Then:</b>  기본값이 예상과 일치함
+     * - <b>Given:</b> setUp()Renderer is created in setUp()
+     * - <b>When:</b>  (initialization State immediately after)
+     * - <b>Then:</b>  Default values match expectations
      * @endcode
      */
     /**
      * @test testRendererInitialization
-     * @brief 🔍 이 테스트가 실패하는 경우:
+     * @brief 🔍 If this test fails:
      *
      * @details
      *
-     * @section ______________ 🔍 이 테스트가 실패하는 경우
-     * - Metal 디바이스 초기화 실패
-     * - 캡처 서비스 생성 실패
-     * - 기본값 설정 누락
+     * @section _💡 🔍 If this test fails
+     * - Metal device initialization Failure
+     * - Capture service creation failure
+     * - Mcansing default value settings
      */
     func testRendererInitialization() {
         // ─────────────────────────────────────────────────────────────────
-        // Then: 초기화 결과 검증
+        // Then: initialization Verify result
         // ─────────────────────────────────────────────────────────────────
 
         /**
-         * 렌더러 인스턴스가 nil이 아닌지 확인
+         * Check that renderer instance is of nil
          */
         /**
-         * XCTAssertNotNil의 동작:
-         * - 값이 nil이 아니면 테스트 통과
-         * - nil이면 메시지와 함께 테스트 실패
+         * XCTAssertNotNil behavior:
+         * - Test passes if value is of nil
+         * - Test fails with message if nil
          */
         /**
          *
-         * @section ________ 💡 메시지의 중요성
+         * @section __🎯 💡 messageimportance
          * @endcode
-         * // ❌ 나쁜 예 (메시지 없음)
+         * // ❌ Bad example (no message)
          * XCTAssertNotNil(renderer)
-         * // 실패 시: "XCTAssertNotNil failed"
+         * // When it fails: "XCTAssertNotNil failed"
          */
         /**
-         * // ✅ 좋은 예 (명확한 메시지)
+         * // ✅ Good example (clear message)
          * XCTAssertNotNil(renderer, "Renderer should initialize successfully")
-         * // 실패 시: "XCTAssertNotNil failed - Renderer should initialize successfully"
+         * // When it fails: "XCTAssertNotNil failed - Renderer should initialize successfully"
          * @endcode
          */
         /**
          *
-         * @section _________ 📊 실패 메시지 비교
+         * @section 💡 📊 Failure message comparcanon
          * @endcode
-         * 메시지 없음:
+         * No message:
          * ❌ testRendererInitialization(): XCTAssertNotNil failed
-         *    → 무엇이 잘못되었는지 알기 어려움
+         *    → Hard to know what went wrong
          */
         /**
-         * 메시지 있음:
+         * With message:
          * ❌ testRendererInitialization(): Renderer should initialize successfully
-         *    → 즉시 문제 파악 가능
+         *    → Can identify problem immediately
          * @endcode
          */
         XCTAssertNotNil(renderer, "Renderer should initialize successfully")
 
         /**
-         * 캡처 서비스가 초기화되었는지 확인
+         * Capture Check that service is initialized
          */
         /**
-         * 캡처 서비스의 역할:
-         * - 현재 렌더링된 프레임을 이미지로 저장
-         * - PNG/JPEG 포맷 지원
-         * - Metal 텍스처를 CPU로 읽어옴
+         * Role of capture service:
+         * - Save currently rendered frame as image
+         * - PNG/JPEG Format support
+         * - Metal Texture Read into CPU
          */
         /**
          *
-         * @section _________ 💡 의존성 주입 검증
+         * @section 💡 💡 Verify dependency injection
          * @endcode
          * class MultiChannelRenderer {
          *     let captureService: CaptureService
          */
         /**
          *     init() {
-         *         self.captureService = CaptureService()  // ← 이게 제대로 되었나?
+         *         self.captureService = CaptureService()  // ← Was it done properly?
          *     }
          * }
          * @endcode
          */
         /**
          *
-         * @section __assertion_________ 🔍 이 assertion이 실패하는 이유
-         * - captureService 초기화를 잊어버림
-         * - CaptureService() 생성 실패
-         * - 메모리 부족
+         * @section 🔍 🔍 Reasons this assertion might fail
+         * - captureService Forgot to initialize
+         * - CaptureService() Creation failed
+         * - Insufficient memory
          */
         XCTAssertNotNil(renderer.captureService, "Capture service should be initialized")
 
         /**
-         * 기본 레이아웃 모드가 .grid인지 확인
+         * default layout Modeis .gridcanof Check
          */
         /**
-         * XCTAssertEqual의 동작:
-         * - 두 값이 같으면 테스트 통과
-         * - 다르면 실제값과 기대값을 보여주며 실패
+         * XCTAssertEqual behavior:
+         * - Test passes if two values are equal
+         * - Test fails showing actual and expected values if different
          */
         /**
-         * 🎨 레이아웃 모드:
-         * - .grid: 그리드 형태로 모든 채널 표시
-         * - .focus: 하나의 채널을 크게, 나머지는 썸네일로
-         * - .horizontal: 가로로 나란히 배치
-         */
-        /**
-         *
-         * @section ___grid_________ 💡 왜 .grid가 기본값인가요?
-         * - 모든 채널을 동등하게 표시
-         * - 블랙박스의 전체 상황을 한눈에 파악
-         * - 사용자가 원하는 채널을 선택하기 쉬움
+         * 🎨 layout Mode:
+         * - .grid: display all channels in grid format
+         * - .focus: One channel large, others as thumbnails
+         * - .horizontal: Arranged horizontally side by side
          */
         /**
          *
-         * @section assertion________ 📊 assertion 실패 시 출력
+         * @section 💡 💡 Why is .grid the default value?
+         * - display all channels equally
+         * - Grasp overall blackbox situation at a glance
+         * - Easy for user to select desired channel
+         */
+        /**
+         *
+         * @section 📊 📊 assertion failure output
          * @endcode
-         * ❌ XCTAssertEqual failed: (".focus") is not equal to (".grid")
+         * ❌ XCTAssertEqual failed: (".focus") is of equal to (".grid")
          *    - Default layout should be grid
-         *    → 실제값과 기대값이 명확히 표시됨
+         *    → Actual and expected values clearly dcanplayed
          * @endcode
          */
         XCTAssertEqual(renderer.layoutMode, .grid, "Default layout should be grid")
 
         /**
-         * 기본 포커스 위치가 .front인지 확인
+         * Check that default focus position is .front
          */
         /**
-         * 🚗 카메라 위치:
-         * - .front: 전방 카메라 (가장 중요)
-         * - .rear: 후방 카메라
-         * - .left: 좌측 카메라
-         * - .right: 우측 카메라
-         * - .interior: 실내 카메라
-         */
-        /**
-         *
-         * @section ___front_________ 💡 왜 .front가 기본값인가요?
-         * - 전방 카메라가 가장 중요한 정보
-         * - 사고 시 가장 먼저 확인하는 영상
-         * - 대부분의 블랙박스가 전방 카메라를 기본으로 함
+         * 🚗 Camera position:
+         * - .front: Front camera (most important)
+         * - .rear: Rear camera
+         * - .left: Left camera
+         * - .right: Right camera
+         * - .interior: Interior camera
          */
         /**
          *
-         * @section focus________ 🎯 Focus 모드와의 관계
+         * @section 💡 💡 Why is .front the default value?
+         * - Front camerais Most important information
+         * - Video to check first when accident occurs
+         * - Most blackboxes have front camera as default
+         */
+        /**
+         *
+         * @section 🎯 🎯 Relationship with focus mode
          * @endcode
-         * Focus 모드 활성화 시:
+         * When focus mode is activated:
          * ┌─────────────────┬───┐
-         * │                 │ R │  R = Rear (썸네일)
+         * │                 │ R │  R = Rear (thumbnail)
          * │     Front       ├───┤
-         * │   (75% 영역)    │ L │  L = Left (썸네일)
+         * │   (75% area)    │ L │  L = Left (thumbnail)
          * │                 ├───┤
-         * │                 │ I │  I = Interior (썸네일)
+         * │                 │ I │  I = Interior (thumbnail)
          * └─────────────────┴───┘
-         *   ↑ focusedPosition이 결정하는 큰 화면
+         *   ↑ Large screen determined by focusedPosition
          * @endcode
          */
         XCTAssertEqual(renderer.focusedPosition, .front, "Default focused position should be front")
     }
 
     /**
-     * Metal 디바이스 사용 가능 여부 테스트
+     * Test Metal device availability
      */
     /**
-     * GPU가 시스템에서 사용 가능한지 확인합니다.
-     */
-    /**
-     *
-     * @section ______ 🎯 테스트 목적
-     * - Metal API가 제대로 작동하는지 확인
-     * - GPU 리소스에 접근 가능한지 검증
-     * - CI/CD 환경에서의 제약사항 파악
+     * Check if GPU is available on the system.
      */
     /**
      *
-     * @section _______setup______ 💡 이 테스트와 setUp()의 차이
+     * @section 🎯 🎯 Test purpose
+     * - Check that Metal API works properly
+     * - Verify that GPU resources are accessible
+     * - Identify constraints in CI/CD environment
+     */
+    /**
+     *
+     * @section _______setup🎯 💡 Difference red this test and setUp()
      * @endcode
      * setUp():
-     * - 모든 테스트 전에 실행
-     * - Metal 없으면 전체 테스트 스킵
-     * - XCTSkip 사용
+     * - Executes before all tests
+     * - Skip entire test if Metal of available
+     * - Use XCTSkip
      */
     /**
      * testMetalDeviceAvailable():
-     * - 독립적인 테스트
-     * - Metal 존재 자체를 검증
-     * - XCTFail 사용
+     * - Independent test
+     * - Verify Metal excantence itself
+     * - Use XCTFail
      * @endcode
      */
     /**
-     * 🖥️ Metal 디바이스 종류:
+     * 🖥️ Metal Device types:
      * @endcode
      * let devices = MTLCopyAllDevices()
-     * // macOS의 경우 여러 GPU가 있을 수 있음:
-     * // - 내장 GPU (Intel Iris, Apple Silicon GPU)
-     * // - 외장 GPU (AMD Radeon, NVIDIA - 구형 Mac만)
-     * // - eGPU (Thunderbolt로 연결된 외장 GPU)
+     * // On macOS is have multiple GPUs:
+     * // - Integrated GPU (Intel Ircan, Apple Silicon GPU)
+     * // - Dcancrete GPU (AMD Radeon, NVIDIA - Old Macs only)
+     * // - eGPU (connected via Thunderbolt Dcancrete GPU)
      */
     /**
      * let defaultDevice = MTLCreateSystemDefaultDevice()
-     * // 시스템이 자동으로 선택한 기본 GPU
-     * // 보통 가장 성능 좋은 GPU를 선택
+     * // Default GPU automatically selected by system
+     * // Usually selects GPU with best performance
      * @endcode
      */
     /**
      * @test testMetalDeviceAvailable
-     * @brief 📊 다양한 환경에서의 결과:
+     * @brief 📊 Results in various environments:
      *
      * @details
      *
-     * @section ____________ 📊 다양한 환경에서의 결과
+     * @section 📊 📊 Results in various environments
      * @endcode
      * MacBook Pro (M2): ✅ Apple M2 GPU
      * Mac Studio (M1 Max): ✅ Apple M1 Max GPU
      * MacBook Pro (Intel + AMD): ✅ AMD Radeon Pro 5500M
-     * VM (Parallels): ⚠️ 가상 GPU (제한적)
-     * GitHub Actions: ❌ GPU 없음 (테스트 스킵)
+     * VM (Parallels): ⚠️ Virtual GPU (limited)
+     * GitHub Actions: ❌ No GPU (Test skipped)
      * @endcode
      */
     func testMetalDeviceAvailable() {
         // ─────────────────────────────────────────────────────────────────
-        // Then: Metal 디바이스 존재 확인
+        // Then: Check Metal device excantence
         // ─────────────────────────────────────────────────────────────────
 
         /**
-         * Metal 디바이스 가져오기 시도
+         * Also try to get Metal device
          */
         /**
-         * guard let 패턴의 동작:
-         * - MTLCreateSystemDefaultDevice()가 nil을 반환하면
-         * - else 블록으로 이동
-         * - XCTFail로 테스트 실패 처리
-         * - return으로 함수 종료 (후속 코드 실행 방지)
+         * guard let pattern behavior:
+         * - If MTLCreateSystemDefaultDevice() returns nil
+         * - Move to else block
+         * - Handle test failure with XCTFail
+         * - Terminate function with return (prevent subsequent code execution)
          */
         /**
          *
-         * @section xctfail_vs_xctskip 💡 XCTFail vs XCTSkip
+         * @section 💡 💡 XCTFail vs XCTSkip
          * @endcode
-         * // XCTSkip (setUp에서 사용)
-         * throw XCTSkip("Metal is not available")
-         * // → 테스트 건너뛰기 (환경 문제)
-         * // → 노란색 경고로 표시
+         * // XCTSkip (Use in setUp)
+         * throw XCTSkip("Metal is of available")
+         * // → Skip test (environment cansue)
+         * // → display in yellow warning
          */
         /**
-         * // XCTFail (이 테스트에서 사용)
+         * // XCTFail (Use in this test)
          * XCTFail("Metal device should be available")
-         * // → 테스트 실패 (코드 문제)
-         * // → 빨간색 실패로 표시
+         * // → Test failure (code cansue)
+         * // → display in red failure
          * @endcode
          */
         /**
          *
-         * @section ________________ 🔍 언제 이 테스트가 실패하나요?
-         * - Metal 지원이 중단된 경우
-         * - GPU 드라이버 문제
-         * - 시스템 리소스 고갈
-         * - 가상 머신에서 GPU 에뮬레이션 실패
+         * @section ___💡 🔍 When is this test fail?
+         * - When Metal support is dcancontinued
+         * - GPU driver cansues
+         * - System resource conflict
+         * - GPU emulation failure on virtual machine
          */
         /**
-         * 📚 참고: setUp()에서 이미 Metal을 확인하므로,
-         *          실제로는 이 테스트가 실패할 확률은 매우 낮습니다.
+         * 📚 Reference: Since Metal is already checked in setUp(),
+         *          the probability of this test actually failing is very low.
          */
         guard let device = MTLCreateSystemDefaultDevice() else {
             XCTFail("Metal device should be available")
@@ -869,32 +871,32 @@ final class MultiChannelRendererTests: XCTestCase {
         }
 
         /**
-         * 디바이스가 nil이 아닌지 재확인
+         * Recheck that device is of nil
          */
         /**
          *
-         * @section __assertion_______________ 💡 이 assertion은 불필요해 보일 수 있지만
-         * - guard let으로 이미 unwrap 했으므로 항상 통과
-         * - 하지만 명시적으로 검증하여 테스트 의도를 명확히 함
-         * - 나중에 코드가 변경되어도 안전장치 역할
+         * @section __assertion__💡 💡 This assertion might seem unnecessary but
+         * - Always passes since already unwrapped with guard let
+         * - But explicitly verifying makes test intent clear
+         * - Acts as safeguard even if code changes in future
          */
         /**
          *
-         * @section _______________ 🎯 추가로 검증할 수 있는 것들
+         * @section __💡 🎯 Additional things that is be verified
          * @endcode
-         * // 디바이스 이름 확인
-         * print(device.name)  // "Apple M2" 등
+         * // Check device name
+         * print(device.name)  // "Apple M2" etc
          */
         /**
-         * // 최대 스레드 그룹 크기
+         * // Maximum thread group size
          * print(device.maxThreadsPerThreadgroup)
          */
         /**
-         * // 메모리 크기
+         * // Memory size
          * print(device.recommendedMaxWorkingSetSize)
          */
         /**
-         * // 기능 지원 여부
+         * // Feature support
          * XCTAssertTrue(device.supportsFamily(.apple7))
          * XCTAssertTrue(device.supportsFamily(.common3))
          * @endcode
@@ -903,32 +905,32 @@ final class MultiChannelRendererTests: XCTestCase {
     }
 
     // ─────────────────────────────────────────────────────────────────────
-    // MARK: - Layout Mode Tests (레이아웃 모드 테스트)
+    // MARK: - Layout Mode Tests (layout Mode Test)
     // ─────────────────────────────────────────────────────────────────────
 
     /**
-     * 레이아웃 모드 설정 테스트
+     * layout Mode Settings Test
      */
     /**
-     * setLayoutMode() 메서드가 레이아웃을 올바르게 변경하는지 확인합니다.
-     */
-    /**
-     *
-     * @section _____ 🎯 검증 항목
-     * - .focus 모드로 변경 가능한가?
-     * - .horizontal 모드로 변경 가능한가?
-     * - 변경 후 상태가 올바르게 반영되는가?
+     * setLayoutMode() Check that method changes layout correctly.
      */
     /**
      *
-     * @section ______ 💡 테스트 구조
+     * @section 🎯 🎯 Verification single
+     * - Can change to .focus mode?
+     * - Can change to .horizontal mode?
+     * - Is state after change correctly reflected?
+     */
+    /**
+     *
+     * @section 🎯 💡 Test structure
      * @endcode
      * When → Then → When → Then
-     * (여러 상태 전환을 순차적으로 검증)
+     * (Verify multiple state transitions sequentially)
      * @endcode
      */
     /**
-     * 🎨 레이아웃 모드별 화면 구성:
+     * 🎨 Screen composition for each layout mode:
      * @endcode
      * .grid (2x2):
      * ┌────────┬────────┐
@@ -958,139 +960,139 @@ final class MultiChannelRendererTests: XCTestCase {
      */
     func testSetLayoutMode() {
         // ─────────────────────────────────────────────────────────────────
-        // When: Focus 모드로 변경
+        // When: Change to focus mode
         // ─────────────────────────────────────────────────────────────────
 
         /**
-         * 레이아웃을 Focus 모드로 설정
+         * layout Focus Modeto Settings
          */
         /**
-         * Focus 모드의 특징:
-         * - 하나의 채널을 크게 표시 (보통 75%)
-         * - 나머지 채널은 썸네일로 표시 (각 25% 영역에 세로로 배치)
-         * - focusedPosition 속성으로 어떤 채널을 크게 표시할지 결정
+         * Focus mode charactercantics:
+         * - display one channel large (usually 75%)
+         * - display other channels as thumbnails (arranged vertically in 25% area each)
+         * - Determine which channel to dcanplay large with focusedPosition property
          */
         /**
          *
-         * @section _____ 💡 사용 사례
-         * - 특정 카메라에 집중하고 싶을 때
-         * - 사고 영상을 자세히 확인할 때
-         * - 전방 카메라를 메인으로 보면서 다른 각도도 확인
+         * @section 🎯 💡 Use cases
+         * - When want to focus on specific camera
+         * - When checking accident video in detail
+         * - Check other angles while viewing front camera as main
          */
         renderer.setLayoutMode(.focus)
 
         // ─────────────────────────────────────────────────────────────────
-        // Then: Focus 모드로 변경되었는지 확인
+        // Then: Check that changed to focus mode
         // ─────────────────────────────────────────────────────────────────
 
         /**
-         * 레이아웃 모드가 .focus인지 검증
+         * layout Modeis .focuscanof Verify
          */
         /**
          *
-         * @section _____________ 💡 상태 변경 검증의 중요성
-         * - setter 메서드가 실제로 값을 변경했는지 확인
-         * - 내부 상태와 외부 인터페이스가 일치하는지 검증
+         * @section 💡 💡 State Change Verifyimportance
+         * - Check that setter method actually changed value
+         * - Verify that internal state matches external interface
          */
         /**
          *
-         * @section ___________ 🔍 실패할 수 있는 경우
+         * @section __💡 🔍 Cases where it is fail
          * @endcode
-         * // ❌ 잘못된 구현
+         * // ❌ Wrong implementation
          * func setLayoutMode(_ mode: LayoutMode) {
-         *     // 아무것도 하지 않음 (버그!)
+         *     // Does ofhing (bug!)
          * }
          */
         /**
-         * // ✅ 올바른 구현
+         * // ✅ Correct implementation
          * func setLayoutMode(_ mode: LayoutMode) {
          *     self.layoutMode = mode
-         *     invalidateLayout()  // 레이아웃 재계산
+         *     invalidateLayout()  // Recalculate layout
          * }
          * @endcode
          */
         XCTAssertEqual(renderer.layoutMode, .focus)
 
         // ─────────────────────────────────────────────────────────────────
-        // When: Horizontal 모드로 변경
+        // When: Horizontal Modeto Change
         // ─────────────────────────────────────────────────────────────────
 
         /**
-         * 레이아웃을 Horizontal 모드로 설정
+         * layout Horizontal Modeto Settings
          */
         /**
-         * Horizontal 모드의 특징:
-         * - 모든 채널을 가로로 나란히 배치
-         * - 각 채널이 동일한 너비를 가짐
-         * - 타임라인 뷰어와 함께 사용하기 좋음
-         */
-        /**
-         *
-         * @section _____ 💡 사용 사례
-         * - 여러 각도를 동시에 비교할 때
-         * - 와이드 모니터에서 사용할 때
-         * - 시간대별로 모든 각도를 확인할 때
+         * Horizontal Modeof charactercantics:
+         * - All channels arranged horizontally side by side
+         * - Each channel is equal width
+         * - Good to use with timeline viewer
          */
         /**
          *
-         * @section 4______ 📊 4채널의 경우
+         * @section 🎯 💡 Use cases
+         * - When comparing multiple angles simultaneously
+         * - When using on wide monitor
+         * - When checking all angles by time period
+         */
+        /**
+         *
+         * @section 4🎯 📊 4Channelof case
          * @endcode
-         * 화면 너비 1920px일 때:
-         * - 각 채널: 480px (1920 / 4)
-         * - 간격: 없음 (경계선만)
+         * When screen width is 1920px:
+         * - Each channel: 480px (1920 / 4)
+         * - spacing: none (boundary line only)
          * @endcode
          */
         renderer.setLayoutMode(.horizontal)
 
         // ─────────────────────────────────────────────────────────────────
-        // Then: Horizontal 모드로 변경되었는지 확인
+        // Then: Check that changed to horizontal mode
         // ─────────────────────────────────────────────────────────────────
 
         /**
-         * 레이아웃 모드가 .horizontal인지 검증
+         * layout Modeis .horizontalcanof Verify
          */
         /**
          *
-         * @section ______________ 💡 왜 여러 번 테스트하나요?
-         * - 첫 번째 변경만 작동하고 두 번째는 실패할 수 있음
-         * - 상태 전환 로직에 버그가 있을 수 있음
-         * - 이전 상태에서 새 상태로의 전환을 모두 검증
+         * @section _💡 💡 Why test multiple times?
+         * - First change works but second one is fail
+         * - Can have bugs in state transition logic
+         * - Verify all transitions from each state to new state
          */
         /**
          *
-         * @section _________ 🔄 상태 전환 그래프
+         * @section 💡 🔄 State Transition graph
          * @endcode
          * .grid ──→ .focus ──→ .horizontal
          *   ↑                      │
          *   └──────────────────────┘
-         * (모든 전환이 가능해야 함)
+         * (All transitions should be possible)
          * @endcode
          */
         XCTAssertEqual(renderer.layoutMode, .horizontal)
     }
 
     /**
-     * 모든 레이아웃 모드 테스트
+     * Test all layout modes
      */
     /**
-     * LayoutMode 열거형의 모든 케이스를 순회하며 테스트합니다.
-     */
-    /**
-     *
-     * @section _____ 🎯 검증 항목
-     * - 모든 레이아웃 모드로 변경 가능한가?
-     * - 각 모드의 displayName이 존재하는가?
+     * Test by iterating through all cases of LayoutMode enum.
      */
     /**
      *
-     * @section _________ 💡 이 테스트의 장점
-     * - 새로운 레이아웃 모드를 추가해도 자동으로 테스트됨
-     * - CaseIterable 프로토콜 활용
-     * - 모든 케이스를 빠뜨리지 않고 검증
+     * @section 🎯 🎯 Verification single
+     * - Can change to all layout modes?
+     * - Does dcanplayName excant for each mode?
      */
     /**
      *
-     * @section caseiterable_____ 🔄 CaseIterable 프로토콜
+     * @section 💡 💡 Advantages of this test
+     * - Automatically tested even if new layout mode is added
+     * - Utilize CaseIterable protocol
+     * - Verify without mcansing any cases
+     */
+    /**
+     *
+     * @section 🔄 🔄 CaseIterable protocol
      * @endcode
      * enum LayoutMode: CaseIterable {
      *     case grid
@@ -1099,37 +1101,37 @@ final class MultiChannelRendererTests: XCTestCase {
      * }
      */
     /**
-     * // allCases는 자동 생성됨
+     * // allCases is automatically created
      * LayoutMode.allCases  // [.grid, .focus, .horizontal]
      * @endcode
      */
     /**
      * @test testAllLayoutModes
-     * @brief 📚 참고: 만약 새로운 모드 (.pip 등)를 추가하면
+     * @brief 📚 Reference: If only adding new mode (.pip etc)
      *
      * @details
-     * 📚 참고: 만약 새로운 모드 (.pip 등)를 추가하면
-     *          이 테스트가 자동으로 검증합니다.
+     * 📚 Reference: If only adding new mode (.pip etc)
+     *          This test is automatically verify it.
      */
     func testAllLayoutModes() {
         // ─────────────────────────────────────────────────────────────────
-        // When & Then: 모든 레이아웃 모드를 순회하며 테스트
+        // When & Then: Iterate and test all layout modes
         // ─────────────────────────────────────────────────────────────────
 
         /**
-         * LayoutMode.allCases를 순회
+         * Iterate LayoutMode.allCases
          */
         /**
-         * for-in 루프로 모든 케이스를 테스트:
-         * 1. .grid로 설정 → 검증
-         * 2. .focus로 설정 → 검증
-         * 3. .horizontal로 설정 → 검증
+         * Test all cases with for-in loop:
+         * 1. .gridto Settings → Verify
+         * 2. .focusto Settings → Verify
+         * 3. .horizontalto Settings → Verify
          */
         /**
          *
-         * @section _______________ 💡 루프를 사용한 테스트의 장점
+         * @section __💡 💡 Advantages of using loop in test
          * @endcode
-         * // ❌ 반복적인 코드 (유지보수 어려움)
+         * // ❌ repetitiveis code (with maintenance difficulty)
          * renderer.setLayoutMode(.grid)
          * XCTAssertEqual(renderer.layoutMode, .grid)
          * renderer.setLayoutMode(.focus)
@@ -1137,7 +1139,7 @@ final class MultiChannelRendererTests: XCTestCase {
          * // ...
          */
         /**
-         * // ✅ 루프 사용 (간결하고 확장 가능)
+         * // ✅ loop Use (redcouplingand expansion possible)
          * for mode in LayoutMode.allCases {
          *     renderer.setLayoutMode(mode)
          *     XCTAssertEqual(renderer.layoutMode, mode)
@@ -1146,37 +1148,37 @@ final class MultiChannelRendererTests: XCTestCase {
          */
         /**
          *
-         * @section ________ 🔍 테스트 실패 시
+         * @section __🎯 🔍 Test Failure when
          * @endcode
-         * ❌ XCTAssertEqual failed: (".grid") is not equal to (".focus")
-         *    → 어떤 모드에서 실패했는지 정확히 알 수 있음
+         * ❌ XCTAssertEqual failed: (".grid") is of equal to (".focus")
+         *    → what kind Modein Failurefailed and exactly know
          * @endcode
          */
         for mode in LayoutMode.allCases {
-            // When: 해당 모드로 변경
+            // When: corresponding Modeto Change
             renderer.setLayoutMode(mode)
 
-            // Then: 모드가 올바르게 설정되었는지 확인
+            // Then: Modeis correctly Settingsedto Check
             XCTAssertEqual(renderer.layoutMode, mode)
 
-            // Then: displayName이 존재하는지 확인
+            // Then: dcanplayNameis existsto Check
             /**
-             * displayName 검증
+             * dcanplayName Verify
              */
             ///
             /**
-             * displayName의 역할:
-             * - UI에 표시할 사용자 친화적인 이름
-             * - 메뉴나 버튼에 사용
-             * - 로그나 디버그 메시지에 사용
+             * dcanplayNameof role:
+             * - UIto User-friendly name to display
+             * - menuor buttonto Use
+             * - for debugging messageto Use
              */
             ///
             /**
              *
-             * @section nil____________ 💡 nil이 되면 안 되는 이유
+             * @section nil📊 💡 nil inside d reason
              * @endcode
-             * // UI 코드에서:
-             * Button(mode.displayName) {  // nil이면 크래시!
+             * // UI in code:
+             * Button(mode.dcanplayName) {  // nilcanif crashwhen!
              *     renderer.setLayoutMode(mode)
              * }
              * @endcode
@@ -1184,52 +1186,52 @@ final class MultiChannelRendererTests: XCTestCase {
             ///
             /**
              *
-             * @section ____ 📊 예상 값
+             * @section ____ 📊 Sample values
              * @endcode
              * .grid       → "Grid"
              * .focus      → "Focus"
              * .horizontal → "Horizontal"
              * @endcode
              */
-            XCTAssertNotNil(mode.displayName)
+            XCTAssertNotNil(mode.dcanplayName)
         }
     }
 
     /**
-     * 레이아웃 모드 표시 이름 테스트
+     * layout Mode display Name Test
      */
     /**
-     * 각 레이아웃 모드의 displayName이 올바른지 확인합니다.
-     */
-    /**
-     *
-     * @section _____ 🎯 검증 항목
-     * - .grid의 displayName이 "Grid"인가?
-     * - .focus의 displayName이 "Focus"인가?
-     * - .horizontal의 displayName이 "Horizontal"인가?
+     * each layout Modeof dcanplayNameis correctof Check.
      */
     /**
      *
-     * @section _______________ 💡 왜 이 테스트가 필요한가요?
-     * - UI에 표시되는 텍스트의 정확성 보장
-     * - 다국어 지원 시 기준값 역할
-     * - 오타나 실수 방지
+     * @section 🎯 🎯 Verification single
+     * - .gridof dcanplayNameis "Grid"cancan?
+     * - .focusof dcanplayNameis "Focus"cancan?
+     * - .horizontalof dcanplayNameis "Horizontal"cancan?
      */
     /**
-     * @test testLayoutModeDisplayNames
-     * @brief 🌍 다국어 지원 예시:
+     *
+     * @section __💡 💡 why is Testis is necessary?
+     * - UIto displayd textof accuracy guarantee
+     * - Multi-language Support when CriteriaValue role
+     * - typos or spelling
+     */
+    /**
+     * @test testLayoutModedisplayNames
+     * @brief 🌍 Multi-language Support Example:
      *
      * @details
-     * 🌍 다국어 지원 예시:
+     * 🌍 Multi-language Support Example:
      * @endcode
      * extension LayoutMode {
-     *     var displayName: String {
+     *     var dcanplayName: String {
      *         switch Locale.current.languageCode {
      *         case "ko":
      *             switch self {
-     *             case .grid: return "격자"
-     *             case .focus: return "집중"
-     *             case .horizontal: return "가로"
+     *             case .grid: return "grid"
+     *             case .focus: return "Focus"
+     *             case .horizontal: return "canto"
      *             }
      *         default:
      *             switch self {
@@ -1242,246 +1244,246 @@ final class MultiChannelRendererTests: XCTestCase {
      * }
      * @endcode
      */
-    func testLayoutModeDisplayNames() {
+    func testLayoutModedisplayNames() {
         // ─────────────────────────────────────────────────────────────────
-        // Then: 각 모드의 displayName 검증
+        // Then: each Modeof dcanplayName Verify
         // ─────────────────────────────────────────────────────────────────
 
         /**
-         * Grid 모드의 표시 이름 확인
+         * Grid Modeof display Name Check
          */
         /**
-         * "Grid"가 기대값인 이유:
-         * - 영어권 사용자에게 익숙한 용어
-         * - 짧고 명확함
-         * - 다른 비디오 플레이어에서도 일반적으로 사용
+         * "Grid"is expectedValueis Reason:
+         * - English users are familiar with
+         * - Short and clear
+         * - other Also commonly used in other video players
          */
         /**
          *
-         * @section ___ 💡 대안들
+         * @section ___ 💡 Alternatives
          * @endcode
-         * "Grid"      ✅ 선택됨
-         * "Grid View"    (너무 길음)
-         * "Tile"         (의미가 덜 명확)
-         * "Matrix"       (기술적이고 어려움)
+         * "Grid"      ✅ Selected
+         * "Grid View"    (too verbose)
+         * "Tile"         (Meaningis Less clear)
+         * "Matrix"       (technicalcanand difficulty)
          * @endcode
          */
-        XCTAssertEqual(LayoutMode.grid.displayName, "Grid")
+        XCTAssertEqual(LayoutMode.grid.dcanplayName, "Grid")
 
         /**
-         * Focus 모드의 표시 이름 확인
+         * Focus Modeof display Name Check
          */
         /**
-         * "Focus"가 기대값인 이유:
-         * - 하나의 채널에 집중한다는 의미 명확
-         * - 간결하고 직관적
-         * - 카메라 앱 등에서도 사용하는 용어
+         * "Focus"is expectedValueis Reason:
+         * - Clearly means focusing on one channel
+         * - redcouplingand intuitive
+         * - camera Also used in camera apps etc
          */
         /**
          *
-         * @section ___ 💡 대안들
+         * @section ___ 💡 Alternatives
          * @endcode
-         * "Focus"           ✅ 선택됨
-         * "Picture-in-Picture"  (PiP와 혼동)
-         * "Main View"           (너무 일반적)
-         * "Spotlight"           (macOS 검색과 혼동)
+         * "Focus"           ✅ Selected
+         * "Picture-in-Picture"  (PiPand confusion)
+         * "Main View"           (Too general)
+         * "Spotlight"           (macOS searchand confusion)
          * @endcode
          */
-        XCTAssertEqual(LayoutMode.focus.displayName, "Focus")
+        XCTAssertEqual(LayoutMode.focus.dcanplayName, "Focus")
 
         /**
-         * Horizontal 모드의 표시 이름 확인
+         * Horizontal Modeof display Name Check
          */
         /**
-         * "Horizontal"이 기대값인 이유:
-         * - 레이아웃 방향을 정확히 설명
-         * - 수평 배치를 명확히 전달
-         * - Vertical(세로)과 대비되는 용어
+         * "Horizontal"is expectedValueis Reason:
+         * - layout direction exactly description
+         * - horizontal arrangement clearly convey
+         * - Vertical(vertical)and Contrasting term
          */
         /**
          *
-         * @section ___ 💡 대안들
+         * @section ___ 💡 Alternatives
          * @endcode
-         * "Horizontal" ✅ 선택됨
-         * "Side by Side"  (길고 띄어쓰기 있음)
-         * "Strip"         (의미가 덜 명확)
-         * "Timeline"      (타임라인 UI와 혼동)
+         * "Horizontal" ✅ Selected
+         * "Side by Side"  (verboseand spacingwrite exists)
+         * "Strip"         (Meaningis Less clear)
+         * "Timeline"      (timelineis UIand confusion)
          * @endcode
          */
-        XCTAssertEqual(LayoutMode.horizontal.displayName, "Horizontal")
+        XCTAssertEqual(LayoutMode.horizontal.dcanplayName, "Horizontal")
     }
 
     // ─────────────────────────────────────────────────────────────────────
-    // MARK: - Focused Position Tests (포커스 위치 테스트)
+    // MARK: - Focused Position Tests (Focus Position Test)
     // ─────────────────────────────────────────────────────────────────────
 
     /**
-     * 포커스 위치 설정 테스트
+     * Focus Position Settings Test
      */
     /**
-     * setFocusedPosition() 메서드가 포커스 카메라를 올바르게 변경하는지 확인합니다.
-     */
-    /**
-     *
-     * @section _____ 🎯 검증 항목
-     * - .rear 위치로 변경 가능한가?
-     * - .left 위치로 변경 가능한가?
-     * - 변경 후 상태가 올바르게 반영되는가?
+     * setFocusedPosition() method correctly changes focus camera check.
      */
     /**
      *
-     * @section __________ 💡 포커스 위치의 의미
-     * - Focus 레이아웃 모드에서 크게 표시할 채널 선택
-     * - Grid/Horizontal 모드에서는 영향 없음
-     * - 사용자가 특정 각도에 집중하고 싶을 때 사용
+     * @section 🎯 🎯 Verification single
+     * - .rear Positionto Change possible?
+     * - .left Positionto Change possible?
+     * - Is state after change correctly reflected?
      */
     /**
-     * 🚗 블랙박스 카메라 배치:
+     *
+     * @section _💡 💡 Focus Positionof Meaning
+     * - Focus on channel to display large in focus layout mode
+     * - Grid/Horizontal No effect in mode
+     * - User uses when specific want to focus on each angle
+     */
+    /**
+     * 🚗 Blackbox Camera Placement:
      * @endcode
-     *        Front (전방)
+     *        Front (Front)
      *           ↑
      *    Left ← 🚗 → Right
      *           ↓
-     *       Rear (후방)
+     *       Rear (Rear)
      */
     /**
      * @test testSetFocusedPosition
-     * @brief Interior (실내): 운전석을 향함
+     * @brief Interior (Interior): driver's seat points to
      *
      * @details
-     * Interior (실내): 운전석을 향함
+     * Interior (Interior): driver's seat points to
      * @endcode
      */
     func testSetFocusedPosition() {
         // ─────────────────────────────────────────────────────────────────
-        // When: Rear (후방) 위치로 변경
+        // When: Rear (Rear) Positionto Change
         // ─────────────────────────────────────────────────────────────────
 
         /**
-         * 포커스를 후방 카메라로 설정
+         * Focus Rear camerato Settings
          */
         /**
-         * 후방 카메라를 선택하는 경우:
-         * - 주차 중 후방 확인
-         * - 후방 추돌 사고 검증
-         * - 뒷차와의 거리 확인
+         * Rear camera When focusing on it:
+         * - Parking important Check rear
+         * - Rear rear-end accident Verify
+         * - distance from car behind Check
          */
         renderer.setFocusedPosition(.rear)
 
         // ─────────────────────────────────────────────────────────────────
-        // Then: Rear 위치로 변경되었는지 확인
+        // Then: Rear Positionto Changeedto Check
         // ─────────────────────────────────────────────────────────────────
 
         XCTAssertEqual(renderer.focusedPosition, .rear)
 
         // ─────────────────────────────────────────────────────────────────
-        // When: Left (좌측) 위치로 변경
+        // When: Left (Left) Positionto Change
         // ─────────────────────────────────────────────────────────────────
 
         /**
-         * 포커스를 좌측 카메라로 설정
+         * Focus Left camerato Settings
          */
         /**
-         * 좌측 카메라를 선택하는 경우:
-         * - 좌회전 시 사각지대 확인
-         * - 측면 접촉 사고 검증
-         * - 주차 시 좌측 여유 공간 확인
+         * Left camera When focusing on it:
+         * - When turning left blind spot Check
+         * - side contact Accident Verify
+         * - parking when left space Check
          */
         renderer.setFocusedPosition(.left)
 
         // ─────────────────────────────────────────────────────────────────
-        // Then: Left 위치로 변경되었는지 확인
+        // Then: Left Positionto Changeedto Check
         // ─────────────────────────────────────────────────────────────────
 
         XCTAssertEqual(renderer.focusedPosition, .left)
     }
 
     /**
-     * 모든 카메라 위치 테스트
+     * all Camera Position Tests
      */
     /**
-     * CameraPosition의 모든 케이스를 순회하며 테스트합니다.
+     * CameraPositionof Test by iterating all cases.
      */
     /**
      *
-     * @section _____ 🎯 검증 항목
-     * - 5개 카메라 위치 모두 설정 가능한가?
-     * - 각 위치로의 전환이 올바르게 동작하는가?
+     * @section 🎯 🎯 Verification single
+     * - 5 camera Position Can all be set?
+     * - Does transition to each position behave correctly?
      */
     /**
-     * 🚗 카메라 위치 설명:
+     * 🚗 camera Position description:
      * @endcode
-     * .front    : 전방 카메라 (주행 방향)
-     * .rear     : 후방 카메라 (후진 방향)
-     * .left     : 좌측 카메라 (운전석 쪽)
-     * .right    : 우측 카메라 (조수석 쪽)
-     * .interior : 실내 카메라 (운전자/승객)
+     * .front    : Front camera (driving direction)
+     * .rear     : Rear camera (reverse direction)
+     * .left     : Left camera (driver's side)
+     * .right    : Right camera (passenger side)
+     * .interior : Interior camera (driver/passenger)
      * @endcode
      */
     /**
      * @test testAllCameraPositions
-     * @brief 💡 배열 리터럴 사용 이유:
+     * @brief 💡 Reason for using array literal:
      *
      * @details
      *
-     * @section ____________ 💡 배열 리터럴 사용 이유
-     * - CameraPosition이 CaseIterable을 채택하지 않을 수 있음
-     * - 테스트할 특정 위치만 선택 가능
-     * - 명시적으로 어떤 위치를 테스트하는지 표시
+     * @section 📊 💡 array literal Use Reason
+     * - CameraPosition might of adopt CaseIterable
+     * - Can select specific positions to test
+     * - Clearly display which positions are being tested
      */
     func testAllCameraPositions() {
         // ─────────────────────────────────────────────────────────────────
-        // When & Then: 모든 카메라 위치를 순회하며 테스트
+        // When & Then: Iterate and test all camera positions
         // ─────────────────────────────────────────────────────────────────
 
         /**
-         * 5개 카메라 위치를 순회
+         * 5 camera Position iteration
          */
         /**
          *
-         * @section _____________ 💡 배열로 직접 나열한 이유
+         * @section 💡 💡 Reason for directly listing in array
          * @endcode
-         * // 방법 1: 배열 리터럴 (현재 사용)
+         * // Method 1: array literal (currently used)
          * for position in [CameraPosition.front, .rear, .left, .right, .interior] {
-         *     // 명시적이고 순서 보장
+         *     // Explicit and order guaranteed
          * }
          */
         /**
-         * // 방법 2: CaseIterable (만약 채택했다면)
+         * // Method 2: CaseIterable (if only adopted)
          * for position in CameraPosition.allCases {
-         *     // 자동으로 모든 케이스 포함
+         *     // automatically all case include
          * }
          * @endcode
          */
         /**
          *
-         * @section ______ 🔄 테스트 순서
+         * @section 🎯 🔄 Test order
          * @endcode
-         * 1. .front로 설정  → 검증
-         * 2. .rear로 설정   → 검증
-         * 3. .left로 설정   → 검증
-         * 4. .right로 설정  → 검증
-         * 5. .interior로 설정 → 검증
+         * 1. .frontto Settings  → Verify
+         * 2. .rearto Settings   → Verify
+         * 3. .leftto Settings   → Verify
+         * 4. .rightto Settings  → Verify
+         * 5. .interiorto Settings → Verify
          * @endcode
          */
         for position in [CameraPosition.front, .rear, .left, .right, .interior] {
-            // When: 해당 위치로 변경
+            // When: Change to that position
             renderer.setFocusedPosition(position)
 
-            // Then: 위치가 올바르게 설정되었는지 확인
+            // Then: Check that position ed set correctly
             /**
-             * 포커스 위치 검증
+             * Focus Position Verify
              */
             ///
             /**
              *
-             * @section _____________ 💡 각 위치별 사용 시나리오
+             * @section 💡 💡 Use scenario for each position
              * @endcode
-             * .front    : 일반 주행 시 (기본값)
-             * .rear     : 주차/후진 시
-             * .left     : 좁은 길, 좌회전 시
-             * .right    : 우회전, 좁은 도로 시
-             * .interior : 택시, 우버 등 승객 확인
+             * .front    : normal driving (default value)
+             * .rear     : When parking/reversing
+             * .left     : narrow verbose, When turning left
+             * .right    : right turn, when in narrow angle
+             * .interior : taxi, delivery etc passenger check
              * @endcode
              */
             XCTAssertEqual(renderer.focusedPosition, position)
@@ -1489,71 +1491,71 @@ final class MultiChannelRendererTests: XCTestCase {
     }
 
     // ─────────────────────────────────────────────────────────────────────
-    // MARK: - Viewport Calculation Tests (뷰포트 계산 테스트 - Grid 레이아웃)
+    // MARK: - Viewport Calculation Tests (Viewport Calculation Test - Grid layout)
     // ─────────────────────────────────────────────────────────────────────
 
     /**
-     * Grid 레이아웃 - 단일 채널 뷰포트 테스트
+     * Grid layout - Single channel viewport test
      */
     /**
-     * 1개 채널만 있을 때 뷰포트 계산을 검증합니다.
+     * Verify viewport calculation when there is only 1 channel.
      */
     /**
      *
-     * @section _____ 💡 현재 상태
-     * - 이 테스트는 private 메서드 접근이 필요
-     * - 실제 렌더링을 통한 간접 테스트 또는
-     * - 메서드를 internal로 변경하여 @testable import로 접근
+     * @section 🎯 💡 current State
+     * - is Testthe private method accessis necessary
+     * - Direct test through actual rendering or
+     * - Change method to internal and access with @testable import
      */
     /**
-     * 🎨 기대되는 레이아웃:
+     * 🎨 Expected layout:
      * @endcode
      * ┌───────────────────────┐
      * │                       │
      * │      Front            │
-     * │    (전체 화면)        │
+     * │    (entire Screen)        │
      * │                       │
      * └───────────────────────┘
      * @endcode
      */
     /**
      * @test testGridViewportsSingleChannel
-     * @brief 📐 기대 뷰포트 크기:
+     * @brief 📐 Expected viewport size:
      *
      * @details
-     * 📐 기대 뷰포트 크기:
+     * 📐 Expected viewport size:
      * - x: 0, y: 0
      * - width: 1920, height: 1080
-     * - 전체 화면을 차지
+     * - Takes entire screen
      */
     func testGridViewportsSingleChannel() {
         /**
-         * 테스트용 화면 크기 정의
+         * Define screen size for testing
          */
         /**
-         * Full HD 해상도 (1920x1080) 사용:
-         * - 가장 일반적인 해상도
-         * - 16:9 비율
-         * - 계산하기 쉬운 숫자
+         * Use Full HD resolution (1920x1080):
+         * - Most normal resolution
+         * - 16:9 ratio
+         * - Numbers easy to calculate
          */
         let size = CGSize(width: 1920, height: 1080)
 
         /**
-         * TODO: 뷰포트 계산 메서드 테스트
+         * TODO: Viewport Calculation method Test
          */
         /**
-         * 구현 방법:
+         * implementation method:
          * @endcode
-         * // 옵션 1: private 메서드를 internal로 변경
+         * // option 1: private method to internal Change
          * internal func calculateGridViewports(for channels: [CameraPosition], size: CGSize) -> [CameraPosition: CGRect]
          */
         /**
-         * // 옵션 2: 통합 테스트에서 실제 렌더링 결과 확인
+         * // Option 2: Check actual rendering result in integration test
          * let texture = renderer.render(frames: singleChannelFrames)
-         * // 텍스처의 픽셀 데이터로 렌더링 영역 확인
+         * // Check rendering area in texture's pixel data
          */
         /**
-         * // 테스트 코드:
+         * // Test code:
          * let viewports = renderer.calculateGridViewports(for: [.front], size: size)
          * XCTAssertEqual(viewports[.front], CGRect(x: 0, y: 0, width: 1920, height: 1080))
          * @endcode
@@ -1561,22 +1563,22 @@ final class MultiChannelRendererTests: XCTestCase {
     }
 
     /**
-     * Grid 레이아웃 - 2채널 뷰포트 테스트
+     * Grid layout - 2Channel Viewport Test
      */
     /**
-     * 2개 채널이 있을 때 뷰포트 계산을 검증합니다.
+     * 2single channels when Viewport Calculation Verify.
      */
     /**
-     * 🎨 기대되는 레이아웃:
+     * 🎨 Expected layout:
      * @endcode
-     * 가로 배치 (화면이 넓을 때):
+     * Side-by-side arrangement (when screen is wide):
      * ┌──────────┬──────────┐
      * │  Front   │   Rear   │
      * │          │          │
      * └──────────┴──────────┘
      */
     /**
-     * 세로 배치 (화면이 높을 때):
+     * Vertical arrangement (when screen is tall):
      * ┌────────────────────┐
      * │      Front         │
      * ├────────────────────┤
@@ -1586,10 +1588,10 @@ final class MultiChannelRendererTests: XCTestCase {
      */
     /**
      * @test testGridViewportsTwoChannels
-     * @brief 📐 기대 뷰포트 크기 (가로 배치):
+     * @brief 📐 expected Viewport size (Side-by-side arrangement):
      *
      * @details
-     * 📐 기대 뷰포트 크기 (가로 배치):
+     * 📐 expected Viewport size (Side-by-side arrangement):
      * - Front: (0, 0, 960, 1080)
      * - Rear: (960, 0, 960, 1080)
      */
@@ -1597,18 +1599,18 @@ final class MultiChannelRendererTests: XCTestCase {
         let size = CGSize(width: 1920, height: 1080)
 
         /**
-         * TODO: 2채널 뷰포트 계산 테스트
+         * TODO: 2Channel Viewport Calculation Test
          */
         /**
          *
-         * @section ____________ 💡 화면 비율에 따른 선택
+         * @section 📊 💡 Screen ratioto according to focus
          * @endcode
          * let aspectRatio = size.width / size.height
          * if aspectRatio > 1.5 {
-         *     // 와이드 스크린 → 가로 배치 (1x2)
+         *     // Wide screen → Side-by-side arrangement (1x2)
          *     layoutChannelsHorizontally()
          * } else {
-         *     // 일반 화면 → 세로 배치 (2x1)
+         *     // Normal screen → Vertical arrangement (2x1)
          *     layoutChannelsVertically()
          * }
          * @endcode
@@ -1616,13 +1618,13 @@ final class MultiChannelRendererTests: XCTestCase {
     }
 
     /**
-     * Grid 레이아웃 - 4채널 뷰포트 테스트
+     * Grid layout - 4Channel Viewport Test
      */
     /**
-     * 4개 채널이 있을 때 뷰포트 계산을 검증합니다.
+     * 4single channels when Viewport Calculation Verify.
      */
     /**
-     * 🎨 기대되는 레이아웃:
+     * 🎨 Expected layout:
      * @endcode
      * ┌─────────┬─────────┐
      * │  Front  │  Rear   │
@@ -1632,7 +1634,7 @@ final class MultiChannelRendererTests: XCTestCase {
      * @endcode
      */
     /**
-     * 📐 기대 뷰포트 크기:
+     * 📐 Expected viewport size:
      * - Front: (0, 0, 960, 540)
      * - Rear: (960, 0, 960, 540)
      * - Left: (0, 540, 960, 540)
@@ -1640,23 +1642,23 @@ final class MultiChannelRendererTests: XCTestCase {
      */
     /**
      * @test testGridViewportsFourChannels
-     * @brief 💡 2x2 그리드가 최적인 이유:
+     * @brief 💡 2x2 gridis optimalis Reason:
      *
      * @details
      *
-     * @section 2x2____________ 💡 2x2 그리드가 최적인 이유
-     * - 4개는 완전한 정사각형 배치 가능
-     * - 모든 채널이 동일한 크기
-     * - 화면 공간을 효율적으로 사용
+     * @section 2x2📊 💡 2x2 gridis optimalis Reason
+     * - 4 channels is be arranged in perfect orthogonal grid
+     * - all Channelis same size
+     * - Screen space efficiencyappropriateto Use
      */
     func testGridViewportsFourChannels() {
         let size = CGSize(width: 1920, height: 1080)
 
         /**
-         * TODO: 4채널 뷰포트 계산 테스트
+         * TODO: 4Channel Viewport Calculation Test
          */
         /**
-         * 검증 항목:
+         * Verification single:
          * @endcode
          * let viewports = renderer.calculateGridViewports(
          *     for: [.front, .rear, .left, .right],
@@ -1664,29 +1666,29 @@ final class MultiChannelRendererTests: XCTestCase {
          * )
          */
         /**
-         * // 각 채널 뷰포트 확인
+         * // each Channel Viewport Check
          * XCTAssertEqual(viewports.count, 4)
          */
         /**
-         * // 크기가 모두 같은지 확인
+         * // check all sizes are equal
          * let sizes = viewports.values.map { ($0.width, $0.height) }
-         * XCTAssertTrue(sizes.allSatisfy { $0 == sizes.first })
+         * XCTAssertTrue(sizes.allSatcanfy { $0 == sizes.first })
          */
         /**
-         * // 전체 면적 확인
+         * // entire Logical check
          * assertTotalViewportArea(viewports, equals: size)
          * @endcode
          */
     }
 
     /**
-     * Grid 레이아웃 - 5채널 뷰포트 테스트
+     * Grid layout - 5Channel Viewport Test
      */
     /**
-     * 5개 채널이 있을 때 뷰포트 계산을 검증합니다.
+     * 5single channels when Viewport Calculation Verify.
      */
     /**
-     * 🎨 기대되는 레이아웃:
+     * 🎨 Expected layout:
      * @endcode
      * ┌──────┬──────┬──────┐
      * │Front │ Rear │ Left │
@@ -1696,67 +1698,67 @@ final class MultiChannelRendererTests: XCTestCase {
      * @endcode
      */
     /**
-     * 📐 기대 뷰포트 크기:
-     * - 첫 줄 3개: 각각 (width: 640, height: 540)
-     * - 둘째 줄 2개: 각각 (width: 960, height: 540)
+     * 📐 Expected viewport size:
+     * - first row 3single: each (width: 640, height: 540)
+     * - Second row 2 channels: each (width: 960, height: 540)
      */
     /**
      * @test testGridViewportsFiveChannels
-     * @brief 💡 3x2 그리드를 선택한 이유:
+     * @brief 💡 3x2 Reason for choosing grid:
      *
      * @details
      *
-     * @section 3x2____________ 💡 3x2 그리드를 선택한 이유
-     * - 5는 완전한 정사각형 배치 불가
-     * - 3x2 (6칸)에서 1칸 비움
-     * - 2x3보다 가로 배치가 시청에 유리
+     * @section 3x2📊 💡 3x2 Reason for choosing grid
+     * - 5 channels cannot be arranged in perfect orthogonal grid
+     * - 3x2 (6cell)in 1cell empty
+     * - 2x3than Side-by-side arrangementis visualto advantageous
      */
     func testGridViewportsFiveChannels() {
         let size = CGSize(width: 1920, height: 1080)
 
         /**
-         * TODO: 5채널 뷰포트 계산 테스트
+         * TODO: 5Channel Viewport Calculation Test
          */
         /**
          *
-         * @section ____________ 💡 불균등 배치의 고려사항
+         * @section 📊 💡 Concerns about uneven arrangement
          * @endcode
-         * // 옵션 1: 균등 분할 (빈 공간 남김)
-         * // Front, Rear, Left 위에 배치 (각 640px)
-         * // Right, Interior 아래 배치 (각 960px)
-         * // 아래 1칸은 비움
+         * // option 1: even divcanion (empty space leave)
+         * // Front, Rear, Left aboveto arrangement (each 640px)
+         * // Right, Interior below arrangement (each 960px)
+         * // 1 cell below is empty
          */
         /**
-         * // 옵션 2: 적응형 크기
-         * // 중요한 채널 (Front)을 더 크게
-         * // 나머지를 작게 배치
+         * // option 2: adaptive size
+         * // importantrequired Channel (Front) larger
+         * // Arrange others smaller
          */
         /**
-         * // 옵션 3: 동적 그리드
-         * // 채널 수에 따라 최적 그리드 자동 계산
+         * // option 3: dynamic grid
+         * // Automatically calculate optimal grid according to channel count
          * @endcode
          */
     }
 
     // ─────────────────────────────────────────────────────────────────────
-    // MARK: - Focus Layout Tests (Focus 레이아웃 테스트)
+    // MARK: - Focus Layout Tests (Focus layout Test)
     // ─────────────────────────────────────────────────────────────────────
 
     /**
-     * Focus 레이아웃 뷰포트 테스트
+     * Focus layout Viewport Test
      */
     /**
-     * Focus 모드에서 뷰포트가 올바르게 계산되는지 확인합니다.
+     * Focus Modein Viewportis correctly Calculationdof Check.
      */
     /**
      *
-     * @section _____ 🎯 검증 항목
-     * - 포커스된 채널이 75% 영역을 차지하는가?
-     * - 썸네일 채널들이 25% 영역에 세로로 배치되는가?
-     * - 모든 뷰포트가 화면 경계 내에 있는가?
+     * @section 🎯 🎯 Verification single
+     * - Focused Channelis 75% area occupiesdo?
+     * - thumbnail Channelsis 25% areato verticalto arrangementdcan?
+     * - all Viewportis Screen boundary Withinto exist?
      */
     /**
-     * 🎨 기대되는 레이아웃:
+     * 🎨 Expected layout:
      * @endcode
      * ┌──────────────────┬────┐
      * │                  │Rear│
@@ -1772,47 +1774,47 @@ final class MultiChannelRendererTests: XCTestCase {
      */
     /**
      * @test testFocusLayoutViewports
-     * @brief 📐 기대 뷰포트 크기:
+     * @brief 📐 Expected viewport size:
      *
      * @details
-     * 📐 기대 뷰포트 크기:
-     * - Front (포커스): (0, 0, 1440, 1080)
-     * - Rear (썸네일): (1440, 0, 480, 270)
-     * - Left (썸네일): (1440, 270, 480, 270)
-     * - Right (썸네일): (1440, 540, 480, 270)
-     * - Interior (썸네일): (1440, 810, 480, 270)
+     * 📐 Expected viewport size:
+     * - Front (Focus): (0, 0, 1440, 1080)
+     * - Rear (thumbnail): (1440, 0, 480, 270)
+     * - Left (thumbnail): (1440, 270, 480, 270)
+     * - Right (thumbnail): (1440, 540, 480, 270)
+     * - Interior (thumbnail): (1440, 810, 480, 270)
      */
     func testFocusLayoutViewports() {
         // ─────────────────────────────────────────────────────────────────
-        // Given: Focus 모드 설정
+        // Given: Focus Mode Settings
         // ─────────────────────────────────────────────────────────────────
 
         /**
-         * Focus 레이아웃 모드로 변경
+         * Focus layout Modeto Change
          */
         renderer.setLayoutMode(.focus)
 
         /**
-         * 전방 카메라를 포커스로 설정
+         * Front camera Focusto Settings
          */
         renderer.setFocusedPosition(.front)
 
         /**
-         * TODO: 뷰포트 검증
+         * TODO: Viewport Verify
          */
         /**
-         * 구현 예시:
+         * implementation Example:
          * @endcode
          * let size = CGSize(width: 1920, height: 1080)
          * let viewports = renderer.calculateFocusViewports(size: size)
          */
         /**
-         * // 포커스 채널 크기 확인
+         * // Focus Channel size Check
          * let focusViewport = viewports[.front]!
          * XCTAssertEqual(focusViewport.width, 1440)  // 75% of 1920
          */
         /**
-         * // 썸네일 영역 확인
+         * // thumbnail area Check
          * let thumbnailViewports = viewports.filter { $0.key != .front }
          * for (_, viewport) in thumbnailViewports {
          *     XCTAssertEqual(viewport.width, 480)  // 25% of 1920
@@ -1823,24 +1825,24 @@ final class MultiChannelRendererTests: XCTestCase {
     }
 
     // ─────────────────────────────────────────────────────────────────────
-    // MARK: - Horizontal Layout Tests (Horizontal 레이아웃 테스트)
+    // MARK: - Horizontal Layout Tests (Horizontal layout Test)
     // ─────────────────────────────────────────────────────────────────────
 
     /**
-     * Horizontal 레이아웃 뷰포트 테스트
+     * Horizontal layout Viewport Test
      */
     /**
-     * Horizontal 모드에서 뷰포트가 올바르게 계산되는지 확인합니다.
+     * Horizontal Modein Viewportis correctly Calculationdof Check.
      */
     /**
      *
-     * @section _____ 🎯 검증 항목
-     * - 모든 채널이 동일한 너비를 가지는가?
-     * - 채널들이 가로로 균등하게 분할되는가?
-     * - 전체 화면 높이를 사용하는가?
+     * @section 🎯 🎯 Verification single
+     * - all Channelis same width canofthecan?
+     * - channels evenly divided side by side?
+     * - entire Screen use height?
      */
     /**
-     * 🎨 기대되는 레이아웃 (4채널):
+     * 🎨 expectedd layout (4Channel):
      * @endcode
      * ┌────┬────┬────┬────┐
      * │    │    │    │    │
@@ -1851,7 +1853,7 @@ final class MultiChannelRendererTests: XCTestCase {
      * @endcode
      */
     /**
-     * 📐 기대 뷰포트 크기 (4채널):
+     * 📐 expected Viewport size (4Channel):
      * - Front: (0, 0, 480, 1080)
      * - Rear: (480, 0, 480, 1080)
      * - Left: (960, 0, 480, 1080)
@@ -1859,30 +1861,30 @@ final class MultiChannelRendererTests: XCTestCase {
      */
     /**
      * @test testHorizontalLayoutViewports
-     * @brief 💡 Horizontal 레이아웃의 장점:
+     * @brief 💡 Horizontal layoutof advantage:
      *
      * @details
      *
-     * @section horizontal_________ 💡 Horizontal 레이아웃의 장점
-     * - 타임라인과 함께 사용하기 좋음
-     * - 여러 각도 동시 비교 용이
-     * - 와이드 모니터 활용 최적화
+     * @section horizontal💡 💡 Horizontal layoutof advantage
+     * - timelinecanand together Useto do good
+     * - multiple eachalso Concurrent Comparcanon forcan
+     * - andwide Monitor utilization optimization
      */
     func testHorizontalLayoutViewports() {
         // ─────────────────────────────────────────────────────────────────
-        // Given: Horizontal 모드 설정
+        // Given: Horizontal Mode Settings
         // ─────────────────────────────────────────────────────────────────
 
         /**
-         * Horizontal 레이아웃 모드로 변경
+         * Horizontal layout Modeto Change
          */
         renderer.setLayoutMode(.horizontal)
 
         /**
-         * TODO: 뷰포트 검증
+         * TODO: Viewport Verify
          */
         /**
-         * 구현 예시:
+         * implementation Example:
          * @endcode
          * let size = CGSize(width: 1920, height: 1080)
          * let channels: [CameraPosition] = [.front, .rear, .left, .interior]
@@ -1892,11 +1894,11 @@ final class MultiChannelRendererTests: XCTestCase {
          * )
          */
         /**
-         * // 채널 수 확인
+         * // Channel number Check
          * XCTAssertEqual(viewports.count, 4)
          */
         /**
-         * // 모든 채널이 동일한 너비인지 확인
+         * // all Channelis same widthcanof Check
          * let width = 1920 / 4  // 480
          * for (_, viewport) in viewports {
          *     XCTAssertEqual(viewport.width, CGFloat(width))
@@ -1904,7 +1906,7 @@ final class MultiChannelRendererTests: XCTestCase {
          * }
          */
         /**
-         * // X 좌표가 순차적인지 확인
+         * // X check coordinates are sequential
          * let sortedViewports = viewports.sorted { $0.value.minX < $1.value.minX }
          * for (index, (_, viewport)) in sortedViewports.enumerated() {
          *     XCTAssertEqual(viewport.minX, CGFloat(index * width))
@@ -1914,88 +1916,88 @@ final class MultiChannelRendererTests: XCTestCase {
     }
 
     // ─────────────────────────────────────────────────────────────────────
-    // MARK: - Capture Tests (화면 캡처 테스트)
+    // MARK: - Capture Tests (Screen Capture Test)
     // ─────────────────────────────────────────────────────────────────────
 
     /**
-     * 렌더링 없이 캡처 시도 테스트
+     * test capture attempt without rendering
      */
     /**
-     * 렌더링된 프레임이 없을 때 캡처를 시도하면 nil을 반환하는지 확인합니다.
-     */
-    /**
-     *
-     * @section _____ 🎯 검증 항목
-     * - 렌더링 전 캡처 시도 시 nil 반환하는가?
-     * - 에러 없이 안전하게 처리되는가?
+     * Renderinged when frame is absent check returns nil when attempting capture.
      */
     /**
      *
-     * @section __nil________ 💡 왜 nil을 반환하나요?
-     * - 캡처할 텍스처가 없음
-     * - Optional 반환으로 안전한 실패 처리
-     * - 크래시 대신 nil 체크로 처리 가능
+     * @section 🎯 🎯 Verification single
+     * - Rendering Return nil when attempting capture before rendering?
+     * - handle error gracefully?
      */
     /**
      *
-     * @section __________ 🔄 정상적인 캡처 흐름
+     * @section __nil__🎯 💡 why Return nil?
+     * - Capturewill no texture
+     * - Safe failure handling with optional return
+     * - crashwhen instead nil checkto handling possible
+     */
+    /**
+     *
+     * @section _💡 🔄 normal capture flow
      * @endcode
-     * 1. render() 호출 → Metal 텍스처에 그리기
-     * 2. captureCurrentFrame() 호출
-     * 3. 텍스처를 CPU로 읽어옴
-     * 4. PNG/JPEG로 인코딩
-     * 5. Data 반환
+     * 1. render() call → Metal Textureto drawing
+     * 2. captureCurrentFrame() call
+     * 3. Texture Read into CPU
+     * 4. PNG/JPEGto cancoding
+     * 5. Data return
      * @endcode
      */
     /**
      * @test testCaptureWithoutRendering
-     * @brief ⚠️ 렌더링 전 캡처 시도 시:
+     * @brief ⚠️ Rendering before Capture whenalso when:
      *
      * @details
      *
-     * @section _____________ ⚠️ 렌더링 전 캡처 시도 시
+     * @section 💡 ⚠️ Rendering before Capture whenalso when
      * @endcode
-     * 1. captureCurrentFrame() 호출 ← 텍스처 없음!
-     * 2. 내부에서 nil 체크
-     * 3. nil 반환 (안전한 실패)
+     * 1. captureCurrentFrame() call ← Texture none!
+     * 2. Check nil internally
+     * 3. nil return (Graceful failure)
      * @endcode
      */
     func testCaptureWithoutRendering() {
         // ─────────────────────────────────────────────────────────────────
-        // When: 렌더링 전에 캡처 시도
+        // When: Rendering beforeto Capture whenalso
         // ─────────────────────────────────────────────────────────────────
 
         /**
-         * 현재 프레임 캡처 시도
+         * current Frame Capture whenalso
          */
         /**
-         * captureCurrentFrame()의 동작:
-         * - 마지막으로 렌더링된 텍스처를 이미지로 변환
-         * - 텍스처가 없으면 nil 반환
-         * - 기본 포맷은 PNG
+         * captureCurrentFrame()of Behavior:
+         * - Transform last rendered texture to image
+         * - Textureis withoutif nil return
+         * - default formatthe PNG
          */
         /**
          *
-         * @section optional_______ 💡 Optional 반환의 이유
+         * @section focus_🎯 💡 Optional returnof Reason
          * @endcode
          * func captureCurrentFrame() -> Data? {
          *     guard let texture = lastRenderedTexture else {
-         *         return nil  // 텍스처 없음
+         *         return nil  // Texture none
          *     }
-         *     // 텍스처를 Data로 변환
+         *     // Texture in data transformation
          *     return encodeToImage(texture)
          * }
          * @endcode
          */
         /**
          *
-         * @section _____ 📊 사용 예시
+         * @section 🎯 📊 Use Example
          * @endcode
          * if let imageData = renderer.captureCurrentFrame() {
-         *     // 이미지 저장 또는 공유
+         *     // Save or share image
          *     try? imageData.write(to: fileURL)
          * } else {
-         *     // 캡처 실패 처리
+         *     // Capture Failure handling
          *     print("No frame to capture")
          * }
          * @endcode
@@ -2003,88 +2005,88 @@ final class MultiChannelRendererTests: XCTestCase {
         let data = renderer.captureCurrentFrame()
 
         // ─────────────────────────────────────────────────────────────────
-        // Then: nil을 반환해야 함
+        // Then: nil returnshould
         // ─────────────────────────────────────────────────────────────────
 
         /**
-         * 반환값이 nil인지 확인
+         * returnValueis nilcanof Check
          */
         /**
-         * XCTAssertNil의 동작:
-         * - 값이 nil이면 테스트 통과
-         * - nil이 아니면 테스트 실패
+         * XCTAssertNilof Behavior:
+         * - test passes if value is nil
+         * - nilis notif Test Failure
          */
         /**
          *
-         * @section ______________ 💡 이 테스트가 실패하는 경우
-         * - captureCurrentFrame()이 항상 빈 Data를 반환
-         * - 에러 대신 기본 이미지를 반환
-         * - nil 체크를 하지 않고 크래시 발생
+         * @section _💡 💡 If this test fails
+         * - captureCurrentFrame()is always empty Data return
+         * - Return default image instead of error
+         * - nil check of doand crashwhen occurrence
          */
         /**
-         * 📚 참고: "프레임이 렌더링되지 않았을 때 nil을 반환해야 함"
-         *          이 메시지로 테스트 의도를 명확히 전달
+         * 📚 Reference: "should return nil when frame is not rendered"
+         *          is messageto Test ofalso clearly convey
          */
-        XCTAssertNil(data, "Should return nil when no frame has been rendered")
+        XCTAssertNil(data, "Should return nil when no frame is been rendered")
     }
 
     /**
-     * 캡처 포맷 테스트
+     * Capture format Test
      */
     /**
-     * PNG와 JPEG 포맷이 모두 지원되는지 확인합니다.
-     */
-    /**
-     *
-     * @section _____ 🎯 검증 항목
-     * - CaptureImageFormat.png가 존재하는가?
-     * - CaptureImageFormat.jpeg가 존재하는가?
+     * PNGand JPEG formatis all supportedof Check.
      */
     /**
      *
-     * @section _______ 💡 현재 제한사항
-     * - 실제 렌더링이 필요하므로 통합 테스트에서 완전히 검증
-     * - 여기서는 포맷 enum이 존재하는지만 확인
+     * @section 🎯 🎯 Verification single
+     * - CaptureImageFormat.pngis existsthecan?
+     * - CaptureImageFormat.jpegis existsthecan?
      */
     /**
-     * 🖼️ 포맷 비교:
+     *
+     * @section _🎯 💡 current limitationmatter
+     * - actual since actual rendering is necessary fully verify in integration test
+     * - here only check that format enum exists
+     */
+    /**
+     * 🖼️ format Comparcanon:
      * @endcode
      * PNG:
-     * - 무손실 압축
-     * - 투명도 지원
-     * - 파일 크기 큼 (5-10MB)
-     * - 품질 100%
-     * - 사용처: 정확한 증거 필요 시
+     * - lossless compression
+     * - Support transparency
+     * - large file size (5-10MB)
+     * - quality 100%
+     * - Use case: When accurate evidence is necessary
      */
     /**
      * JPEG:
-     * - 손실 압축
-     * - 투명도 없음
-     * - 파일 크기 작음 (1-2MB)
-     * - 품질 조절 가능 (70-95%)
-     * - 사용처: 공유, SNS 업로드
+     * - lossy compression
+     * - transparentalso none
+     * - file size small (1-2MB)
+     * - quality control possible (70-95%)
+     * - Use case: Sharing, SNS upload
      * @endcode
      */
     /**
      * @test testCaptureFormats
-     * @brief 📊 파일 크기 예시 (1920x1080 4채널):
+     * @brief 📊 file size Example (1920x1080 4Channel):
      *
      * @details
      *
-     * @section __________1920x1080_4___ 📊 파일 크기 예시 (1920x1080 4채널)
+     * @section __________1920x1080_4___ 📊 file size Example (1920x1080 4Channel)
      * @endcode
-     * PNG:  약 8-12MB
-     * JPEG: 약 1-3MB (품질 80%)
-     * 압축률: 약 4-8배 차이
+     * PNG:  if 8-12MB
+     * JPEG: if 1-3MB (quality 80%)
+     * Compression ratio: 4-8x difference
      * @endcode
      */
     func testCaptureFormats() {
         /**
-         * PNG와 JPEG 포맷 배열
+         * PNGand JPEG format array
          */
         /**
          *
-         * @section ___enum____ 💡 포맷 enum의 역할
+         * @section ___enum____ 💡 format enumof role
          * @endcode
          * enum CaptureImageFormat {
          *     case png
@@ -2092,7 +2094,7 @@ final class MultiChannelRendererTests: XCTestCase {
          * }
          */
         /**
-         * // 사용 예시:
+         * // Use Example:
          * let data = renderer.captureCurrentFrame(format: .png)
          * let data = renderer.captureCurrentFrame(format: .jpeg(quality: 0.8))
          * @endcode
@@ -2100,38 +2102,38 @@ final class MultiChannelRendererTests: XCTestCase {
         let formats: [CaptureImageFormat] = [.png, .jpeg]
 
         /**
-         * 각 포맷이 존재하는지 확인
+         * each formatis existsto Check
          */
         /**
-         * for 루프로 모든 포맷 검증:
-         * - .png 검증
-         * - .jpeg 검증
-         */
-        /**
-         *
-         * @section xctassertnotnil_format_____ 💡 XCTAssertNotNil(format)의 의미
-         * - enum case는 nil이 될 수 없으므로 항상 통과
-         * - 하지만 컴파일 시점에 타입 체크 보장
-         * - 나중에 Optional로 변경되어도 안전
+         * for loopto all format Verify:
+         * - .png Verify
+         * - .jpeg Verify
          */
         /**
          *
-         * @section ___________ 🔍 더 나은 테스트 방법
+         * @section xctassertofnil_format🎯 💡 XCTAssertNotNil(format)of Meaning
+         * - enum case can never be nil so always passes
+         * - But guarantee type check at compile time
+         * - orimportantto Optionalto Changebecomealso insidebefore
+         */
+        /**
+         *
+         * @section __💡 🔍 additional test method
          * @endcode
-         * // 실제 렌더링 후 포맷 테스트 (통합 테스트에서)
+         * // actual Rendering after format Test (integration Testin)
          * let pngData = renderer.captureCurrentFrame(format: .png)
          * let jpegData = renderer.captureCurrentFrame(format: .jpeg(quality: 0.8))
          */
         /**
-         * // PNG 시그니처 확인 (89 50 4E 47)
+         * // PNG whensignature Check (89 50 4E 47)
          * XCTAssertEqual(pngData?.prefix(4), Data([0x89, 0x50, 0x4E, 0x47]))
          */
         /**
-         * // JPEG 시그니처 확인 (FF D8 FF)
+         * // JPEG whensignature Check (FF D8 FF)
          * XCTAssertEqual(jpegData?.prefix(3), Data([0xFF, 0xD8, 0xFF]))
          */
         /**
-         * // 파일 크기 비교
+         * // file size Comparcanon
          * XCTAssertLessThan(jpegData!.count, pngData!.count)
          * @endcode
          */
@@ -2141,88 +2143,88 @@ final class MultiChannelRendererTests: XCTestCase {
     }
 
     // ─────────────────────────────────────────────────────────────────────
-    // MARK: - Performance Tests (성능 테스트)
+    // MARK: - Performance Tests (Performance Test)
     // ─────────────────────────────────────────────────────────────────────
 
     /**
-     * 레이아웃 모드 변경 성능 테스트
+     * layout Mode Change Performance Test
      */
     /**
-     * 레이아웃 모드를 빠르게 전환할 때의 성능을 측정합니다.
-     */
-    /**
-     *
-     * @section _____ 🎯 측정 항목
-     * - 1000번 반복 시 평균 실행 시간
-     * - 메모리 할당 횟수
-     * - CPU 사용률
+     * layout Mode fastly measure performance when transitioning.
      */
     /**
      *
-     * @section measure_______ 💡 measure 블록의 동작
-     * @endcode
-     * 1. 코드를 10번 실행 (warmup 1회 + 측정 9회)
-     * 2. 각 실행 시간 측정
-     * 3. 평균, 표준편차 계산
-     * 4. 기준값(baseline)과 비교
-     * @endcode
+     * @section 🎯 🎯 measurement item
+     * - 1000times iteration when Average execution Time
+     * - memory allocation count
+     * - CPU Usage rate
      */
     /**
      *
-     * @section _____ 📊 성능 기준
+     * @section measure_🎯 💡 measure blockof Behavior
      * @endcode
-     * 우수:   < 0.1초 (1000번 반복)
-     * 양호:   < 0.5초
-     * 보통:   < 1.0초
-     * 느림:   > 1.0초
+     * 1. code 10times execution (warmup 1times + measurement 9times)
+     * 2. each execution Time measurement
+     * 3. Average, standarddeviation Calculation
+     * 4. CriteriaValue(baseline)and Comparcanon
      * @endcode
      */
     /**
      *
-     * @section ________ 🔍 성능 문제 원인
-     * - 불필요한 메모리 할당
-     * - 레이아웃 재계산 오버헤드
-     * - 동기화 잠금 경합
-     * - 통지(notification) 오버헤드
+     * @section 🎯 📊 Performance Criteria
+     * @endcode
+     * Count:   < 0.1seconds (1000times iteration)
+     * good:   < 0.5seconds
+     * average:   < 1.0seconds
+     * slow:   > 1.0seconds
+     * @endcode
      */
     /**
      *
-     * @section ______ 💡 최적화 방법
+     * @section __🎯 🔍 Performance Problem cause
+     * - Unnecessary memory allocation
+     * - Recalculate layout overHEAD
+     * - synchronization lock contention
+     * - throughof(ofification) overHEAD
+     */
+    /**
+     *
+     * @section 🎯 💡 optimization method
      * @endcode
-     * // ❌ 느린 구현
+     * // ❌ slow implementation
      * func setLayoutMode(_ mode: LayoutMode) {
      *     self.layoutMode = mode
-     *     recalculateAllViewports()      // 항상 재계산
-     *     notifyAllObservers()            // 모든 관찰자에게 통지
-     *     invalidateWholeScreen()         // 전체 화면 다시 그리기
+     *     recalculateAllViewports()      // always recalculation
+     *     notifyAllObservers()()            // all Notify all observers
+     *     invalidateWholeScreen()         // Redraw entire screen
      * }
      */
     /**
      * @test testLayoutModeChangePerformance
-     * @brief // ✅ 빠른 구현
+     * @brief // ✅ fast implementation
      *
      * @details
-     * // ✅ 빠른 구현
+     * // ✅ fast implementation
      * func setLayoutMode(_ mode: LayoutMode) {
-     *     guard self.layoutMode != mode else { return }  // 같으면 skip
+     *     guard self.layoutMode != mode else { return }  // sameif skip
      *     self.layoutMode = mode
-     *     scheduleLayoutUpdate()          // 배치로 업데이트
-     *     invalidateLayoutRegion()        // 필요한 영역만
+     *     scheduleLayoutUpdate()          // Schedule layout update
+     *     invalidateLayoutRegion()        // Only necessary area
      * }
      * @endcode
      */
     func testLayoutModeChangePerformance() {
         /**
-         * measure 블록으로 성능 측정
+         * measure performance with measure block
          */
         /**
-         * 측정 대상:
-         * - 3개 레이아웃 모드 전환 × 1000회 = 총 3000번 전환
-         * - 각 전환의 평균 시간
+         * measurement target:
+         * - 3single layout Mode transitions × 1000 times = total 3000 transitions
+         * - each Transitionof Average Time
          */
         /**
          *
-         * @section xcode__________ 📊 XCode의 성능 측정 결과
+         * @section xcode_💡 📊 XCodeof Performance measurement result
          * @endcode
          * Average: 0.124 sec
          * Baseline: 0.150 sec
@@ -2230,18 +2232,18 @@ final class MultiChannelRendererTests: XCTestCase {
          */
         /**
          *
-         * @section passed_________17____ ✅ Passed - 기준값보다 17% 빠름
+         * @section passed_________17____ ✅ Passed - CriteriaValuethan 17% fast
          * @endcode
          */
         /**
          *
-         * @section __________ 💡 성능 리그레션 감지
-         * - 이전 측정값을 baseline으로 저장
-         * - 새 코드가 10% 이상 느려지면 경고
-         * - CI/CD에서 자동으로 실패 처리 가능
+         * @section _💡 💡 Performance regression Detection
+         * - save baseline with expected measurement value
+         * - warning if new code is 10% or more slower
+         * - CI/CDin automatically Failure handling possible
          */
         /**
-         * 🔧 성능 개선 후 확인:
+         * 🔧 Performance optimization check:
          * @endcode
          * Before: 0.500 sec
          * After:  0.124 sec
@@ -2250,23 +2252,23 @@ final class MultiChannelRendererTests: XCTestCase {
          */
         measure {
             /**
-             * 1000번 반복 실행
+             * 1000times iteration execution
              */
             ///
             /**
              *
-             * @section __1000____ 💡 왜 1000번인가?
-             * - 충분히 측정 가능한 시간 확보
-             * - 노이즈 제거 (평균으로 안정화)
-             * - 너무 길지 않아 테스트 스위트 전체 시간 최소화
+             * @section __1000____ 💡 why 1000timescancan?
+             * - secure sufficient time for measurement
+             * - noise removal (Averageuhto insidepurification)
+             * - minimize total test suite time by not being too verbose
              */
             ///
             /**
-             * 📐 계산:
+             * 📐 Calculation:
              * @endcode
-             * 1회 전환: 0.0001초 (100 μs)
-             * 1000회: 0.1초
-             * 10회 측정: 1초 (허용 범위)
+             * 1times transition: 0.0001seconds (100 μs)
+             * 1000times: 0.1seconds
+             * 10times measurement: 1seconds (allowed range)
              * @endcode
              */
             for _ in 0..<1000 {
@@ -2278,70 +2280,70 @@ final class MultiChannelRendererTests: XCTestCase {
     }
 
     /**
-     * 포커스 위치 변경 성능 테스트
+     * Focus Position Change Performance Test
      */
     /**
-     * 포커스 카메라 위치를 빠르게 전환할 때의 성능을 측정합니다.
-     */
-    /**
-     *
-     * @section _____ 🎯 측정 항목
-     * - 1000번 반복 시 평균 실행 시간
-     * - 레이아웃 모드 변경보다 빠른지 확인
+     * Focus camera Position fastly measure performance when transitioning.
      */
     /**
      *
-     * @section ___________________ 💡 포커스 위치 변경이 더 가벼운 이유
+     * @section 🎯 🎯 measurement item
+     * - 1000times iteration when Average execution Time
+     * - layout Mode Changethan fastof Check
+     */
+    /**
+     *
+     * @section ______💡 💡 reason focus position change is more lightweight
      * @endcode
      * setLayoutMode():
-     * - 전체 레이아웃 재계산
-     * - 모든 뷰포트 크기 변경
-     * - 렌더 파이프라인 재구성
+     * - entire Recalculate layout
+     * - all Viewport size Change
+     * - render pipeline reconstruction
      */
     /**
      * setFocusedPosition():
-     * - 한 개 프로퍼티만 변경
-     * - Focus 모드에서만 영향
-     * - 뷰포트 크기는 유지 (배치만 변경)
+     * - limited single protopropertyonly Change
+     * - Focus Modeinonly zerotoward
+     * - Viewport sizeis maintained (arrangementonly Change)
      * @endcode
      */
     /**
      * @test testFocusPositionChangePerformance
-     * @brief 📊 예상 성능:
+     * @brief 📊 Example上 Performance:
      *
      * @details
      *
-     * @section _____ 📊 예상 성능
+     * @section 🎯 📊 Example上 Performance
      * @endcode
-     * setFocusedPosition: 0.050 sec (1000회)
-     * setLayoutMode:      0.124 sec (1000회)
-     * 약 2.5배 더 빠름
+     * setFocusedPosition: 0.050 sec (1000times)
+     * setLayoutMode:      0.124 sec (1000times)
+     * if 2.5x more fast
      * @endcode
      */
     func testFocusPositionChangePerformance() {
         measure {
             /**
-             * 1000번 반복 실행
+             * 1000times iteration execution
              */
             ///
             /**
-             * 4개 위치 × 1000회 = 총 4000번 전환
-             */
-            ///
-            /**
-             *
-             * @section __4__________ 💡 왜 4개만 테스트하나요?
-             * - .interior는 생략 (모든 위치를 테스트할 필요 없음)
-             * - 대표적인 4방향만으로 충분
-             * - 실행 시간 단축
+             * 4single Position × 1000times = total 4000times Transition
              */
             ///
             /**
              *
-             * @section _____ 🔄 실행 순서
+             * @section __4_💡 💡 why 4singleonly Testoneneed?
+             * - .interiorthe omit (all Position Testwill necessary none)
+             * - representativeis 4directiononlyuhto sufficient
+             * - execution Time shorten
+             */
+            ///
+            /**
+             *
+             * @section 🎯 🔄 execution order
              * @endcode
              * .front → .rear → .left → .right → .front → ...
-             * (1000회 반복)
+             * (1000times iteration)
              * @endcode
              */
             for _ in 0..<1000 {
@@ -2354,132 +2356,132 @@ final class MultiChannelRendererTests: XCTestCase {
     }
 
     // ─────────────────────────────────────────────────────────────────────
-    // MARK: - Memory Management Tests (메모리 관리 테스트)
+    // MARK: - Memory Management Tests (Memory Management Test)
     // ─────────────────────────────────────────────────────────────────────
 
     /**
-     * 렌더러 소멸자(deinit) 테스트
+     * Renderer destructor(deinit) Test
      */
     /**
-     * 렌더러 인스턴스가 올바르게 메모리에서 해제되는지 확인합니다.
-     */
-    /**
-     *
-     * @section _____ 🎯 검증 항목
-     * - 렌더러를 nil로 설정하면 메모리에서 해제되는가?
-     * - 메모리 누수가 없는가?
-     * - 순환 참조가 없는가?
+     * Renderer instanceis correctly Memoryin releasedof Check.
      */
     /**
      *
-     * @section _______________ 💡 메모리 누수가 발생하는 경우
+     * @section 🎯 🎯 Verification single
+     * - Renderer nilto Settingsdoif Memoryin releasedcan?
+     * - Memory leakis not exist?
+     * - circular referenceis not exist?
+     */
+    /**
+     *
+     * @section __💡 💡 Memory leakis occurrencedothe case
      * @endcode
-     * // ❌ 순환 참조 (Retain Cycle)
+     * // ❌ circular reference (Retain Cycle)
      * class Renderer {
      *     var delegate: Delegate?
      *     init() {
      *         delegate = Delegate()
-     *         delegate?.renderer = self  // 강한 참조!
+     *         delegate?.renderer = self  // strong reference!
      *     }
      * }
      */
     /**
-     * // ✅ weak로 순환 참조 방지
+     * // ✅ weakto circular reference roomof
      * class Renderer {
      *     weak var delegate: Delegate?
      *     init() {
      *         delegate = Delegate()
-     *         delegate?.renderer = self  // weak 참조
+     *         delegate?.renderer = self  // weak reference
      *     }
      * }
      * @endcode
      */
     /**
      *
-     * @section __________ 🔍 메모리 누수 디버깅
+     * @section _💡 🔍 Memory leak debugging
      * @endcode
-     * 1. Instruments → Leaks 도구 실행
-     * 2. 렌더러 생성/해제 반복
-     * 3. 메모리 그래프에서 살아있는 객체 확인
-     * 4. 순환 참조 체인 분석
+     * 1. Instruments → Leaks alsoold execution
+     * 2. Renderer Creation/release iteration
+     * 3. Memory graphin alivethe object Check
+     * 4. circular reference bodyis analysis
      * @endcode
      */
     /**
      *
-     * @section ___________ 📊 정상적인 메모리 패턴
+     * @section __💡 📊 normalticis Memory pattern
      * @endcode
-     * 생성 → 메모리 100MB ↑
-     * 사용 → 메모리 100MB 유지
-     * 해제 → 메모리 100MB ↓
+     * Creation → Memory 100MB ↑
+     * Use → Memory 100MB retained
+     * release → Memory 100MB ↓
      * @endcode
      */
     /**
      * @test testRendererDeinit
-     * @brief ⚠️ 메모리 누수 패턴:
+     * @brief ⚠️ Memory leak pattern:
      *
      * @details
      *
-     * @section _________ ⚠️ 메모리 누수 패턴
+     * @section 💡 ⚠️ Memory leak pattern
      * @endcode
-     * 생성 → 메모리 100MB ↑
-     * 사용 → 메모리 100MB 유지
-     * 해제 → 메모리 유지 (누수!)
+     * Creation → Memory 100MB ↑
+     * Use → Memory 100MB retained
+     * release → Memory retained (leak!)
      * @endcode
      */
     func testRendererDeinit() {
         // ─────────────────────────────────────────────────────────────────
-        // Given: 새로운 렌더러 인스턴스 생성
+        // Given: new Renderer instance Creation
         // ─────────────────────────────────────────────────────────────────
 
         /**
-         * 테스트용 렌더러 생성
+         * Testfor Renderer Creation
          */
         /**
-         * var로 선언하여 nil 할당 가능하게 함
+         * varto declarationby nil allocation possibledoly does
          */
         /**
          *
-         * @section optional____________ 💡 Optional 타입을 사용하는 이유
-         * - nil을 할당하여 해제 시뮬레이션
-         * - ARC가 참조 카운트를 0으로 만들 수 있음
-         * - deinit이 호출되는지 간접 확인
+         * @section focus📊 💡 Optional type Usedothe Reason
+         * - nil allocationby release whenmulationcantion
+         * - ARCis reference count 0uhto onlys number exists
+         * - deinitis calldof direct Check
          */
         /**
          * 🔢 ARC (Automatic Reference Counting):
          * @endcode
          * var testRenderer = MultiChannelRenderer()  // retain count = 1
-         * let anotherRef = testRenderer              // retain count = 2
-         * anotherRef = nil                          // retain count = 1
+         * let aofherRef = testRenderer              // retain count = 2
+         * aofherRef = nil                          // retain count = 1
          * testRenderer = nil                        // retain count = 0 → deinit!
          * @endcode
          */
         var testRenderer: MultiChannelRenderer? = MultiChannelRenderer()
 
         // ─────────────────────────────────────────────────────────────────
-        // When: 렌더러를 nil로 설정
+        // When: Renderer nilto Settings
         // ─────────────────────────────────────────────────────────────────
 
         /**
-         * nil 할당으로 참조 해제
+         * nil allocationuhto reference release
          */
         /**
-         * 이 시점에 일어나는 일:
-         * 1. testRenderer의 참조 카운트 감소
-         * 2. 참조 카운트가 0이 되면 deinit 호출
-         * 3. 소유한 모든 리소스 해제:
-         *    - MTLDevice 해제
-         *    - MTLCommandQueue 해제
-         *    - 모든 텍스처 해제
-         *    - 캡처 서비스 해제
+         * is pointto occursorthe work:
+         * 1. testRendererof reference count decrease
+         * 2. reference countis 0is becomeif deinit call
+         * 3. owns all resource release:
+         *    - MTLDevice deallocation
+         *    - MTLCommandQueue deallocation
+         *    - all Texture release
+         *    - Capture service deallocation
          */
         /**
          *
-         * @section deinit______ 💡 deinit 구현 예시
+         * @section deinit🎯 💡 deinit implementation Example
          * @endcode
          * class MultiChannelRenderer {
          *     deinit {
          *         print("Renderer being deinitialized")
-         *         // Metal 리소스 정리
+         *         // Metal resource cleanup
          *         commandQueue = nil
          *         device = nil
          *         textures.removeAll()
@@ -2490,35 +2492,35 @@ final class MultiChannelRendererTests: XCTestCase {
         testRenderer = nil
 
         // ─────────────────────────────────────────────────────────────────
-        // Then: nil이 되었는지 확인
+        // Then: nilis edto Check
         // ─────────────────────────────────────────────────────────────────
 
         /**
-         * nil 확인
+         * nil Check
          */
         /**
-         * XCTAssertNil의 검증:
-         * - testRenderer가 nil인지 확인
-         * - 항상 통과해야 함 (위에서 nil 할당)
-         */
-        /**
-         *
-         * @section ____________ 💡 이 테스트의 실제 목적
-         * - deinit이 크래시 없이 완료되는지 확인
-         * - 메모리 누수 도구와 함께 사용
-         * - Instruments로 실행 시 누수 자동 감지
+         * XCTAssertNilof Verify:
+         * - testRendereris nilcanof Check
+         * - always throughandshould (abovein nil allocation)
          */
         /**
          *
-         * @section ________ 🔍 추가 검증 방법
+         * @section 📊 💡 is Testof actual purpose
+         * - check deinit completes without crash
+         * - Memory leak alsooldand together Use
+         * - Instrumentsto execution when leak automatic Detection
+         */
+        /**
+         *
+         * @section __🎯 🔍 addition Verify method
          * @endcode
-         * // weak 참조로 deinit 확인
+         * // weak referenceto deinit Check
          * weak var weakRenderer: MultiChannelRenderer?
          * autoreleasepool {
          *     let renderer = MultiChannelRenderer()
          *     weakRenderer = renderer
          *     XCTAssertNotNil(weakRenderer)
-         * } // renderer 범위 종료 → deinit
+         * } // renderer Range termination → deinit
          * XCTAssertNil(weakRenderer, "Renderer should be deallocated")
          * @endcode
          */
@@ -2526,41 +2528,41 @@ final class MultiChannelRendererTests: XCTestCase {
     }
 
     // ─────────────────────────────────────────────────────────────────────
-    // MARK: - Thread Safety Tests (스레드 안전성 테스트)
+    // MARK: - Thread Safety Tests (Thread Safety Test)
     // ─────────────────────────────────────────────────────────────────────
 
     /**
-     * 동시 레이아웃 모드 변경 테스트
+     * Concurrent layout Mode Change Test
      */
     /**
-     * 여러 스레드에서 동시에 레이아웃 모드를 변경할 때 크래시가 발생하지 않는지 확인합니다.
-     */
-    /**
-     *
-     * @section _____ 🎯 검증 항목
-     * - 동시성 환경에서 크래시 없는가?
-     * - 데이터 경쟁(Data Race)이 없는가?
-     * - 잠금 메커니즘이 올바르게 작동하는가?
+     * multiple Threadin Concurrentto layout Mode Changewill when crashwhenis occurrenceof doto Check.
      */
     /**
      *
-     * @section _______data_race____ 💡 데이터 경쟁(Data Race)이란?
+     * @section 🎯 🎯 Verification single
+     * - Concurrent性 environmentin crashwhen not exist?
+     * - Data race(Data Race)is not exist?
+     * - lock mechanismis correctly worksthecan?
+     */
+    /**
+     *
+     * @section _______data_race____ 💡 What is data race?
      * @endcode
-     * // ❌ 스레드 안전하지 않은 코드
+     * // ❌ Thread insidebeforeof dothe code
      * var layoutMode: LayoutMode = .grid
      */
     /**
      * // Thread 1:
-     * layoutMode = .focus     // 쓰기
+     * layoutMode = .focus     // write
      */
     /**
-     * // Thread 2 (동시에):
-     * print(layoutMode)       // 읽기 → 예측 불가능한 결과!
+     * // Thread 2 (Concurrentto):
+     * print(layoutMode)       // read → Examplemeasure notpossiblelimited result!
      * @endcode
      */
     /**
      *
-     * @section __________ ✅ 스레드 안전한 구현
+     * @section _💡 ✅ Thread insidegraceful implementation
      * @endcode
      * class Renderer {
      *     private var _layoutMode: LayoutMode = .grid
@@ -2584,132 +2586,132 @@ final class MultiChannelRendererTests: XCTestCase {
      */
     /**
      *
-     * @section _________ 🔍 동시성 버그 증상
-     * - 간헐적 크래시 (재현 어려움)
-     * - EXC_BAD_ACCESS 에러
-     * - 데이터 손상
-     * - 교착 상태(Deadlock)
+     * @section 💡 🔍 Concurrent性 bug symptoms
+     * - redsporadic crashwhen (reproduction difficulty)
+     * - EXC_BAD_ACCESS error
+     * - Data corruption
+     * - deadlock State(Deadlock)
      */
     /**
      * @test testConcurrentLayoutModeChange
-     * @brief 📊 테스트 전략:
+     * @brief 📊 Test strategy:
      *
      * @details
      *
-     * @section ______ 📊 테스트 전략
+     * @section 🎯 📊 Test strategy
      * @endcode
-     * 100번 반복 → 3개 모드 → 33~34회씩 각 모드 설정
-     * 여러 스레드가 동시에 실행 → 경쟁 조건 유도
-     * 크래시 없으면 통과
+     * 100times iteration → 3single Mode → 33~34timeseach each Mode Settings
+     * Concurrent execution on multiple threads → can have race condition
+     * crashwhen withoutif throughand
      * @endcode
      */
     func testConcurrentLayoutModeChange() {
         // ─────────────────────────────────────────────────────────────────
-        // When: 여러 스레드에서 레이아웃 모드 변경
+        // When: multiple Threadin layout Mode Change
         // ─────────────────────────────────────────────────────────────────
 
         /**
-         * DispatchQueue.concurrentPerform를 사용한 동시 실행
+         * DcanpatchQueue.concurrentPerform Uselimited Concurrent execution
          */
         /**
-         * 동작 방식:
-         * - 100번의 반복을 여러 스레드에 분산
-         * - 시스템이 최적의 스레드 수 결정 (보통 CPU 코어 수)
-         * - 각 스레드가 동시에 setLayoutMode() 호출
+         * Behavior method:
+         * - 100timesof iteration multiple Threadto distribution
+         * - whensystemis optimalof Thread number decision (average CPU core number)
+         * - each Threadis Concurrentto setLayoutMode() call
          */
         /**
          *
-         * @section concurrentperform____ 💡 concurrentPerform의 특징
+         * @section concurrentperform____ 💡 concurrentPerformof charactercantics
          * @endcode
-         * DispatchQueue.concurrentPerform(iterations: 100) { index in
-         *     // 이 블록이 여러 스레드에서 동시에 실행됨
+         * DcanpatchQueue.concurrentPerform(iterations: 100) { index in
+         *     // is blockis multiple Threadin Concurrentto executionis
          *     // index: 0~99
          * }
-         * // 모든 반복이 끝날 때까지 대기
+         * // all iterationis endday whento waiting
          * @endcode
          */
         /**
          *
-         * @section _______4_______ 🔄 실행 예시 (4코어 시스템)
+         * @section _______4_🎯 🔄 execution Example (4core whensystem)
          * @endcode
-         * Thread 1: index 0, 4, 8, 12, ... (setLayoutMode를 25회)
-         * Thread 2: index 1, 5, 9, 13, ... (setLayoutMode를 25회)
-         * Thread 3: index 2, 6, 10, 14, ... (setLayoutMode를 25회)
-         * Thread 4: index 3, 7, 11, 15, ... (setLayoutMode를 25회)
-         * → 100회 모두 동시에 실행
+         * Thread 1: index 0, 4, 8, 12, ... (setLayoutMode 25times)
+         * Thread 2: index 1, 5, 9, 13, ... (setLayoutMode 25times)
+         * Thread 3: index 2, 6, 10, 14, ... (setLayoutMode 25times)
+         * Thread 4: index 3, 7, 11, 15, ... (setLayoutMode 25times)
+         * → 100times all Concurrentto execution
          * @endcode
          */
         /**
          *
-         * @section _____ 📊 모드 분포
+         * @section 🎯 📊 Mode distribution
          * @endcode
-         * index % 3 == 0 → .grid       (33~34회)
-         * index % 3 == 1 → .focus      (33회)
-         * index % 3 == 2 → .horizontal (33회)
+         * index % 3 == 0 → .grid       (33~34times)
+         * index % 3 == 1 → .focus      (33times)
+         * index % 3 == 2 → .horizontal (33times)
          * @endcode
          */
-        DispatchQueue.concurrentPerform(iterations: 100) { index in
+        DcanpatchQueue.concurrentPerform(iterations: 100) { index in
             /**
-             * 레이아웃 모드 배열
+             * layout Mode array
              */
             let modes: [LayoutMode] = [.grid, .focus, .horizontal]
 
             /**
-             * index를 3으로 나눈 나머지로 모드 선택
+             * index 3uhto oreye otherofto Mode focus
              */
             ///
             /**
              *
-             * @section _______modulo_ 💡 % 연산자 (modulo)
+             * @section _______modulo_ 💡 % operator (modulo)
              * @endcode
              * 0 % 3 = 0 → modes[0] = .grid
              * 1 % 3 = 1 → modes[1] = .focus
              * 2 % 3 = 2 → modes[2] = .horizontal
-             * 3 % 3 = 0 → modes[0] = .grid (반복)
+             * 3 % 3 = 0 → modes[0] = .grid (iteration)
              * ...
              * @endcode
              */
             ///
             /**
              *
-             * @section __________ 🔄 동시에 일어나는 일
+             * @section _💡 🔄 Concurrentto occursorthe work
              * @endcode
              * Thread 1: renderer.setLayoutMode(.grid)
-             * Thread 2: renderer.setLayoutMode(.focus)      ← 동시!
-             * Thread 3: renderer.setLayoutMode(.horizontal) ← 동시!
-             * Thread 4: renderer.setLayoutMode(.grid)       ← 동시!
+             * Thread 2: renderer.setLayoutMode(.focus)      ← Concurrent!
+             * Thread 3: renderer.setLayoutMode(.horizontal) ← Concurrent!
+             * Thread 4: renderer.setLayoutMode(.grid)       ← Concurrent!
              * @endcode
              */
             ///
             /**
              *
-             * @section ____________ ⚠️ 스레드 안전하지 않으면
-             * - 읽기/쓰기 충돌
-             * - 크래시 발생
-             * - 데이터 손상
+             * @section 📊 ⚠️ Thread insidebeforeof douhif
+             * - read/write conflict
+             * - crashwhen occurrence
+             * - Data corruption
              */
             renderer.setLayoutMode(modes[index % 3])
         }
 
         // ─────────────────────────────────────────────────────────────────
-        // Then: 크래시하지 않아야 함
+        // Then: crashwhenof doshould does
         // ─────────────────────────────────────────────────────────────────
 
         /**
-         * 렌더러가 여전히 유효한지 확인
+         * Check renderer is still valid
          */
         /**
          *
-         * @section __assertion____ 💡 이 assertion의 의미
-         * - 실제로는 "크래시하지 않았음"을 검증
-         * - 여기까지 도달했다 = 크래시 없음
-         * - renderer가 손상되지 않았음
+         * @section __assertion____ 💡 is assertionof Meaning
+         * - actualtothe "crashwhenof dowas" Verify
+         * - hereto alsoreached = crashwhen none
+         * - rendereris corruptionbecomeof did notness
          */
         /**
          *
-         * @section ____________ 🔍 추가 검증 가능한 항목
+         * @section 📊 🔍 addition Verify possiblelimited item
          * @endcode
-         * // 최종 상태가 유효한 값인지 확인
+         * // final Stateis valid Valuecanof Check
          * XCTAssertTrue(
          *     renderer.layoutMode == .grid ||
          *     renderer.layoutMode == .focus ||
@@ -2717,7 +2719,7 @@ final class MultiChannelRendererTests: XCTestCase {
          * )
          */
         /**
-         * // 캡처 서비스가 여전히 유효한지 확인
+         * // Check capture service is still valid
          * XCTAssertNotNil(renderer.captureService)
          * @endcode
          */
@@ -2725,111 +2727,111 @@ final class MultiChannelRendererTests: XCTestCase {
     }
 
     /**
-     * 동시 포커스 위치 변경 테스트
+     * Concurrent Focus Position Change Test
      */
     /**
-     * 여러 스레드에서 동시에 포커스 위치를 변경할 때 크래시가 발생하지 않는지 확인합니다.
-     */
-    /**
-     *
-     * @section _____ 🎯 검증 항목
-     * - 포커스 위치 변경도 스레드 안전한가?
-     * - 레이아웃 모드와 포커스 위치를 동시에 변경해도 안전한가?
+     * multiple Threadin Concurrentto Focus Position Changewill when crashwhenis occurrenceof doto Check.
      */
     /**
      *
-     * @section ___________ 💡 복합 동시성 시나리오
+     * @section 🎯 🎯 Verification single
+     * - Focus Position changeLongitude Thread insidegracefulcan?
+     * - layout Modeand Focus Position Concurrentto Changedoalso insidegracefulcan?
+     */
+    /**
+     *
+     * @section __💡 💡 composite Concurrent性 scenario
      * @endcode
      * // Thread 1:
      * renderer.setLayoutMode(.focus)
      * renderer.setFocusedPosition(.front)
      */
     /**
-     * // Thread 2 (동시에):
+     * // Thread 2 (Concurrentto):
      * renderer.setLayoutMode(.grid)
      * renderer.setFocusedPosition(.rear)
      */
     /**
-     * // 두 작업이 충돌하지 않아야 함!
+     * // two workingis conflictof doshould does!
      * @endcode
      */
     /**
      * @test testConcurrentFocusPositionChange
-     * @brief 🔒 보호해야 할 공유 상태:
+     * @brief 🔒 protectedshould will share State:
      *
      * @details
-     * 🔒 보호해야 할 공유 상태:
+     * 🔒 protectedshould will share State:
      * @endcode
-     * - layoutMode 프로퍼티
-     * - focusedPosition 프로퍼티
-     * - 뷰포트 계산 결과
-     * - 렌더링 상태
+     * - layoutMode protoproperty
+     * - focusedPosition protoproperty
+     * - Viewport Calculation result
+     * - Rendering State
      * @endcode
      */
     func testConcurrentFocusPositionChange() {
         // ─────────────────────────────────────────────────────────────────
-        // When: 여러 스레드에서 포커스 위치 변경
+        // When: multiple Threadin Focus Position Change
         // ─────────────────────────────────────────────────────────────────
 
         /**
-         * 100번 반복을 동시 실행
+         * 100times iteration Concurrent execution
          */
         /**
          *
-         * @section 5________ 💡 5개 위치를 순환
+         * @section 5__🎯 💡 5single Position circular
          * @endcode
-         * index % 5 == 0 → .front    (20회)
-         * index % 5 == 1 → .rear     (20회)
-         * index % 5 == 2 → .left     (20회)
-         * index % 5 == 3 → .right    (20회)
-         * index % 5 == 4 → .interior (20회)
+         * index % 5 == 0 → .front    (20times)
+         * index % 5 == 1 → .rear     (20times)
+         * index % 5 == 2 → .left     (20times)
+         * index % 5 == 3 → .right    (20times)
+         * index % 5 == 4 → .interior (20times)
          * @endcode
          */
         /**
          *
-         * @section ________ 🔄 동시 실행 패턴
+         * @section __🎯 🔄 Concurrent execution pattern
          * @endcode
          * Thread 1: .front → .front → .front → ...
          * Thread 2: .rear → .rear → .left → ...
          * Thread 3: .left → .right → .interior → ...
          * Thread 4: .right → .interior → .front → ...
-         * (모두 동시에 setFocusedPosition 호출)
+         * (all Concurrentto setFocusedPosition call)
          * @endcode
          */
-        DispatchQueue.concurrentPerform(iterations: 100) { index in
+        DcanpatchQueue.concurrentPerform(iterations: 100) { index in
             /**
-             * 카메라 위치 배열
+             * camera Position array
              */
             let positions: [CameraPosition] = [.front, .rear, .left, .right, .interior]
 
             /**
-             * index를 5로 나눈 나머지로 위치 선택
+             * index 5to oreye otherofto Position focus
              */
             ///
             /**
              *
-             * @section ____________ ⚠️ 배열 인덱스 범위 확인
+             * @section 📊 ⚠️ array canindex Range Check
              * @endcode
-             * index % 5는 항상 0~4 범위
-             * positions 배열 크기: 5
-             * → 안전한 접근 보장
+             * index % 5the always 0~4 Range
+             * positions array size: 5
+             * → insidegraceful access guarantee
              * @endcode
              */
             renderer.setFocusedPosition(positions[index % 5])
         }
 
         // ─────────────────────────────────────────────────────────────────
-        // Then: 크래시하지 않아야 함
+        // Then: crashwhenof doshould does
         // ─────────────────────────────────────────────────────────────────
 
         /**
-         * 렌더러가 여전히 유효한지 확인
+         * Check renderer is still valid
          */
         /**
          *
-         * @section _____________ 💡 스레드 안전성 보장 방법
+         * @section 💡 💡 Thread Safety guarantee method
          * @endcode
-         * // 방법 1: NSLock
+         * // method 1: NSLock
          * private let lock = NSLock()
          * func setFocusedPosition(_ position: CameraPosition) {
          *     lock.lock()
@@ -2838,8 +2840,8 @@ final class MultiChannelRendererTests: XCTestCase {
          * }
          */
         /**
-         * // 방법 2: DispatchQueue
-         * private let queue = DispatchQueue(label: "renderer.queue")
+         * // method 2: DcanpatchQueue
+         * private let queue = DcanpatchQueue(label: "renderer.queue")
          * func setFocusedPosition(_ position: CameraPosition) {
          *     queue.sync {
          *         self.focusedPosition = position
@@ -2847,7 +2849,7 @@ final class MultiChannelRendererTests: XCTestCase {
          * }
          */
         /**
-         * // 방법 3: actor (Swift 5.5+)
+         * // method 3: actor (Swift 5.5+)
          * actor Renderer {
          *     var focusedPosition: CameraPosition = .front
          *     func setFocusedPosition(_ position: CameraPosition) {
@@ -2861,79 +2863,79 @@ final class MultiChannelRendererTests: XCTestCase {
 }
 
 // ═════════════════════════════════════════════════════════════════════════
-// MARK: - Integration Tests (통합 테스트)
+// MARK: - Integration Tests (integration Test)
 // ═════════════════════════════════════════════════════════════════════════
 
-/// 실제 Metal 렌더링이 필요한 통합 테스트
+/// actual Metal Renderingis necessarylimited integration Test
 ///
-/// 단위 테스트와 달리 실제 GPU 렌더링 파이프라인을 검증합니다.
+/// Unlike actual GPU rendering in unit tests pipelineframeis Verify.
 ///
-/// 🎯 통합 테스트의 목적:
-/// - 실제 렌더링 동작 확인
-/// - 여러 컴포넌트의 상호작용 검증
-/// - 엔드투엔드(End-to-End) 시나리오 테스트
+/// 🎯 integration Testof purpose:
+/// - actual Rendering Behavior Check
+/// - multiple componentof interactionfor Verify
+/// - end-to-end(End-to-End) scenario Test
 ///
-/// 💡 단위 테스트 vs 통합 테스트:
+/// 💡 Unit test vs integration test:
 /// ```
-/// 단위 테스트 (Unit Tests):
-/// - 개별 함수/메서드 테스트
-/// - Mock 객체 사용 가능
-/// - 빠른 실행 (밀리초)
-/// - 의존성 최소화
+/// unit Test (Unit Tests):
+/// - singlefor each function/method Test
+/// - Mock object Use possible
+/// - fast execution (milliseconds)
+/// - ofdependency Minimumize
 ///
-/// 통합 테스트 (Integration Tests):
-/// - 여러 컴포넌트 함께 테스트
-/// - 실제 객체 사용
-/// - 느린 실행 (초 단위)
-/// - 실제 환경과 유사
+/// integration Test (Integration Tests):
+/// - multiple component together Test
+/// - actual object Use
+/// - slow execution (seconds unit)
+/// - actual environmentand similar
 /// ```
 ///
-/// 🖼️ 렌더링 파이프라인 통합:
+/// 🖼️ Rendering pipelineframeis integration:
 /// ```
 /// VideoFrame → MultiChannelRenderer → Metal → MTKView
 ///    ↓               ↓                  ↓         ↓
-/// 비디오 데이터   레이아웃 계산     GPU 렌더링  화면 표시
+/// video Data   layout Calculation     GPU Rendering  Screen display
 /// ```
 final class MultiChannelRendererIntegrationTests: XCTestCase {
 
     /**
-     * 테스트 대상 렌더러
+     * Test target Renderer
      */
     var renderer: MultiChannelRenderer!
 
     /**
-     * 테스트용 비디오 프레임
+     * Testfor video Frame
      */
     /**
      *
-     * @section ____________ 💡 실제 통합 테스트에서는
-     * - 실제 비디오 프레임 데이터 필요
-     * - 각 카메라 위치별 프레임
-     * - Metal 텍스처로 변환된 데이터
+     * @section 📊 💡 actual integration Testinthe
+     * - actual video Frame Data necessary
+     * - each camera Positionfor each Frame
+     * - Metal Textureto transformationed Data
      */
     var testFrames: [CameraPosition: VideoFrame]!
 
     /**
-     * 각 통합 테스트 전 설정
+     * each integration Test before Settings
      */
     /**
-     * 단위 테스트와 동일하지만, 추가로:
-     * - 테스트 비디오 프레임 준비
-     * - 렌더링 환경 설정
-     * - MTKView 또는 대체 Drawable 준비
+     * Identical to unit test, additionally:
+     * - Test video Frame preparation
+     * - Rendering environment Settings
+     * - MTKView or replacement Drawable preparation
      */
     override func setUpWithError() throws {
         super.setUp()
 
         /**
-         * Metal 디바이스 확인
+         * Metal device Check
          */
         guard MTLCreateSystemDefaultDevice() != nil else {
-            throw XCTSkip("Metal is not available")
+            throw XCTSkip("Metal is of available")
         }
 
         /**
-         * 렌더러 생성
+         * Renderer Creation
          */
         renderer = MultiChannelRenderer()
         guard renderer != nil else {
@@ -2941,13 +2943,13 @@ final class MultiChannelRendererIntegrationTests: XCTestCase {
         }
 
         /**
-         * 테스트 프레임 생성
+         * Test Frame Creation
          */
         /**
-         * TODO: 실제 비디오 프레임 로드
+         * TODO: actual video Frame load
          */
         /**
-         * 구현 예시:
+         * implementation Example:
          * @endcode
          * let testVideoURL = Bundle(for: type(of: self)).url(
          *     forResource: "test_video",
@@ -2964,17 +2966,17 @@ final class MultiChannelRendererIntegrationTests: XCTestCase {
          */
         /**
          *
-         * @section ____________ 📊 테스트 비디오 요구사항
-         * - 해상도: 1920x1080 또는 1280x720
-         * - 코덱: H.264 또는 H.265
-         * - 길이: 1-2초 (짧은 클립)
-         * - 크기: 1-5MB
+         * @section 📊 📊 Test video requirement
+         * - resolution: 1920x1080 or 1280x720
+         * - codec: H.264 or H.265
+         * - verbosecan: 1-2seconds (shortthe clip)
+         * - size: 1-5MB
          */
         testFrames = [:]
     }
 
     /**
-     * 각 통합 테스트 후 정리
+     * each integration Test after cleanup
      */
     override func tearDownWithError() throws {
         renderer = nil
@@ -2983,150 +2985,150 @@ final class MultiChannelRendererIntegrationTests: XCTestCase {
     }
 
     /**
-     * 빈 프레임으로 렌더링 테스트
+     * empty Frameuhto Rendering Test
      */
     /**
-     * 프레임 데이터가 없을 때도 안전하게 처리하는지 확인합니다.
+     * Frame Datanot exist whenalso insidebeforedoly handlingdoto Check.
      */
     /**
      *
-     * @section _____ 🎯 검증 항목
-     * - 빈 딕셔너리로 렌더링 시도 시 크래시 없는가?
-     * - 에러 처리가 적절한가?
-     * - 검은 화면 또는 빈 화면이 표시되는가?
+     * @section 🎯 🎯 Verification single
+     * - empty dictionaryto Rendering whenalso when crashwhen not exist?
+     * - error handlingis appropriatecan?
+     * - Is black screen or empty screen displayed?
      */
     /**
      * @test testRenderWithEmptyFrames
-     * @brief 💡 실제 구현에서:
+     * @brief 💡 actual implementationin:
      *
      * @details
      *
-     * @section _______ 💡 실제 구현에서
+     * @section _🎯 💡 actual implementationin
      * @endcode
      * func render(frames: [CameraPosition: VideoFrame]) {
-     *     guard !frames.isEmpty else {
-     *         // 빈 화면 렌더링 또는 skip
+     *     guard !frames.canEmpty else {
+     *         // empty Screen Rendering or skip
      *         return
      *     }
-     *     // 정상 렌더링
+     *     // normal Rendering
      * }
      * @endcode
      */
     func testRenderWithEmptyFrames() {
         /**
-         * 빈 프레임 딕셔너리
+         * empty Frame dictionary
          */
         let frames: [CameraPosition: VideoFrame] = [:]
 
         /**
-         * TODO: 실제 렌더링 호출
+         * TODO: actual Rendering call
          */
         /**
-         * 구현 예시:
+         * implementation Example:
          * @endcode
-         * // MTKView 또는 테스트용 Drawable 준비
+         * // MTKView or Testfor Drawable preparation
          * let drawable = createTestDrawable()
          */
         /**
-         * // 렌더링 시도 (크래시하지 않아야 함)
+         * // Rendering whenalso (crashwhenof doshould does)
          * renderer.render(frames: frames, to: drawable)
          */
         /**
-         * // 결과 검증
+         * // Verify result
          * XCTAssertNotNil(drawable.texture)
-         * // 텍스처가 검은색 또는 비어있는지 확인
+         * // Check texture is black or empty
          * @endcode
          *
-         * 렌더러가 여전히 유효한지 확인
+         * Check renderer is still valid
          */
         XCTAssertNotNil(renderer)
     }
 
     /**
-     * Grid 레이아웃 렌더링 테스트
+     * Grid layout Rendering Test
      */
     /**
-     * Grid 모드에서 실제 렌더링이 올바르게 동작하는지 확인합니다.
+     * Grid Modein actual Renderingis correctly Behaviordoto Check.
      */
     /**
      *
-     * @section _____ 🎯 검증 항목
-     * - 모든 채널이 화면에 표시되는가?
-     * - 뷰포트가 올바르게 계산되는가?
-     * - 각 채널의 크기가 동일한가?
+     * @section 🎯 🎯 Verification single
+     * - all Channelis Screento displaydcan?
+     * - Viewportis correctly Calculationdcan?
+     * - each Channelof sizeis samecan?
      */
     /**
      * @test testGridLayoutRendering
-     * @brief 📐 예상 결과 (4채널):
+     * @brief 📐 Example上 result (4Channel):
      *
      * @details
-     * 📐 예상 결과 (4채널):
+     * 📐 Example上 result (4Channel):
      * @endcode
      * ┌─────────┬─────────┐
-     * │ Front   │  Rear   │  각 960x540
+     * │ Front   │  Rear   │  each 960x540
      * ├─────────┼─────────┤
-     * │ Left    │  Right  │  전체 1920x1080
+     * │ Left    │  Right  │  entire 1920x1080
      * └─────────┴─────────┘
      * @endcode
      */
     func testGridLayoutRendering() {
         /**
-         * TODO: Grid 레이아웃 렌더링 검증
+         * TODO: Grid layout Rendering Verify
          */
         /**
-         * 구현 예시:
+         * implementation Example:
          * @endcode
-         * // Grid 모드 설정
+         * // Grid Mode Settings
          * renderer.setLayoutMode(.grid)
          */
         /**
-         * // 4채널 프레임 준비
+         * // 4Channel Frame preparation
          * let frames = prepareTestFrames(
          *     positions: [.front, .rear, .left, .right]
          * )
          */
         /**
-         * // 렌더링
+         * // Rendering
          * let texture = renderer.render(frames: frames, size: CGSize(1920, 1080))
          */
         /**
-         * // 결과 검증
+         * // Verify result
          * XCTAssertNotNil(texture)
          */
         /**
-         * // 각 채널이 올바른 위치에 렌더링되었는지 확인
-         * // (픽셀 샘플링 또는 시각적 비교)
-         * assertChannelVisible(in: texture, at: .topLeft, for: .front)
-         * assertChannelVisible(in: texture, at: .topRight, for: .rear)
-         * assertChannelVisible(in: texture, at: .bottomLeft, for: .left)
-         * assertChannelVisible(in: texture, at: .bottomRight, for: .right)
+         * // each Channelis correct Positionto Renderingedto Check
+         * // (pixel sampling or wheneachtic Comparcanon)
+         * assertChannelVcanible(in: texture, at: .topLeft, for: .front)
+         * assertChannelVcanible(in: texture, at: .topRight, for: .rear)
+         * assertChannelVcanible(in: texture, at: .bottomLeft, for: .left)
+         * assertChannelVcanible(in: texture, at: .bottomRight, for: .right)
          * @endcode
          */
     }
 
     /**
-     * Focus 레이아웃 렌더링 테스트
+     * Focus layout Rendering Test
      */
     /**
-     * Focus 모드에서 메인 채널과 썸네일이 올바르게 표시되는지 확인합니다.
+     * Focus Modein meis Channeland thumbnailis correctly displaydof Check.
      */
     /**
      * @test testFocusLayoutRendering
-     * @brief 🎯 검증 항목:
+     * @brief 🎯 Verification single:
      *
      * @details
      *
-     * @section _____ 🎯 검증 항목
-     * - 포커스 채널이 75% 크기로 표시되는가?
-     * - 썸네일 채널이 25% 영역에 표시되는가?
-     * - 썸네일이 세로로 올바르게 정렬되는가?
+     * @section 🎯 🎯 Verification single
+     * - Focus Channelis 75% sizeto displaydcan?
+     * - thumbnail Channelis 25% areato displaydcan?
+     * - thumbnailis verticalto correctly sortdcan?
      */
     func testFocusLayoutRendering() {
         /**
-         * TODO: Focus 레이아웃 렌더링 검증
+         * TODO: Focus layout Rendering Verify
          */
         /**
-         * 구현 예시:
+         * implementation Example:
          * @endcode
          * renderer.setLayoutMode(.focus)
          * renderer.setFocusedPosition(.front)
@@ -3140,45 +3142,45 @@ final class MultiChannelRendererIntegrationTests: XCTestCase {
          * let texture = renderer.render(frames: frames, size: CGSize(1920, 1080))
          */
         /**
-         * // 메인 채널 확인 (좌측 75%)
-         * assertChannelVisible(
+         * // meis Channel Check (Left 75%)
+         * assertChannelVcanible(
          *     in: texture,
          *     at: CGRect(0, 0, 1440, 1080),
          *     for: .front
          * )
          */
         /**
-         * // 썸네일 확인 (우측 25%)
-         * assertChannelVisible(in: texture, at: CGRect(1440, 0, 480, 270), for: .rear)
-         * assertChannelVisible(in: texture, at: CGRect(1440, 270, 480, 270), for: .left)
-         * assertChannelVisible(in: texture, at: CGRect(1440, 540, 480, 270), for: .right)
+         * // thumbnail Check (Right 25%)
+         * assertChannelVcanible(in: texture, at: CGRect(1440, 0, 480, 270), for: .rear)
+         * assertChannelVcanible(in: texture, at: CGRect(1440, 270, 480, 270), for: .left)
+         * assertChannelVcanible(in: texture, at: CGRect(1440, 540, 480, 270), for: .right)
          * @endcode
          */
     }
 
     /**
-     * Horizontal 레이아웃 렌더링 테스트
+     * Horizontal layout Rendering Test
      */
     /**
-     * Horizontal 모드에서 채널들이 가로로 균등하게 배치되는지 확인합니다.
+     * Horizontal Modein Channelsis cantoto evendoly arrangementdof Check.
      */
     /**
      * @test testHorizontalLayoutRendering
-     * @brief 🎯 검증 항목:
+     * @brief 🎯 Verification single:
      *
      * @details
      *
-     * @section _____ 🎯 검증 항목
-     * - 모든 채널이 동일한 너비를 가지는가?
-     * - 채널 순서가 올바른가?
-     * - 전체 높이를 사용하는가?
+     * @section 🎯 🎯 Verification single
+     * - all Channelis same width canofthecan?
+     * - Channel orderis correctcan?
+     * - entire use height?
      */
     func testHorizontalLayoutRendering() {
         /**
-         * TODO: Horizontal 레이아웃 렌더링 검증
+         * TODO: Horizontal layout Rendering Verify
          */
         /**
-         * 구현 예시:
+         * implementation Example:
          * @endcode
          * renderer.setLayoutMode(.horizontal)
          */
@@ -3191,59 +3193,59 @@ final class MultiChannelRendererIntegrationTests: XCTestCase {
          * let texture = renderer.render(frames: frames, size: CGSize(1920, 1080))
          */
         /**
-         * // 각 채널이 480px 너비로 표시되는지 확인
-         * assertChannelVisible(in: texture, at: CGRect(0, 0, 480, 1080), for: .front)
-         * assertChannelVisible(in: texture, at: CGRect(480, 0, 480, 1080), for: .rear)
-         * assertChannelVisible(in: texture, at: CGRect(960, 0, 480, 1080), for: .left)
-         * assertChannelVisible(in: texture, at: CGRect(1440, 0, 480, 1080), for: .interior)
+         * // each Channelis 480px widthto displaydof Check
+         * assertChannelVcanible(in: texture, at: CGRect(0, 0, 480, 1080), for: .front)
+         * assertChannelVcanible(in: texture, at: CGRect(480, 0, 480, 1080), for: .rear)
+         * assertChannelVcanible(in: texture, at: CGRect(960, 0, 480, 1080), for: .left)
+         * assertChannelVcanible(in: texture, at: CGRect(1440, 0, 480, 1080), for: .interior)
          * @endcode
          */
     }
 
     /**
-     * 렌더링 후 캡처 테스트
+     * Rendering after Capture Test
      */
     /**
-     * 실제 렌더링 후 화면 캡처가 올바르게 동작하는지 확인합니다.
+     * actual Rendering after Screen Captureis correctly Behaviordoto Check.
      */
     /**
      * @test testCaptureAfterRendering
-     * @brief 🎯 검증 항목:
+     * @brief 🎯 Verification single:
      *
      * @details
      *
-     * @section _____ 🎯 검증 항목
-     * - 렌더링 후 캡처 시 Data를 반환하는가?
-     * - Data 크기가 적절한가?
-     * - 이미지 포맷이 올바른가?
+     * @section 🎯 🎯 Verification single
+     * - Rendering after Capture when Data returndo?
+     * - Data sizeis appropriatecan?
+     * - image formatis correctcan?
      */
     func testCaptureAfterRendering() {
         /**
-         * TODO: 렌더링 후 캡처 검증
+         * TODO: Rendering after Capture Verify
          */
         /**
-         * 구현 예시:
+         * implementation Example:
          * @endcode
-         * // 렌더링 수행
+         * // Rendering perform
          * let frames = prepareTestFrames(positions: [.front, .rear])
          * renderer.render(frames: frames, size: CGSize(1920, 1080))
          */
         /**
-         * // 캡처 시도
+         * // Capture whenalso
          * let capturedData = renderer.captureCurrentFrame()
          */
         /**
-         * // 데이터 검증
+         * // Data Verify
          * XCTAssertNotNil(capturedData, "Capture should return data after rendering")
          * XCTAssertGreaterThan(capturedData!.count, 100_000, "Image should have reasonable size")
          */
         /**
-         * // PNG 시그니처 확인
+         * // PNG whensignature Check
          * let pngSignature: [UInt8] = [0x89, 0x50, 0x4E, 0x47]
          * XCTAssertEqual(capturedData!.prefix(4), Data(pngSignature))
          */
         /**
-         * // 이미지로 디코딩 가능한지 확인
+         * // imageto Decoding possiblelimitedof Check
          * #if os(macOS)
          * let image = NSImage(data: capturedData!)
          * XCTAssertNotNil(image)
@@ -3254,51 +3256,51 @@ final class MultiChannelRendererIntegrationTests: XCTestCase {
     }
 
     /**
-     * 다양한 캡처 포맷 테스트
+     * various Capture format Test
      */
     /**
-     * PNG와 JPEG 포맷으로 캡처했을 때 결과가 올바른지 확인합니다.
+     * PNGand JPEG formatuhto Capturedid when resultis correctof Check.
      */
     /**
      * @test testCaptureDifferentFormats
-     * @brief 🎯 검증 항목:
+     * @brief 🎯 Verification single:
      *
      * @details
      *
-     * @section _____ 🎯 검증 항목
-     * - PNG와 JPEG 모두 캡처 가능한가?
-     * - JPEG가 PNG보다 작은가?
-     * - 각 포맷의 시그니처가 올바른가?
+     * @section 🎯 🎯 Verification single
+     * - PNGand JPEG all Capture possible?
+     * - JPEGis PNGthan smallthecan?
+     * - each formatof whensignatureis correctcan?
      */
     func testCaptureDifferentFormats() {
         /**
-         * TODO: 포맷별 캡처 검증
+         * TODO: formatfor each Capture Verify
          */
         /**
-         * 구현 예시:
+         * implementation Example:
          * @endcode
-         * // 렌더링
+         * // Rendering
          * let frames = prepareTestFrames(positions: [.front])
          * renderer.render(frames: frames, size: CGSize(1920, 1080))
          */
         /**
-         * // PNG 캡처
+         * // PNG Capture
          * let pngData = renderer.captureCurrentFrame(format: .png)
          * XCTAssertNotNil(pngData)
          * XCTAssertEqual(pngData!.prefix(4), Data([0x89, 0x50, 0x4E, 0x47]))
          */
         /**
-         * // JPEG 캡처
+         * // JPEG Capture
          * let jpegData = renderer.captureCurrentFrame(format: .jpeg(quality: 0.8))
          * XCTAssertNotNil(jpegData)
          * XCTAssertEqual(jpegData!.prefix(3), Data([0xFF, 0xD8, 0xFF]))
          */
         /**
-         * // 크기 비교
+         * // size Comparcanon
          * XCTAssertLessThan(jpegData!.count, pngData!.count, "JPEG should be smaller than PNG")
          */
         /**
-         * // 품질 차이 테스트
+         * // quality Difference Test
          * let jpegLow = renderer.captureCurrentFrame(format: .jpeg(quality: 0.5))
          * let jpegHigh = renderer.captureCurrentFrame(format: .jpeg(quality: 0.95))
          * XCTAssertLessThan(jpegLow!.count, jpegHigh!.count)
@@ -3307,30 +3309,30 @@ final class MultiChannelRendererIntegrationTests: XCTestCase {
     }
 
     /**
-     * 비디오 변환 통합 테스트
+     * video transformation integration Test
      */
     /**
-     * 회전, 크롭 등 비디오 변환이 렌더링에 올바르게 적용되는지 확인합니다.
+     * timesbefore, crop etc video transformationis Renderingto correctly applydof Check.
      */
     /**
      * @test testTransformationIntegration
-     * @brief 🎯 검증 항목:
+     * @brief 🎯 Verification single:
      *
      * @details
      *
-     * @section _____ 🎯 검증 항목
-     * - 회전 변환이 적용되는가?
-     * - 크롭 변환이 적용되는가?
-     * - 밝기/대비 조정이 적용되는가?
+     * @section 🎯 🎯 Verification single
+     * - timesbefore transformationis applydcan?
+     * - crop transformationis applydcan?
+     * - brightness/contrast adjustmentis applydcan?
      */
     func testTransformationIntegration() {
         /**
-         * TODO: 변환 통합 검증
+         * TODO: transformation integration Verify
          */
         /**
-         * 구현 예시:
+         * implementation Example:
          * @endcode
-         * // 변환 서비스 설정
+         * // transformation service Settings
          * let transformation = VideoTransformation(
          *     rotation: 90,
          *     crop: CGRect(0.1, 0.1, 0.8, 0.8),
@@ -3340,13 +3342,13 @@ final class MultiChannelRendererIntegrationTests: XCTestCase {
          * renderer.transformationService.setTransformation(transformation, for: .front)
          */
         /**
-         * // 렌더링
+         * // Rendering
          * let frames = prepareTestFrames(positions: [.front])
          * let texture = renderer.render(frames: frames, size: CGSize(1920, 1080))
          */
         /**
-         * // 변환 적용 확인
-         * // (픽셀 비교 또는 시각적 검증 필요)
+         * // transformation apply Check
+         * // (pixel Comparcanon or wheneachtic Verify necessary)
          * assertTransformationApplied(to: texture, transformation: transformation)
          * @endcode
          */
@@ -3354,27 +3356,27 @@ final class MultiChannelRendererIntegrationTests: XCTestCase {
 }
 
 // ═════════════════════════════════════════════════════════════════════════
-// MARK: - Helper Extensions for Testing (테스트 헬퍼 확장)
+// MARK: - Helper Extensions for Testing (Test helper expansion)
 // ═════════════════════════════════════════════════════════════════════════
 
 extension MultiChannelRendererTests {
     /**
-     * 테스트용 뷰포트 생성
+     * Testfor Viewport Creation
      */
     /**
-     * 뷰포트 계산 테스트에서 사용할 CGRect를 생성합니다.
+     * Viewport Calculation Testin Usewill CGRect Creation.
      */
     /**
      * - Parameters:
-     *   - x: X 좌표 (기본값: 0)
-     *   - y: Y 좌표 (기본값: 0)
-     *   - width: 너비 (기본값: 100)
-     *   - height: 높이 (기본값: 100)
-     * - Returns: 생성된 CGRect
+     *   - x: X coordinate (Default value: 0)
+     *   - y: Y coordinate (Default value: 0)
+     *   - width: width (Default value: 100)
+     *   - height: highis (Default value: 100)
+     * - Returns: Creationed CGRect
      */
     /**
      *
-     * @section _____ 💡 사용 예시
+     * @section 🎯 💡 Use Example
      * @endcode
      * let viewport = createTestViewport(x: 100, y: 200, width: 960, height: 540)
      * assertViewportInBounds(viewport, size)
@@ -3385,20 +3387,20 @@ extension MultiChannelRendererTests {
     }
 
     /**
-     * 테스트용 화면 크기 생성
+     * Testfor Screen size Creation
      */
     /**
-     * 화면 크기 테스트에서 사용할 CGSize를 생성합니다.
+     * Screen size Testin Usewill CGSize Creation.
      */
     /**
      * - Parameters:
-     *   - width: 화면 너비 (기본값: 1920 - Full HD)
-     *   - height: 화면 높이 (기본값: 1080 - Full HD)
-     * - Returns: 생성된 CGSize
+     *   - width: Screen width (Default value: 1920 - Full HD)
+     *   - height: Screen highis (Default value: 1080 - Full HD)
+     * - Returns: Creationed CGSize
      */
     /**
      *
-     * @section ________ 💡 일반적인 해상도
+     * @section __🎯 💡 normalticis resolution
      * @endcode
      * Full HD:    1920 x 1080 (16:9)
      * HD:         1280 x 720  (16:9)
@@ -3412,19 +3414,19 @@ extension MultiChannelRendererTests {
     }
 
     /**
-     * 뷰포트가 화면 경계 내에 있는지 검증
+     * Viewportis Screen boundary Withinto existto Verify
      */
     /**
-     * 뷰포트의 모든 좌표가 유효한 범위 내에 있는지 확인합니다.
+     * Viewportof all coordinateis Valid range Withinto existto Check.
      */
     /**
      * - Parameters:
-     *   - viewport: 검증할 뷰포트
-     *   - size: 화면 크기
+     *   - viewport: Verifywill Viewport
+     *   - size: Screen size
      */
     /**
      *
-     * @section _____ 🎯 검증 항목
+     * @section 🎯 🎯 Verification single
      * - viewport.origin.x >= 0
      * - viewport.origin.y >= 0
      * - viewport.maxX <= size.width
@@ -3432,60 +3434,60 @@ extension MultiChannelRendererTests {
      */
     /**
      *
-     * @section _____ 💡 사용 예시
+     * @section 🎯 💡 Use Example
      * @endcode
      * let viewport = CGRect(x: 960, y: 540, width: 960, height: 540)
      * let size = CGSize(width: 1920, height: 1080)
-     * assertViewportInBounds(viewport, size)  // ✅ 통과
+     * assertViewportInBounds(viewport, size)  // ✅ throughand
      */
     /**
      * let invalidViewport = CGRect(x: 1500, y: 0, width: 1000, height: 1080)
-     * assertViewportInBounds(invalidViewport, size)  // ❌ 실패 (maxX = 2500 > 1920)
+     * assertViewportInBounds(invalidViewport, size)  // ❌ Failure (maxX = 2500 > 1920)
      * @endcode
      */
     func assertViewportInBounds(_ viewport: CGRect, _ size: CGSize) {
         /**
-         * X 좌표가 0 이상인지 확인
+         * X coordinateis 0 can上canof Check
          */
         XCTAssertGreaterThanOrEqual(viewport.origin.x, 0)
 
         /**
-         * Y 좌표가 0 이상인지 확인
+         * Y coordinateis 0 can上canof Check
          */
         XCTAssertGreaterThanOrEqual(viewport.origin.y, 0)
 
         /**
-         * 오른쪽 끝이 화면 너비 이내인지 확인
+         * right endis Screen width canWithincanof Check
          */
         XCTAssertLessThanOrEqual(viewport.maxX, size.width)
 
         /**
-         * 아래쪽 끝이 화면 높이 이내인지 확인
+         * belowside endis Screen highis canWithincanof Check
          */
         XCTAssertLessThanOrEqual(viewport.maxY, size.height)
     }
 
     /**
-     * 전체 뷰포트 면적이 화면 크기와 일치하는지 검증
+     * entire Viewport logicalis Screen sizeand matchdoto Verify
      */
     /**
-     * 모든 뷰포트의 총 면적이 화면 전체 면적과 같은지 확인합니다.
+     * all Viewportof total logicalis Screen entire logicaland sameto Check.
      */
     /**
      * - Parameters:
-     *   - viewports: 검증할 뷰포트 딕셔너리
-     *   - size: 화면 크기
-     *   - tolerance: 허용 오차 (기본값: 0.01 = 1%)
+     *   - viewports: Verifywill Viewport dictionary
+     *   - size: Screen size
+     *   - tolerance: allow tolerance (Default value: 0.01 = 1%)
      */
     /**
      *
-     * @section _______________ 💡 왜 허용 오차가 필요한가요?
-     * - 부동소수점 연산의 정밀도 한계
-     * - 픽셀 정렬로 인한 1-2px 차이
-     * - 반올림 오차 누적
+     * @section __💡 💡 why allow toleranceis is necessary?
+     * - floating point operationof precisionalso limit
+     * - pixel sortto canlimited 1-2px Difference
+     * - halfround up tolerance cumulative
      */
     /**
-     * 🔢 계산 방식:
+     * 🔢 Calculation method:
      * @endcode
      * totalArea = viewport1.area + viewport2.area + ...
      * expectedArea = size.width × size.height
@@ -3494,7 +3496,7 @@ extension MultiChannelRendererTests {
      */
     /**
      *
-     * @section _____ 📊 사용 예시
+     * @section 🎯 📊 Use Example
      * @endcode
      * let viewports: [CameraPosition: CGRect] = [
      *     .front: CGRect(0, 0, 960, 540),
@@ -3505,73 +3507,73 @@ extension MultiChannelRendererTests {
      * let size = CGSize(width: 1920, height: 1080)
      */
     /**
-     * // 총 면적: 4 × (960 × 540) = 2,073,600
-     * // 화면 면적: 1920 × 1080 = 2,073,600
-     * // 차이: 0% → 통과
+     * // total logical: 4 × (960 × 540) = 2,073,600
+     * // Screen logical: 1920 × 1080 = 2,073,600
+     * // Difference: 0% → throughand
      * assertTotalViewportArea(viewports, equals: size)
      * @endcode
      */
     func assertTotalViewportArea(_ viewports: [CameraPosition: CGRect], equals size: CGSize, tolerance: CGFloat = 0.01) {
         /**
-         * 모든 뷰포트의 총 면적 계산
+         * all Viewportof total logical Calculation
          */
         /**
-         * reduce를 사용한 누적 합산:
-         * - 초기값: 0
-         * - 각 뷰포트: width × height
-         * - 결과: 모든 뷰포트 면적의 합
+         * reduce Uselimited cumulative sum:
+         * - secondsenergyValue: 0
+         * - each Viewport: width × height
+         * - result: all Viewport logicalof combine
          */
         /**
          *
-         * @section reduce___ 💡 reduce 설명
+         * @section reduce___ 💡 reduce description
          * @endcode
          * [10, 20, 30].reduce(0) { $0 + $1 }
          * // = ((0 + 10) + 20) + 30 = 60
          */
         /**
          * viewports.values.reduce(0) { $0 + ($1.width * $1.height) }
-         * // = 각 뷰포트의 면적을 모두 더함
+         * // = each Viewportof logical all add
          * @endcode
          */
         let totalArea = viewports.values.reduce(0) { $0 + ($1.width * $1.height) }
 
         /**
-         * 기대되는 전체 면적 (화면 크기)
+         * expectedd entire logical (Screen size)
          */
         let expectedArea = size.width * size.height
 
         /**
-         * 상대적 차이 계산 (백분율)
+         * relative Difference Calculation (percentage)
          */
         /**
-         * 절대값 사용 이유:
-         * - totalArea가 더 클 수도, 작을 수도 있음
-         * - 어느 쪽이든 차이의 크기만 중요
+         * absoluteValue Use Reason:
+         * - totalAreais more class numberalso, small numberalso exists
+         * - Whichever side, only size of difference is important
          */
         /**
-         * 백분율 계산:
+         * percentage Calculation:
          * @endcode
          * difference = |totalArea - expectedArea| / expectedArea
-         * 예: |2100000 - 2073600| / 2073600 = 0.0127 (1.27%)
+         * Example: |2100000 - 2073600| / 2073600 = 0.0127 (1.27%)
          * @endcode
          */
         let difference = abs(totalArea - expectedArea) / expectedArea
 
         /**
-         * 차이가 허용 범위 이내인지 확인
+         * Differenceis allowed range canWithincanof Check
          */
         /**
          * XCTAssertLessThan:
-         * - difference < tolerance면 통과
-         * - 메시지로 테스트 의도 명확히 전달
+         * - difference < toleranceif throughand
+         * - messageto Test ofalso clearly convey
          */
         /**
          *
-         * @section _________ 💡 실패 메시지 예시
+         * @section 💡 💡 Failure message Example
          * @endcode
-         * ❌ XCTAssertLessThan failed: ("0.05") is not less than ("0.01")
+         * ❌ XCTAssertLessThan failed: ("0.05") is of less than ("0.01")
          *    - Total viewport area should match drawable size
-         *    → 5% 차이 발생 (허용 범위 1% 초과)
+         *    → 5% Difference occurrence (allowed range 1% secondsand)
          * @endcode
          */
         XCTAssertLessThan(difference, tolerance, "Total viewport area should match drawable size")

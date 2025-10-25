@@ -1,19 +1,19 @@
 /**
  * @file GPSSensorIntegrationTests_Improved.swift
- * @brief 개선된 GPS/G-센서 통합 테스트
+ * @brief Improved GPS/G-sensor integration tests
  * @author BlackboxPlayer Team
  *
  * @details
- * Mock 서비스를 사용하여 테스트 안정성을 높이고,
- * async/await 기반으로 타이밍 문제를 해결한 통합 테스트입니다.
+ * Improves test stability using Mock services,
+ * and resolves timing issues with async/await-based integration tests.
  *
- * @section improvements 개선 사항
+ * @section improvements Improvements
  *
- * 1. **Mock Infrastructure**: 실제 서비스 대신 Mock 사용
- * 2. **Async/Await**: Combine + XCTestExpectation 대신 async/await
- * 3. **Deterministic Timing**: 실제 시간 대신 시뮬레이션
- * 4. **Better Isolation**: 각 테스트 완전 격리
- * 5. **No File System**: 파일 시스템 의존성 제거
+ * 1. **Mock Infrastructure**: Use Mocks instead of real services
+ * 2. **Async/Await**: async/await instead of Combine + XCTestExpectation
+ * 3. **Deterministic Timing**: Simulation instead of real time
+ * 4. **Better Isolation**: Complete isolation of each test
+ * 5. **No File System**: Remove file system dependencies
  */
 
 import XCTest
@@ -29,10 +29,10 @@ class GPSSensorIntegrationTests_Improved: XCTestCase {
 
     // MARK: - Properties
 
-    /// Mock 동기화 컨트롤러
+    /// Mock synchronization controller
     var mockSyncController: MockSyncController!
 
-    /// Combine 구독 저장소
+    /// Combine subscription storage
     var cancellables: Set<AnyCancellable> = []
 
     // MARK: - Setup & Teardown
@@ -45,7 +45,7 @@ class GPSSensorIntegrationTests_Improved: XCTestCase {
     }
 
     override func tearDown() async throws {
-        // 명시적 정리
+        // Explicit cleanup
         mockSyncController?.stop()
         mockSyncController?.gpsService.clear()
         mockSyncController?.gsensorService.clear()
@@ -53,7 +53,7 @@ class GPSSensorIntegrationTests_Improved: XCTestCase {
 
         mockSyncController = nil
 
-        // 약간의 대기 시간으로 리소스 정리 보장
+        // Ensure resource cleanup with a small delay
         try await Task.sleep(nanoseconds: 100_000_000) // 100ms
 
         try await super.tearDown()
@@ -64,39 +64,39 @@ class GPSSensorIntegrationTests_Improved: XCTestCase {
     // ============================================================================
 
     func testVideoMetadataGPSData() {
-        // Given: 샘플 GPS 포인트
+        // Given: Sample GPS points
         let baseDate = Date()
         let gpsPoints = TestDataFactory.createGPSPoints(baseDate: baseDate, count: 10)
 
-        // When: VideoMetadata 생성
+        // When: Create VideoMetadata
         let metadata = VideoMetadata(gpsPoints: gpsPoints, accelerationData: [])
 
-        // Then: GPS 데이터 검증
+        // Then: Verify GPS data
         XCTAssertEqual(metadata.gpsPoints.count, 10)
         XCTAssertTrue(metadata.hasGPSData)
 
         let point = metadata.gpsPoint(at: 5.0)
-        XCTAssertNotNil(point, "5초 시점의 GPS 포인트가 있어야 함")
+        XCTAssertNotNil(point, "GPS point at 5 second mark should exist")
     }
 
     func testVideoMetadataAccelerationData() {
-        // Given: 샘플 가속도 데이터
+        // Given: Sample acceleration data
         let baseDate = Date()
         let accelData = TestDataFactory.createAccelerationData(baseDate: baseDate, count: 1000)
 
-        // When: VideoMetadata 생성
+        // When: Create VideoMetadata
         let metadata = VideoMetadata(gpsPoints: [], accelerationData: accelData)
 
-        // Then: 가속도 데이터 검증
+        // Then: Verify acceleration data
         XCTAssertEqual(metadata.accelerationData.count, 1000)
         XCTAssertTrue(metadata.hasAccelerationData)
 
         let data = metadata.accelerationData(at: 5.0)
-        XCTAssertNotNil(data, "5초 시점의 가속도 데이터가 있어야 함")
+        XCTAssertNotNil(data, "Acceleration data at 5 second mark should exist")
     }
 
     func testImpactEventDetection() {
-        // Given: 정상 + 충격 데이터
+        // Given: Normal + impact data
         let baseDate = Date()
         let normalData = AccelerationData(timestamp: baseDate, x: 0.0, y: 0.0, z: 1.0)
         let impactData = AccelerationData(
@@ -106,13 +106,13 @@ class GPSSensorIntegrationTests_Improved: XCTestCase {
 
         let metadata = VideoMetadata(gpsPoints: [], accelerationData: [normalData, impactData])
 
-        // Then: 충격 감지 확인
+        // Then: Verify impact detection
         let impactEvents = metadata.impactEvents
-        XCTAssertGreaterThan(impactEvents.count, 0, "충격 이벤트가 감지되어야 함")
+        XCTAssertGreaterThan(impactEvents.count, 0, "Impact event should be detected")
 
         let impact = impactEvents.first!
         let magnitude = sqrt(impact.x * impact.x + impact.y * impact.y + impact.z * impact.z)
-        XCTAssertGreaterThan(magnitude, 3.0, "충격 강도가 임계값을 초과해야 함")
+        XCTAssertGreaterThan(magnitude, 3.0, "Impact magnitude should exceed threshold")
     }
 
     // ============================================================================
@@ -120,27 +120,27 @@ class GPSSensorIntegrationTests_Improved: XCTestCase {
     // ============================================================================
 
     func testMockGPSServiceIntegration() {
-        // Given: Mock GPS 데이터
+        // Given: Mock GPS data
         let baseDate = Date()
         let gpsPoints = TestDataFactory.createGPSPoints(baseDate: baseDate, count: 10)
         let metadata = VideoMetadata(gpsPoints: gpsPoints, accelerationData: [])
 
-        // When: Mock 서비스에 로드
+        // When: Load into Mock service
         mockSyncController.gpsService.loadGPSData(from: metadata, startTime: baseDate)
 
-        // Then: 데이터 로드 확인
+        // Then: Verify data loaded
         XCTAssertTrue(mockSyncController.gpsService.hasData)
         XCTAssertEqual(mockSyncController.gpsService.pointCount, 10)
-        XCTAssertEqual(mockSyncController.gpsService.loadCallCount, 1, "loadGPSData가 1번 호출되어야 함")
+        XCTAssertEqual(mockSyncController.gpsService.loadCallCount, 1, "loadGPSData should be called once")
 
-        // 위치 조회
+        // Query location
         let location = mockSyncController.gpsService.getCurrentLocation(at: 5.0)
         XCTAssertNotNil(location)
         XCTAssertEqual(mockSyncController.gpsService.getCurrentLocationCallCount, 1)
     }
 
     func testGPSInterpolation() {
-        // Given: 0초와 2초에 GPS 포인트
+        // Given: GPS points at 0 sec and 2 sec
         let baseDate = Date()
         let point1 = GPSPoint(
             timestamp: baseDate,
@@ -157,10 +157,10 @@ class GPSSensorIntegrationTests_Improved: XCTestCase {
 
         mockSyncController.gpsService.setMockData(points: [point1, point2], startTime: baseDate)
 
-        // When: 중간 시간(1초) 위치 요청
+        // When: Request position at middle time (1 sec)
         let interpolated = mockSyncController.gpsService.getCurrentLocation(at: 1.0)
 
-        // Then: 선형 보간 검증
+        // Then: Verify linear interpolation
         XCTAssertNotNil(interpolated)
 
         if let location = interpolated {
@@ -175,61 +175,61 @@ class GPSSensorIntegrationTests_Improved: XCTestCase {
     // ============================================================================
 
     func testVideoGPSSynchronization() async throws {
-        // Given: GPS 데이터 포함 비디오 파일
+        // Given: Video file with GPS data
         let videoFile = TestDataFactory.createVideoFile(withGPS: true, withAccel: false)
 
-        // When: 비디오 파일 로드
+        // When: Load video file
         try mockSyncController.loadVideoFile(videoFile)
 
-        // 5초로 시크
+        // Seek to 5 seconds
         mockSyncController.seekToTime(5.0)
 
-        // Then: 5초의 GPS 위치 확인
+        // Then: Verify GPS position at 5 seconds
         let gpsLocation = mockSyncController.gpsService.getCurrentLocation(at: 5.0)
-        XCTAssertNotNil(gpsLocation, "5초 시점의 GPS 위치가 반환되어야 함")
+        XCTAssertNotNil(gpsLocation, "GPS position at 5 second mark should be returned")
 
         XCTAssertEqual(mockSyncController.loadCallCount, 1)
         XCTAssertEqual(mockSyncController.seekCallCount, 1)
     }
 
     func testVideoGSensorSynchronization() async throws {
-        // Given: G-센서 데이터 포함 비디오 파일
+        // Given: Video file with G-sensor data
         let videoFile = TestDataFactory.createVideoFile(withGPS: false, withAccel: true)
 
-        // When: 비디오 파일 로드
+        // When: Load video file
         try mockSyncController.loadVideoFile(videoFile)
 
-        // 3초로 시크
+        // Seek to 3 seconds
         mockSyncController.seekToTime(3.0)
 
-        // Then: 3초의 가속도 데이터 확인
+        // Then: Verify acceleration data at 3 seconds
         let accelData = mockSyncController.gsensorService.getCurrentAcceleration(at: 3.0)
-        XCTAssertNotNil(accelData, "3초 시점의 가속도 데이터가 반환되어야 함")
+        XCTAssertNotNil(accelData, "Acceleration data at 3 second mark should be returned")
 
         XCTAssertEqual(mockSyncController.loadCallCount, 1)
         XCTAssertEqual(mockSyncController.seekCallCount, 1)
     }
 
-    /// 🔧 개선된 실시간 센서 데이터 업데이트 테스트
+    /// 🔧 Improved real-time sensor data update test
     ///
-    /// **개선 사항:**
-    /// - XCTestExpectation 대신 async/await 사용
-    /// - Combine 구독 대신 직접 polling
-    /// - 타이밍을 시뮬레이션으로 제어 (실제 3초 대기 불필요)
+    /// **Improvements:**
+    /// - Use async/await instead of XCTestExpectation
+    /// - Direct polling instead of Combine subscription
+    /// - Control timing with simulation (no need to wait actual 3 seconds)
     func testRealtimeSensorDataUpdate() async throws {
-        // Given: GPS/G-센서 데이터 포함 비디오 파일
+        // Given: Video file with GPS/G-sensor data
         let videoFile = TestDataFactory.createVideoFile(withGPS: true, withAccel: true)
         try mockSyncController.loadVideoFile(videoFile)
 
-        // When: 시간 진행 시뮬레이션 (0초 → 2초)
+        // When: Simulate time progress (0 sec → 2 sec)
         var timePoints: [TimeInterval] = []
         var gpsUpdates: [GPSPoint] = []
         var accelUpdates: [AccelerationData] = []
 
-        // 비동기 시간 진행
+        // Async time progress
         await mockSyncController.simulateTimeProgress(to: 2.0, step: 0.5)
 
-        // 각 시간 포인트에서 데이터 수집
+        // Collect data at each time point
         for time in stride(from: 0.0, through: 2.0, by: 0.5) {
             mockSyncController.seekToTime(time)
             timePoints.append(time)
@@ -243,17 +243,17 @@ class GPSSensorIntegrationTests_Improved: XCTestCase {
             }
         }
 
-        // Then: 센서 데이터가 각 시간 포인트마다 업데이트되었는지 확인
-        XCTAssertGreaterThanOrEqual(timePoints.count, 4, "최소 4개 시간 포인트 테스트")
-        XCTAssertGreaterThanOrEqual(gpsUpdates.count, 4, "GPS 데이터가 각 시간마다 업데이트되어야 함")
-        XCTAssertGreaterThanOrEqual(accelUpdates.count, 4, "G-센서 데이터가 각 시간마다 업데이트되어야 함")
+        // Then: Verify sensor data is updated at each time point
+        XCTAssertGreaterThanOrEqual(timePoints.count, 4, "Test at least 4 time points")
+        XCTAssertGreaterThanOrEqual(gpsUpdates.count, 4, "GPS data should be updated at each time")
+        XCTAssertGreaterThanOrEqual(accelUpdates.count, 4, "G-sensor data should be updated at each time")
 
-        // 연속성 검증: 시간이 증가하는지 확인
+        // Verify continuity: Check if time increases
         for i in 1..<gpsUpdates.count {
             XCTAssertGreaterThan(
                 gpsUpdates[i].timestamp,
                 gpsUpdates[i - 1].timestamp,
-                "GPS 타임스탬프가 순서대로 증가해야 함"
+                "GPS timestamps should increase in order"
             )
         }
     }
@@ -262,9 +262,9 @@ class GPSSensorIntegrationTests_Improved: XCTestCase {
     // MARK: - 4. Performance Tests (with Smaller Dataset)
     // ============================================================================
 
-    /// 성능 테스트는 더 작은 데이터셋으로 수행 (CI 안정성)
+    /// Performance tests are performed with smaller dataset (CI stability)
     func testGPSDataSearchPerformance() {
-        // Given: 1,000개의 GPS 포인트 (원래 10,000에서 축소)
+        // Given: 1,000 GPS points (reduced from original 10,000)
         let baseDate = Date()
         var gpsPoints: [GPSPoint] = []
         for i in 0..<1000 {
@@ -279,14 +279,14 @@ class GPSSensorIntegrationTests_Improved: XCTestCase {
 
         mockSyncController.gpsService.setMockData(points: gpsPoints, startTime: baseDate)
 
-        // When: 특정 시간 데이터 검색 성능 측정
+        // When: Measure search performance for data at specific time
         measure {
             for i in stride(from: 0, to: 1000, by: 10) {
                 _ = mockSyncController.gpsService.getCurrentLocation(at: TimeInterval(i))
             }
         }
 
-        // Then: measure로 자동 측정 (baseline 대비 검증)
+        // Then: Automatically measured by measure (verify against baseline)
     }
 }
 
@@ -296,14 +296,14 @@ class GPSSensorIntegrationTests_Improved: XCTestCase {
 
 /**
  * @class TestDataFactory
- * @brief 테스트 데이터 생성 팩토리
+ * @brief Test data creation factory
  *
  * @details
- * 일관된 테스트 데이터 생성을 위한 유틸리티 클래스입니다.
+ * Utility class for consistent test data generation.
  */
 enum TestDataFactory {
 
-    /// GPS 포인트 배열 생성
+    /// Create GPS point array
     static func createGPSPoints(baseDate: Date, count: Int) -> [GPSPoint] {
         var points: [GPSPoint] = []
 
@@ -313,7 +313,7 @@ enum TestDataFactory {
                 latitude: 37.5665 + Double(i) * 0.001,
                 longitude: 126.9780 + Double(i) * 0.001,
                 speed: 30.0 + Double(i) * 2.0,
-                heading: Double(i) * 36.0 // 0, 36, 72, ... 도
+                heading: Double(i) * 36.0 // 0, 36, 72, ... degrees
             )
             points.append(point)
         }
@@ -321,7 +321,7 @@ enum TestDataFactory {
         return points
     }
 
-    /// 가속도 데이터 배열 생성
+    /// Create acceleration data array
     static func createAccelerationData(baseDate: Date, count: Int) -> [AccelerationData] {
         var data: [AccelerationData] = []
 
@@ -338,7 +338,7 @@ enum TestDataFactory {
         return data
     }
 
-    /// 테스트용 비디오 파일 생성
+    /// Create video file for testing
     static func createVideoFile(withGPS: Bool, withAccel: Bool) -> VideoFile {
         let baseDate = Date()
 
@@ -357,7 +357,7 @@ enum TestDataFactory {
 
         let channelInfo = ChannelInfo(
             position: .front,
-            filePath: "/mock/test_front.mp4",  // Mock 경로 (실제 파일 불필요)
+            filePath: "/mock/test_front.mp4",  // Mock path (no actual file needed)
             width: 1920,
             height: 1080,
             frameRate: 30.0

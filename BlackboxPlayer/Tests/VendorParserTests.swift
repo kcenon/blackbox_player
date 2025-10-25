@@ -1,6 +1,6 @@
 /**
  * @file VendorParserTests.swift
- * @brief Vendor parser 단위 테스트
+ * @brief Vendor parser unit tests
  * @author BlackboxPlayer Development Team
  */
 
@@ -28,7 +28,7 @@ class CR2000OmegaParserTests: XCTestCase {
     // MARK: - Filename Matching Tests
 
     func testMatchesValidFilename() {
-        // CR-2000 OMEGA 형식: YYYY-MM-DD-HHh-MMm-SSs_X_type.mp4
+        // CR-2000 OMEGA format: YYYY-MM-DD-HHh-MMm-SSs_X_type.mp4
         let validFilenames = [
             "2025-10-07-09h-11m-09s_F_normal.mp4",
             "2025-10-07-09h-11m-09s_R_normal.mp4",
@@ -171,7 +171,7 @@ class BlackVueParserTests: XCTestCase {
     // MARK: - Filename Matching Tests
 
     func testMatchesValidFilename() {
-        // BlackVue 형식: YYYYMMDD_HHMMSS_X.mp4
+        // BlackVue format: YYYYMMDD_HHMMSS_X.mp4
         let validFilenames = [
             "20240115_143025_F.mp4",
             "20240115_143025_R.mp4",
@@ -235,17 +235,17 @@ class BlackVueParserTests: XCTestCase {
     }
 
     func testParseVideoFileEventType() {
-        // Event 폴더의 파일
+        // File in Event folder
         let eventFile = URL(fileURLWithPath: "/test/Event/20240115_143025_F.mp4")
         let eventInfo = parser.parseVideoFile(eventFile)
         XCTAssertEqual(eventInfo?.eventType, .impact, "Should detect event type from path")
 
-        // Normal 폴더의 파일
+        // File in Normal folder
         let normalFile = URL(fileURLWithPath: "/test/Normal/20240115_143025_F.mp4")
         let normalInfo = parser.parseVideoFile(normalFile)
         XCTAssertEqual(normalInfo?.eventType, .normal, "Should detect normal type from path")
 
-        // Parking 폴더의 파일
+        // File in Parking folder
         let parkingFile = URL(fileURLWithPath: "/test/Parking/20240115_143025_F.mp4")
         let parkingInfo = parser.parseVideoFile(parkingFile)
         XCTAssertEqual(parkingInfo?.eventType, .parking, "Should detect parking type from path")

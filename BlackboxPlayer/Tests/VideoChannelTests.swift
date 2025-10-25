@@ -1,123 +1,123 @@
 /**
  * @file VideoChannelTests.swift
- * @brief 비디오 채널 단위 테스트
+ * @brief Video channel unit tests
  * @author BlackboxPlayer Team
  *
  * @details
- * 개별 비디오 채널(VideoChannel)의 디코딩, 버퍼링, 상태 관리를 검증하는
- * 단위 테스트 모음입니다. 멀티채널 블랙박스 시스템에서 각 카메라 채널의
- * 독립적인 동작을 테스트합니다.
+ * Verifies decoding, buffering, and state management of individual video channels (VideoChannel)
+ * Unit test collection. For each camera channel in multi-channel blackbox system
+ * Tests independent operation.
  *
- * @section video_channel_overview VideoChannel이란?
+ * @section video_channel_overview What is VideoChannel?
  *
- * VideoChannel은 하나의 카메라 비디오를 디코딩하고 프레임을 버퍼링하는
- * 컴포넌트입니다. 각 채널은 독립적으로 동작하며, 멀티스레드 환경에서
- * 안전하게 접근할 수 있습니다.
+ * VideoChannel is a component that decodes one camera video and buffers frames
+ * Component. Each channel operates independently, in multi-threaded environment
+ * can be accessed safely.
  *
- * **주요 기능:**
+ * **Main Features:**
  *
- * 1. **디코딩 관리**
- *    - 백그라운드 스레드에서 비디오 디코딩
- *    - FFmpeg VideoDecoder 래핑
- *    - 비동기 프레임 생성
+ * 1. **Decoding Management**
+ *    - Video decoding in background thread
+ *    - FFmpeg VideoDecoder wrapping
+ *    - Asynchronous frame generation
  *
- * 2. **프레임 버퍼링**
- *    - 최근 30개 프레임 저장 (LRU 캐시)
- *    - 빠른 프레임 조회 (O(1) 접근)
- *    - 메모리 효율적 관리
+ * 2. **Frame Buffering**
+ *    - Store recent 30 frames (LRU cache)
+ *    - Fast frame lookup (O(1) access)
+ *    - Memory-efficient management
  *
- * 3. **상태 관리**
+ * 3. **State Management**
  *    - Idle → Ready → Decoding → Completed/Error
- *    - Combine Publisher로 상태 변경 전파
- *    - 상태 전환 이벤트 구독 가능
+ *    - Propagate state changes via Combine Publisher
+ *    - Can subscribe to state transition events
  *
- * 4. **스레드 안전성**
- *    - 여러 스레드에서 동시 접근 가능
- *    - 내부 락으로 데이터 보호
- *    - 경쟁 조건 방지
+ * 4. **Thread Safety**
+ *    - Concurrent access from multiple threads possible
+ *    - Protect data with internal locks
+ *    - Prevent race conditions
  *
- * @section multichannel_structure 블랙박스 멀티채널 구조
+ * @section multichannel_structure Blackbox multi-channel structure
  *
  * ```
  * BlackboxPlayer
- * ├── VideoChannel (전방)
+ * ├── VideoChannel (Front)
  * │   ├── VideoDecoder (FFmpeg)
- * │   └── Frame Buffer [30개]
- * ├── VideoChannel (후방)
+ * │   └── Frame Buffer [30pieces]
+ * ├── VideoChannel (Rear)
  * │   ├── VideoDecoder (FFmpeg)
- * │   └── Frame Buffer [30개]
- * ├── VideoChannel (좌측)
+ * │   └── Frame Buffer [30pieces]
+ * ├── VideoChannel (Left)
  * │   ├── VideoDecoder (FFmpeg)
- * │   └── Frame Buffer [30개]
- * ├── VideoChannel (우측)
+ * │   └── Frame Buffer [30pieces]
+ * ├── VideoChannel (Right)
  * │   ├── VideoDecoder (FFmpeg)
- * │   └── Frame Buffer [30개]
- * └── VideoChannel (실내)
+ * │   └── Frame Buffer [30pieces]
+ * └── VideoChannel (Interior)
  *     ├── VideoDecoder (FFmpeg)
- *     └── Frame Buffer [30개]
+ *     └── Frame Buffer [30pieces]
  * ```
  *
- * @section test_scope 테스트 범위
+ * @section test_scope Test Scope
  *
- * 1. **초기화 테스트**
- *    - 채널 ID 할당
- *    - 초기 상태 확인 (Idle)
- *    - 버퍼 초기화
+ * 1. **Initialization Tests**
+ *    - Channel ID assignment
+ *    - Verify initial state (Idle)
+ *    - Buffer initialization
  *
- * 2. **디코딩 테스트**
- *    - 비디오 파일 로드
- *    - 프레임 디코딩
- *    - 상태 전환 (Idle → Ready → Decoding)
+ * 2. **Decoding Tests**
+ *    - Load video file
+ *    - Frame decoding
+ *    - State transition (Idle → Ready → Decoding)
  *
- * 3. **버퍼링 테스트**
- *    - 프레임 저장
- *    - 프레임 조회
- *    - LRU 캐시 동작
- *    - 버퍼 오버플로 처리
+ * 3. **Buffering Tests**
+ *    - Store frames
+ *    - Frame lookup
+ *    - LRU cache operation
+ *    - Buffer overflow handling
  *
- * 4. **상태 관리 테스트**
- *    - 상태 전환 검증
- *    - Combine Publisher 이벤트
- *    - 에러 상태 처리
+ * 4. **State Management Tests**
+ *    - Verify state transition
+ *    - Combine Publisher event
+ *    - Error state handling
  *
- * 5. **스레드 안전성 테스트**
- *    - 동시 접근 검증
- *    - 경쟁 조건 테스트
- *    - 데이터 레이스 감지
+ * 5. **Thread Safety Tests**
+ *    - Verify concurrent access
+ *    - Race condition tests
+ *    - Data race detection
  *
- * 6. **성능 테스트**
- *    - 프레임 조회 속도
- *    - 버퍼 업데이트 성능
- *    - 메모리 사용량
+ * 6. **Performance Tests**
+ *    - Frame lookup speed
+ *    - Buffer update performance
+ *    - Memory usage
  *
- * @section combine_overview Combine 프레임워크
+ * @section combine_overview Combine Framework
  *
- * Combine은 Apple의 reactive 프로그래밍 프레임워크로, 데이터의 변화를
- * 자동으로 감지하고 반응하는 패턴을 제공합니다.
+ * Combine is Apple's reactive programming framework, changes in data
+ * provides patterns that automatically detect and react.
  *
- * **주요 개념:**
- * - **Publisher**: 값을 발행하는 객체
- * - **Subscriber**: 값을 구독하는 객체
- * - **AnyCancellable**: 구독 취소를 위한 토큰
+ * **Main Concepts:**
+ * - **Publisher**: Object that publishes values
+ * - **Subscriber**: Object that subscribes to values
+ * - **AnyCancellable**: Token for canceling subscriptions
  *
- * **사용 예시:**
+ * **Usage example:**
  * ```swift
  * channel.$state  // Publisher
  *     .sink { state in  // Subscriber
  *         print("State changed: \(state)")
  *     }
- *     .store(in: &cancellables)  // 구독 관리
+ *     .store(in: &cancellables)  // Subscription management
  * ```
  *
- * @section test_strategy 테스트 전략
+ * @section test_strategy Test Strategy
  *
- * - Mock 데이터 사용으로 외부 의존성 제거
- * - 비동기 테스트에 async/await 활용
- * - XCTestExpectation으로 상태 변경 대기
- * - Combine sink로 이벤트 스트림 검증
+ * - Remove external dependencies by using Mock data
+ * - Utilize async/await for asynchronous tests
+ * - Wait for state changes using XCTestExpectation
+ * - Verify event stream using Combine sink
  *
- * @note 이 테스트는 실제 비디오 파일 없이 Mock 데이터로 실행됩니다.
- * 통합 테스트에서 실제 파일 디코딩을 검증합니다.
+ * @note These tests run with Mock data without actual video files.
+ * Actual file decoding is verified in integration tests.
  */
 
 //
@@ -125,136 +125,136 @@
 //  VideoChannelTests.swift
 //  BlackboxPlayerTests
 //
-//  📋 프로젝트: BlackboxPlayer
-//  🎯 목적: VideoChannel 유닛 테스트
-//  📝 설명: 비디오 채널의 디코딩, 버퍼링, 상태 관리를 검증합니다
+//  📋 Project: BlackboxPlayer
+//  🎯 Purpose: VideoChannel Unit Tests
+//  📝 Description: Verifies decoding, buffering, and state management of video channels
 //
 //  ═══════════════════════════════════════════════════════════════════════════
 //
-//  🎬 VideoChannel이란?
+//  🎬 What is VideoChannel?
 //  ────────────────────────────────────────────────────────────────────────
-//  하나의 카메라 비디오를 디코딩하고 프레임을 버퍼링하는 컴포넌트입니다.
+//  Component that decodes one camera video and buffers frames.
 //
-//  📦 주요 기능:
+//  📦 Main Features:
 //  ```
-//  1. 디코딩 관리
-//     - 백그라운드 스레드에서 비디오 디코딩
-//     - FFmpeg VideoDecoder 래핑
+//  1. Decoding Management
+//     - Video decoding in background thread
+//     - FFmpeg VideoDecoder wrapping
 //
-//  2. 프레임 버퍼링
-//     - 최근 30개 프레임 저장
-//     - 빠른 프레임 조회
+//  2. Frame Buffering
+//     - Store recent 30 frames
+//     - Fast frame lookup
 //
-//  3. 상태 관리
+//  3. State Management
 //     - Idle → Ready → Decoding → Completed/Error
-//     - Combine Publisher로 상태 변경 전파
+//     - Propagate state changes via Combine Publisher
 //
-//  4. 스레드 안전성
-//     - 여러 스레드에서 동시 접근 가능
-//     - 내부 락으로 데이터 보호
+//  4. Thread Safety
+//     - Concurrent access from multiple threads possible
+//     - Protect data with internal locks
 //  ```
 //
-//  🔄 블랙박스 멀티 채널 구조:
+//  🔄 Blackbox multi-channel structure:
 //  ```
 //  BlackboxPlayer
-//  ├── VideoChannel (전방)
+//  ├── VideoChannel (Front)
 //  │   ├── VideoDecoder
-//  │   └── Frame Buffer [30개]
-//  ├── VideoChannel (후방)
+//  │   └── Frame Buffer [30pieces]
+//  ├── VideoChannel (Rear)
 //  │   ├── VideoDecoder
-//  │   └── Frame Buffer [30개]
-//  └── VideoChannel (측면)
+//  │   └── Frame Buffer [30pieces]
+//  └── VideoChannel (Side)
 //      ├── VideoDecoder
-//      └── Frame Buffer [30개]
+//      └── Frame Buffer [30pieces]
 //  ```
 //  ────────────────────────────────────────────────────────────────────────
 //
 
-/// XCTest 프레임워크
+/// XCTest framework
 ///
-/// Apple의 공식 유닛 테스트 프레임워크입니다.
+/// Apple's official Unit Tests framework.
 import XCTest
 
-/// Combine 프레임워크
+/// Combine Framework
 ///
-/// Apple의 reactive 프로그래밍 프레임워크입니다.
+/// Apple's reactive programming framework.
 ///
-/// 🔄 Reactive Programming이란?
+/// 🔄 What is Reactive Programming?
 /// ```
-/// 데이터의 변화를 자동으로 감지하고 반응하는 프로그래밍 패러다임
+/// Programming paradigm that automatically detects and reacts to changes in data
 ///
-/// 전통적 방식:
+/// Traditional approach:
 /// if (state == .ready) {
-///     // 상태 변경 수동 확인
+///     // Manual state change check
 /// }
 ///
-/// Reactive 방식:
+/// Reactive approach:
 /// channel.$state.sink { newState in
-///     // 상태 변경 시 자동 실행
+///     // Auto-execute on state change
 /// }
 /// ```
 ///
-/// 💡 Combine의 주요 개념:
-/// - Publisher: 값을 발행하는 객체
-/// - Subscriber: 값을 구독하는 객체
-/// - AnyCancellable: 구독 취소를 위한 토큰
+/// 💡 Combine's Main Concepts:
+/// - Publisher: Object that publishes values
+/// - Subscriber: Object that subscribes to values
+/// - AnyCancellable: Token for canceling subscriptions
 ///
-/// 📚 사용 예시:
+/// 📚 Usage example:
 /// ```swift
 /// channel.$state  // Publisher
 ///     .sink { state in  // Subscriber
 ///         print("State changed: \(state)")
 ///     }
-///     .store(in: &cancellables)  // 구독 관리
+///     .store(in: &cancellables)  // Subscription management
 /// ```
 import Combine
 
 /// @testable import
 ///
-/// 테스트 대상 모듈의 internal 멤버에 접근할 수 있게 합니다.
+/// Allows access to internal members of the test target module.
 @testable import BlackboxPlayer
 
 // ═══════════════════════════════════════════════════════════════════════════
-// MARK: - 비디오 채널 테스트 (Unit Tests)
+// MARK: - Video channel tests (Unit Tests)
 // ═══════════════════════════════════════════════════════════════════════════
 
-/// VideoChannel 유닛 테스트 클래스
+/// VideoChannel Unit Tests class
 ///
-/// 비디오 채널의 기본 기능을 검증합니다.
+/// Verifies basic functions of video channels.
 ///
-/// 🎯 테스트 범위:
+/// 🎯 Test Scope:
 /// ```
-/// 1. 초기화
-///    - 채널 생성
-///    - Identifiable (고유 ID)
-///    - Equatable (비교 가능)
+/// 1. initialization
+///    - Create channel
+///    - Identifiable (unique ID)
+///    - Equatable (comparable)
 ///
-/// 2. 상태 관리
-///    - 상태 전환
-///    - 상태 이름
+/// 2. State Management
+///    - State transition
+///    - state name
 ///    - Combine Publisher
 ///
-/// 3. 버퍼 관리
-///    - 버퍼 상태 조회
-///    - 버퍼 초기화
-///    - 프레임 조회
+/// 3. buffer management
+///    - buffer state lookup
+///    - Buffer initialization
+///    - Frame lookup
 ///
-/// 4. 에러 처리
-///    - 잘못된 파일
-///    - 미초기화 상태
-///    - 중복 초기화
+/// 4. error handling/processing
+///    - invalid file
+///    - uninitialized state
+///    - duplicate initialization
 ///
-/// 5. 스레드 안전성
-///    - 동시 버퍼 접근
-///    - 동시 프레임 조회
+/// 5. Thread Safety
+///    - concurrent buffer access
+///    - concurrent Frame lookup
 ///
-/// 6. 메모리 관리
-///    - deinit 정리
-///    - stop() 정리
+/// 6. Memory management
+///    - deinit cleanup
+///    - stop() cleanup
 ///
-/// 7. 성능
-///    - 버퍼 상태 조회
-///    - 프레임 조회
+/// 7. performance
+///    - buffer state lookup
+///    - Frame lookup
 /// ```
 final class VideoChannelTests: XCTestCase {
 
@@ -263,69 +263,69 @@ final class VideoChannelTests: XCTestCase {
     // ═══════════════════════════════════════════════════════════════════════
 
     /**
-     * 비디오 채널 인스턴스
+     * Video channel instance
      */
     /**
-     * 각 테스트에서 새로 생성됩니다.
+     * Created anew for each test.
      */
     var channel: VideoChannel!
 
     /**
-     * 테스트 채널 정보
+     * Test channel information
      */
     /**
-     * 채널 위치, 파일 경로, 표시 이름을 포함합니다.
+     * Includes channel position, file path, and display name.
      */
     /**
      *
-     * @section channelinfo___ 📝 ChannelInfo 구조
+     * @section channelinfo___ 📝 ChannelInfo structure
      * @endcode
      * struct ChannelInfo {
      *     let position: CameraPosition  // .front, .rear, etc.
-     *     let filePath: String          // 비디오 파일 경로
-     *     let displayName: String       // UI에 표시할 이름
+     *     let filePath: String          // video file path
+     *     let displayName: String       // display name for UI
      * }
      * @endcode
      */
     var testChannelInfo: ChannelInfo!
 
     /**
-     * Combine 구독 저장소
+     * Combine Subscription storage
      */
     /**
-     * Combine의 구독을 저장하여 메모리 누수를 방지합니다.
-     */
-    /**
-     *
-     * @section anycancellable___ 💡 AnyCancellable이란?
-     * @endcode
-     * Combine 구독의 수명을 관리하는 토큰
-     */
-    /**
-     * 역할:
-     * 1. 구독 취소 가능
-     * 2. 자동 메모리 관리
-     * 3. Set으로 여러 구독 관리
-     * @endcode
+     * Stores Combine subscriptions to prevent memory leaks.
      */
     /**
      *
-     * @section _____ 📝 사용 패턴
+     * @section anycancellable___ 💡 What is AnyCancellable?
+     * @endcode
+     * Token for managing the lifecycle of Combine subscriptions
+     */
+    /**
+     * Role:
+     * 1. Can cancel subscriptions
+     * 2. automatic Memory management
+     * 3. Manage multiple subscriptions using Set
+     * @endcode
+     */
+    /**
+     *
+     * @section _____ 📝 Usage pattern
      * @endcode
      * publisher
      *     .sink { value in ... }
-     *     .store(in: &cancellables)  // Set에 저장
+     *     .store(in: &cancellables)  // Store in Set
      */
     /**
-     * // cancellables = nil 시 모든 구독 자동 취소
+     * // cancellables = nil automatically cancels all subscriptions
      * @endcode
      */
     /**
      *
-     * @section set__________ ⚠️ Set으로 관리하는 이유
-     * - 여러 구독을 한 번에 관리
-     * - tearDown에서 일괄 취소
-     * - 메모리 누수 방지
+     * @section set__________ ⚠️ Why manage with Set
+     * - Manage multiple subscriptions at once
+     * - Cancel all in tearDown
+     * - Prevent memory leaks
      */
     var cancellables: Set<AnyCancellable>!
 
@@ -334,65 +334,65 @@ final class VideoChannelTests: XCTestCase {
     // ═══════════════════════════════════════════════════════════════════════
 
     /**
-     * 각 테스트 실행 전 초기화
+     * Initialize before each test execution
      */
     /**
-     * XCTest가 각 테스트 메서드 실행 전에 자동으로 호출합니다.
+     * XCTest automatically calls this before executing each test method.
      */
     /**
      *
-     * @section ______ 🎯 초기화 내용
-     * 1. 부모 클래스의 setUp 호출
-     * 2. continueAfterFailure 플래그 설정
-     * 3. cancellables 빈 Set 생성
-     * 4. 테스트 채널 정보 생성
+     * @section ______ 🎯 Initialization
+     * 1. Call parent class setUp
+     * 2. continueAfterFailure flag set/setting/configuration
+     * 3. cancellables empty Set create/creation
+     * 4. Test channel information create/creation
      */
     /**
      *
      * @section continueafterfailure___false 💡 continueAfterFailure = false
-     * 첫 번째 assertion 실패 시 테스트를 즉시 중단합니다.
-     * (안전성 확보: nil 접근 방지)
+     * Immediately stops the test upon first assertion failure.
+     * (Ensures safety: prevents nil access)
      */
     override func setUpWithError() throws {
         /**
-         * 부모 클래스의 setUp 호출
+         * Call parent class setUp
          */
         super.setUp()
 
         /**
-         * 실패 시 즉시 중단 설정
+         * Set to stop immediately on failure
          */
         /**
          *
-         * @section __ 💡 이유
-         * 첫 번째 실패 후 계속 실행하면
-         * nil 접근으로 크래시 발생 가능
+         * @section __ 💡 Reason
+         * Continuing execution after first failure
+         * may cause crash due to nil access
          */
         continueAfterFailure = false
 
         /**
-         * Combine 구독 저장소 초기화
+         * Combine Subscription storage initialization
          */
         /**
-         * 빈 Set으로 시작
-         * 테스트에서 .store(in: &cancellables)로 구독 추가
+         * Start with empty Set
+         * Add subscription using .store(in: &cancellables) in tests
          */
         cancellables = []
 
         /**
-         * 테스트 채널 정보 생성
+         * Test channel information create/creation
          */
         /**
          *
-         * @section _______ 💡 테스트용 설정
-         * - position: .front (전방 카메라)
-         * - filePath: "/path/to/test/video.mp4" (존재하지 않는 경로)
+         * @section _______ 💡 Test configuration
+         * - position: .front (Front camera)
+         * - filePath: "/path/to/test/video.mp4" (non-existent path)
          * - displayName: "Test Channel"
          */
         /**
          *
-         * @section ________________ ⚠️ 파일 경로는 의도적으로 잘못됨
-         * 에러 처리를 테스트하기 위함
+         * @section ________________ ⚠️ File path is intentionally incorrect
+         * To test error handling
          */
         testChannelInfo = ChannelInfo(
             position: .front,
@@ -404,85 +404,85 @@ final class VideoChannelTests: XCTestCase {
     }
 
     /**
-     * 각 테스트 실행 후 정리
+     * Cleanup after each test execution
      */
     /**
-     * XCTest가 각 테스트 메서드 실행 후에 자동으로 호출합니다.
+     * XCTest automatically calls this after executing each test method.
      */
     /**
-     * 🧹 정리 내용:
-     * 1. 채널 중지 (디코딩 스레드 종료)
-     * 2. 채널 해제
-     * 3. 채널 정보 해제
-     * 4. Combine 구독 해제
-     * 5. 부모 클래스의 tearDown 호출
+     * 🧹 Cleanup:
+     * 1. Stop channel (terminate decoding thread)
+     * 2. Release channel
+     * 3. Release channel info
+     * 4. Combine Cancel subscription
+     * 5. Call parent class tearDown
      */
     /**
      *
-     * @section _____________ 💡 정리 순서가 중요한 이유
+     * @section _____________ 💡 Why cleanup order matters
      * @endcode
      * 1. channel?.stop()
-     *    - 백그라운드 디코딩 스레드 먼저 중지
-     *    - 안전하게 종료
+     *    - Stop background decoding thread first
+     *    - Terminate safely
      */
     /**
      * 2. channel = nil
-     *    - 채널 메모리 해제
-     *    - 디코더 정리
+     *    - Release channel memory
+     *    - Clean up decoder
      */
     /**
      * 3. cancellables = nil
-     *    - 모든 Combine 구독 취소
-     *    - 순환 참조 방지
+     *    - Cancel all Combine subscriptions
+     *    - Prevent circular references
      * @endcode
      */
     override func tearDownWithError() throws {
         /**
-         * 채널 중지
+         * Stop channel
          */
         /**
-         * ?: 옵셔널 체이닝
-         * channel이 nil이면 호출하지 않음
+         * ?: Optional chaining
+         * If channel is nil, doesn't call
          */
         /**
-         * stop()의 역할:
-         * - 디코딩 스레드 중지
-         * - 버퍼 초기화
-         * - 상태를 idle로 변경
+         * stop()'s Role:
+         * - Stop decoding thread
+         * - Buffer initialization
+         * - Change state to idle
          */
         channel?.stop()
 
         /**
-         * 채널 해제
+         * Release channel
          */
         /**
-         * nil 할당으로 ARC가 메모리 해제
+         * ARC releases memory by nil assignment
          */
         channel = nil
 
         /**
-         * 채널 정보 해제
+         * Release channel info
          */
         testChannelInfo = nil
 
         /**
-         * Combine 구독 해제
+         * Combine Cancel subscription
          */
         /**
-         * Set을 nil로 설정하면
-         * 모든 AnyCancellable이 deinit되어
-         * 자동으로 구독이 취소됩니다.
+         * Setting Set to nil
+         * causes all AnyCancellable to deinit
+         * automatically canceling subscriptions.
          */
         /**
          *
-         * @section _________ 💡 메모리 누수 방지
-         * Combine 구독은 강한 참조를 생성하므로
-         * 반드시 해제해야 합니다.
+         * @section _________ 💡 Prevent memory leaks
+         * Combine subscriptions create strong references, so
+         * Must be released .
          */
         cancellables = nil
 
         /**
-         * 부모 클래스의 tearDown 호출
+         * Call parent class tearDown
          */
         super.tearDown()
     }
@@ -492,150 +492,150 @@ final class VideoChannelTests: XCTestCase {
     // ═══════════════════════════════════════════════════════════════════════
 
     /**
-     * 채널 초기화 테스트
+     * Channel initialization test
      */
     /**
-     * VideoChannel의 기본 초기화가 올바르게 수행되는지 검증합니다.
-     */
-    /**
-     *
-     * @section _____ 🎯 검증 사항
-     * @endcode
-     * 1. 채널 객체 생성 성공
-     * 2. 초기 상태 = .idle
-     * 3. 현재 프레임 = nil
-     * 4. 채널 정보 저장 확인
-     * @endcode
+     * Verifies that basic initialization of VideoChannel is performed correctly.
      */
     /**
      *
-     * @section ______ 💡 초기화 단계
+     * @section _____ 🎯 Verification Items
+     * @endcode
+     * 1. channel object creation successful
+     * 2. initial state = .idle
+     * 3. current frame = nil
+     * 4. Verify channel information saved
+     * @endcode
+     */
+    /**
+     *
+     * @section ______ 💡 Initialization Steps
      * @endcode
      * VideoChannel(channelInfo:)
-     * ├── 1. channelInfo 저장
-     * ├── 2. 고유 ID 생성 (UUID)
-     * ├── 3. 상태를 .idle로 설정
-     * ├── 4. 프레임 버퍼 초기화 (빈 버퍼)
+     * ├── 1. Save channelInfo
+     * ├── 2. Create unique ID (UUID)
+     * ├── 3. Set state to .idle
+     * ├── 4. Initialize frame buffer (empty buffer)
      * └── 5. currentFrame = nil
      * @endcode
      */
     /**
      * @test testChannelInitialization
-     * @brief ⚠️ 초기화 vs initialize():
+     * @brief ⚠️ initialization vs initialize():
      *
      * @details
      *
-     * @section ____vs_initialize__ ⚠️ 초기화 vs initialize()
-     * - init: 객체 생성만 (메모리 할당)
-     * - initialize(): 디코더 준비 (파일 열기)
+     * @section ____vs_initialize__ ⚠️ initialization vs initialize()
+     * - init: Only object creation (memory allocation)
+     * - initialize(): decoder ready (file open)
      */
     func testChannelInitialization() {
         /**
-         * Given/When: 채널 생성
+         * Given/When: Create channel
          */
         /**
-         * testChannelInfo로 새 채널을 생성합니다.
+         * Create a new channel using testChannelInfo.
          */
         /**
          *
-         * @section ______ 💡 이 시점에는
-         * - 객체만 생성됨
-         * - 디코더는 아직 초기화 안 됨
-         * - 파일은 아직 열지 않음
+         * @section ______ 💡 At This Point
+         * - Only object is created
+         * - Decoder not yet initialized
+         * - File not yet opened
          */
         channel = VideoChannel(channelInfo: testChannelInfo)
 
         /**
          *
          * @par Given-When-Then:
-         * - <b>Then:</b> 초기화 검증
+         * - <b>Then:</b> initialization verify/verification
          */
         /**
-         * 4가지 조건을 확인합니다.
+         * Verify 4 conditions.
          *
-         * 1. 채널 객체 생성 성공
+         * 1. channel object creation successful
          */
         /**
-         * XCTAssertNotNil: 객체가 nil이 아닌지 확인
+         * XCTAssertNotNil: Verify object is not nil
          */
         XCTAssertNotNil(channel, "Channel should be initialized")
 
         /**
-         * 2. 초기 상태가 .idle인지 확인
+         * 2. Verify initial state is .idle
          */
         /**
          *
          * @section channelstate_idle 💡 ChannelState.idle
-         * - 아직 초기화되지 않은 상태
-         * - 디코더 미생성
-         * - 디코딩 불가능
+         * - State not yet initialized
+         * - Decoder not created
+         * - Cannot decode
          */
         XCTAssertEqual(channel.state, .idle, "Initial state should be idle")
 
         /**
-         * 3. 현재 프레임이 nil인지 확인
+         * 3. Verify current frame is nil
          */
         /**
          *
-         * @section __ 💡 이유
-         * - 아직 디코딩하지 않음
-         * - 버퍼가 비어있음
+         * @section __ 💡 Reason
+         * - Not yet decoded
+         * - Buffer is empty
          */
         XCTAssertNil(channel.currentFrame, "Current frame should be nil initially")
 
         /**
-         * 4. 채널 정보가 올바르게 저장되었는지 확인
+         * 4. Verify channel information is correctly saved
          */
         /**
-         * position이 .front인지 검증
+         * Verify position is .front
          */
         XCTAssertEqual(channel.channelInfo.position, .front, "Channel position should match")
     }
 
     /**
-     * Identifiable 프로토콜 테스트
+     * Identifiable protocol test
      */
     /**
-     * 각 채널이 고유한 ID를 가지는지 검증합니다.
+     * Verifies that each channel has a unique ID.
      */
     /**
-     * 🆔 Identifiable 프로토콜이란?
+     * 🆔 What is Identifiable protocol?
      * @endcode
      * protocol Identifiable {
-     *     var id: ID { get }  // 고유 식별자
+     *     var id: ID { get }  // unique identifier
      * }
      */
     /**
-     * SwiftUI의 List, ForEach 등에서 항목을 구분하는 데 사용
+     * Used in SwiftUI's List, ForEach, etc. to distinguish items
      * @endcode
      */
     /**
      *
-     * @section videochannel__id 💡 VideoChannel의 ID
+     * @section videochannel__id 💡 VideoChannel's ID
      * @endcode
      * class VideoChannel: Identifiable {
-     *     let id: UUID = UUID()  // 생성 시 랜덤 UUID
+     *     let id: UUID = UUID()  // Random UUID on creation
      * }
      * @endcode
      */
     /**
      *
-     * @section _____id_______ 🎯 왜 고유 ID가 필요한가?
+     * @section _____id_______ 🎯 Why is a unique ID necessary?
      * @endcode
-     * 멀티 채널 플레이어에서 각 채널을 구분하기 위해
+     * To distinguish each channel in multi-channel player
      */
     /**
-     * 예시:
-     * - 전방 카메라 (ID: 1234-5678)
-     * - 후방 카메라 (ID: 9abc-def0)
-     * - 측면 카메라 (ID: 1111-2222)
+     * Examples:
+     * - Front camera (ID: 1234-5678)
+     * - Rear camera (ID: 9abc-def0)
+     * - Side camera (ID: 1111-2222)
      */
     /**
      * @test testChannelIdentifiable
-     * @brief SwiftUI에서 사용:
+     * @brief Using in SwiftUI:
      *
      * @details
-     * SwiftUI에서 사용:
+     * Using in SwiftUI:
      * ForEach(channels) { channel in
      *     VideoView(channel: channel)
      * }
@@ -645,13 +645,13 @@ final class VideoChannelTests: XCTestCase {
         /**
          *
          * @par Given-When-Then:
-         * - <b>Given:</b> 같은 정보로 두 채널 생성
+         * - <b>Given:</b> Create two channels with same information
          */
         /**
          *
-         * @section ___ 💡 포인트
-         * - testChannelInfo는 동일
-         * - 하지만 각 채널은 독립적인 인스턴스
+         * @section ___ 💡 Key Point
+         * - testChannelInfo is identical
+         * - But each channel is an independent instance
          */
         let channel1 = VideoChannel(channelInfo: testChannelInfo)
         let channel2 = VideoChannel(channelInfo: testChannelInfo)
@@ -659,118 +659,118 @@ final class VideoChannelTests: XCTestCase {
         /**
          *
          * @par Given-When-Then:
-         * - <b>Then:</b> ID가 서로 다른지 확인
+         * - <b>Then:</b> Verify IDs are different from each other
          */
         /**
          *
-         * @section _____ 💡 예상 동작
+         * @section _____ 💡 Expected Behavior
          * @endcode
          * channel1.id = UUID("1234-5678-...")
-         * channel2.id = UUID("9abc-def0-...")  ← 다름!
+         * channel2.id = UUID("9abc-def0-...")  ← Different!
          * @endcode
          */
         /**
-         * UUID는 초기화 시마다 랜덤 생성되므로
-         * 두 채널의 ID는 항상 달라야 합니다.
+         * UUID is randomly created on each initialization, so
+         * the two channel IDs must always be different.
          */
         XCTAssertNotEqual(channel1.id, channel2.id, "Each channel should have unique ID")
     }
 
     /**
-     * Equatable 프로토콜 테스트
+     * Equatable protocol test
      */
     /**
-     * ID 기반 동등성 비교가 올바르게 작동하는지 검증합니다.
+     * Verifies that ID-based equality comparison works correctly.
      */
     /**
-     * ⚖️ Equatable 프로토콜이란?
+     * ⚖️ What is Equatable protocol?
      * @endcode
      * protocol Equatable {
      *     static func == (lhs: Self, rhs: Self) -> Bool
      * }
      */
     /**
-     * == 연산자로 두 객체를 비교 가능하게 만듦
+     * Makes two objects comparable using == operator
      * @endcode
      */
     /**
      *
-     * @section videochannel_____ 💡 VideoChannel의 동등성
+     * @section videochannel_____ 💡 VideoChannel's Equality
      * @endcode
      * extension VideoChannel: Equatable {
      *     static func == (lhs: VideoChannel, rhs: VideoChannel) -> Bool {
-     *         return lhs.id == rhs.id  // ID만 비교
+     *         return lhs.id == rhs.id  // Compare only ID
      *     }
      * }
      */
     /**
-     * 즉, ID가 같으면 같은 채널로 간주
+     * In other words, if IDs are same, considered same channel
      * @endcode
      */
     /**
      * @test testChannelEquatable
-     * @brief 🎯 테스트 시나리오:
+     * @brief 🎯 Test scenario:
      *
      * @details
      *
-     * @section ________ 🎯 테스트 시나리오
+     * @section ________ 🎯 Test Scenario
      * @endcode
-     * 1. 같은 ID → 같은 채널 (==)
-     * 2. 다른 ID → 다른 채널 (!=)
+     * 1. Same ID → Same channel (==)
+     * 2. Different ID → Different channel (!=)
      * @endcode
      */
     func testChannelEquatable() {
         /**
          *
          * @par Given-When-Then:
-         * - <b>Given:</b> 특정 UUID 생성
+         * - <b>Given:</b> Create specific UUID
          */
         /**
          *
          * @section uuid__ 💡 UUID()
-         * 랜덤 UUID 생성
-         * 예: "550E8400-E29B-41D4-A716-446655440000"
+         * Create random UUID
+         * Example: "550E8400-E29B-41D4-A716-446655440000"
          */
         let channelID = UUID()
 
         /**
-         * 같은 ID로 두 채널 생성
+         * Create two channels with same ID
          */
         /**
-         * VideoChannel(channelID:channelInfo:) 생성자 사용
-         * (ID를 직접 지정 가능)
+         * Use VideoChannel(channelID:channelInfo:) initializer
+         * (Can directly specify ID)
          */
         /**
          *
-         * @section channel1__channel2_ 💡 channel1과 channel2는
-         * - 동일한 ID를 공유
-         * - 다른 인스턴스
+         * @section channel1__channel2_ 💡 channel1 and channel2 are
+         * - Share the same ID
+         * - Different instances
          */
         let channel1 = VideoChannel(channelID: channelID, channelInfo: testChannelInfo)
         let channel2 = VideoChannel(channelID: channelID, channelInfo: testChannelInfo)
 
         /**
-         * 다른 ID로 세 번째 채널 생성
+         * Create third channel with different ID
          */
         /**
-         * channelID 지정 없이 생성
-         * → 자동으로 새 UUID 생성
+         * Create without specifying channelID
+         * → Automatically creates new UUID
          */
         let channel3 = VideoChannel(channelInfo: testChannelInfo)
 
         /**
          *
          * @par Given-When-Then:
-         * - <b>Then:</b> 동등성 검증
+         * - <b>Then:</b> Verify equality
          *
-         * 1. 같은 ID → 같은 채널
+         * 1. Same ID → Same channel
          */
         /**
-         * XCTAssertEqual: == 연산자로 비교
+         * XCTAssertEqual: Compare using == operator
          */
         /**
          *
-         * @section __ 💡 예상
+         * @section __ 💡 expected
          * @endcode
          * channel1.id = channelID
          * channel2.id = channelID
@@ -780,14 +780,14 @@ final class VideoChannelTests: XCTestCase {
         XCTAssertEqual(channel1, channel2, "Channels with same ID should be equal")
 
         /**
-         * 2. 다른 ID → 다른 채널
+         * 2. Different ID → Different channel
          */
         /**
          *
-         * @section __ 💡 예상
+         * @section __ 💡 expected
          * @endcode
          * channel1.id = channelID
-         * channel3.id = 새로운 UUID (다름)
+         * channel3.id = New UUID (different)
          * → channel1 != channel3  ✅
          * @endcode
          */
@@ -799,84 +799,84 @@ final class VideoChannelTests: XCTestCase {
     // ═══════════════════════════════════════════════════════════════════════
 
     /**
-     * 상태 전환 테스트
+     * State transition test
      */
     /**
-     * 채널의 초기 상태와 표시 이름을 검증합니다.
+     * Verifies the channel's initial state and display name.
      */
     /**
      *
      * @section channelstate_enum 🔄 ChannelState Enum
      * @endcode
      * enum ChannelState: Equatable {
-     *     case idle         // 유휴: 초기 상태
-     *     case ready        // 준비: 디코더 초기화 완료
-     *     case decoding     // 디코딩 중: 프레임 생성 중
-     *     case completed    // 완료: 비디오 끝
-     *     case error(String) // 에러: 실패 (메시지 포함)
+     *     case idle         // Idle: initial state
+     *     case ready        // Ready: decoder initialization complete
+     *     case decoding     // Decoding: frame creation in progress
+     *     case completed    // Completed: video ended
+     *     case error(String) // Error: failure (includes message)
      * }
      * @endcode
      */
     /**
      *
-     * @section ________ 💡 상태 전환 흐름
+     * @section ________ 💡 State Transition Flow
      * @endcode
      * Idle
      *  ↓ initialize()
      * Ready
      *  ↓ startDecoding()
      * Decoding
-     *  ↓ 비디오 끝 or stop()
+     *  ↓ video ends or stop()
      * Completed
      */
     /**
-     * 어느 상태에서든:
-     *  ↓ 에러 발생
+     * From any state:
+     *  ↓ error occurs
      * Error
      * @endcode
      */
     /**
      * @test testStateTransitions
-     * @brief 🎯 displayName 속성:
+     * @brief 🎯 displayName Property:
      *
      * @details
      *
-     * @section displayname___ 🎯 displayName 속성
-     * UI에 표시할 사용자 친화적인 문자열
+     * @section displayname___ 🎯 displayName Property
+     * User-friendly string to display in UI
      */
     func testStateTransitions() {
         /**
          *
          * @par Given-When-Then:
-         * - <b>Given:</b> 채널 생성
+         * - <b>Given:</b> Create channel
          */
         /**
-         * 생성 직후의 상태를 확인합니다.
+         * Verify the state immediately after creation.
          */
         channel = VideoChannel(channelInfo: testChannelInfo)
 
         /**
          *
          * @par Given-When-Then:
-         * - <b>Then:</b> 초기 상태 검증
+         * - <b>Then:</b> Verify initial state
          *
-         * 1. 상태가 .idle인지 확인
+         * 1. Verify state is .idle
          */
         /**
          *
-         * @section ___________idle 💡 초기 상태는 항상 .idle
-         * - 디코더 미초기화
-         * - 디코딩 불가능
-         * - initialize() 대기 중
+         * @section ___________idle 💡 Initial state is always .idle
+         * - Decoder not initialized
+         * - Cannot decode
+         * - Waiting for initialize()
          */
         XCTAssertEqual(channel.state, .idle, "Initial state should be idle")
 
         /**
-         * 2. 표시 이름 확인
+         * 2. Verify display name
          */
         /**
          *
-         * @section displayname______ 💡 displayName 계산 속성
+         * @section displayname______ 💡 displayName Computed Property
          * @endcode
          * var displayName: String {
          *     switch self {
@@ -891,13 +891,13 @@ final class VideoChannelTests: XCTestCase {
     }
 
     /**
-     * 상태 표시 이름 테스트
+     * state display name test
      */
     /**
-     * 모든 ChannelState 케이스의 displayName을 검증합니다.
+     * Verifies displayName of all ChannelState cases.
      */
     /**
-     * 🏷️ 테스트 대상:
+     * 🏷️ Test Targets:
      * @endcode
      * .idle       → "Idle"
      * .ready      → "Ready"
@@ -908,77 +908,77 @@ final class VideoChannelTests: XCTestCase {
      */
     /**
      *
-     * @section _____________ 💡 이 테스트가 중요한 이유
-     * - UI에 상태를 표시할 때 사용
-     * - 로그 메시지에 사용
-     * - 디버깅 시 가독성 향상
+     * @section _____________ 💡 Why This Test Is Important
+     * - Used when displaying state in UI
+     * - Used in log messages
+     * - Improves readability when debugging
      */
     /**
      * @test testStateDisplayNames
-     * @brief 📱 UI 사용 예시:
+     * @brief 📱 UI Usage example:
      *
      * @details
-     * 📱 UI 사용 예시:
+     * 📱 UI Usage example:
      * @endcode
      * Text("Status: \(channel.state.displayName)")
-     * // "Status: Decoding" 표시
+     * // "Status: Decoding" display
      * @endcode
      */
     func testStateDisplayNames() {
         /**
-         * 모든 상태의 표시 이름 테스트
+         * Test display names of all states
          */
         /**
          *
-         * @section _________________ 💡 각 케이스를 직접 생성하여 검증
+         * @section _________________ 💡 Verify by directly creating each case
          *
-         * 1. Idle 상태
+         * 1. Idle state
          */
         /**
-         * 초기 상태, 아직 초기화 안 됨
+         * Initial state, not yet initialized 
          */
         XCTAssertEqual(ChannelState.idle.displayName, "Idle")
 
         /**
-         * 2. Ready 상태
+         * 2. Ready state
          */
         /**
-         * initialize() 완료, 디코딩 준비 완료
+         * initialize() completed, decoding ready completed
          */
         XCTAssertEqual(ChannelState.ready.displayName, "Ready")
 
         /**
-         * 3. Decoding 상태
+         * 3. Decoding state
          */
         /**
-         * startDecoding() 후, 프레임 생성 중
+         * After startDecoding(), frame creation in progress
          */
         XCTAssertEqual(ChannelState.decoding.displayName, "Decoding")
 
         /**
-         * 4. Completed 상태
+         * 4. Completed state
          */
         /**
-         * 비디오 끝까지 디코딩 완료
+         * Video decoding completed to the end
          */
         XCTAssertEqual(ChannelState.completed.displayName, "Completed")
 
         /**
-         * 5. Error 상태
+         * 5. Error state
          */
         /**
-         * 에러 발생, associated value로 메시지 전달
+         * Error occurred, message passed via associated value
          */
         /**
          *
          * @section enum_with_associated_values 💡 Enum with Associated Values
          * @endcode
-         * case error(String)  // String을 저장
+         * case error(String)  // Stores String
          * @endcode
          */
         /**
          *
-         * @section displayname___ 💡 displayName 구현
+         * @section displayname___ 💡 displayName Implementation
          * @endcode
          * case .error(let message):
          *     return "Error: \(message)"
@@ -988,13 +988,13 @@ final class VideoChannelTests: XCTestCase {
     }
 
     /**
-     * 상태 발행 테스트
+     * State publishing test
      */
     /**
-     * Combine의 @Published를 통한 상태 변경 알림을 검증합니다.
+     * Verifies state change notification via Combine's @Published.
      */
     /**
-     * 📡 @Published 속성:
+     * 📡 @Published Property:
      * @endcode
      * class VideoChannel {
      *     @Published var state: ChannelState = .idle
@@ -1003,180 +1003,180 @@ final class VideoChannelTests: XCTestCase {
      */
     /**
      *
-     * @section _published____ 💡 @Published의 동작
-     * - 값이 변경되면 자동으로 Publisher가 새 값을 발행
-     * - $state로 Publisher에 접근
-     * - Subscriber들이 변경을 감지
+     * @section _published____ 💡 @Published's Operation
+     * - When value changes, Publisher automatically publishes new value
+     * - Access Publisher via $state
+     * - Subscribers detect changes
      */
     /**
      *
-     * @section reactive___ 🔄 Reactive 패턴
+     * @section reactive___ 🔄 Reactive Pattern
      * @endcode
      * VideoChannel (Publisher)
-     *       ↓ state 변경
+     *       ↓ state change
      *   Combine Framework
-     *       ↓ 이벤트 전달
+     *       ↓ event delivery
      *    UI / Logic (Subscriber)
      * @endcode
      */
     /**
      * @test testStatePublishing
-     * @brief 🎯 비동기 테스트 패턴:
+     * @brief 🎯 Asynchronous Test Pattern:
      *
      * @details
      *
-     * @section __________ 🎯 비동기 테스트 패턴
-     * XCTestExpectation을 사용하여 비동기 이벤트를 검증합니다.
+     * @section __________ 🎯 Asynchronous Test Pattern
+     * Verify asynchronous events using XCTestExpectation.
      */
     func testStatePublishing() {
         /**
          *
          * @par Given-When-Then:
-         * - <b>Given:</b> 채널과 비동기 기대값 설정
+         * - <b>Given:</b> Setup channel and asynchronous expectation
          */
         /**
-         * 채널 생성
+         * Create channel
          */
         channel = VideoChannel(channelInfo: testChannelInfo)
 
         /**
-         * XCTestExpectation 생성
+         * Create XCTestExpectation
          */
         /**
          *
          * @section xctestexpectation 💡 XCTestExpectation
-         * 비동기 작업의 완료를 기다리는 객체
+         * Object that waits for asynchronous task completed
          */
         /**
          * @endcode
-         * let exp = expectation(description: "작업 설명")
-         * // ... 비동기 작업 ...
-         * exp.fulfill()  // 완료 신호
-         * waitForExpectations(timeout: 1.0)  // 대기
+         * let exp = expectation(description: "Task description")
+         * // ... asynchronous task ...
+         * exp.fulfill()  // completed signal
+         * waitForExpectations(timeout: 1.0)  // wait
          * @endcode
          */
         let expectation = expectation(description: "State change published")
 
         /**
-         * 수신한 상태들을 저장할 배열
+         * Array to store received states
          */
         /**
          *
-         * @section __ 💡 이유
-         * - 상태 변경 횟수 추적
-         * - 상태 변경 순서 확인 가능
+         * @section __ 💡 Reason
+         * - Track state change count
+         * - Can verify state change order
          */
         var receivedStates: [ChannelState] = []
 
         /**
          *
          * @par Given-When-Then:
-         * - <b>When:</b> 상태 변경 구독
+         * - <b>When:</b> state change subscription
          */
         /**
          *
-         * @section _____ 💡 구독 체인
+         * @section _____ 💡 Subscription Chain
          * @endcode
          * channel.$state      // Publisher<ChannelState, Never>
          *   .sink { state in  // Subscriber
-         *       // state: 새로운 상태 값
+         *       // state: new state value
          *   }
-         *   .store(in: &cancellables)  // 구독 저장
+         *   .store(in: &cancellables)  // save subscription
          * @endcode
          *
-         * $state: Publisher에 접근
+         * $state: Access Publisher
          */
         /**
          *
-         * @section __prefix 💡 $ prefix
-         * @Published 속성의 Publisher를 가져옴
+         * @section __prefix 💡 $ Prefix
+         * Gets the Publisher of @Published property
          * @endcode
-         * @Published var state: ChannelState  // 값
+         * @Published var state: ChannelState  // value
          * $state                              // Publisher
          * @endcode
          */
         channel.$state
             /**
-             * .sink: Subscriber 생성
+             * .sink: Create Subscriber
              */
             ///
             /**
-             * 클로저가 값을 받을 때마다 실행됨
-             */
-            ///
-            /**
-             *
-             * @section ____ 💡 파라미터
-             * - state: 새로 발행된 상태 값
+             * Executed whenever closure receives a value
              */
             ///
             /**
              *
-             * @section __ 💡 반환
-             * - AnyCancellable: 구독 취소 토큰
+             * @section ____ 💡 Parameter
+             * - state: newly published state value
+             */
+            ///
+            /**
+             *
+             * @section __ 💡 Return
+             * - AnyCancellable: subscription cancellation token
              */
             .sink { state in
                 /**
-                 * 받은 상태를 배열에 추가
+                 * Add received state to array
                  */
                 receivedStates.append(state)
 
                 /**
-                 * 2개 이상 받으면 완료
+                 * Complete when 2 or more received
                  */
                 ///
                 /**
                  *
-                 * @section __2__ 💡 왜 2개?
-                 * 1. 초기 값 (.idle)
-                 * 2. 첫 번째 변경
+                 * @section __2__ 💡 Why 2 items?
+                 * 1. initial value (.idle)
+                 * 2. first change
                  */
                 ///
                 /**
                  *
-                 * @section ____ 💡 실제로는
-                 * 이 테스트에서는 상태 변경이 없어
-                 * 초기 값만 받음 (1개)
+                 * @section ____ 💡 In reality
+                 * No state change in test
+                 * Only receives initial value (1 item)
                  */
                 if receivedStates.count >= 2 {
                     /**
-                     * fulfill(): 기대값 충족
+                     * fulfill(): Satisfy expectation
                      */
                     ///
                     /**
-                     * 비동기 작업 완료 신호
+                     * Asynchronous task completed signal
                      */
                     expectation.fulfill()
                 }
             }
             /**
-             * .store(in:): 구독 저장
+             * .store(in:): Save subscription
              */
             ///
             /**
-             * cancellables Set에 추가
-             * tearDown에서 자동 취소됨
+             * Add to cancellables Set
+             * Automatically cancelled in tearDown
              */
             ///
             /**
              *
-             * @section ___inout_____ 💡 &: inout 파라미터
-             * Set을 직접 수정
+             * @section ___inout_____ 💡 &: inout Parameter
+             * Directly modify Set
              */
             .store(in: &cancellables)
 
         /**
-         * 상태 변경 시뮬레이션 생략
+         * State change simulation omitted
          */
         /**
          *
-         * @section __ ⚠️ 주의
-         * 이 테스트는 구독 패턴을 보여주는 예시입니다.
-         * 실제 상태 변경은 실제 디코더가 필요합니다.
+         * @section __ ⚠️ Note
+         * This test is an example showing subscription pattern.
+         * Actual state change requires actual decoder.
          */
         /**
          *
-         * @section _______ 💡 실제 사용 예
+         * @section _______ 💡 Actual Usage Example
          * @endcode
          * channel.initialize()  // .idle → .ready
          * channel.startDecoding()  // .ready → .decoding
@@ -1184,28 +1184,28 @@ final class VideoChannelTests: XCTestCase {
          *
          *
          * @par Given-When-Then:
-         * - <b>Then:</b> 비동기 대기
+         * - <b>Then:</b> Asynchronous wait
          */
         /**
-         * waitForExpectations: 기대값 충족까지 대기
-         */
-        /**
-         *
-         * @section ____ 💡 파라미터
-         * - timeout: 최대 대기 시간 (초)
+         * waitForExpectations: Wait until expectation satisfied
          */
         /**
          *
-         * @section __ 💡 동작
-         * - expectation.fulfill() 호출되면 성공
-         * - timeout 초과하면 실패
+         * @section ____ 💡 Parameter
+         * - timeout: maximum wait time (seconds)
          */
         /**
          *
-         * @section ______ ⚠️ 이 테스트는
-         * 실제 상태 변경이 없어서
-         * timeout으로 종료될 수 있음
-         * (패턴 시연용 테스트)
+         * @section __ 💡 Operation
+         * - Success when expectation.fulfill() is called
+         * - Failure if timeout exceeded
+         */
+        /**
+         *
+         * @section ______ ⚠️ This test
+         * May terminate with timeout due to
+         * no actual state change
+         * (test for demonstrating pattern)
          */
         waitForExpectations(timeout: 1.0)
     }
@@ -1215,72 +1215,72 @@ final class VideoChannelTests: XCTestCase {
     // ═══════════════════════════════════════════════════════════════════════
 
     /**
-     * 초기 버퍼 상태 테스트
+     * initial buffer state test
      */
     /**
-     * 채널 생성 직후 버퍼 상태를 검증합니다.
+     * Verifies buffer state immediately after creating channel.
      */
     /**
-     * 📦 프레임 버퍼란?
+     * 📦 What is frame buffer?
      * @endcode
-     * 디코딩된 비디오 프레임을 저장하는 메모리 구조
+     * Memory structure that stores decoded video frames
      */
     /**
-     * 구조:
+     * Structure:
      * [Frame 1] [Frame 2] [Frame 3] ... [Frame 30]
-     *  ↑ 가장 오래된           ↑ 가장 최신
+     *  ↑ Oldest           ↑ Latest
      */
     /**
-     * 특징:
-     * - 최대 30개 프레임 저장
-     * - 오래된 프레임 자동 제거 (FIFO)
-     * - 빠른 타임스탬프 기반 조회
+     * Features:
+     * - Stores maximum 30 frames
+     * - Automatic removal of old frames (FIFO)
+     * - Fast timestamp-based lookup
      * @endcode
      */
     /**
      *
-     * @section bufferstatus___ 💡 BufferStatus 구조
+     * @section bufferstatus___ 💡 BufferStatus structure
      * @endcode
      * struct BufferStatus {
-     *     let current: Int           // 현재 프레임 개수
-     *     let max: Int              // 최대 용량
-     *     let fillPercentage: Double // 채워진 비율 (0.0~1.0)
+     *     let current: Int           // current frame piecesnumber
+     *     let max: Int              // maximum capacity
+     *     let fillPercentage: Double // Fill ratio (0.0~1.0)
      * }
      * @endcode
      */
     /**
      * @test testInitialBufferStatus
-     * @brief 🎯 왜 버퍼가 필요한가?
+     * @brief 🎯 Why is buffer necessary?
      *
      * @details
      *
-     * @section ___________ 🎯 왜 버퍼가 필요한가?
-     * - 부드러운 재생을 위한 프레임 미리 준비
-     * - 빠른 탐색 (이미 디코딩된 프레임 재사용)
-     * - 디코딩과 렌더링의 비동기 처리
+     * @section ___________ 🎯 Why is buffer necessary?
+     * - Prepare frames in advance for smooth playback
+     * - Fast seeking (reuse already decoded frames)
+     * - Asynchronous handling of decoding and rendering
      */
     func testInitialBufferStatus() {
         /**
          *
          * @par Given-When-Then:
-         * - <b>Given:</b> 채널 생성
+         * - <b>Given:</b> Create channel
          */
         /**
-         * 아직 디코딩 시작 전
+         * Not yet started decoding
          */
         channel = VideoChannel(channelInfo: testChannelInfo)
 
         /**
          *
          * @par Given-When-Then:
-         * - <b>When:</b> 버퍼 상태 조회
+         * - <b>When:</b> buffer state lookup
          */
         /**
-         * getBufferStatus(): BufferStatus 반환
+         * getBufferStatus(): BufferStatus return
          */
         /**
          *
-         * @section __ 💡 동작
+         * @section __ 💡 operation
          * @endcode
          * func getBufferStatus() -> BufferStatus {
          *     lock.lock()
@@ -1298,35 +1298,35 @@ final class VideoChannelTests: XCTestCase {
         /**
          *
          * @par Given-When-Then:
-         * - <b>Then:</b> 초기 버퍼 상태 검증
+         * - <b>Then:</b> initial buffer state verify/verification
          *
-         * 1. 현재 프레임 개수 = 0
+         * 1. current frame piecesnumber = 0
          */
         /**
          *
-         * @section _____ 💡 초기 상태
-         * 아직 디코딩하지 않아서 비어있음
+         * @section _____ 💡 Initial State
+         * Empty because not yet decoded
          */
         XCTAssertEqual(status.current, 0, "Buffer should be empty initially")
 
         /**
-         * 2. 최대 크기 = 30
+         * 2. maximum size = 30
          */
         /**
          *
-         * @section 30_______ 💡 30개 제한 이유
-         * - 메모리 사용량 제한
-         * - 30 fps * 1초 = 약 1초분량
-         * - 충분한 버퍼링 + 메모리 효율
+         * @section 30_______ 💡 Why 30 Frame Limit
+         * - Limit memory usage
+         * - 30 fps * 1 second = approx. 1 second worth
+         * - Sufficient buffering + memory efficient
          */
         XCTAssertEqual(status.max, 30, "Max buffer size should be 30")
 
         /**
-         * 3. 채움 비율 = 0%
+         * 3. Fill ratio = 0%
          */
         /**
          *
-         * @section __ 💡 계산
+         * @section __ 💡 Calculation
          * fillPercentage = current / max
          *                = 0 / 30
          *                = 0.0
@@ -1335,67 +1335,67 @@ final class VideoChannelTests: XCTestCase {
     }
 
     /**
-     * 버퍼 초기화 테스트
+     * buffer Initialization Tests
      */
     /**
-     * flushBuffer() 메서드가 버퍼를 올바르게 비우는지 검증합니다.
+     * flushBuffer() method verifies that buffer is correctly emptied.
      */
     /**
-     * 🚽 flushBuffer()의 역할:
+     * 🚽 flushBuffer()'s Role:
      * @endcode
-     * 버퍼에 저장된 모든 프레임을 제거
+     * Remove all frames stored in buffer
      */
     /**
-     * 사용 시점:
-     * 1. stop() 호출 시
-     * 2. seek() 호출 시 (새 위치로 이동)
-     * 3. 에러 발생 시
+     * Use cases:
+     * 1. stop() when calling
+     * 2. seek() call when (move to new position)
+     * 3. when error occurs
      * @endcode
      */
     /**
      *
-     * @section __ 💡 구현
+     * @section __ 💡 implementation
      * @endcode
      * func flushBuffer() {
      *     lock.lock()
      *     defer { lock.unlock() }
-     *     buffer.removeAll()  // 모든 프레임 제거
+     *     buffer.removeAll()  // remove all frames
      *     currentFrame = nil
      * }
      * @endcode
      */
     /**
      * @test testFlushBuffer
-     * @brief 🎯 왜 Flush가 필요한가?
+     * @brief 🎯 Why is Flush necessary?
      *
      * @details
      *
-     * @section __flush_______ 🎯 왜 Flush가 필요한가?
-     * - Seek 시 오래된 프레임 제거
-     * - 메모리 절약
-     * - 상태 초기화
+     * @section __flush_______ 🎯 Why is Flush necessary?
+     * - Remove old frames when seeking
+     * - save memory
+     * - state initialization
      */
     func testFlushBuffer() {
         /**
          *
          * @par Given-When-Then:
-         * - <b>Given:</b> 채널 생성
+         * - <b>Given:</b> Create channel
          */
         /**
-         * (실제로는 버퍼에 프레임이 있어야 의미있지만,
-         *  여기서는 빈 버퍼에서도 정상 작동 확인)
+         * (in reality buffer should have frames meaningful, but,
+         *  here empty even in buffer normal operation verify)
          */
         channel = VideoChannel(channelInfo: testChannelInfo)
 
         /**
          *
          * @par Given-When-Then:
-         * - <b>When:</b> 버퍼 초기화 + 상태 조회
+         * - <b>When:</b> Buffer initialization + state lookup
          */
         /**
-         * 순서:
-         * 1. flushBuffer() 호출
-         * 2. getBufferStatus() 호출
+         * order:
+         * 1. flushBuffer() call
+         * 2. getBufferStatus() call
          */
         channel.flushBuffer()
         let status = channel.getBufferStatus()
@@ -1403,52 +1403,52 @@ final class VideoChannelTests: XCTestCase {
         /**
          *
          * @par Given-When-Then:
-         * - <b>Then:</b> 버퍼가 비었는지 확인
+         * - <b>Then:</b> whether buffer is empty verify
          */
         /**
          *
-         * @section __ 💡 예상
-         * current = 0 (모든 프레임 제거됨)
+         * @section __ 💡 expected
+         * current = 0 (remove all framescompleted)
          */
         /**
          *
-         * @section _______ 💡 실제 사용 예
+         * @section _______ 💡 actual use example
          * @endcode
-         * // 50프레임이 버퍼에 있음
-         * channel.seek(to: 10.0)  // 10초로 이동
-         * // flushBuffer() 자동 호출
-         * // → 이전 프레임 모두 제거
-         * // → 10초부터 새로 디코딩
+         * // 50frames in buffer
+         * channel.seek(to: 10.0)  // 10sec move to
+         * // flushBuffer() automatically called
+         * // → remove all previous frames
+         * // → 10sec decode anew from
          * @endcode
          */
         XCTAssertEqual(status.current, 0, "Buffer should be empty after flush")
     }
 
     /**
-     * 빈 버퍼에서 프레임 가져오기 테스트
+     * test getting frame from empty buffer
      */
     /**
-     * 버퍼가 비어있을 때 getFrame(at:) 동작을 검증합니다.
+     * when buffer is empty getFrame(at:) operation verifies.
      */
     /**
      *
-     * @section getframe_at______ 🔍 getFrame(at:) 메서드
+     * @section getframe_at______ 🔍 getFrame(at:) method
      * @endcode
      * func getFrame(at timestamp: TimeInterval) -> VideoFrame?
      * @endcode
      */
     /**
      *
-     * @section __ 💡 동작
+     * @section __ 💡 operation
      * @endcode
-     * 1. 버퍼에서 timestamp에 가장 가까운 프레임 찾기
-     * 2. 프레임 반환
-     * 3. 없으면 nil 반환
+     * 1. find frame closest in buffer
+     * 2. frame return
+     * 3. return nil if not found
      */
     /**
-     * 검색 알고리즘:
-     * - 이진 검색 사용 (O(log n))
-     * - timestamp 기준 정렬된 버퍼
+     * Search algorithm:
+     * - use binary search (O(log n))
+     * - timestamp buffer sorted by criteria
      * @endcode
      */
     /**
@@ -1456,18 +1456,18 @@ final class VideoChannelTests: XCTestCase {
      * @section timeinterval 📝 TimeInterval
      * @endcode
      * typealias TimeInterval = Double
-     * // 초 단위 시간 (예: 1.5 = 1.5초)
+     * // sec unit time (example: 1.5 = 1.5sec)
      * @endcode
      */
     /**
      * @test testGetFrameFromEmptyBuffer
-     * @brief 🎯 사용 예시:
+     * @brief 🎯 Usage example:
      *
      * @details
      *
-     * @section _____ 🎯 사용 예시
+     * @section _____ 🎯 usage example
      * @endcode
-     * // 1.0초 시점의 프레임 가져오기
+     * // 1.0sec get frame at time
      * if let frame = channel.getFrame(at: 1.0) {
      *     renderFrame(frame)
      * } else {
@@ -1479,27 +1479,27 @@ final class VideoChannelTests: XCTestCase {
         /**
          *
          * @par Given-When-Then:
-         * - <b>Given:</b> 채널 생성
+         * - <b>Given:</b> Create channel
          */
         /**
-         * 버퍼가 비어있는 상태
+         * buffer empty state
          */
         channel = VideoChannel(channelInfo: testChannelInfo)
 
         /**
          *
          * @par Given-When-Then:
-         * - <b>When:</b> 프레임 조회
+         * - <b>When:</b> Frame lookup
          */
         /**
-         * 1.0초 시점의 프레임 요청
+         * 1.0sec time point frame request
          */
         /**
          *
-         * @section _____ 💡 버퍼 상태
+         * @section _____ 💡 buffer state
          * @endcode
-         * Buffer: []  ← 비어있음
-         * 요청: 1.0초 프레임
+         * Buffer: []  ← empty
+         * request: 1.0sec frame
          * @endcode
          */
         let frame = channel.getFrame(at: 1.0)
@@ -1507,22 +1507,22 @@ final class VideoChannelTests: XCTestCase {
         /**
          *
          * @par Given-When-Then:
-         * - <b>Then:</b> nil 반환 확인
+         * - <b>Then:</b> nil return verify
          */
         /**
-         * XCTAssertNil: 값이 nil인지 확인
-         */
-        /**
-         *
-         * @section _____ 💡 예상 동작
-         * - 버퍼가 비어있음
-         * - 검색 불가
-         * - nil 반환
+         * XCTAssertNil: whether value is nil verify
          */
         /**
          *
-         * @section nil________ ⚠️ nil은 에러가 아님
-         * 버퍼에 프레임이 없는 정상 상태
+         * @section _____ 💡 expected operation
+         * - buffer is empty
+         * - cannot search
+         * - nil return
+         */
+        /**
+         *
+         * @section nil________ ⚠️ nilis not an error
+         * buffer normal state without frames
          */
         XCTAssertNil(frame, "Should return nil when buffer is empty")
     }
@@ -1532,39 +1532,39 @@ final class VideoChannelTests: XCTestCase {
     // ═══════════════════════════════════════════════════════════════════════
 
     /**
-     * 존재하지 않는 파일로 초기화 테스트
+     * with non-existent file Initialization Tests
      */
     /**
-     * 잘못된 파일 경로로 initialize() 호출 시 에러 처리를 검증합니다.
-     */
-    /**
-     *
-     * @section ______ 🎯 테스트 목적
-     * - 파일 오류 감지
-     * - 적절한 에러 발생
-     * - 안전한 실패 처리
+     * with invalid file path initialize() call when error handling verifies.
      */
     /**
      *
-     * @section initialize______ 💡 initialize() 메서드
+     * @section ______ 🎯 test Purpose
+     * - file error detect
+     * - appropriate error occurs
+     * - unsafe failure handling/processing
+     */
+    /**
+     *
+     * @section initialize______ 💡 initialize() method
      * @endcode
      * func initialize() throws {
-     *     // 1. 파일 존재 확인
-     *     // 2. VideoDecoder 생성
-     *     // 3. 파일 열기
-     *     // 4. 상태를 .ready로 변경
+     *     // 1. file verify existence
+     *     // 2. VideoDecoder create/creation
+     *     // 3. file open
+     *     // 4. change state to .ready
      * }
      * @endcode
      */
     /**
-     * ❌ 실패 시나리오:
+     * ❌ failure Scenario:
      * @endcode
-     * 파일 경로: "/path/to/test/video.mp4"
-     *         ↓ 파일 없음
-     * VideoDecoder.open() 실패
+     * file path: "/path/to/test/video.mp4"
+     *         ↓ file none
+     * VideoDecoder.open() failure
      *         ↓
-     * DecoderError.fileNotFound 또는
-     * DecoderError.openFailed 발생
+     * DecoderError.fileNotFound or
+     * DecoderError.openFailed occurs
      * @endcode
      */
     /**
@@ -1574,66 +1574,66 @@ final class VideoChannelTests: XCTestCase {
      * @details
      *
      * @section xctassertthrowserror 🔍 XCTAssertThrowsError
-     * throwing 함수가 에러를 발생시키는지 검증
+     * throwing function whether error it occurs verify/verification
      */
     func testInitializeWithNonExistentFile() {
         /**
          *
          * @par Given-When-Then:
-         * - <b>Given:</b> 잘못된 경로로 채널 생성
+         * - <b>Given:</b> invalid with path Create channel
          */
         /**
-         * testChannelInfo의 filePath는
-         * "/path/to/test/video.mp4" (존재하지 않음)
+         * testChannelInfofilePath is
+         * "/path/to/test/video.mp4" (does not exist)
          */
         channel = VideoChannel(channelInfo: testChannelInfo)
 
         /**
-         * When/Then: 초기화 시도 및 에러 확인
+         * When/Then: initialization attempt and error verify
          */
         /**
-         * XCTAssertThrowsError의 동작:
+         * XCTAssertThrowsErroroperation:
          * @endcode
          * XCTAssertThrowsError(
-         *     try 테스트할코드(),    // 에러 발생 예상
-         *     "실패 메시지"
+         *     try code to test(),    // error expected to occur
+         *     "failure message"
          * ) { error in
-         *     // 발생한 에러 검사
+         *     // occurred error check
          * }
          * @endcode
          */
         /**
          *
-         * @section _____ 💡 예상 동작
-         * 1. channel.initialize() 호출
-         * 2. VideoDecoder가 파일 열기 시도
-         * 3. 파일 없음 → Error throw
-         * 4. 테스트 성공
+         * @section _____ 💡 expected operation
+         * 1. channel.initialize() call
+         * 2. VideoDecoder file open attempt
+         * 3. file none → Error throw
+         * 4. test success
          */
         /**
          *
-         * @section __________ ⚠️ 에러 발생 안 하면
-         * 테스트 실패 (파일 검증 누락)
+         * @section __________ ⚠️ error occurs does not
+         * test failure (file verify/verification missing)
          */
         XCTAssertThrowsError(try channel.initialize()) { _ in
             /**
-             * 발생한 에러 타입 확인
+             * occurred error type verify
              */
             ///
             /**
              *
-             * @section _____ 💡 예상 에러
+             * @section _____ 💡 expected error
              * - DecoderError.fileNotFound
              * - DecoderError.openFailed
-             * - 기타 파일 관련 에러
+             * - other file related error
              */
             ///
             /**
              *
-             * @section ___________ 📝 에러 타입 확인 예시
+             * @section ___________ 📝 error type verify example
              * @endcode
              * if case DecoderError.fileNotFound = error {
-             *     // 예상된 에러
+             *     // expected error
              * } else {
              *     XCTFail("Unexpected error: \(error)")
              * }
@@ -1644,26 +1644,26 @@ final class VideoChannelTests: XCTestCase {
     }
 
     /**
-     * 초기화 없이 seek 테스트
+     * initialization without seek test
      */
     /**
-     * initialize()를 호출하지 않고 seek()를 호출했을 때
-     * 적절한 에러 처리를 검증합니다.
+     * initialize()without calling seek()when calling
+     * appropriate error handling verifies.
      */
     /**
-     * 🚫 잘못된 사용 패턴:
+     * 🚫 invalid Usage pattern:
      * @endcode
      * let channel = VideoChannel(...)
-     * try channel.seek(to: 5.0)  // ❌ initialize() 먼저 필요!
+     * try channel.seek(to: 5.0)  // ❌ initialize() first required!
      * @endcode
      */
     /**
      *
-     * @section _________ ✅ 올바른 사용 패턴
+     * @section _________ ✅ correct Usage pattern
      * @endcode
      * let channel = VideoChannel(...)
-     * try channel.initialize()   // 1. 먼저 초기화
-     * try channel.seek(to: 5.0)  // 2. 그 다음 seek
+     * try channel.initialize()   // 1. first initialization
+     * try channel.seek(to: 5.0)  // 2. then next seek
      * @endcode
      */
     /**
@@ -1671,108 +1671,108 @@ final class VideoChannelTests: XCTestCase {
      * @section channelerror_notinitialized 💡 ChannelError.notInitialized
      * @endcode
      * enum ChannelError: Error {
-     *     case notInitialized  // 초기화되지 않음
-     *     case invalidState    // 잘못된 상태
-     *     case decoderError    // 디코더 에러
+     *     case notInitialized  // initializationnot done
+     *     case invalidState    // invalid state
+     *     case decoderError    // decoder error
      * }
      * @endcode
      */
     /**
      * @test testSeekWithoutInitialization
-     * @brief 🔍 if case 패턴 매칭:
+     * @brief 🔍 if case pattern matching:
      *
      * @details
      *
-     * @section if_case______ 🔍 if case 패턴 매칭
-     * enum 케이스를 매칭하는 Swift 문법
+     * @section if_case______ 🔍 if case pattern matching
+     * enum to match cases Swift syntax
      */
     func testSeekWithoutInitialization() {
         /**
          *
          * @par Given-When-Then:
-         * - <b>Given:</b> 초기화하지 않은 채널
+         * - <b>Given:</b> uninitialized channel
          */
         /**
-         * 채널 생성만 하고 initialize() 호출 안 함
+         * Create channelonly and initialize() not call 
          */
         /**
          *
-         * @section __ 💡 상태
+         * @section __ 💡 state
          * - state = .idle
          * - decoder = nil
-         * - seek 불가능
+         * - seek not possible
          */
         channel = VideoChannel(channelInfo: testChannelInfo)
 
         /**
-         * When/Then: seek 시도 및 에러 확인
+         * When/Then: seek attempt and error verify
          */
         /**
-         * 5.0초 위치로 이동 시도
+         * 5.0sec position move to attempt
          */
         /**
          *
-         * @section _____ 💡 예상 동작
+         * @section _____ 💡 expected operation
          * @endcode
          * channel.seek(to: 5.0)
-         *     ↓ state가 .idle?
-         *     ↓ decoder가 nil?
+         *     ↓ state .idle?
+         *     ↓ decoder nil?
          * throw ChannelError.notInitialized
          * @endcode
          */
         XCTAssertThrowsError(try channel.seek(to: 5.0)) { error in
             /**
-             * 에러 타입 확인
+             * error type verify
              */
             ///
             /**
-             * if case: enum 패턴 매칭
+             * if case: enum pattern matching
              */
             ///
             /**
              *
-             * @section __ 💡 문법
+             * @section __ 💡 syntax
              * @endcode
              * if case PatternType.case = value {
-             *     // 매칭 성공
+             *     // matching success
              * }
              * @endcode
              */
             ///
             /**
              *
-             * @section __ 💡 예시
+             * @section __ 💡 example
              * @endcode
              * let error: Error = ChannelError.notInitialized
              * if case ChannelError.notInitialized = error {
-             *     print("예상된 에러")  // ✅
+             *     print("expected error")  // ✅
              * }
              * @endcode
              */
             if case ChannelError.notInitialized = error {
                 /**
-                 * 예상된 에러 발생
+                 * expected error occurs
                  */
                 ///
                 /**
-                 * notInitialized 에러가 맞음
-                 * 테스트 통과
+                 * notInitialized error is correct
+                 * test passed
                  */
                 // Expected error
             } else {
                 /**
-                 * 예상치 못한 에러
+                 * unexpected error
                  */
                 ///
                 /**
-                 * XCTFail: 테스트 강제 실패
+                 * XCTFail: test forced failure
                  */
                 ///
                 /**
                  *
-                 * @section __ 💡 이유
-                 * notInitialized가 아닌 다른 에러 발생
-                 * → 에러 처리 로직 문제
+                 * @section __ 💡 Reason
+                 * not notInitialized other error occurs
+                 * → error handling/processing logic problem
                  */
                 XCTFail("Expected notInitialized error, got \(error)")
             }
@@ -1780,64 +1780,64 @@ final class VideoChannelTests: XCTestCase {
     }
 
     /**
-     * 중복 초기화 테스트
+     * duplicate Initialization Tests
      */
     /**
-     * initialize()를 두 번 호출했을 때의 에러 처리를 검증합니다.
+     * initialize() twice when calling error handling verifies.
      */
     /**
-     * 🚫 잘못된 사용 패턴:
+     * 🚫 invalid Usage pattern:
      * @endcode
-     * try channel.initialize()  // 1차 초기화
-     * try channel.initialize()  // ❌ 중복 초기화!
+     * try channel.initialize()  // 1th initialization
+     * try channel.initialize()  // ❌ duplicate initialization!
      * @endcode
      */
     /**
      *
-     * @section _____ 💡 예상 동작
+     * @section _____ 💡 expected operation
      * @endcode
-     * 1차 initialize()
+     * 1th initialize()
      *     ↓
      * state = .ready
      *     ↓
-     * 2차 initialize() 시도
+     * 2th initialize() attempt
      *     ↓
-     * state가 .idle이 아님
+     * state .idleis not
      *     ↓
      * throw ChannelError.invalidState
      * @endcode
      */
     /**
      *
-     * @section ____ ⚠️ 주의사항
-     * - 이 테스트는 실제 비디오 파일 필요
-     * - 유효한 파일로 initialize() 성공해야 함
-     * - 현재는 stub (구현 예정)
+     * @section ____ ⚠️ cautions
+     * - test actual video file required
+     * - valid with file initialize() must succeed 
+     * - current is stub (implementation planned)
      */
     /**
      *
-     * @section _________ 🎯 구현 시 확인사항
+     * @section _________ 🎯 implementation when verifying
      * @endcode
-     * // Given: 유효한 파일로 채널 생성
+     * // Given: valid with file Create channel
      * let bundle = Bundle(for: type(of: self))
      * let videoPath = bundle.path(forResource: "test", ofType: "mp4")!
      * let info = ChannelInfo(position: .front, filePath: videoPath, ...)
      * channel = VideoChannel(channelInfo: info)
      */
     /**
-     * // When: 첫 번째 초기화 성공
+     * // When: first th initialization success
      * try channel.initialize()  // ✅
      * XCTAssertEqual(channel.state, .ready)
      */
     /**
      * @test testDoubleInitialization
-     * @brief // Then: 두 번째 초기화 실패
+     * @brief // Then: second initialization failure
      *
      * @details
-     * // Then: 두 번째 초기화 실패
+     * // Then: second initialization failure
      * XCTAssertThrowsError(try channel.initialize()) { error in
      *     if case ChannelError.invalidState = error {
-     *         // 예상된 에러
+     *         // expected error
      *     } else {
      *         XCTFail("Expected invalidState error")
      *     }
@@ -1847,15 +1847,15 @@ final class VideoChannelTests: XCTestCase {
     func testDoubleInitialization() {
         /**
          *
-         * @section ________________________ ⚠️ 이 테스트는 실제 비디오 파일이 필요합니다.
+         * @section ________________________ ⚠️ test actual video fileis required.
          */
         /**
          *
-         * @section _____ 💡 구현 방법
-         * 1. 테스트 번들에 test_video.mp4 추가
-         * 2. Bundle에서 파일 경로 가져오기
-         * 3. 첫 번째 initialize() 호출
-         * 4. 두 번째 initialize() 호출 시 에러 확인
+         * @section _____ 💡 implementation method
+         * 1. test in bundle test_video.mp4 add
+         * 2. from Bundle file path get
+         * 3. first th initialize() call
+         * 4. second initialize() call when error verify
          */
         // Note: This test requires a valid video file
         // Given: A channel with valid file
@@ -1868,38 +1868,38 @@ final class VideoChannelTests: XCTestCase {
     // ═══════════════════════════════════════════════════════════════════════
 
     /**
-     * 동시 버퍼 접근 테스트
+     * concurrent buffer access test
      */
     /**
-     * 여러 스레드에서 동시에 버퍼에 접근할 때
-     * 스레드 안전성을 검증합니다.
+     * multiple threads concurrently to access buffer when
+     * verifies Thread Safety.
      */
     /**
-     * 🔒 스레드 안전성(Thread Safety)이란?
+     * 🔒 What is Thread Safety (Thread Safety)?
      * @endcode
-     * 여러 스레드가 동시에 같은 데이터에 접근해도
-     * 데이터 손상이나 크래시가 발생하지 않는 성질
+     * multiple threads concurrently same access data
+     * data damage or crash does not occur nature
      */
     /**
-     * 문제 상황 (스레드 안전하지 않을 때):
-     * Thread 1: buffer.count 읽기 → 5
-     * Thread 2: buffer.removeAll() → 버퍼 비움
-     * Thread 1: buffer[5] 접근 → ❌ 크래시!
+     * problem situation (when thread unsafe):
+     * Thread 1: buffer.count read → 5
+     * Thread 2: buffer.removeAll() → empty buffer
+     * Thread 1: buffer[5] access → ❌ crash!
      * @endcode
      */
     /**
-     * 🛡️ 보호 메커니즘:
+     * 🛡️ Protection mechanism:
      * @endcode
      * class VideoChannel {
      *     private let lock = NSLock()
      */
     /**
      *     func getBufferStatus() -> BufferStatus {
-     *         lock.lock()          // 1. 잠금
-     *         defer { lock.unlock() }  // 2. 종료 시 해제
+     *         lock.lock()          // 1. lock
+     *         defer { lock.unlock() }  // 2. termination when unlock
      */
     /**
-     *         // 3. 안전한 데이터 접근
+     *         // 3. unsafe data access
      *         return BufferStatus(current: buffer.count, ...)
      *     }
      * }
@@ -1912,77 +1912,77 @@ final class VideoChannelTests: XCTestCase {
      * @details
      *
      * @section dispatchqueue_concurrentperform 💡 DispatchQueue.concurrentPerform
-     * 여러 스레드에서 동시에 작업 수행
+     * multiple threads concurrently perform Tasks
      */
     func testConcurrentBufferAccess() {
         /**
          *
          * @par Given-When-Then:
-         * - <b>Given:</b> 채널 생성 및 반복 횟수 설정
+         * - <b>Given:</b> Create channel and set repeat count
          */
         /**
-         * 빈 채널 준비
+         * empty channel ready
          */
         channel = VideoChannel(channelInfo: testChannelInfo)
 
         /**
-         * 100번 반복
+         * 100times repeat
          */
         /**
          *
-         * @section __ 💡 이유
-         * - 충분한 동시성 테스트
-         * - 경쟁 조건(race condition) 발견 가능
+         * @section __ 💡 Reason
+         * - sufficient concurrency test
+         * - race condition(race condition) can be found
          */
         let iterations = 100
 
         /**
          *
          * @par Given-When-Then:
-         * - <b>When:</b> 여러 스레드에서 동시 접근
+         * - <b>When:</b> multiple in thread concurrent access
          */
         /**
-         * concurrentPerform: 동시 실행
+         * concurrentPerform: concurrent execution
          */
         /**
          *
-         * @section __ 💡 동작
+         * @section __ 💡 operation
          * @endcode
-         * Thread 1: 반복 0, 1, 2, ...
-         * Thread 2: 반복 10, 11, 12, ...
-         * Thread 3: 반복 20, 21, 22, ...
+         * Thread 1: iteration 0, 1, 2, ...
+         * Thread 2: iteration 10, 11, 12, ...
+         * Thread 3: iteration 20, 21, 22, ...
          * ...
-         * 모든 반복이 동시에 실행됨
+         * all iterations concurrently executed
          * @endcode
          */
         /**
          *
-         * @section ____ 📝 파라미터
-         * - iterations: 총 반복 횟수
-         * - _ in: 각 반복의 인덱스 (사용 안 함)
+         * @section ____ 📝 parameter
+         * - iterations: total iteration count
+         * - _ in: each of iteration index (use not )
          */
         DispatchQueue.concurrentPerform(iterations: iterations) { _ in
             /**
-             * 버퍼 상태 조회
+             * buffer state lookup
              */
             ///
             /**
              *
-             * @section ______________ 💡 스레드 안전성 검증 포인트
-             * - buffer.count 읽기
-             * - 동시에 다른 스레드가 버퍼 수정
+             * @section ______________ 💡 Thread Safety verify/verification point
+             * - buffer.count read
+             * - concurrently other thread buffer fix
              */
             _ = channel.getBufferStatus()
 
             /**
-             * 버퍼 초기화
+             * Buffer initialization
              */
             ///
             /**
              *
-             * @section ______________ 💡 스레드 안전성 검증 포인트
-             * - buffer.removeAll() 호출
-             * - 동시에 다른 스레드가 버퍼 읽기
+             * @section ______________ 💡 Thread Safety verify/verification point
+             * - buffer.removeAll() call
+             * - concurrently other thread buffer read
              */
             channel.flushBuffer()
         }
@@ -1990,42 +1990,42 @@ final class VideoChannelTests: XCTestCase {
         /**
          *
          * @par Given-When-Then:
-         * - <b>Then:</b> 크래시 없이 완료 확인
+         * - <b>Then:</b> verify completed without crash
          */
         /**
          *
-         * @section _________ 💡 테스트 통과 조건
-         * - 크래시 발생 안 함
-         * - 데이터 손상 없음
-         * - 최종 버퍼 상태 일관성 유지
+         * @section _________ 💡 test passing condition
+         * - no crash occurs 
+         * - data no damage
+         * - final buffer state maintain consistency
          */
         /**
-         * 최종 상태 확인
+         * final state verify
          */
         let finalStatus = channel.getBufferStatus()
 
         /**
-         * 버퍼가 비어있어야 함
+         * buffer should be empty 
          */
         /**
          *
-         * @section __ 💡 이유
-         * 모든 flushBuffer() 호출이 완료됨
-         * → 버퍼는 비어있어야 정상
+         * @section __ 💡 Reason
+         * all flushBuffer() calls completed
+         * → buffer should be empty as normal
          */
         XCTAssertEqual(finalStatus.current, 0)
     }
 
     /**
-     * 동시 프레임 조회 테스트
+     * concurrent Frame lookup test
      */
     /**
-     * 여러 스레드에서 동시에 getFrame()을 호출할 때
-     * 스레드 안전성을 검증합니다.
+     * multiple threads concurrently when calling getFrame()
+     * verifies Thread Safety.
      */
     /**
      *
-     * @section ________ 🔍 테스트 시나리오
+     * @section ________ 🔍 test Scenario
      * @endcode
      * Thread 1: getFrame(at: 0.0)
      * Thread 2: getFrame(at: 1.0)
@@ -2034,56 +2034,56 @@ final class VideoChannelTests: XCTestCase {
      * Thread 100: getFrame(at: 99.0)
      */
     /**
-     * 모두 동시 실행
+     * all concurrent execution
      * @endcode
      */
     /**
      *
-     * @section getframe___________ 💡 getFrame()의 스레드 안전성
+     * @section getframe___________ 💡 of getFrame() Thread Safety
      * @endcode
      * func getFrame(at timestamp: TimeInterval) -> VideoFrame? {
      *     lock.lock()
      *     defer { lock.unlock() }
      */
     /**
-     *     // 버퍼 검색 (이진 탐색)
+     *     // buffer search (binary search)
      *     return buffer.first { ... }
      * }
      * @endcode
      */
     /**
      * @test testConcurrentGetFrame
-     * @brief 🎯 검증 포인트:
+     * @brief 🎯 verify/verification point:
      *
      * @details
      *
-     * @section ______ 🎯 검증 포인트
-     * - 동시 읽기 작업의 안전성
-     * - 버퍼 접근 중 크래시 방지
-     * - 일관된 검색 결과
+     * @section ______ 🎯 verify/verification point
+     * - concurrent read Tasks safety
+     * - buffer access prevent crash during
+     * - consistent search result
      */
     func testConcurrentGetFrame() {
         /**
          *
          * @par Given-When-Then:
-         * - <b>Given:</b> 채널 생성
+         * - <b>Given:</b> Create channel
          */
         /**
-         * 빈 버퍼 상태
+         * empty buffer state
          */
         channel = VideoChannel(channelInfo: testChannelInfo)
 
         /**
          *
          * @par Given-When-Then:
-         * - <b>When:</b> 여러 스레드에서 동시에 프레임 조회
+         * - <b>When:</b> multiple threads concurrently Frame lookup
          */
         /**
-         * 100개 스레드에서 동시 실행
+         * 100pieces in thread concurrent execution
          */
         /**
          *
-         * @section __________timestamp___ 💡 각 스레드가 다른 timestamp 조회
+         * @section __________timestamp___ 💡 each thread other timestamp lookup
          * @endcode
          * Thread 0: getFrame(at: 0.0)
          * Thread 1: getFrame(at: 1.0)
@@ -2093,11 +2093,11 @@ final class VideoChannelTests: XCTestCase {
          */
         DispatchQueue.concurrentPerform(iterations: 100) { index in
             /**
-             * index를 Double로 변환
+             * index Doubleto convert
              */
             ///
             /**
-             * 예: index=5 → timestamp=5.0
+             * example: index=5 → timestamp=5.0
              */
             _ = channel.getFrame(at: Double(index))
         }
@@ -2105,23 +2105,23 @@ final class VideoChannelTests: XCTestCase {
         /**
          *
          * @par Given-When-Then:
-         * - <b>Then:</b> 크래시 없이 완료
+         * - <b>Then:</b> completed without crash
          */
         /**
-         * XCTAssertNotNil: 채널 객체가 유효한지 확인
-         */
-        /**
-         *
-         * @section _________ 💡 테스트 통과 의미
-         * - 100번의 동시 조회에서 크래시 없음
-         * - 데이터 경쟁 조건 없음
-         * - 스레드 안전성 확보
+         * XCTAssertNotNil: channel whether object is valid verify
          */
         /**
          *
-         * @section __ ⚠️ 주의
-         * 버퍼가 비어있으므로 모든 getFrame()은 nil 반환
-         * (정상 동작)
+         * @section _________ 💡 test meaning of passed
+         * - 100times concurrent lookup without crash
+         * - data race condition none
+         * - Thread Safety secured
+         */
+        /**
+         *
+         * @section __ ⚠️ caution
+         * since buffer is empty all getFrame() return nil
+         * (normal operation)
          */
         XCTAssertNotNil(channel)
     }
@@ -2131,50 +2131,50 @@ final class VideoChannelTests: XCTestCase {
     // ═══════════════════════════════════════════════════════════════════════
 
     /**
-     * 채널 deinit 테스트
+     * channel deinit test
      */
     /**
-     * VideoChannel이 메모리에서 해제될 때
-     * 올바르게 정리되는지 검증합니다.
+     * VideoChannel when unlocked from memory
+     * correctly whether cleaned up verifies.
      */
     /**
      *
      * @section arc__automatic_reference_counting_ 💾 ARC (Automatic Reference Counting)
      * @endcode
-     * Swift의 자동 메모리 관리 시스템
+     * Swift's automatic Memory management system
      */
     /**
-     * 객체 생성:
-     * let channel = VideoChannel(...)  // 참조 횟수 = 1
+     * object create/creation:
+     * let channel = VideoChannel(...)  // reference count = 1
      */
     /**
-     * 참조 증가:
-     * let ref2 = channel  // 참조 횟수 = 2
+     * reference increment:
+     * let ref2 = channel  // reference count = 2
      */
     /**
-     * 참조 감소:
-     * ref2 = nil  // 참조 횟수 = 1
-     * channel = nil  // 참조 횟수 = 0 → deinit 호출
+     * reference decrement:
+     * ref2 = nil  // reference count = 1
+     * channel = nil  // reference count = 0 → deinit call
      * @endcode
      */
     /**
-     * 🧹 deinit의 역할:
+     * 🧹 deinit's Role:
      * @endcode
      * class VideoChannel {
      *     deinit {
-     *         // 1. 디코딩 스레드 중지
+     *         // 1. decoding stop thread
      *         stop()
      */
     /**
-     *         // 2. 버퍼 정리
+     *         // 2. buffer cleanup
      *         buffer.removeAll()
      */
     /**
-     *         // 3. Combine 구독 취소
+     *         // 3. Combine cancel subscription
      *         cancellables.removeAll()
      */
     /**
-     *         // 4. 디코더 해제
+     *         // 4. decoder unlock
      *         decoder = nil
      *     }
      * }
@@ -2182,11 +2182,11 @@ final class VideoChannelTests: XCTestCase {
      */
     /**
      * @test testChannelDeinit
-     * @brief 🔍 메모리 누수 검증 도구:
+     * @brief 🔍 memory leak verification tool:
      *
      * @details
      *
-     * @section ____________ 🔍 메모리 누수 검증 도구
+     * @section ____________ 🔍 memory leak verify/verification tool
      * - Instruments (Leaks, Allocations)
      * - Memory Graph Debugger
      */
@@ -2194,50 +2194,50 @@ final class VideoChannelTests: XCTestCase {
         /**
          *
          * @par Given-When-Then:
-         * - <b>Given:</b> 로컬 변수로 채널 생성
+         * - <b>Given:</b> with local variable Create channel
          */
         /**
-         * var: 변경 가능한 변수
-         * ?: 옵셔널 타입
+         * var: mutable variable
+         * ?: optional type
          */
         /**
          *
-         * @section __ 💡 이유
-         * - nil 할당 가능
-         * - 참조 횟수 제어 가능
+         * @section __ 💡 Reason
+         * - nil can assign
+         * - can control reference count
          */
         var testChannel: VideoChannel? = VideoChannel(channelInfo: testChannelInfo)
 
         /**
-         * 채널이 생성되었는지 확인
+         * whether channel created verify
          */
         /**
          *
-         * @section ____ 💡 이 시점
-         * - testChannel 참조 횟수 = 1
-         * - 메모리 할당됨
+         * @section ____ 💡 time
+         * - testChannel reference count = 1
+         * - memory allocated
          */
         XCTAssertNotNil(testChannel)
 
         /**
          *
          * @par Given-When-Then:
-         * - <b>When:</b> 채널 해제
+         * - <b>When:</b> Release channel
          */
         /**
-         * nil 할당으로 참조 해제
+         * nil By assignment reference unlock
          */
         /**
          *
-         * @section __ 💡 동작
+         * @section __ 💡 operation
          * @endcode
          * testChannel = nil
          *     ↓
-         * 참조 횟수 = 0
+         * reference count = 0
          *     ↓
-         * ARC가 deinit 호출
+         * ARC deinit call
          *     ↓
-         * 메모리 해제
+         * memory unlock
          * @endcode
          */
         testChannel = nil
@@ -2245,60 +2245,60 @@ final class VideoChannelTests: XCTestCase {
         /**
          *
          * @par Given-When-Then:
-         * - <b>Then:</b> nil 확인
+         * - <b>Then:</b> nil verify
          */
         /**
          *
-         * @section _____ 💡 검증 사항
-         * - 변수가 nil로 설정됨
-         * - deinit이 정상 호출됨 (크래시 없음)
-         * - 리소스가 정리됨
+         * @section _____ 💡 verification items
+         * - variable set to nil
+         * - deinit called normally (no crash)
+         * - resources cleaned up
          */
         /**
          *
-         * @section __________ ⚠️ 실제 메모리 누수는
-         * Instruments 도구로 확인해야 함
-         * (이 테스트는 기본 동작만 확인)
+         * @section __________ ⚠️ actual memory leak
+         * Instruments should verify with tool 
+         * (this test only verifies basic operation)
          */
         XCTAssertNil(testChannel)
     }
 
     /**
-     * stop() 리소스 정리 테스트
+     * stop() resource cleanup test
      */
     /**
-     * stop() 메서드가 모든 리소스를 올바르게 정리하는지 검증합니다.
+     * stop() whether method correctly cleans up all resources verifies.
      */
     /**
-     * 🛑 stop() 메서드의 역할:
+     * 🛑 stop() method's Role:
      * @endcode
      * func stop() {
-     *     // 1. 디코딩 스레드 중지
+     *     // 1. decoding stop thread
      *     decodingQueue.async {
      *         self.shouldStop = true
      *     }
      */
     /**
-     *     // 2. 버퍼 초기화
+     *     // 2. Buffer initialization
      *     flushBuffer()
      */
     /**
-     *     // 3. 현재 프레임 제거
+     *     // 3. current frame removal
      *     currentFrame = nil
      */
     /**
-     *     // 4. 상태를 idle로 변경
+     *     // 4. change state to idle
      *     state = .idle
      * }
      * @endcode
      */
     /**
      *
-     * @section _____ 🎯 사용 시점
-     * - 비디오 재생 중지
-     * - 새 비디오 로드 전
-     * - 앱 종료 전
-     * - 에러 발생 시
+     * @section _____ 🎯 use time
+     * - video stop playback
+     * - new video load before
+     * - before app termination
+     * - when error occurs
      */
     /**
      * @test testStopCleansResources
@@ -2307,37 +2307,37 @@ final class VideoChannelTests: XCTestCase {
      * @details
      *
      * @section stop___vs_deinit 💡 stop() vs deinit
-     * - stop(): 수동 호출, 재사용 가능
-     * - deinit: 자동 호출, 객체 소멸
+     * - stop(): manually called, reusable
+     * - deinit: automatically called, object destruction
      */
     func testStopCleansResources() {
         /**
          *
          * @par Given-When-Then:
-         * - <b>Given:</b> 채널 생성
+         * - <b>Given:</b> Create channel
          */
         /**
-         * 초기 상태로 채널 준비
+         * channel ready in initial state
          */
         channel = VideoChannel(channelInfo: testChannelInfo)
 
         /**
          *
          * @par Given-When-Then:
-         * - <b>When:</b> stop() 호출
+         * - <b>When:</b> stop() call
          */
         /**
-         * 리소스 정리 실행
+         * execute resource cleanup
          */
         /**
          *
-         * @section _____ 💡 내부 동작
+         * @section _____ 💡 internal operation
          * @endcode
          * stop()
-         *   ↓ 디코딩 중지
-         *   ↓ 버퍼 비우기
-         *   ↓ 상태 초기화
-         * 완료
+         *   ↓ decoding halt
+         *   ↓ empty buffer
+         *   ↓ state initialization
+         * completed
          * @endcode
          */
         channel.stop()
@@ -2345,42 +2345,42 @@ final class VideoChannelTests: XCTestCase {
         /**
          *
          * @par Given-When-Then:
-         * - <b>Then:</b> 정리 상태 검증
+         * - <b>Then:</b> cleanup state verify/verification
          *
-         * 1. 상태가 .idle인지 확인
+         * 1. state whether .idle verify
          */
         /**
          *
-         * @section stop_______ 💡 stop() 후 상태
-         * 항상 .idle로 돌아감
+         * @section stop_______ 💡 stop() after state
+         * always returns to .idle
          */
         XCTAssertEqual(channel.state, .idle)
 
         /**
-         * 2. 현재 프레임이 nil인지 확인
+         * 2. current whether frame is nil verify
          */
         /**
          *
-         * @section __ 💡 이유
-         * stop()에서 currentFrame = nil 설정
+         * @section __ 💡 Reason
+         * in stop() set currentFrame = nil
          */
         XCTAssertNil(channel.currentFrame)
 
         /**
-         * 3. 버퍼가 비었는지 확인
+         * 3. whether buffer is empty verify
          */
         /**
-         * getBufferStatus() 호출하여 상태 확인
+         * getBufferStatus() call to verify state
          */
         let status = channel.getBufferStatus()
 
         /**
-         * 버퍼 카운트 = 0
+         * buffer count = 0
          */
         /**
          *
-         * @section __ 💡 이유
-         * stop()이 flushBuffer() 호출함
+         * @section __ 💡 Reason
+         * stop() flushBuffer() calls
          */
         XCTAssertEqual(status.current, 0, "Buffer should be empty after stop")
     }
@@ -2390,36 +2390,36 @@ final class VideoChannelTests: XCTestCase {
     // ═══════════════════════════════════════════════════════════════════════
 
     /**
-     * 버퍼 상태 조회 성능 테스트
+     * buffer state lookup Performance Tests
      */
     /**
-     * getBufferStatus() 메서드의 성능을 측정합니다.
+     * getBufferStatus() measures method's performance.
      */
     /**
-     * ⏱️ measure { } 블록:
+     * ⏱️ measure { } block:
      * @endcode
-     * XCTest의 성능 측정 도구
+     * XCTest's performance measurement tool
      */
     /**
-     * 동작:
-     * 1. 블록을 10회 실행
-     * 2. 각 실행 시간 측정
-     * 3. 평균, 표준편차 계산
-     * 4. 기준치와 비교
-     * @endcode
-     */
-    /**
-     *
-     * @section _____ 💡 성능 기준
-     * @endcode
-     * getBufferStatus()는 매 프레임마다 호출 가능
-     * → 매우 빠르게 실행되어야 함
-     * → 목표: 1000회 호출에 < 10ms
+     * operation:
+     * 1. execute block 10 times
+     * 2. measure each execution time
+     * 3. calculate average, standard deviation
+     * 4. compare with baseline
      * @endcode
      */
     /**
      *
-     * @section ________ 📊 측정 결과 예시
+     * @section _____ 💡 performance criteria
+     * @endcode
+     * getBufferStatus() can be called per frame
+     * → must execute very fast 
+     * → goal: 1000calls in < 10ms
+     * @endcode
+     */
+    /**
+     *
+     * @section ________ 📊 measurement result example
      * @endcode
      * Average: 5.234 ms
      * Relative standard deviation: 3.2%
@@ -2428,66 +2428,66 @@ final class VideoChannelTests: XCTestCase {
      */
     /**
      * @test testBufferStatusPerformance
-     * @brief 🎯 성능 최적화 포인트:
+     * @brief 🎯 performance optimization point:
      *
      * @details
      *
-     * @section __________ 🎯 성능 최적화 포인트
-     * - NSLock 사용 (빠른 잠금)
-     * - 간단한 계산만 수행
-     * - 메모리 할당 최소화
+     * @section __________ 🎯 performance optimization point
+     * - NSLock use (fast lock)
+     * - only simple calculations performed
+     * - minimize memory allocation
      */
     func testBufferStatusPerformance() {
         /**
          *
          * @par Given-When-Then:
-         * - <b>Given:</b> 채널 생성
+         * - <b>Given:</b> Create channel
          */
         /**
-         * 빈 버퍼 상태
+         * empty buffer state
          */
         channel = VideoChannel(channelInfo: testChannelInfo)
 
         /**
-         * When/Then: 성능 측정
+         * When/Then: measure performance
          */
         /**
-         * measure: 성능 측정 블록
+         * measure: measure performance block
          */
         /**
          *
-         * @section __ 💡 동작
-         * 이 블록이 10회 반복 실행되고
-         * 각 실행 시간이 측정됩니다
+         * @section __ 💡 operation
+         * block executed 10 times and
+         * each execution time is measured 
          */
         measure {
             /**
-             * 1000회 버퍼 상태 조회
+             * 1000times buffer state lookup
              */
             ///
             /**
              *
-             * @section 1000____ 💡 1000회 이유
-             * - 통계적으로 의미있는 측정
-             * - 실제 사용 패턴 시뮬레이션
-             * - 성능 병목 지점 발견
+             * @section 1000____ 💡 1000times Reason
+             * - statistically meaningful measurement
+             * - simulate actual usage pattern
+             * - find performance bottleneck
              */
             for _ in 0..<1000 {
                 /**
-                 * 버퍼 상태 조회
+                 * buffer state lookup
                  */
                 ///
                 /**
-                 * _: 결과 무시 (사용 안 함)
+                 * _: ignore result (not used)
                  */
                 ///
                 /**
                  *
-                 * @section _____ 💡 측정 대상
-                 * - lock/unlock 오버헤드
-                 * - buffer.count 접근
-                 * - BufferStatus 생성
-                 * - fillPercentage 계산
+                 * @section _____ 💡 measurement target
+                 * - lock/unlock overhead
+                 * - buffer.count access
+                 * - BufferStatus create/creation
+                 * - fillPercentage calculation
                  */
                 _ = channel.getBufferStatus()
             }
@@ -2495,85 +2495,85 @@ final class VideoChannelTests: XCTestCase {
 
         /**
          *
-         * @section _____ 💡 결과 확인
-         * Xcode 테스트 레포트에서 확인
-         * - Average: 평균 실행 시간
-         * - Std Dev: 표준 편차
-         * - Set Baseline: 기준치 설정 가능
+         * @section _____ 💡 result verify
+         * verify in Xcode test report
+         * - Average: average execution time
+         * - Std Dev: standard deviation
+         * - Set Baseline: can set baseline
          */
     }
 
     /**
-     * 프레임 조회 성능 테스트
+     * Frame lookup Performance Tests
      */
     /**
-     * getFrame(at:) 메서드의 성능을 측정합니다.
-     */
-    /**
-     *
-     * @section getframe________ 🔍 getFrame() 성능 특성
-     * @endcode
-     * 빈 버퍼: O(1) - 즉시 nil 반환
-     * 가득 찬 버퍼: O(log n) - 이진 탐색
-     */
-    /**
-     * 최악의 경우:
-     * - 버퍼 30개
-     * - 이진 탐색: log₂(30) ≈ 5 단계
-     * @endcode
+     * getFrame(at:) measures method's performance.
      */
     /**
      *
-     * @section 0_033____ 💡 0.033초 간격
+     * @section getframe________ 🔍 getFrame() performance characteristics
      * @endcode
-     * 30 fps 비디오의 프레임 간격
-     * 1초 / 30 프레임 = 0.033초
+     * empty buffer: O(1) - immediately nil return
+     * full buffer: O(log n) - binary search
      */
     /**
-     * 테스트 패턴:
-     * frame 0: 0.000초
-     * frame 1: 0.033초
-     * frame 2: 0.066초
+     * worst case:
+     * - buffer 30pieces
+     * - binary search: log₂(30) ≈ 5 steps
+     * @endcode
+     */
+    /**
+     *
+     * @section 0_033____ 💡 0.033sec interval
+     * @endcode
+     * 30 fps video's frame interval
+     * 1sec / 30 frame = 0.033sec
+     */
+    /**
+     * test pattern:
+     * frame 0: 0.000sec
+     * frame 1: 0.033sec
+     * frame 2: 0.066sec
      * ...
      * @endcode
      */
     /**
      * @test testGetFramePerformance
-     * @brief 🎯 성능 목표:
+     * @brief 🎯 performance goal:
      *
      * @details
      *
-     * @section _____ 🎯 성능 목표
-     * - 1000회 조회에 < 20ms
-     * - 실시간 재생에 충분
+     * @section _____ 🎯 performance goal
+     * - 1000times lookup in < 20ms
+     * - sufficient for real-time playback
      */
     func testGetFramePerformance() {
         /**
          *
          * @par Given-When-Then:
-         * - <b>Given:</b> 채널 생성
+         * - <b>Given:</b> Create channel
          */
         /**
-         * 빈 버퍼 상태
-         * (실제로는 프레임이 있어야 의미있지만,
-         *  이 테스트는 기본 성능 측정)
+         * empty buffer state
+         * (in reality frames should be present for meaningful test, but,
+         *  test basic measure performance)
          */
         channel = VideoChannel(channelInfo: testChannelInfo)
 
         /**
-         * When/Then: 성능 측정
+         * When/Then: measure performance
          */
         /**
-         * measure 블록 안에서 1000회 프레임 조회
+         * in measure block 1000times Frame lookup
          */
         measure {
             /**
-             * 1000회 프레임 조회
+             * 1000times Frame lookup
              */
             ///
             /**
              *
-             * @section ____ 💡 각 반복
+             * @section ____ 💡 each iteration
              * i=0: getFrame(at: 0.0)
              * i=1: getFrame(at: 0.033)
              * i=2: getFrame(at: 0.066)
@@ -2581,17 +2581,17 @@ final class VideoChannelTests: XCTestCase {
              */
             for i in 0..<1000 {
                 /**
-                 * timestamp 계산
+                 * timestamp calculation
                  */
                 ///
                 /**
                  * Double(i) * 0.033
-                 * = i번째 프레임의 예상 timestamp
+                 * = iexpected timestamp of th frame
                  */
                 ///
                 /**
                  *
-                 * @section 0_033___30_fps___ 💡 0.033 = 30 fps 간격
+                 * @section 0_033___30_fps___ 💡 0.033 = 30 fps interval
                  */
                 _ = channel.getFrame(at: Double(i) * 0.033)
             }
@@ -2599,61 +2599,61 @@ final class VideoChannelTests: XCTestCase {
 
         /**
          *
-         * @section __________ 💡 성능 개선 아이디어
-         * - 버퍼를 정렬된 배열로 유지
-         * - 이진 탐색 알고리즘 최적화
-         * - 최근 조회 결과 캐싱
-         * - 시간 범위 인덱싱
+         * @section __________ 💡 performance improvement ideas
+         * - maintain buffer as sorted array
+         * - binary search algorithm optimization
+         * - cache recent lookup results
+         * - time scope indexing
          */
     }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// MARK: - Integration Tests (통합 테스트)
+// MARK: - Integration Tests (integration test)
 // ═══════════════════════════════════════════════════════════════════════════
 
-/// VideoChannel 통합 테스트 클래스
+/// VideoChannel integration test class
 ///
-/// 실제 비디오 파일을 사용한 전체 workflow 테스트를 수행합니다.
+/// performs entire workflow test using actual video file.
 ///
-/// 🔗 통합 테스트 (Integration Tests)란?
+/// 🔗 What is integration test (Integration Tests)?
 /// ```
-/// 여러 컴포넌트가 함께 작동하는 것을 검증하는 테스트
+/// test that verifies multiple components work together
 ///
 /// Unit Tests vs Integration Tests:
 ///
 /// Unit Tests:
-/// - 단일 클래스/메서드 테스트
-/// - Mock 객체 사용
-/// - 빠른 실행
+/// - test single class/method
+/// - Mock object use
+/// - fast execution
 ///
 /// Integration Tests:
-/// - 실제 의존성 사용
-/// - 전체 workflow 테스트
-/// - 느린 실행
+/// - use actual dependencies
+/// - entire workflow test
+/// - slow execution
 /// ```
 ///
-/// 💡 이 테스트의 특징:
+/// 💡 test characteristics:
 /// ```
-/// 1. 실제 비디오 파일 필요
-///    - test_video.mp4를 Bundle에서 로드
-///    - XCTSkip으로 파일 없으면 건너뛰기
+/// 1. actual video file required
+///    - test_video.mp4load from Bundle
+///    - XCTSkipto skip if file missing
 ///
-/// 2. 실제 디코딩 수행
-///    - FFmpeg VideoDecoder 사용
-///    - Thread.sleep으로 디코딩 대기
-///    - 실제 프레임 생성 검증
+/// 2. perform actual decoding
+///    - FFmpeg VideoDecoder use
+///    - Thread.sleepto wait for decoding
+///    - actual frame create/creation verify/verification
 ///
-/// 3. 전체 기능 검증
+/// 3. entire function/feature verify/verification
 ///    - initialize → startDecoding → getFrame
-///    - seek → 새 위치 디코딩
-///    - 버퍼 관리 및 프레임 순서
+///    - seek → new position decoding
+///    - buffer management and frame order
 /// ```
 ///
-/// ⚠️ 실행 주의사항:
-/// - test_video.mp4 파일이 테스트 번들에 포함되어야 함
-/// - 파일 없으면 모든 테스트가 XCTSkip으로 건너뛰어짐
-/// - 실제 디코딩으로 인해 느리게 실행됨 (수 초 소요)
+/// ⚠️ execution cautions:
+/// - test_video.mp4 file must be included in test bundle 
+/// - if file missing all tests XCTSkipskipped with
+/// - executed slowly due to actual decoding (number sec takes)
 final class VideoChannelIntegrationTests: XCTestCase {
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -2661,18 +2661,18 @@ final class VideoChannelIntegrationTests: XCTestCase {
     // ═══════════════════════════════════════════════════════════════════════
 
     /**
-     * 비디오 채널 인스턴스
+     * Video channel instance
      */
     /**
-     * 실제 비디오 파일로 초기화됩니다.
+     * actual video with file initialization.
      */
     var channel: VideoChannel!
 
     /**
-     * 테스트 채널 정보
+     * Test channel information
      */
     /**
-     * 테스트 비디오 파일 경로를 포함합니다.
+     * includes test video file path.
      */
     var testChannelInfo: ChannelInfo!
 
@@ -2681,61 +2681,61 @@ final class VideoChannelIntegrationTests: XCTestCase {
     // ═══════════════════════════════════════════════════════════════════════
 
     /**
-     * 각 테스트 실행 전 초기화
+     * Initialize before each test execution
      */
     /**
-     * 테스트 비디오 파일을 찾아서 채널을 생성합니다.
+     * find test video file and create channel.
      */
     /**
-     * 📦 Bundle 파일 접근:
+     * 📦 Bundle file access:
      * @endcode
      * let bundle = Bundle(for: type(of: self))
-     * bundle.path(forResource: "파일명", ofType: "확장자")
+     * bundle.path(forResource: "filename", ofType: "extension")
      * @endcode
      */
     /**
      *
      * @section xctskip 💡 XCTSkip
      * @endcode
-     * 테스트를 건너뛰는 특수 에러
+     * special error to skip test
      */
     /**
-     * throw XCTSkip("이유")
+     * throw XCTSkip("Reason")
      *     ↓
-     * 테스트가 Skipped로 표시됨 (실패 아님)
+     * test displayed as Skipped (not failure)
      */
     /**
-     * 사용 시기:
-     * - 필수 리소스 없음
-     * - 특정 환경에서만 실행
-     * - 구현 대기 중
+     * when to use:
+     * - required resource absent
+     * - execute only in specific environment
+     * - implementation wait during
      * @endcode
      */
     override func setUpWithError() throws {
         /**
-         * 부모 클래스의 setUp 호출
+         * Call parent class setUp
          */
         super.setUp()
 
         /**
-         * 테스트 비디오 파일 찾기
+         * find test video file
          */
         /**
-         * Bundle(for:): 이 테스트 클래스의 Bundle
+         * Bundle(for:): test class Bundle
          */
         /**
          *
-         * @section bundle___ 💡 Bundle이란?
+         * @section bundle___ 💡 What is Bundle?
          * @endcode
-         * 앱의 리소스를 담고 있는 디렉토리
+         * directory containing app resources
          */
         /**
-         * 구조:
+         * structure:
          * MyApp.app/
-         * ├── MyApp (실행 파일)
+         * ├── MyApp (execution file)
          * ├── Info.plist
          * └── Resources/
-         *     ├── test_video.mp4  ← 여기서 찾음
+         *     ├── test_video.mp4  ← found here
          *     ├── icon.png
          *     └── ...
          * @endcode
@@ -2743,46 +2743,46 @@ final class VideoChannelIntegrationTests: XCTestCase {
         let bundle = Bundle(for: type(of: self))
 
         /**
-         * path(forResource:ofType:): 파일 경로 찾기
+         * path(forResource:ofType:): file path find
          */
         /**
          *
-         * @section __ 💡 동작
+         * @section __ 💡 operation
          * @endcode
-         * Bundle에서 "test_video.mp4" 파일 찾기
-         *     ↓ 찾으면
-         * 전체 경로 반환 ("/path/to/test_video.mp4")
-         *     ↓ 못 찾으면
-         * nil 반환
+         * from Bundle "test_video.mp4" file find
+         *     ↓ if found
+         * entire path return ("/path/to/test_video.mp4")
+         *     ↓ if not found
+         * nil return
          * @endcode
          */
         /**
-         * guard let: nil이면 else 실행
+         * guard let: nilthen execute else
          */
         guard let videoPath = bundle.path(forResource: "test_video", ofType: "mp4") else {
             /**
-             * 파일 없으면 테스트 건너뛰기
+             * skip test if file missing
              */
             ///
             /**
-             * XCTSkip: 테스트 스킵 에러
+             * XCTSkip: test skip error
              */
             ///
             /**
              *
-             * @section __ 💡 이유
-             * - 실패가 아닌 건너뛰기로 표시
-             * - CI 환경에서 유용
-             * - 선택적 테스트 가능
+             * @section __ 💡 Reason
+             * - displayed as skip not failure
+             * - CI useful in environment
+             * - optional test possible
              */
             throw XCTSkip("Test video file not found")
         }
 
         /**
-         * 채널 정보 생성
+         * channel information create/creation
          */
         /**
-         * 실제 비디오 파일 경로 사용
+         * actual video file path use
          */
         testChannelInfo = ChannelInfo(
             position: .front,
@@ -2793,48 +2793,48 @@ final class VideoChannelIntegrationTests: XCTestCase {
         )
 
         /**
-         * 채널 생성
+         * Create channel
          */
         /**
-         * 실제 파일로 초기화 가능한 상태
+         * actual with file initialization possible state
          */
         channel = VideoChannel(channelInfo: testChannelInfo)
     }
 
     /**
-     * 각 테스트 실행 후 정리
+     * Cleanup after each test execution
      */
     /**
-     * 채널을 중지하고 리소스를 해제합니다.
+     * halt channel and release resources.
      */
     /**
      *
-     * @section _____ 💡 정리 순서
-     * 1. stop() - 디코딩 중지, 버퍼 정리
-     * 2. channel = nil - 메모리 해제
-     * 3. testChannelInfo = nil - 정보 해제
+     * @section _____ 💡 cleanup order
+     * 1. stop() - decoding halt, buffer cleanup
+     * 2. channel = nil - memory unlock
+     * 3. testChannelInfo = nil - information unlock
      */
     override func tearDownWithError() throws {
         /**
-         * 채널 중지
+         * Stop channel
          */
         /**
-         * 디코딩 스레드 종료, 버퍼 비우기
+         * decoding terminate thread, empty buffer
          */
         channel.stop()
 
         /**
-         * 채널 해제
+         * Release channel
          */
         channel = nil
 
         /**
-         * 채널 정보 해제
+         * Release channel info
          */
         testChannelInfo = nil
 
         /**
-         * 부모 클래스의 tearDown 호출
+         * Call parent class tearDown
          */
         super.tearDown()
     }
@@ -2844,35 +2844,35 @@ final class VideoChannelIntegrationTests: XCTestCase {
     // ═══════════════════════════════════════════════════════════════════════
 
     /**
-     * 채널 초기화 통합 테스트
+     * channel initialization integration test
      */
     /**
-     * 실제 비디오 파일로 initialize()를 호출하여
-     * 디코더가 정상적으로 준비되는지 검증합니다.
+     * actual video call initialize() with file
+     * verifies decoder readied normally.
      */
     /**
      *
-     * @section ________ 🎬 테스트 시나리오
+     * @section ________ 🎬 test Scenario
      * @endcode
-     * 1. 채널 생성 (setUp에서 완료)
-     * 2. initialize() 호출
-     * 3. 상태가 .ready로 변경되는지 확인
+     * 1. Create channel (setUpcompleted in)
+     * 2. initialize() call
+     * 3. state .readyverify change to
      * @endcode
      */
     /**
      * @test testInitializeChannel
-     * @brief 💡 initialize()의 내부 동작:
+     * @brief 💡 initialize()internal operation of
      *
      * @details
      *
-     * @section initialize_________ 💡 initialize()의 내부 동작
+     * @section initialize_________ 💡 internal operation of initialize()
      * @endcode
      * initialize()
-     *   ↓ 파일 경로 확인
-     *   ↓ VideoDecoder 생성
-     *   ↓ FFmpeg로 파일 열기
-     *   ↓ 비디오 스트림 찾기
-     *   ↓ 코덱 초기화
+     *   ↓ file path verify
+     *   ↓ VideoDecoder create/creation
+     *   ↓ FFmpegopen file with
+     *   ↓ video stream find
+     *   ↓ codec initialization
      * state = .ready
      * @endcode
      */
@@ -2880,37 +2880,37 @@ final class VideoChannelIntegrationTests: XCTestCase {
         /**
          *
          * @par Given-When-Then:
-         * - <b>When:</b> 채널 초기화
+         * - <b>When:</b> channel initialization
          */
         /**
-         * try: 에러 발생 가능
+         * try: error can occur
          */
         /**
          *
-         * @section _____ 💡 성공 조건
-         * - test_video.mp4 파일 존재
-         * - 유효한 비디오 포맷
-         * - 지원되는 코덱
+         * @section _____ 💡 success condition
+         * - test_video.mp4 file exists
+         * - valid video format
+         * - supported codec
          */
         try channel.initialize()
 
         /**
          *
          * @par Given-When-Then:
-         * - <b>Then:</b> 상태 확인
+         * - <b>Then:</b> state verify
          */
         /**
-         * XCTAssertEqual: 값 비교
-         */
-        /**
-         *
-         * @section __ 💡 예상
-         * state = .ready (초기화 완료)
+         * XCTAssertEqual: compare value
          */
         /**
          *
-         * @section _idle__ ⚠️ .idle이면
-         * 초기화 실패 (테스트 실패)
+         * @section __ 💡 expected
+         * state = .ready (initialization completed)
+         */
+        /**
+         *
+         * @section _idle__ ⚠️ .idleif
+         * initialization failure (test failure)
          */
         XCTAssertEqual(channel.state, .ready, "State should be ready after initialization")
     }
@@ -2920,67 +2920,67 @@ final class VideoChannelIntegrationTests: XCTestCase {
     // ═══════════════════════════════════════════════════════════════════════
 
     /**
-     * 디코딩 시작 통합 테스트
+     * decoding start integration test
      */
     /**
-     * startDecoding()을 호출하여 백그라운드 디코딩이
-     * 정상적으로 시작되는지 검증합니다.
+     * startDecoding()call to start background decoding
+     * verifies normally started.
      */
     /**
      *
-     * @section ________ 🎬 테스트 시나리오
+     * @section ________ 🎬 test Scenario
      * @endcode
-     * 1. initialize() - 디코더 준비
-     * 2. startDecoding() - 디코딩 시작
-     * 3. 0.5초 대기
-     * 4. 상태 및 버퍼 확인
+     * 1. initialize() - decoder ready
+     * 2. startDecoding() - decoding start
+     * 3. 0.5sec wait
+     * 4. state and buffer verify
      * @endcode
      */
     /**
      * @test testStartDecoding
-     * @brief 🔄 디코딩 프로세스:
+     * @brief 🔄 decoding process:
      *
      * @details
      *
-     * @section ________ 🔄 디코딩 프로세스
+     * @section ________ 🔄 decoding process
      * @endcode
      * startDecoding()
-     *   ↓ 백그라운드 큐에서 실행
+     *   ↓ execute in background queue
      *   ↓ loop:
-     *   ↓   - AVPacket 읽기
-     *   ↓   - AVFrame 디코딩
-     *   ↓   - 버퍼에 추가
+     *   ↓   - AVPacket read
+     *   ↓   - AVFrame decoding
+     *   ↓   - add to buffer
      *   ↓   - state = .decoding
-     * 지속적으로 실행 중...
+     * continuously executing...
      * @endcode
      */
     func testStartDecoding() throws {
         /**
          *
          * @par Given-When-Then:
-         * - <b>Given:</b> 채널 초기화
+         * - <b>Given:</b> channel initialization
          */
         /**
-         * initialize()로 디코더 준비
+         * initialize()ready decoder with
          */
         try channel.initialize()
 
         /**
          *
          * @par Given-When-Then:
-         * - <b>When:</b> 디코딩 시작
+         * - <b>When:</b> decoding start
          */
         /**
-         * startDecoding(): 백그라운드 디코딩 시작
+         * startDecoding(): start background decoding
          */
         /**
          *
-         * @section __ 💡 동작
+         * @section __ 💡 operation
          * @endcode
          * DispatchQueue.global().async {
          *     while !shouldStop {
-         *         // 프레임 디코딩
-         *         // 버퍼에 추가
+         *         // Frame decoding
+         *         // add to buffer
          *     }
          * }
          * @endcode
@@ -2988,133 +2988,133 @@ final class VideoChannelIntegrationTests: XCTestCase {
         channel.startDecoding()
 
         /**
-         * 프레임 디코딩 대기
+         * Frame wait for decoding
          */
         /**
-         * Thread.sleep: 현재 스레드를 일시 중지
-         */
-        /**
-         *
-         * @section 0_5_______ 💡 0.5초 대기 이유
-         * @endcode
-         * 30 fps 비디오 기준:
-         * 0.5초 = 15 프레임 디코딩 가능
-         */
-        /**
-         * 충분한 프레임이 버퍼에 쌓임
-         * @endcode
+         * Thread.sleep: current temporarily halt thread
          */
         /**
          *
-         * @section _______ ⚠️ 실제 앱에서는
-         * sleep 대신 비동기 대기 사용
+         * @section 0_5_______ 💡 0.5sec wait Reason
+         * @endcode
+         * 30 fps video reference:
+         * 0.5sec = 15 Frame can decode
+         */
+        /**
+         * sufficient frames accumulated in buffer
+         * @endcode
+         */
+        /**
+         *
+         * @section _______ ⚠️ in actual app
+         * sleep instead asynchronous wait use
          */
         Thread.sleep(forTimeInterval: 0.5)
 
         /**
          *
          * @par Given-When-Then:
-         * - <b>Then:</b> 상태 및 버퍼 검증
+         * - <b>Then:</b> state and buffer verify/verification
          *
-         * 1. 상태가 .decoding인지 확인
+         * 1. state .decodingverify whether
          */
         /**
          *
-         * @section __ 💡 예상
-         * startDecoding() 후 → state = .decoding
+         * @section __ 💡 expected
+         * startDecoding() after → state = .decoding
          */
         XCTAssertEqual(channel.state, .decoding, "State should be decoding")
 
         /**
-         * 2. 버퍼에 프레임이 있는지 확인
+         * 2. bufferverify frames exist in
          */
         /**
-         * getBufferStatus(): 버퍼 상태 조회
+         * getBufferStatus(): buffer state lookup
          */
         let status = channel.getBufferStatus()
 
         /**
-         * XCTAssertGreaterThan: 큰지 확인
+         * XCTAssertGreaterThan: verify greater
          */
         /**
          *
-         * @section __ 💡 예상
-         * status.current > 0 (프레임이 디코딩됨)
+         * @section __ 💡 expected
+         * status.current > 0 (frame decoding completed)
          */
         /**
          *
-         * @section 0__ ⚠️ 0이면
-         * 디코딩이 동작하지 않음 (실패)
+         * @section 0__ ⚠️ 0if
+         * decoding not operating (failure)
          */
         XCTAssertGreaterThan(status.current, 0, "Buffer should have frames")
     }
 
     /**
-     * 디코딩 후 프레임 조회 통합 테스트
+     * decoding after Frame lookup integration test
      */
     /**
-     * 디코딩 후 getFrame()으로 특정 시점의 프레임을
-     * 조회할 수 있는지 검증합니다.
+     * decoding after decoding get frame at specific time with getFrame()
+     * verifies can lookup.
      */
     /**
      *
-     * @section ________ 🎬 테스트 시나리오
+     * @section ________ 🎬 test Scenario
      * @endcode
      * 1. initialize() + startDecoding()
-     * 2. 0.5초 대기 (프레임 디코딩)
-     * 3. getFrame(at: 0.5) 호출
-     * 4. 프레임 반환 및 타임스탬프 확인
+     * 2. 0.5sec wait (Frame decoding)
+     * 3. getFrame(at: 0.5) call
+     * 4. frame return and timestamp verify
      * @endcode
      */
     /**
      * @test testGetFrameAfterDecoding
-     * @brief 🔍 getFrame() 동작:
+     * @brief 🔍 getFrame() operation:
      *
      * @details
      *
-     * @section getframe_____ 🔍 getFrame() 동작
+     * @section getframe_____ 🔍 getFrame() operation
      * @endcode
      * getFrame(at: 0.5)
-     *   ↓ 버퍼에서 0.5초에 가장 가까운 프레임 찾기
-     *   ↓ 이진 탐색
-     *   ↓ 프레임 반환
+     *   ↓ find frame closest in buffer
+     *   ↓ binary search
+     *   ↓ frame return
      * @endcode
      */
     func testGetFrameAfterDecoding() throws {
         /**
          *
          * @par Given-When-Then:
-         * - <b>Given:</b> 초기화 및 디코딩 시작
+         * - <b>Given:</b> initialization and decoding start
          */
         /**
-         * 준비 단계 수행
+         * perform ready steps
          */
         try channel.initialize()
         channel.startDecoding()
 
         /**
-         * 프레임 디코딩 대기
+         * Frame wait for decoding
          */
         /**
-         * 0.5초 동안 약 15개 프레임 디코딩
+         * 0.5sec approximately 15frames decoding
          */
         Thread.sleep(forTimeInterval: 0.5)
 
         /**
          *
          * @par Given-When-Then:
-         * - <b>When:</b> 0.5초 시점 프레임 조회
+         * - <b>When:</b> 0.5sec time Frame lookup
          */
         /**
-         * getFrame(at:): 특정 시점 프레임 가져오기
+         * getFrame(at:): specific time frame get
          */
         /**
          *
-         * @section __ 💡 동작
+         * @section __ 💡 operation
          * @endcode
-         * 버퍼: [0.0, 0.033, 0.066, ..., 0.5, ...]
-         *          ↓ 0.5초에 가장 가까운 프레임 찾기
-         * 반환: Frame(timestamp: 0.5)
+         * buffer: [0.0, 0.033, 0.066, ..., 0.5, ...]
+         *          ↓ 0.5secclosest to frame find
+         * return: Frame(timestamp: 0.5)
          * @endcode
          */
         let frame = channel.getFrame(at: 0.5)
@@ -3122,186 +3122,186 @@ final class VideoChannelIntegrationTests: XCTestCase {
         /**
          *
          * @par Given-When-Then:
-         * - <b>Then:</b> 프레임 검증
+         * - <b>Then:</b> frame verify/verification
          *
-         * 1. 프레임이 반환되었는지 확인
+         * 1. verify frame returned
          */
         /**
-         * XCTAssertNotNil: nil이 아닌지 확인
-         */
-        /**
-         *
-         * @section __ 💡 예상
-         * frame != nil (프레임 존재)
+         * XCTAssertNotNil: nilverify not
          */
         /**
          *
-         * @section nil__ ⚠️ nil이면
-         * 버퍼에 프레임 없음 (실패)
+         * @section __ 💡 expected
+         * frame != nil (frame exists)
+         */
+        /**
+         *
+         * @section nil__ ⚠️ nilif
+         * no frames in buffer (failure)
          */
         XCTAssertNotNil(frame, "Should get frame from buffer")
 
         /**
-         * 2. 프레임 타임스탬프 확인
+         * 2. frame timestamp verify
          */
         /**
-         * if let: 옵셔널 바인딩
+         * if let: optional binding
          */
         /**
          *
-         * @section frame__nil_____ 💡 frame이 nil이 아니면
-         * timestamp 확인
+         * @section frame__nil_____ 💡 if frame is not nil
+         * timestamp verify
          */
         if let frame = frame {
             /**
-             * XCTAssertGreaterThanOrEqual: ≥ 확인
+             * XCTAssertGreaterThanOrEqual: ≥ verify
              */
             ///
             /**
              *
-             * @section __ 💡 예상
-             * timestamp >= 0.0 (유효한 시간)
+             * @section __ 💡 expected
+             * timestamp >= 0.0 (valid time)
              */
             ///
             /**
-             * 일반적으로:
-             * timestamp ≈ 0.5 (요청한 시간 근처)
+             * generally:
+             * timestamp ≈ 0.5 (near requested time)
              */
             XCTAssertGreaterThanOrEqual(frame.timestamp, 0.0)
         }
     }
 
     /**
-     * Seek 및 디코딩 통합 테스트
+     * Seek and decoding integration test
      */
     /**
-     * seek()로 특정 위치로 이동 후
-     * 새 위치에서 디코딩이 정상 동작하는지 검증합니다.
+     * seek()move to specific position with
+     * verifies decoding normally operates at new position.
      */
     /**
      *
-     * @section ________ 🎬 테스트 시나리오
+     * @section ________ 🎬 test Scenario
      * @endcode
      * 1. initialize() + startDecoding()
-     * 2. 0.3초 대기 (초기 프레임 디코딩)
-     * 3. seek(to: 5.0) - 5초 위치로 이동
-     * 4. 0.5초 대기 (새 위치 디코딩)
-     * 5. getFrame(at: 5.0) 확인
+     * 2. 0.3sec wait (initial Frame decoding)
+     * 3. seek(to: 5.0) - 5sec position move to
+     * 4. 0.5sec wait (new position decoding)
+     * 5. getFrame(at: 5.0) verify
      * @endcode
      */
     /**
      * @test testSeekAndDecode
-     * @brief 🎯 seek() 동작:
+     * @brief 🎯 seek() operation:
      *
      * @details
      *
-     * @section seek_____ 🎯 seek() 동작
+     * @section seek_____ 🎯 seek() operation
      * @endcode
      * seek(to: 5.0)
-     *   ↓ 디코딩 일시 중지
-     *   ↓ 버퍼 비우기 (flushBuffer)
+     *   ↓ temporarily halt decoding
+     *   ↓ empty buffer (flushBuffer)
      *   ↓ VideoDecoder.seek(to: 5.0)
-     *   ↓ 5초 근처 I-Frame으로 이동
-     *   ↓ 디코딩 재개
-     * 5초부터 새로 디코딩...
+     *   ↓ 5sec move to I-Frame near
+     *   ↓ resume decoding
+     * 5sec decode anew from...
      * @endcode
      */
     func testSeekAndDecode() throws {
         /**
          *
          * @par Given-When-Then:
-         * - <b>Given:</b> 초기화 및 초기 디코딩
+         * - <b>Given:</b> initialization and initial decoding
          */
         /**
-         * 디코더 준비 및 시작
+         * decoder ready and start
          */
         try channel.initialize()
         channel.startDecoding()
 
         /**
-         * 초기 프레임 디코딩 대기
+         * initial Frame wait for decoding
          */
         /**
-         * 0.3초 = 약 9개 프레임
+         * 0.3sec = approx 9pieces frame
          */
         Thread.sleep(forTimeInterval: 0.3)
 
         /**
          *
          * @par Given-When-Then:
-         * - <b>When:</b> 5초로 seek
+         * - <b>When:</b> 5secseek to
          */
         /**
-         * seek(to:): 특정 시간으로 이동
+         * seek(to:): move to specific time
          */
         /**
          *
-         * @section __ 💡 동작
+         * @section __ 💡 operation
          * @endcode
-         * 현재 위치: ~0.3초
+         * current position: ~0.3sec
          *     ↓ seek(to: 5.0)
-         * 새 위치: 5.0초
-         *     ↓ 버퍼 초기화
-         *     ↓ 5초부터 디코딩
+         * new position: 5.0sec
+         *     ↓ Buffer initialization
+         *     ↓ 5secdecode from
          * @endcode
          */
         try channel.seek(to: 5.0)
 
         /**
-         * 새 위치에서 디코딩 대기
+         * wait for decoding at new position
          */
         /**
-         * 0.5초 동안 5초 근처 프레임 디코딩
+         * 0.5sec for 5sec decode frames near
          */
         Thread.sleep(forTimeInterval: 0.5)
 
         /**
          *
          * @par Given-When-Then:
-         * - <b>Then:</b> 5초 근처 프레임 확인
+         * - <b>Then:</b> 5sec verify frames near
          */
         /**
-         * getFrame(at: 5.0): 5초 프레임 조회
+         * getFrame(at: 5.0): 5sec Frame lookup
          */
         let frame = channel.getFrame(at: 5.0)
 
         /**
-         * 1. 프레임 존재 확인
+         * 1. frame verify existence
          */
         /**
          *
-         * @section __ 💡 예상
-         * 5초 근처 프레임이 버퍼에 있음
+         * @section __ 💡 expected
+         * 5sec frames near in buffer
          */
         XCTAssertNotNil(frame, "Should get frame after seeking")
 
         /**
-         * 2. 프레임 타임스탬프 확인
+         * 2. frame timestamp verify
          */
         /**
-         * if let: 옵셔널 바인딩
+         * if let: optional binding
          */
         if let frame = frame {
             /**
-             * XCTAssertGreaterThanOrEqual: ≥ 확인
+             * XCTAssertGreaterThanOrEqual: ≥ verify
              */
             ///
             /**
              *
-             * @section __ 💡 예상
+             * @section __ 💡 expected
              * timestamp >= 5.0
              */
             ///
             /**
-             * 일반적으로:
-             * timestamp ≈ 5.0 (seek 지점)
+             * generally:
+             * timestamp ≈ 5.0 (seek point)
              */
             ///
             /**
              *
-             * @section i_frame_______ ⚠️ I-Frame 위치에 따라
-             * 정확히 5.0이 아닐 수 있음
-             * (4.9 ~ 5.1 정도)
+             * @section i_frame_______ ⚠️ I-Frame depending on position
+             * accurately 5.0may not be
+             * (4.9 ~ 5.1 approximately)
              */
             XCTAssertGreaterThanOrEqual(frame.timestamp, 5.0, "Frame should be at or after seek point")
         }
@@ -3312,65 +3312,65 @@ final class VideoChannelIntegrationTests: XCTestCase {
     // ═══════════════════════════════════════════════════════════════════════
 
     /**
-     * 버퍼 채우기 및 정리 통합 테스트
+     * buffer filling and cleanup integration test
      */
     /**
-     * 버퍼가 가득 찰 때까지 디코딩하여
-     * 버퍼 크기 제한이 올바르게 동작하는지 검증합니다.
+     * decode until buffer is full
+     * verifies buffer size limit operates correctly.
      */
     /**
      *
-     * @section ________ 🎬 테스트 시나리오
+     * @section ________ 🎬 test Scenario
      * @endcode
      * 1. initialize() + startDecoding()
-     * 2. 2.0초 대기 (충분한 디코딩 시간)
-     * 3. 버퍼 상태 확인
-     * 4. 최대 크기 및 채움 비율 검증
+     * 2. 2.0sec wait (sufficient decoding time)
+     * 3. buffer state verify
+     * 4. maximum size and fill ratio verify/verification
      * @endcode
      */
     /**
      *
-     * @section ________ 💡 버퍼 크기 제한
+     * @section ________ 💡 buffer size limit
      * @endcode
      * maxBufferSize = 30
      */
     /**
      * @test testBufferFillAndCleanup
-     * @brief 동작:
+     * @brief operation:
      *
      * @details
-     * 동작:
-     * - 30개 프레임까지 저장
-     * - 31번째 프레임 추가 시 가장 오래된 프레임 제거
-     * - FIFO (First In First Out) 방식
+     * operation:
+     * - 30pieces framesave up to
+     * - 31th frame add removes oldest frame
+     * - FIFO (First In First Out) way
      * @endcode
      */
     func testBufferFillAndCleanup() throws {
         /**
          *
          * @par Given-When-Then:
-         * - <b>Given:</b> 초기화 및 디코딩 시작
+         * - <b>Given:</b> initialization and decoding start
          */
         /**
-         * 디코더 준비 및 시작
+         * decoder ready and start
          */
         try channel.initialize()
         channel.startDecoding()
 
         /**
-         * 버퍼 채우기 대기
+         * buffer wait for filling
          */
         /**
-         * 2.0초 = 약 60개 프레임 디코딩 시도
+         * 2.0sec = approx 60frames decoding attempt
          */
         /**
          *
-         * @section __ 💡 동작
+         * @section __ 💡 operation
          * @endcode
-         * 0.0 ~ 0.5초: 버퍼 15개
-         * 0.5 ~ 1.0초: 버퍼 30개 (가득 참)
-         * 1.0 ~ 2.0초: 버퍼 30개 (최대 유지)
-         *               → 오래된 프레임 제거됨
+         * 0.0 ~ 0.5sec: buffer 15pieces
+         * 0.5 ~ 1.0sec: buffer 30pieces (full)
+         * 1.0 ~ 2.0sec: buffer 30pieces (maintain maximum)
+         *               → old frames removed
          * @endcode
          */
         Thread.sleep(forTimeInterval: 2.0)
@@ -3378,128 +3378,128 @@ final class VideoChannelIntegrationTests: XCTestCase {
         /**
          *
          * @par Given-When-Then:
-         * - <b>When:</b> 버퍼 상태 조회
+         * - <b>When:</b> buffer state lookup
          */
         /**
-         * getBufferStatus(): 현재 버퍼 상태
+         * getBufferStatus(): current buffer state
          */
         let status = channel.getBufferStatus()
 
         /**
          *
          * @par Given-When-Then:
-         * - <b>Then:</b> 버퍼 크기 제한 검증
+         * - <b>Then:</b> buffer size limit verify/verification
          *
-         * 1. 현재 크기 ≤ 최대 크기
+         * 1. current size ≤ maximum size
          */
         /**
-         * XCTAssertLessThanOrEqual: ≤ 확인
+         * XCTAssertLessThanOrEqual: ≤ verify
          */
         /**
          *
-         * @section __ 💡 예상
+         * @section __ 💡 expected
          * status.current <= status.max
-         * 예: current=30, max=30 ✅
+         * example: current=30, max=30 ✅
          */
         /**
          *
-         * @section current___max__ ⚠️ current > max이면
-         * 버퍼 크기 제한 실패 (실패)
+         * @section current___max__ ⚠️ current > maxif
+         * buffer size limit failure (failure)
          */
         XCTAssertLessThanOrEqual(status.current, status.max, "Buffer should not exceed max size")
 
         /**
-         * 2. 채움 비율 ≤ 100%
+         * 2. fill ratio ≤ 100%
          */
         /**
          * fillPercentage: current / max
          */
         /**
          *
-         * @section __ 💡 예상
+         * @section __ 💡 expected
          * fillPercentage <= 1.0 (100%)
-         * 예: 30/30 = 1.0 ✅
+         * example: 30/30 = 1.0 ✅
          */
         /**
          *
-         * @section __1_0__ ⚠️ > 1.0이면
-         * 계산 오류 (실패)
+         * @section __1_0__ ⚠️ > 1.0if
+         * calculation error (failure)
          */
         XCTAssertLessThanOrEqual(status.fillPercentage, 1.0, "Fill percentage should not exceed 100%")
     }
 
     /**
-     * 프레임 타임스탬프 순서 통합 테스트
+     * frame timestamp order integration test
      */
     /**
-     * 버퍼에서 조회한 프레임들의 타임스탬프가
-     * 올바른 순서로 정렬되어 있는지 검증합니다.
+     * timestamp of looked up frames in buffer
+     * verifies sorted in correct order.
      */
     /**
      *
-     * @section ________ 🎬 테스트 시나리오
+     * @section ________ 🎬 test Scenario
      * @endcode
      * 1. initialize() + startDecoding()
-     * 2. 1.0초 대기 (충분한 프레임 디코딩)
-     * 3. 0.0, 1.0, 2.0초 프레임 조회
-     * 4. 타임스탬프 순서 확인
+     * 2. 1.0sec wait (sufficient Frame decoding)
+     * 3. 0.0, 1.0, 2.0sec Frame lookup
+     * 4. timestamp order verify
      * @endcode
      */
     /**
      *
-     * @section _____________ 💡 타임스탬프 순서의 중요성
+     * @section _____________ 💡 importance of timestamp order
      * @endcode
-     * 정렬된 버퍼:
+     * sorted buffer:
      * [0.0, 0.033, 0.066, ..., 1.0, ..., 2.0]
      */
     /**
-     * 이진 탐색 가능:
-     * - O(log n) 성능
-     * - 빠른 프레임 조회
+     * binary search possible:
+     * - O(log n) performance
+     * - Fast frame lookup
      */
     /**
      * @test testFrameTimestampOrdering
-     * @brief 순서 없으면:
+     * @brief without order:
      *
      * @details
-     * 순서 없으면:
-     * - 선형 탐색 필요 O(n)
-     * - 느린 성능
+     * without order:
+     * - linear search required O(n)
+     * - slow performance
      * @endcode
      */
     func testFrameTimestampOrdering() throws {
         /**
          *
          * @par Given-When-Then:
-         * - <b>Given:</b> 초기화 및 디코딩
+         * - <b>Given:</b> initialization and decoding
          */
         /**
-         * 디코더 준비 및 시작
+         * decoder ready and start
          */
         try channel.initialize()
         channel.startDecoding()
 
         /**
-         * 프레임 디코딩 대기
+         * Frame wait for decoding
          */
         /**
-         * 1.0초 = 약 30개 프레임
+         * 1.0sec = approx 30pieces frame
          */
         Thread.sleep(forTimeInterval: 1.0)
 
         /**
          *
          * @par Given-When-Then:
-         * - <b>When:</b> 여러 시점의 프레임 조회
+         * - <b>When:</b> lookup frames at multiple times
          */
         /**
-         * 0.0, 1.0, 2.0초 프레임 가져오기
+         * 0.0, 1.0, 2.0sec frame get
          */
         /**
          *
-         * @section _____ 💡 조회 순서
-         * 순차적이지 않아도 됨
-         * 타임스탬프로 정렬된 버퍼에서 찾음
+         * @section _____ 💡 lookup order
+         * even if not sequential 
+         * find in buffer sorted by timestamp
          */
         let frame1 = channel.getFrame(at: 0.0)
         let frame2 = channel.getFrame(at: 1.0)
@@ -3508,17 +3508,17 @@ final class VideoChannelIntegrationTests: XCTestCase {
         /**
          *
          * @par Given-When-Then:
-         * - <b>Then:</b> 타임스탬프 순서 확인
+         * - <b>Then:</b> timestamp order verify
          */
         /**
-         * if let: 옵셔널 바인딩 (3개 모두)
+         * if let: optional binding (3pieces all)
          */
         /**
          *
-         * @section __ 💡 문법
+         * @section __ 💡 syntax
          * @endcode
          * if let f1 = frame1, let f2 = frame2, let f3 = frame3 {
-         *     // 모두 nil이 아닐 때만 실행
+         *     // execute only when all not nil
          * }
          * @endcode
          */
@@ -3528,14 +3528,14 @@ final class VideoChannelIntegrationTests: XCTestCase {
              */
             ///
             /**
-             * XCTAssertLessThan: < 확인
+             * XCTAssertLessThan: < verify
              */
             ///
             /**
              *
-             * @section __ 💡 예상
+             * @section __ 💡 expected
              * f1.timestamp < f2.timestamp
-             * 예: 0.0 < 1.0 ✅
+             * example: 0.0 < 1.0 ✅
              */
             XCTAssertLessThan(f1.timestamp, f2.timestamp, "Frames should be ordered by timestamp")
 
@@ -3545,15 +3545,15 @@ final class VideoChannelIntegrationTests: XCTestCase {
             ///
             /**
              *
-             * @section __ 💡 예상
+             * @section __ 💡 expected
              * f2.timestamp < f3.timestamp
-             * 예: 1.0 < 2.0 ✅
+             * example: 1.0 < 2.0 ✅
              */
             ///
             /**
              *
-             * @section _______ ⚠️ 순서가 틀리면
-             * 버퍼 정렬 실패 (실패)
+             * @section _______ ⚠️ if order wrong
+             * buffer sorting failure (failure)
              */
             XCTAssertLessThan(f2.timestamp, f3.timestamp, "Frames should be ordered by timestamp")
         }

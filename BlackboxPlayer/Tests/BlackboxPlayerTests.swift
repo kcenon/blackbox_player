@@ -1,335 +1,334 @@
 /**
  * @file BlackboxPlayerTests.swift
- * @brief 기본 테스트 클래스 및 XCTest 프레임워크 사용법 가이드
+ * @brief Basic Test Class and XCTest Framework Usage Guide
  * @author BlackboxPlayer Team
  *
  * @details
- * BlackboxPlayer 앱의 기본 테스트 설정과 XCTest 프레임워크 사용법을 제공하는
- * 템플릿 테스트 클래스입니다. 실제 기능 테스트는 전문화된 테스트 클래스들에
- * 구현되어 있습니다.
+ * A template test class that provides basic test configuration and XCTest framework
+ * usage for the BlackboxPlayer app. Actual feature tests are implemented in
+ * specialized test classes.
  *
- * @section purpose 목적
- * - XCTest 프레임워크의 기본 사용법 제공
- * - 테스트 생명주기(setUp/tearDown) 예제
- * - 예제 테스트 메서드 및 성능 테스트 템플릿
- * - 테스트 작성 가이드 및 베스트 프랙티스
+ * @section purpose Purpose
+ * - Provide basic XCTest framework usage
+ * - Example of test lifecycle (setUp/tearDown)
+ * - Example test methods and performance test templates
+ * - Test writing guide and best practices
  *
- * @section xctest_intro XCTest 프레임워크란?
- * XCTest는 iOS, macOS, watchOS, tvOS 앱을 테스트하기 위한 Apple의 공식
- * 프레임워크입니다.
+ * @section xctest_intro What is the XCTest Framework?
+ * XCTest is Apple's official framework for testing iOS, macOS, watchOS, and tvOS apps.
  *
- * **테스트 종류:**
- * - **단위 테스트 (Unit Test)**: 개별 함수/메서드의 정확성 검증
- * - **통합 테스트 (Integration Test)**: 여러 컴포넌트의 협동 검증
- * - **UI 테스트 (UI Test)**: 사용자 인터페이스 동작 검증
- * - **성능 테스트 (Performance Test)**: 코드 실행 속도 측정
+ * **Test Types:**
+ * - **Unit Test**: Verify correctness of individual functions/methods
+ * - **Integration Test**: Verify cooperation of multiple components
+ * - **UI Test**: Verify user interface behavior
+ * - **Performance Test**: Measure code execution speed
  *
- * @section test_principles 테스트 작성 원칙
+ * @section test_principles Test Writing Principles
  *
- * **FIRST 원칙:**
- * - **F**ast: 빠르게 실행되어야 함
- * - **I**ndependent: 다른 테스트에 독립적이어야 함
- * - **R**epeatable: 반복 실행 시 동일한 결과
- * - **S**elf-validating: 스스로 성공/실패 판단
- * - **T**imely: 코드 작성과 동시에 테스트 작성
+ * **FIRST Principles:**
+ * - **F**ast: Should execute quickly
+ * - **I**ndependent: Should be independent of other tests
+ * - **R**epeatable: Should produce same results when repeated
+ * - **S**elf-validating: Should clearly indicate success/failure
+ * - **T**imely: Should be written alongside code
  *
- * **Given-When-Then 패턴:**
- * - **Given** (준비): 테스트에 필요한 상태 설정
- * - **When** (실행): 테스트할 동작 수행
- * - **Then** (검증): 결과가 예상과 일치하는지 확인
+ * **Given-When-Then Pattern:**
+ * - **Given** (Setup): Set up the state needed for the test
+ * - **When** (Execute): Perform the action to test
+ * - **Then** (Verify): Confirm results match expectations
  *
- * @section assert_functions XCTAssert 함수 종류
- * - `XCTAssertTrue(condition)`: 조건이 true인지 확인
- * - `XCTAssertFalse(condition)`: 조건이 false인지 확인
- * - `XCTAssertEqual(value1, value2)`: 두 값이 같은지 확인
- * - `XCTAssertNotEqual(value1, value2)`: 두 값이 다른지 확인
- * - `XCTAssertNil(value)`: 값이 nil인지 확인
- * - `XCTAssertNotNil(value)`: 값이 nil이 아닌지 확인
- * - `XCTAssertGreaterThan(value1, value2)`: value1 > value2 확인
- * - `XCTAssertLessThan(value1, value2)`: value1 < value2 확인
- * - `XCTAssertThrowsError(expression)`: 코드가 에러를 던지는지 확인
+ * @section assert_functions XCTAssert Function Types
+ * - `XCTAssertTrue(condition)`: Check if condition is true
+ * - `XCTAssertFalse(condition)`: Check if condition is false
+ * - `XCTAssertEqual(value1, value2)`: Check if two values are equal
+ * - `XCTAssertNotEqual(value1, value2)`: Check if two values are different
+ * - `XCTAssertNil(value)`: Check if value is nil
+ * - `XCTAssertNotNil(value)`: Check if value is not nil
+ * - `XCTAssertGreaterThan(value1, value2)`: Check if value1 > value2
+ * - `XCTAssertLessThan(value1, value2)`: Check if value1 < value2
+ * - `XCTAssertThrowsError(expression)`: Check if code throws an error
  *
- * @section test_execution 테스트 실행 방법
+ * @section test_execution How to Run Tests
  *
- * **Xcode에서:**
- * - `Cmd + U`: 모든 테스트 실행
- * - `Cmd + Ctrl + Option + U`: 현재 테스트만 실행
- * - `Test Navigator (Cmd + 6)`: 테스트 목록 보기
+ * **In Xcode:**
+ * - `Cmd + U`: Run all tests
+ * - `Cmd + Ctrl + Option + U`: Run current test only
+ * - `Test Navigator (Cmd + 6)`: View test list
  *
- * **터미널에서:**
+ * **From Terminal:**
  * ```bash
  * xcodebuild test -scheme BlackboxPlayer
  * ```
  *
- * @section related_tests 관련 테스트 파일
- * - `DataModelsTests.swift`: VideoFile, ChannelInfo, GPSPoint 등 모델 테스트
- * - `VideoDecoderTests.swift`: FFmpeg 디코더 기능 테스트
- * - `SyncControllerTests.swift`: 멀티채널 동기화 테스트
- * - `VideoChannelTests.swift`: 개별 채널 버퍼링 테스트
- * - `MultiChannelRendererTests.swift`: Metal GPU 렌더링 테스트
+ * @section related_tests Related Test Files
+ * - `DataModelsTests.swift`: Tests for VideoFile, ChannelInfo, GPSPoint etc.
+ * - `VideoDecoderTests.swift`: FFmpeg decoder functionality tests
+ * - `SyncControllerTests.swift`: Multi-channel synchronization tests
+ * - `VideoChannelTests.swift`: Individual channel buffering tests
+ * - `MultiChannelRendererTests.swift`: Metal GPU rendering tests
  *
- * @note 이 파일은 기본 템플릿으로, 실제 기능 테스트는 위의 전문화된 테스트
- * 파일들에 구현되어 있습니다.
+ * @note This file is a basic template. Actual feature tests are implemented in
+ * the specialized test files listed above.
  */
 
 /*
  ╔══════════════════════════════════════════════════════════════════════════════╗
  ║                                                                              ║
- ║                      BlackboxPlayerTests - 기본 테스트 클래스                   ║
+ ║                      BlackboxPlayerTests - Basic Test Class                  ║
  ║                                                                              ║
- ║  목적:                                                                        ║
- ║    BlackboxPlayer 앱의 기본 테스트 설정과 예제를 제공합니다.                      ║
- ║    실제 테스트는 다른 전문화된 테스트 클래스들에 구현되어 있습니다.                  ║
+ ║  Purpose:                                                                    ║
+ ║    Provides basic test setup and examples for BlackboxPlayer app.           ║
+ ║    Actual tests are implemented in specialized test classes.                ║
  ║                                                                              ║
- ║  포함된 내용:                                                                 ║
- ║    • XCTest 프레임워크 기본 사용법                                             ║
- ║    • 테스트 생명주기 (setUp/tearDown)                                         ║
- ║    • 예제 테스트 메서드                                                        ║
- ║    • 성능 테스트 예제                                                          ║
+ ║  Contents:                                                                   ║
+ ║    • Basic XCTest framework usage                                            ║
+ ║    • Test lifecycle (setUp/tearDown)                                         ║
+ ║    • Example test methods                                                    ║
+ ║    • Performance test examples                                               ║
  ║                                                                              ║
- ║  학습 내용:                                                                   ║
- ║    1. XCTest는 Apple의 공식 단위 테스트 프레임워크입니다                          ║
- ║    2. XCTestCase를 상속하여 테스트 클래스를 만듭니다                             ║
- ║    3. test로 시작하는 메서드가 자동으로 테스트로 인식됩니다                        ║
- ║    4. XCTAssert 함수들로 테스트 결과를 검증합니다                                ║
+ ║  Learning Points:                                                            ║
+ ║    1. XCTest is Apple's official unit testing framework                      ║
+ ║    2. Inherit from XCTestCase to create test classes                         ║
+ ║    3. Methods starting with 'test' are automatically recognized as tests     ║
+ ║    4. Use XCTAssert functions to verify test results                         ║
  ║                                                                              ║
  ╚══════════════════════════════════════════════════════════════════════════════╝
 
 
  ┌──────────────────────────────────────────────────────────────────────────────┐
- │ XCTest 프레임워크란?                                                           │
+ │ What is the XCTest Framework?                                                │
  └──────────────────────────────────────────────────────────────────────────────┘
 
- XCTest는 iOS, macOS, watchOS, tvOS 앱을 테스트하기 위한 Apple의 공식 프레임워크입니다.
+ XCTest is Apple's official framework for testing iOS, macOS, watchOS, and tvOS apps.
 
- • 단위 테스트 (Unit Test)
- - 개별 함수나 메서드가 올바르게 작동하는지 검증
- - 예: 특정 입력에 대해 예상된 출력이 나오는지 확인
+ • Unit Test
+ - Verify that individual functions or methods work correctly
+ - Example: Check if specific inputs produce expected outputs
 
- • 통합 테스트 (Integration Test)
- - 여러 컴포넌트가 함께 작동하는지 검증
- - 예: 파일 스캔 → 파일 로딩 → 비디오 재생 전체 흐름 테스트
+ • Integration Test
+ - Verify that multiple components work together
+ - Example: Test entire flow of file scan → file loading → video playback
 
- • UI 테스트 (UI Test)
- - 사용자 인터페이스가 올바르게 동작하는지 검증
- - 예: 버튼 클릭, 화면 전환 등
+ • UI Test
+ - Verify that user interface behaves correctly
+ - Example: Button clicks, screen transitions, etc.
 
- • 성능 테스트 (Performance Test)
- - 코드의 실행 속도를 측정
- - 예: 1000개 파일 스캔 시간 측정
+ • Performance Test
+ - Measure code execution speed
+ - Example: Measure time to scan 1000 files
 
 
  ┌──────────────────────────────────────────────────────────────────────────────┐
- │ 테스트 작성 기본 원칙                                                           │
+ │ Basic Test Writing Principles                                                │
  └──────────────────────────────────────────────────────────────────────────────┘
 
- 1. FIRST 원칙:
- F - Fast: 빠르게 실행되어야 함
- I - Independent: 다른 테스트에 독립적이어야 함
- R - Repeatable: 반복 실행 시 동일한 결과
- S - Self-validating: 스스로 성공/실패 판단
- T - Timely: 코드 작성과 동시에 테스트 작성
+ 1. FIRST Principles:
+ F - Fast: Should execute quickly
+ I - Independent: Should be independent of other tests
+ R - Repeatable: Should produce same results when repeated
+ S - Self-validating: Should clearly indicate success/failure
+ T - Timely: Should be written alongside code
 
- 2. Given-When-Then 패턴:
- Given (준비): 테스트에 필요한 상태 설정
- When (실행): 테스트할 동작 수행
- Then (검증): 결과가 예상과 일치하는지 확인
+ 2. Given-When-Then Pattern:
+ Given (Setup): Set up the state needed for the test
+ When (Execute): Perform the action to test
+ Then (Verify): Confirm results match expectations
 
- 3. 테스트 명명 규칙:
- - test로 시작해야 함 (필수)
- - 무엇을 테스트하는지 명확히 표현
- - 예: testLoginWithValidCredentials()
- - 예: testParseGPSDataReturnsCorrectLatitude()
+ 3. Test Naming Convention:
+ - Must start with 'test' (required)
+ - Clearly express what is being tested
+ - Example: testLoginWithValidCredentials()
+ - Example: testParseGPSDataReturnsCorrectLatitude()
 
 
  ┌──────────────────────────────────────────────────────────────────────────────┐
- │ XCTAssert 함수 종류                                                            │
+ │ XCTAssert Function Types                                                     │
  └──────────────────────────────────────────────────────────────────────────────┘
 
  • XCTAssertTrue(condition)
- 조건이 true인지 확인
- 예: XCTAssertTrue(user.isLoggedIn)
+ Check if condition is true
+ Example: XCTAssertTrue(user.isLoggedIn)
 
  • XCTAssertFalse(condition)
- 조건이 false인지 확인
- 예: XCTAssertFalse(videoFile.isCorrupted)
+ Check if condition is false
+ Example: XCTAssertFalse(videoFile.isCorrupted)
 
  • XCTAssertEqual(value1, value2)
- 두 값이 같은지 확인
- 예: XCTAssertEqual(videoFile.channelCount, 5)
+ Check if two values are equal
+ Example: XCTAssertEqual(videoFile.channelCount, 5)
 
  • XCTAssertNotEqual(value1, value2)
- 두 값이 다른지 확인
- 예: XCTAssertNotEqual(id1, id2)
+ Check if two values are different
+ Example: XCTAssertNotEqual(id1, id2)
 
  • XCTAssertNil(value)
- 값이 nil인지 확인
- 예: XCTAssertNil(decoder.error)
+ Check if value is nil
+ Example: XCTAssertNil(decoder.error)
 
  • XCTAssertNotNil(value)
- 값이 nil이 아닌지 확인
- 예: XCTAssertNotNil(decoder.videoInfo)
+ Check if value is not nil
+ Example: XCTAssertNotNil(decoder.videoInfo)
 
  • XCTAssertGreaterThan(value1, value2)
- value1이 value2보다 큰지 확인
- 예: XCTAssertGreaterThan(fileSize, 0)
+ Check if value1 is greater than value2
+ Example: XCTAssertGreaterThan(fileSize, 0)
 
  • XCTAssertLessThan(value1, value2)
- value1이 value2보다 작은지 확인
- 예: XCTAssertLessThan(latency, 0.1)
+ Check if value1 is less than value2
+ Example: XCTAssertLessThan(latency, 0.1)
 
  • XCTAssertThrowsError(expression)
- 코드가 에러를 던지는지 확인
- 예: XCTAssertThrowsError(try decoder.initialize())
+ Check if code throws an error
+ Example: XCTAssertThrowsError(try decoder.initialize())
 
  • XCTFail(message)
- 테스트를 무조건 실패시킴
- 예: XCTFail("Should not reach here")
+ Force test to fail
+ Example: XCTFail("Should not reach here")
 
 
  ┌──────────────────────────────────────────────────────────────────────────────┐
- │ 테스트 실행 방법                                                               │
+ │ How to Run Tests                                                             │
  └──────────────────────────────────────────────────────────────────────────────┘
 
- 1. Xcode에서:
- • Cmd + U: 모든 테스트 실행
- • Cmd + Ctrl + Option + U: 현재 테스트만 실행
- • Test Navigator (Cmd + 6): 테스트 목록 보기
+ 1. In Xcode:
+ • Cmd + U: Run all tests
+ • Cmd + Ctrl + Option + U: Run current test only
+ • Test Navigator (Cmd + 6): View test list
 
- 2. 터미널에서:
+ 2. From Terminal:
  xcodebuild test -scheme BlackboxPlayer
 
- 3. 개별 테스트 실행:
- 줄 번호 옆의 다이아몬드 아이콘 클릭
+ 3. Run Individual Test:
+ Click the diamond icon next to the line number
 
- 4. 테스트 결과:
- • ✓ 녹색: 성공
- • ✗ 빨간색: 실패
- • 실패 시 정확한 줄과 이유 표시
+ 4. Test Results:
+ • ✓ Green: Success
+ • ✗ Red: Failure
+ • On failure, shows exact line and reason
  */
 
 import XCTest
 
-// MARK: - BlackboxPlayerTests 클래스
+// MARK: - BlackboxPlayerTests Class
 
-/// BlackboxPlayer 앱의 기본 테스트 클래스
+/// Basic test class for BlackboxPlayer app
 ///
-/// XCTestCase를 상속받아 테스트 기능을 제공받습니다.
+/// Receives test functionality by inheriting from XCTestCase.
 ///
-/// - Note: final 키워드
-///   이 클래스는 더 이상 상속될 수 없습니다.
-///   테스트 클래스는 일반적으로 final로 선언하여 최적화합니다.
+/// - Note: final keyword
+///   This class cannot be inherited further.
+///   Test classes are typically declared as final for optimization.
 ///
-/// - Important: 테스트 메서드 규칙
-///   1. 메서드 이름이 'test'로 시작해야 합니다
-///   2. 반환 타입이 없어야 합니다 (Void)
-///   3. 매개변수가 없어야 합니다
-///   4. throws를 선언할 수 있습니다 (에러 처리용)
+/// - Important: Test method rules
+///   1. Method name must start with 'test'
+///   2. Must have no return type (Void)
+///   3. Must have no parameters
+///   4. Can declare throws (for error handling)
 ///
-/// 사용 예:
+/// Usage example:
 /// ```swift
-/// // 올바른 테스트 메서드
+/// // Correct test method
 /// func testAddition() {
 ///     XCTAssertEqual(2 + 2, 4)
 /// }
 ///
-/// // 잘못된 테스트 메서드 (인식 안 됨)
-/// func validateAddition() {  // 'test'로 시작 안 함
+/// // Incorrect test method (not recognized)
+/// func validateAddition() {  // Does not start with 'test'
 ///     XCTAssertEqual(2 + 2, 4)
 /// }
 /// ```
 final class BlackboxPlayerTests: XCTestCase {
 
-    // MARK: - 테스트 생명주기 (Test Lifecycle)
+    // MARK: - Test Lifecycle
 
     /*
      ┌──────────────────────────────────────────────────────────────────────────┐
-     │ 테스트 생명주기란?                                                         │
+     │ What is the Test Lifecycle?                                              │
      └──────────────────────────────────────────────────────────────────────────┘
 
-     XCTest는 각 테스트 메서드를 실행할 때 다음 순서를 따릅니다:
+     XCTest follows this sequence when executing each test method:
 
-     1. setUpWithError() 호출
+     1. setUpWithError() called
      ↓
-     2. 테스트 메서드 실행 (예: testExample())
+     2. Test method executed (e.g., testExample())
      ↓
-     3. tearDownWithError() 호출
+     3. tearDownWithError() called
 
-     이 과정이 각 테스트마다 반복됩니다!
+     This process repeats for each test!
 
-     예시:
+     Example:
      setUpWithError() → testExample() → tearDownWithError()
      setUpWithError() → testPerformanceExample() → tearDownWithError()
 
-     왜 매번 setUp/tearDown을 실행하나요?
-     → 각 테스트가 서로 영향을 주지 않도록 격리하기 위해서입니다.
-     → 이전 테스트의 상태가 다음 테스트에 영향을 주면 안 됩니다.
+     Why execute setUp/tearDown every time?
+     → To isolate tests from affecting each other.
+     → Previous test state should not impact the next test.
 
 
      ┌──────────────────────────────────────────────────────────────────────────┐
      │ setUp vs setUpWithError                                                  │
      └──────────────────────────────────────────────────────────────────────────┘
 
-     • setUp() - 구버전
-     - 에러를 던질 수 없음
-     - 간단한 초기화용
+     • setUp() - Older version
+     - Cannot throw errors
+     - For simple initialization
 
-     • setUpWithError() - 최신 버전 (권장)
-     - throws 키워드로 에러를 던질 수 있음
-     - 초기화 실패 시 테스트 자체를 건너뜀
-     - 예: 테스트 파일이 없으면 throw XCTSkip("파일 없음")
+     • setUpWithError() - Latest version (Recommended)
+     - Can throw errors using throws keyword
+     - Can skip entire test if initialization fails
+     - Example: throw XCTSkip("File not found") if test file is missing
      */
 
-    /// 각 테스트 메서드 실행 전에 호출되는 설정 메서드
-    /// 이 메서드는 다음 용도로 사용됩니다:
-    /// 1. 테스트에 필요한 객체 생성
-    /// 2. 테스트 환경 초기화
-    /// 3. 테스트 데이터 준비
-    /// - Throws: 초기화 실패 시 에러를 던질 수 있습니다
-    /// - Important: continueAfterFailure 플래그
-    ///   • true (기본값): Assert 실패 후에도 테스트 계속 진행
-    ///   • false: 첫 Assert 실패 시 즉시 테스트 중단
-    ///   언제 false를 사용하나?
-    ///   - 첫 번째 검증이 실패하면 이후 검증이 무의미할 때
-    ///   - 예: 파일 열기 실패 → 파일 읽기 검증 불필요
-    /// 사용 예:
+    /// Setup method called before each test method execution
+    /// This method is used for:
+    /// 1. Creating objects needed for tests
+    /// 2. Initializing test environment
+    /// 3. Preparing test data
+    /// - Throws: Can throw errors when initialization fails
+    /// - Important: continueAfterFailure flag
+    ///   • true (default): Continue test even after Assert failure
+    ///   • false: Stop test immediately on first Assert failure
+    ///   When to use false?
+    ///   - When subsequent validations become meaningless if first validation fails
+    ///   - Example: File open failure → No need to verify file reading
+    /// Usage example:
     /// ```swift
     /// override func setUpWithError() throws {
-    ///     // 테스트용 임시 파일 생성
+    ///     // Create temporary test file
     ///     testFile = try createTestFile()
-    ///     // 테스트용 디코더 초기화
+    ///     // Initialize test decoder
     ///     decoder = VideoDecoder(filePath: testFile.path)
-    ///     // 첫 실패 시 중단 (이후 테스트 무의미)
+    ///     // Stop on first failure (subsequent tests meaningless)
     ///     continueAfterFailure = false
     /// }
     /// ```
     override func setUpWithError() throws {
         // Put setup code here. This method is called before the invocation of each test method in the class.
 
-        // continueAfterFailure 플래그 설정
-        // - false: 첫 번째 Assert 실패 시 즉시 테스트 중단
-        // - 이후 검증이 무의미한 경우 사용
-        // - 예: 초기화 실패 → 이후 모든 검증 무의미
+        // Set continueAfterFailure flag
+        // - false: Stop test immediately on first Assert failure
+        // - Use when subsequent validations are meaningless
+        // - Example: Initialization failure → All subsequent validations meaningless
         continueAfterFailure = false
     }
 
-    /// 각 테스트 메서드 실행 후에 호출되는 정리 메서드
-    /// 이 메서드는 다음 용도로 사용됩니다:
-    /// 1. 테스트에서 생성한 객체 해제
-    /// 2. 임시 파일 삭제
-    /// 3. 리소스 정리
-    /// - Throws: 정리 실패 시 에러를 던질 수 있습니다
-    /// - Important: 왜 정리가 중요한가?
-    ///   • 메모리 누수 방지
-    ///   • 디스크 공간 절약 (임시 파일 삭제)
-    ///   • 다음 테스트에 영향 방지
-    /// 사용 예:
+    /// Teardown method called after each test method execution
+    /// This method is used for:
+    /// 1. Releasing objects created in tests
+    /// 2. Deleting temporary files
+    /// 3. Cleaning up resources
+    /// - Throws: Can throw errors when cleanup fails
+    /// - Important: Why is cleanup important?
+    ///   • Prevent memory leaks
+    ///   • Save disk space (delete temporary files)
+    ///   • Prevent affecting next test
+    /// Usage example:
     /// ```swift
     /// override func tearDownWithError() throws {
-    ///     // 디코더 정리
+    ///     // Clean up decoder
     ///     decoder?.stop()
     ///     decoder = nil
-    ///     // 임시 파일 삭제
+    ///     // Delete temporary file
     ///     if let testFile = testFile {
     ///         try FileManager.default.removeItem(at: testFile)
     ///     }
@@ -339,123 +338,123 @@ final class BlackboxPlayerTests: XCTestCase {
         // Put teardown code here. This method is called after the invocation of each test method in the class.
     }
 
-    // MARK: - 기능 테스트 (Functional Test)
+    // MARK: - Functional Tests
 
-    /// 예제 테스트 메서드
-    /// 이 메서드는 XCTest의 기본 사용법을 보여줍니다.
-    /// - Throws: 테스트 실패 시 에러를 던질 수 있습니다
-    /// Given-When-Then 패턴 예제:
+    /// Example test method
+    /// This method demonstrates basic XCTest usage.
+    /// - Throws: Can throw errors when test fails
+    /// Given-When-Then pattern example:
     /// ```swift
     /// func testVideoFileLoading() throws {
-    ///     // Given: 테스트 파일 경로 준비
+    ///     // Given: Prepare test file path
     ///     let filePath = "/path/to/test/video.mp4"
     ///     let loader = VideoFileLoader()
-    ///     // When: 파일 로딩 실행
+    ///     // When: Execute file loading
     ///     let videoFile = try loader.load(from: filePath)
-    ///     // Then: 결과 검증
+    ///     // Then: Verify results
     ///     XCTAssertNotNil(videoFile, "VideoFile should not be nil")
     ///     XCTAssertEqual(videoFile.channelCount, 5, "Should have 5 channels")
     ///     XCTAssertTrue(videoFile.isValid, "VideoFile should be valid")
     /// }
     /// ```
-    /// - Note: XCTAssert의 메시지 매개변수
-    ///   실패 시 표시될 메시지를 제공하면 디버깅이 쉬워집니다.
-    ///   나쁜 예: XCTAssertTrue(value)
-    ///   좋은 예: XCTAssertTrue(value, "Value should be true but was false")
+    /// - Note: XCTAssert message parameter
+    ///   Providing a message for failures makes debugging easier.
+    ///   Bad example: XCTAssertTrue(value)
+    ///   Good example: XCTAssertTrue(value, "Value should be true but was false")
     func testExample() throws {
         // This is an example of a functional test case.
         // Use XCTAssert and related functions to verify your tests produce the correct results.
 
-        // 간단한 Assert 예제
-        // - XCTAssertTrue: 조건이 true인지 검증
-        // - 두 번째 매개변수: 실패 시 표시될 메시지
+        // Simple Assert example
+        // - XCTAssertTrue: Verify condition is true
+        // - Second parameter: Message to display on failure
         XCTAssertTrue(true, "Example test passes")
     }
 
-    // MARK: - 성능 테스트 (Performance Test)
+    // MARK: - Performance Tests
 
     /*
      ┌──────────────────────────────────────────────────────────────────────────┐
-     │ 성능 테스트란?                                                             │
+     │ What is Performance Testing?                                             │
      └──────────────────────────────────────────────────────────────────────────┘
 
-     성능 테스트는 코드 실행 시간을 측정하고 기준값과 비교합니다.
+     Performance tests measure code execution time and compare against baseline.
 
-     • measure 클로저 안의 코드 실행 시간을 10회 측정
-     • 평균, 표준편차 자동 계산
-     • Baseline(기준값) 설정 가능
-     • 성능 퇴화(regression) 감지
+     • Measure code execution time in measure closure 10 times
+     • Automatically calculate average and standard deviation
+     • Can set Baseline (reference value)
+     • Detect performance regression
 
-     언제 사용하나?
-     1. 알고리즘 최적화 전후 비교
-     2. 대량 데이터 처리 성능 검증
-     3. UI 반응 속도 측정
-     4. 메모리 사용량 확인
+     When to use?
+     1. Compare before/after algorithm optimization
+     2. Verify bulk data processing performance
+     3. Measure UI responsiveness
+     4. Check memory usage
 
-     예시:
+     Example:
      ```swift
      func testFileScanPerformance() throws {
      let scanner = FileScanner()
      let folder = URL(fileURLWithPath: "/test/folder")
 
-     // 10회 반복 실행하여 평균 시간 측정
+     // Measure average time by running 10 times
      measure {
      _ = try? scanner.scanDirectory(folder)
      }
 
-     // 결과 예시:
+     // Result example:
      // Average: 0.523 sec
      // Relative standard deviation: 2.5%
      // Values: [0.520, 0.525, 0.518, 0.527, ...]
      }
      ```
 
-     Baseline 설정:
-     1. 테스트 실행
-     2. 결과 옆의 'Set Baseline' 클릭
-     3. 이후 실행 시 기준값과 자동 비교
-     4. 10% 이상 느려지면 경고
+     Setting Baseline:
+     1. Run test
+     2. Click 'Set Baseline' next to results
+     3. Future runs automatically compare against baseline
+     4. Warns if 10% or more slower
      */
 
-    /// 예제 성능 테스트 메서드
-    /// measure 클로저를 사용하여 코드 실행 시간을 측정합니다.
-    /// - Throws: 테스트 실패 시 에러를 던질 수 있습니다
-    /// - Important: 성능 테스트 주의사항
-    ///   1. 측정 대상 코드만 measure 안에 넣기
-    ///   2. 준비 코드는 measure 밖에서 실행
-    ///   3. 디버그 모드에서는 최적화 안 되므로 Release 모드로 테스트
-    ///   4. 다른 앱 실행을 최소화하여 정확한 측정
-    /// 실제 사용 예:
+    /// Example performance test method
+    /// Measures code execution time using measure closure.
+    /// - Throws: Can throw errors when test fails
+    /// - Important: Performance testing precautions
+    ///   1. Only put code to measure inside measure block
+    ///   2. Run preparation code outside measure block
+    ///   3. Test in Release mode as Debug mode is not optimized
+    ///   4. Minimize other app execution for accurate measurement
+    /// Actual usage example:
     /// ```swift
     /// func testVideoDecodingPerformance() throws {
-    ///     // Given: 준비 코드 (측정 대상 아님)
+    ///     // Given: Preparation code (not measured)
     ///     let decoder = VideoDecoder(filePath: testVideoPath)
     ///     try decoder.initialize()
-    ///     // When/Then: 성능 측정
+    ///     // When/Then: Measure performance
     ///     measure {
-    ///         // 100 프레임 디코딩 시간 측정
+    ///         // Measure time to decode 100 frames
     ///         for _ in 0..<100 {
     ///             _ = try? decoder.decodeNextFrame()
     ///         }
     ///     }
     /// }
     /// ```
-    /// - Note: measure 메서드
-    ///   • 클로저를 10회 반복 실행
-    ///   • 평균 시간과 표준편차 계산
-    ///   • Xcode에서 시각적으로 결과 표시
-    ///   • Baseline 설정 시 자동으로 성능 비교
+    /// - Note: measure method
+    ///   • Runs closure 10 times
+    ///   • Calculates average time and standard deviation
+    ///   • Displays results visually in Xcode
+    ///   • Automatically compares performance when Baseline is set
     func testPerformanceExample() throws {
         // This is an example of a performance test case.
 
-        // measure 클로저: 이 안의 코드 실행 시간을 측정합니다
-        // - 10회 반복 실행
-        // - 평균 시간 자동 계산
-        // - 표준편차 계산 (결과의 일관성)
+        // measure closure: Measures execution time of code inside
+        // - Runs 10 times
+        // - Automatically calculates average time
+        // - Calculates standard deviation (result consistency)
         measure {
             // Put the code you want to measure the time of here.
 
-            // 예제: 간단한 반복문 성능 측정
+            // Example: Measure simple loop performance
             var sum = 0
             for i in 0..<1000 {
                 sum += i
@@ -468,24 +467,24 @@ final class BlackboxPlayerTests: XCTestCase {
 /*
  ╔══════════════════════════════════════════════════════════════════════════════╗
  ║                                                                              ║
- ║                           실제 테스트는 어디에?                                 ║
+ ║                           Where are the Actual Tests?                        ║
  ║                                                                              ║
- ║  이 파일은 기본 템플릿입니다. 실제 테스트는 다음 파일들에 있습니다:              ║
+ ║  This file is a basic template. Actual tests are in these files:            ║
  ║                                                                              ║
  ║  • DataModelsTests.swift                                                     ║
- ║    - VideoFile, ChannelInfo, GPSPoint 등 모델 테스트                          ║
+ ║    - Tests for VideoFile, ChannelInfo, GPSPoint and other models            ║
  ║                                                                              ║
  ║  • VideoDecoderTests.swift                                                   ║
- ║    - FFmpeg 디코더 기능 테스트                                                 ║
+ ║    - FFmpeg decoder functionality tests                                      ║
  ║                                                                              ║
  ║  • SyncControllerTests.swift                                                 ║
- ║    - 멀티채널 동기화 테스트                                                     ║
+ ║    - Multi-channel synchronization tests                                     ║
  ║                                                                              ║
  ║  • VideoChannelTests.swift                                                   ║
- ║    - 개별 채널 버퍼링 테스트                                                    ║
+ ║    - Individual channel buffering tests                                      ║
  ║                                                                              ║
  ║  • MultiChannelRendererTests.swift                                           ║
- ║    - Metal GPU 렌더링 테스트                                                  ║
+ ║    - Metal GPU rendering tests                                               ║
  ║                                                                              ║
  ╚══════════════════════════════════════════════════════════════════════════════╝
  */
