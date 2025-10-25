@@ -1,22 +1,22 @@
 /// @file SettingsView.swift
-/// @brief 앱 설정 페이지
+/// @brief App settings page
 /// @author BlackboxPlayer Development Team
 /// @details
-/// 앱의 모든 설정을 관리하는 설정 페이지입니다.
-/// 카테고리별로 설정을 그룹화하여 표시합니다.
+/// Settings page that manages all app settings.
+/// Groups settings by category for display.
 
 import SwiftUI
 
-/// 앱 설정 뷰
+/// App settings view
 ///
-/// ## 설정 카테고리
-/// - UI 설정: 사이드바, 디버그 로그 표시 여부
-/// - 오버레이 설정: GPS, 메타데이터, 지도, 그래프 오버레이 기본값
-/// - 재생 설정: 기본 재생 속도, 볼륨, 자동 재생
-/// - 비디오 설정: 레이아웃 모드, 컨트롤 자동 숨김 시간
-/// - 성능 설정: 프레임율, 하드웨어 가속
+/// ## Settings Categories
+/// - UI Settings: Sidebar, debug log display options
+/// - Overlay Settings: GPS, metadata, map, graph overlay defaults
+/// - Playback Settings: Default playback speed, volume, auto-play
+/// - Video Settings: Layout mode, control auto-hide duration
+/// - Performance Settings: Frame rate, hardware acceleration
 ///
-/// ## 사용 예
+/// ## Usage Example
 /// ```swift
 /// .sheet(isPresented: $showSettings) {
 ///     SettingsView()
@@ -25,25 +25,25 @@ import SwiftUI
 struct SettingsView: View {
     // MARK: - Properties
 
-    /// 앱 설정 (Singleton)
+    /// App settings (Singleton)
     @ObservedObject var settings = AppSettings.shared
 
-    /// 설정 창 닫기 액션
+    /// Action to dismiss settings window
     @Environment(\.dismiss) private var dismiss
 
-    /// 리셋 확인 알림 표시 여부
+    /// Whether to show reset confirmation alert
     @State private var showResetAlert = false
 
     // MARK: - Body
 
     var body: some View {
         VStack(spacing: 0) {
-            // 헤더
+            // Header
             header
 
             Divider()
 
-            // 설정 컨텐츠
+            // Settings content
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
                     uiSettingsSection
@@ -57,17 +57,17 @@ struct SettingsView: View {
 
             Divider()
 
-            // 하단 버튼
+            // Footer buttons
             footer
         }
         .frame(width: 600, height: 700)
-        .alert("설정 초기화", isPresented: $showResetAlert) {
-            Button("취소", role: .cancel) { }
-            Button("초기화", role: .destructive) {
+        .alert("Reset Settings", isPresented: $showResetAlert) {
+            Button("Cancel", role: .cancel) { }
+            Button("Reset", role: .destructive) {
                 settings.resetToDefaults()
             }
         } message: {
-            Text("모든 설정을 기본값으로 초기화하시겠습니까?")
+            Text("Are you sure you want to reset all settings to default values?")
         }
     }
 
@@ -75,7 +75,7 @@ struct SettingsView: View {
 
     private var header: some View {
         HStack {
-            Text("설정")
+            Text("Settings")
                 .font(.system(size: 24, weight: .bold))
 
             Spacer()
@@ -86,7 +86,7 @@ struct SettingsView: View {
                     .foregroundColor(.secondary)
             }
             .buttonStyle(.plain)
-            .help("닫기")
+            .help("Close")
         }
         .padding()
     }
@@ -96,7 +96,7 @@ struct SettingsView: View {
     private var footer: some View {
         HStack {
             Button(action: { showResetAlert = true }) {
-                Text("기본값으로 초기화")
+                Text("Reset to Defaults")
                     .foregroundColor(.red)
             }
             .buttonStyle(.plain)
@@ -104,7 +104,7 @@ struct SettingsView: View {
             Spacer()
 
             Button(action: { dismiss() }) {
-                Text("완료")
+                Text("Done")
                     .frame(width: 80)
             }
             .buttonStyle(.borderedProminent)
@@ -117,17 +117,17 @@ struct SettingsView: View {
     private var uiSettingsSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             sectionHeader(
-                title: "UI 설정",
+                title: "UI Settings",
                 icon: "sidebar.left",
-                description: "사용자 인터페이스 표시 설정"
+                description: "User interface display settings"
             )
 
             VStack(alignment: .leading, spacing: 12) {
                 Toggle(isOn: $settings.showSidebarByDefault) {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("사이드바 기본 표시")
+                        Text("Show Sidebar by Default")
                             .font(.body)
-                        Text("앱 실행 시 사이드바를 표시합니다")
+                        Text("Display sidebar when app launches")
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -135,9 +135,9 @@ struct SettingsView: View {
 
                 Toggle(isOn: $settings.showDebugLogByDefault) {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("디버그 로그 기본 표시")
+                        Text("Show Debug Log by Default")
                             .font(.body)
-                        Text("앱 실행 시 디버그 로그를 표시합니다")
+                        Text("Display debug log when app launches")
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -152,17 +152,17 @@ struct SettingsView: View {
     private var overlaySettingsSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             sectionHeader(
-                title: "오버레이 설정",
+                title: "Overlay Settings",
                 icon: "square.stack.3d.up",
-                description: "비디오 위에 표시되는 정보 레이어 설정"
+                description: "Information layers displayed over video"
             )
 
             VStack(alignment: .leading, spacing: 12) {
                 Toggle(isOn: $settings.showGPSOverlayByDefault) {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("GPS 오버레이 기본 표시")
+                        Text("Show GPS Overlay by Default")
                             .font(.body)
-                        Text("속도, 좌표 등 GPS 정보를 표시합니다")
+                        Text("Display GPS information such as speed and coordinates")
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -170,9 +170,9 @@ struct SettingsView: View {
 
                 Toggle(isOn: $settings.showMetadataOverlayByDefault) {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("메타데이터 오버레이 기본 표시")
+                        Text("Show Metadata Overlay by Default")
                             .font(.body)
-                        Text("비디오 파일 정보를 표시합니다")
+                        Text("Display video file information")
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -180,9 +180,9 @@ struct SettingsView: View {
 
                 Toggle(isOn: $settings.showMapOverlayByDefault) {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("지도 오버레이 기본 표시")
+                        Text("Show Map Overlay by Default")
                             .font(.body)
-                        Text("GPS 궤적을 지도 위에 표시합니다")
+                        Text("Display GPS trajectory on map")
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -190,9 +190,9 @@ struct SettingsView: View {
 
                 Toggle(isOn: $settings.showGraphOverlayByDefault) {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("그래프 오버레이 기본 표시")
+                        Text("Show Graph Overlay by Default")
                             .font(.body)
-                        Text("속도, 가속도 등의 그래프를 표시합니다")
+                        Text("Display graphs such as speed and acceleration")
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -207,15 +207,15 @@ struct SettingsView: View {
     private var playbackSettingsSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             sectionHeader(
-                title: "재생 설정",
+                title: "Playback Settings",
                 icon: "play.circle",
-                description: "비디오 재생 관련 설정"
+                description: "Video playback related settings"
             )
 
             VStack(alignment: .leading, spacing: 16) {
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
-                        Text("기본 재생 속도")
+                        Text("Default Playback Speed")
                             .font(.body)
                         Spacer()
                         Text(String(format: "%.2fx", settings.defaultPlaybackSpeed))
@@ -238,7 +238,7 @@ struct SettingsView: View {
 
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
-                        Text("기본 볼륨")
+                        Text("Default Volume")
                             .font(.body)
                         Spacer()
                         Text("\(Int(settings.defaultVolume * 100))%")
@@ -261,9 +261,9 @@ struct SettingsView: View {
 
                 Toggle(isOn: $settings.autoPlayOnSelect) {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("파일 선택 시 자동 재생")
+                        Text("Auto-play on File Selection")
                             .font(.body)
-                        Text("파일을 선택하면 자동으로 재생을 시작합니다")
+                        Text("Automatically start playback when a file is selected")
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -278,19 +278,19 @@ struct SettingsView: View {
     private var videoSettingsSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             sectionHeader(
-                title: "비디오 설정",
+                title: "Video Settings",
                 icon: "video",
-                description: "비디오 표시 관련 설정"
+                description: "Video display related settings"
             )
 
             VStack(alignment: .leading, spacing: 16) {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("기본 레이아웃 모드")
+                    Text("Default Layout Mode")
                         .font(.body)
 
                     Picker("", selection: $settings.defaultLayoutMode) {
-                        Text("그리드").tag("grid")
-                        Text("단일 화면").tag("single")
+                        Text("Grid").tag("grid")
+                        Text("Single").tag("single")
                         Text("PIP").tag("pip")
                     }
                     .pickerStyle(.segmented)
@@ -299,10 +299,10 @@ struct SettingsView: View {
 
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
-                        Text("컨트롤 자동 숨김 시간")
+                        Text("Controls Auto-hide Duration")
                             .font(.body)
                         Spacer()
-                        Text(String(format: "%.1f초", settings.controlsAutoHideDelay))
+                        Text(String(format: "%.1fs", settings.controlsAutoHideDelay))
                             .font(.body.monospacedDigit())
                             .foregroundColor(.secondary)
                     }
@@ -310,11 +310,11 @@ struct SettingsView: View {
                     Slider(value: $settings.controlsAutoHideDelay, in: 1.0...10.0, step: 0.5)
 
                     HStack {
-                        Text("1초")
+                        Text("1s")
                             .font(.caption)
                             .foregroundColor(.secondary)
                         Spacer()
-                        Text("10초")
+                        Text("10s")
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -329,15 +329,15 @@ struct SettingsView: View {
     private var performanceSettingsSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             sectionHeader(
-                title: "성능 설정",
+                title: "Performance Settings",
                 icon: "speedometer",
-                description: "비디오 재생 성능 관련 설정"
+                description: "Video playback performance related settings"
             )
 
             VStack(alignment: .leading, spacing: 16) {
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
-                        Text("목표 프레임율")
+                        Text("Target Frame Rate")
                             .font(.body)
                         Spacer()
                         Text("\(settings.targetFrameRate) FPS")
@@ -356,9 +356,9 @@ struct SettingsView: View {
 
                 Toggle(isOn: $settings.useHardwareAcceleration) {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("하드웨어 가속 사용")
+                        Text("Use Hardware Acceleration")
                             .font(.body)
-                        Text("GPU를 사용하여 비디오 디코딩 성능을 향상시킵니다")
+                        Text("Improve video decoding performance using GPU")
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -370,7 +370,7 @@ struct SettingsView: View {
 
     // MARK: - Helper Views
 
-    /// 섹션 헤더
+    /// Section header
     private func sectionHeader(title: String, icon: String, description: String) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 8) {

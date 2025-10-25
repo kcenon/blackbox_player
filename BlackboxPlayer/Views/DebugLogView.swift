@@ -1,57 +1,57 @@
 /// @file DebugLogView.swift
-/// @brief 디버그 로그 뷰어 오버레이
+/// @brief Debug log viewer overlay
 /// @author BlackboxPlayer Development Team
 /// @details
-/// 애플리케이션의 디버그 로그를 실시간으로 표시하는 오버레이 UI를 구현합니다.
-/// 실시간 로그 스트리밍, 자동 스크롤, 로그 레벨별 색상 구분 기능을 제공합니다.
+/// Implements an overlay UI that displays application debug logs in real-time.
+/// Provides real-time log streaming, auto-scroll, and color-coded log levels.
 
 /*
- 【DebugLogView 개요】
+ 【DebugLogView Overview】
 
- 이 파일은 애플리케이션의 디버그 로그를 실시간으로 표시하는 오버레이 UI를 구현합니다.
+ This file implements an overlay UI that displays application debug logs in real-time.
 
 
  ┌─────────────────────────────────────┐
- │  Debug Log         [Auto-scroll] 🗑️ │ ← 헤더 (제목 + 컨트롤)
+ │  Debug Log         [Auto-scroll] 🗑️ │ ← Header (title + controls)
  ├─────────────────────────────────────┤
  │ 14:23:01 [INFO] App started         │
  │ 14:23:05 [DEBUG] Loading video...   │
- │ 14:23:10 [WARNING] Low buffer       │ ← 로그 리스트
- │ 14:23:15 [ERROR] Decode failed      │   (자동 스크롤)
+ │ 14:23:10 [WARNING] Low buffer       │ ← Log list
+ │ 14:23:15 [ERROR] Decode failed      │   (auto-scroll)
  │                                     │
  └─────────────────────────────────────┘
 
 
- 【주요 기능】
+ 【Key Features】
 
- 1. 실시간 로그 표시
- - LogManager 싱글톤으로부터 로그 수신
- - 새 로그 추가 시 자동으로 UI 업데이트
+ 1. Real-time log display
+ - Receives logs from LogManager singleton
+ - Automatically updates UI when new logs are added
 
- 2. 자동 스크롤
- - 새 로그가 추가되면 자동으로 맨 아래로 스크롤
- - 토글 버튼으로 On/Off 가능
+ 2. Auto-scroll
+ - Automatically scrolls to bottom when new logs are added
+ - Can be toggled On/Off with button
 
- 3. 로그 레벨별 색상
- - Debug: 회색 (상세 디버그 정보)
- - Info: 흰색 (일반 정보)
- - Warning: 노란색 (경고)
- - Error: 빨간색 (오류)
+ 3. Color-coded log levels
+ - Debug: Gray (detailed debug information)
+ - Info: White (general information)
+ - Warning: Yellow (warnings)
+ - Error: Red (errors)
 
- 4. 로그 관리
- - Clear 버튼으로 모든 로그 삭제
- - 텍스트 선택 가능 (복사를 위해)
+ 4. Log management
+ - Clear button to delete all logs
+ - Text selection enabled (for copying)
 
 
- 【사용 예시】
+ 【Usage Example】
 
  ```swift
- // 1. 오버레이로 표시
+ // 1. Display as overlay
  ZStack {
- // 메인 콘텐츠
+ // Main content
  ContentView()
 
- // 하단에 디버그 로그 오버레이
+ // Debug log overlay at bottom
  VStack {
  Spacer()
  DebugLogView()
@@ -59,80 +59,80 @@
  }
  }
 
- // 2. 로그 기록
+ // 2. Log messages
  LogManager.shared.log("Video loaded", level: .info)
  LogManager.shared.log("Frame dropped", level: .warning)
  ```
 
 
- 【SwiftUI 개념】
+ 【SwiftUI Concepts】
 
- 이 파일에서 배울 수 있는 주요 SwiftUI 개념들:
+ Key SwiftUI concepts demonstrated in this file:
 
  1. @ObservedObject
- - 외부 객체의 변경사항 관찰
- - 객체가 변경되면 View 자동 재렌더링
+ - Observes changes in external objects
+ - Automatically re-renders View when object changes
 
  2. @State
- - View 내부 상태 저장
- - 상태 변경 시 View 재렌더링
+ - Stores View internal state
+ - Re-renders View when state changes
 
  3. ScrollViewReader
- - 프로그래밍 방식으로 스크롤 위치 제어
- - scrollTo() 메서드로 특정 항목으로 이동
+ - Programmatically control scroll position
+ - Navigate to specific items using scrollTo() method
 
  4. LazyVStack
- - 화면에 보이는 항목만 렌더링 (성능 최적화)
- - 많은 로그 항목이 있을 때 효율적
+ - Only renders visible items (performance optimization)
+ - Efficient when there are many log entries
 
- 5. onChange 모디파이어
- - 특정 값의 변경 감지
- - 변경 시 추가 작업 수행
+ 5. onChange modifier
+ - Detects changes in specific values
+ - Performs additional actions when changes occur
 
  6. Private struct
- - View를 작은 서브뷰로 분리
- - 코드 재사용성과 가독성 향상
+ - Separates View into smaller sub-views
+ - Improves code reusability and readability
 
 
- 【디버그 로그 뷰어의 중요성】
+ 【Importance of Debug Log Viewer】
 
- 디버그 로그 뷰어는 개발 및 테스팅 중 문제를 진단하는 데 필수적입니다:
+ A debug log viewer is essential for diagnosing issues during development and testing:
 
- ✓ 실시간 피드백
- → 애플리케이션이 무엇을 하고 있는지 즉시 확인
+ ✓ Real-time feedback
+ → Immediately see what the application is doing
 
- ✓ 문제 추적
- → 오류 발생 전후의 이벤트 순서 파악
+ ✓ Issue tracking
+ → Understand the sequence of events before and after errors
 
- ✓ 성능 분석
- → 특정 작업에 걸리는 시간 측정
+ ✓ Performance analysis
+ → Measure time taken for specific operations
 
- ✓ 사용자 테스팅
- → QA 팀이나 베타 테스터가 문제 리포트 시 로그 제공
+ ✓ User testing
+ → Provide logs when QA team or beta testers report issues
 
 
- 【관련 파일】
+ 【Related Files】
 
- - LogManager.swift: 로그를 관리하고 저장하는 싱글톤 클래스
- - LogEntry.swift: 개별 로그 엔트리의 데이터 모델
+ - LogManager.swift: Singleton class that manages and stores logs
+ - LogEntry.swift: Data model for individual log entries
 
  */
 
 import SwiftUI
 
 /// @struct DebugLogView
-/// @brief 디버그 로그 뷰어 오버레이
+/// @brief Debug log viewer overlay
 ///
 /// @details
-/// 디버그 로그를 실시간으로 표시하는 오버레이 뷰입니다.
+/// An overlay view that displays debug logs in real-time.
 ///
-/// **주요 기능:**
-/// - 실시간 로그 스트리밍
-/// - 자동 스크롤 (토글 가능)
-/// - 로그 레벨별 색상 구분
-/// - 로그 클리어 기능
+/// **Key Features:**
+/// - Real-time log streaming
+/// - Auto-scroll (toggleable)
+/// - Color-coded log levels
+/// - Log clear functionality
 ///
-/// **사용 예시:**
+/// **Usage Example:**
 /// ```swift
 /// ZStack {
 ///     ContentView()
@@ -144,82 +144,82 @@ import SwiftUI
 /// }
 /// ```
 ///
-/// **연관 타입:**
-/// - `LogManager`: 로그 데이터 제공자
-/// - `LogEntry`: 개별 로그 엔트리
+/// **Related Types:**
+/// - `LogManager`: Log data provider
+/// - `LogEntry`: Individual log entry
 ///
 struct DebugLogView: View {
     // MARK: - Properties
 
     /// @var logManager
-    /// @brief 로그 관리자 싱글톤 인스턴스
+    /// @brief Log manager singleton instance
     ///
-    /// **@ObservedObject란?**
+    /// **What is @ObservedObject?**
     ///
-    /// @ObservedObject는 외부에서 생성된 ObservableObject를 관찰하는 프로퍼티 래퍼입니다.
+    /// @ObservedObject is a property wrapper that observes an externally created ObservableObject.
     ///
-    /// **작동 원리:**
+    /// **How it works:**
     /// ```
-    /// 1. LogManager에서 로그 추가
+    /// 1. LogManager adds a log
     ///    ↓
-    /// 2. @Published var logs 변경
+    /// 2. @Published var logs changes
     ///    ↓
-    /// 3. DebugLogView 자동 재렌더링
+    /// 3. DebugLogView automatically re-renders
     ///    ↓
-    /// 4. 새 로그가 화면에 표시됨
+    /// 4. New log appears on screen
     /// ```
     ///
     /// **@ObservedObject vs @State:**
     ///
-    /// | @ObservedObject                | @State                      |
-    /// |--------------------------------|-----------------------------|
-    /// | 외부 객체 관찰                 | View 내부 상태 저장          |
-    /// | 여러 View에서 공유 가능        | 해당 View에서만 사용         |
-    /// | 참조 타입 (class)              | 값 타입 (struct/enum/기본형) |
-    /// | 싱글톤 패턴에 적합             | 간단한 UI 상태에 적합        |
+    /// | @ObservedObject                | @State                          |
+    /// |--------------------------------|---------------------------------|
+    /// | Observes external objects      | Stores View internal state      |
+    /// | Can be shared across Views     | Only used in that View          |
+    /// | Reference type (class)         | Value type (struct/enum/basic)  |
+    /// | Suitable for singleton pattern | Suitable for simple UI state    |
     ///
-    /// **왜 shared 싱글톤을 사용할까?**
+    /// **Why use shared singleton?**
     ///
-    /// LogManager는 앱 전체에서 하나의 인스턴스만 존재해야 합니다:
-    /// - 모든 코드가 동일한 로그 저장소에 접근
-    /// - 여러 View에서 동일한 로그 목록 표시
-    /// - 메모리 효율성 (중복 인스턴스 방지)
+    /// LogManager should only have one instance across the entire app:
+    /// - All code accesses the same log storage
+    /// - Multiple Views display the same log list
+    /// - Memory efficiency (prevents duplicate instances)
     ///
     @ObservedObject var logManager = LogManager.shared
 
     /// @var autoScroll
-    /// @brief 자동 스크롤 토글 상태
+    /// @brief Auto-scroll toggle state
     ///
-    /// **@State란?**
+    /// **What is @State?**
     ///
-    /// @State는 View 내부에서만 사용하는 간단한 상태를 저장하는 프로퍼티 래퍼입니다.
+    /// @State is a property wrapper that stores simple state used only within a View.
     ///
-    /// **작동 원리:**
+    /// **How it works:**
     /// ```swift
-    /// // 1. 초기값 설정
-    /// @State private var autoScroll = true  // true로 시작
+    /// // 1. Set initial value
+    /// @State private var autoScroll = true  // starts as true
     ///
-    /// // 2. Toggle이 상태 변경
-    /// Toggle("Auto-scroll", isOn: $autoScroll)  // $로 바인딩
+    /// // 2. Toggle changes state
+    /// Toggle("Auto-scroll", isOn: $autoScroll)  // bind with $
     ///
-    /// // 3. 상태가 false로 변경되면...
-    /// //    → SwiftUI가 View를 재렌더링
-    /// //    → onChange에서 if autoScroll 체크
+    /// // 3. When state changes to false...
+    /// //    → SwiftUI re-renders the View
+    /// //    → onChange checks if autoScroll
     /// ```
     ///
-    /// **private을 사용하는 이유:**
+    /// **Why use private?**
     ///
-    /// autoScroll은 DebugLogView 내부에서만 사용되므로:
-    /// - 캡슐화 (encapsulation) - 외부에서 접근 불가
-    /// - 명확한 의도 표현 - "이 상태는 내부 전용"
-    /// - 코드 안전성 - 실수로 외부에서 수정 방지
+    /// Since autoScroll is only used within DebugLogView:
+    /// - Encapsulation - external access prevented
+    /// - Clear intent - "this state is internal only"
+    /// - Code safety - prevents accidental external modification
     ///
-    /// **기본값이 true인 이유:**
+    /// **Why default to true?**
     ///
-    /// 대부분의 경우 새 로그가 추가되면 자동으로 스크롤하는 것이 유용합니다:
-    /// - 개발 중: 최신 로그를 즉시 확인
-    /// - 디버깅: 실시간으로 이벤트 추적
-    /// - 사용자는 원하면 토글로 끌 수 있음
+    /// In most cases, auto-scrolling when new logs are added is useful:
+    /// - During development: immediately see latest logs
+    /// - During debugging: track events in real-time
+    /// - User can toggle off if desired
     ///
     @State private var autoScroll = true
 
@@ -229,78 +229,78 @@ struct DebugLogView: View {
         VStack(spacing: 0) {
             // Header
             //
-            // 헤더 섹션: 제목 + 자동 스크롤 토글 + 클리어 버튼
+            // Header section: title + auto-scroll toggle + clear button
             //
-            // HStack을 사용하여 좌우로 배치:
-            // [제목]                    [토글] [버튼]
+            // Arranged horizontally using HStack:
+            // [Title]                    [Toggle] [Button]
             HStack {
                 // Title
                 //
-                // "Debug Log" 제목을 표시합니다.
+                // Displays "Debug Log" title
                 //
                 // .font(.headline):
-                //   - 헤드라인 스타일 (일반적으로 17pt, Bold)
-                //   - 시스템 Dynamic Type 지원 (사용자가 설정한 폰트 크기에 따라 자동 조정)
+                //   - Headline style (typically 17pt, Bold)
+                //   - Supports system Dynamic Type (automatically adjusts to user's font size setting)
                 //
                 // .foregroundColor(.white):
-                //   - 텍스트 색상을 흰색으로 설정
-                //   - 검은 배경(opacity 0.9)에서 잘 보이도록
+                //   - Sets text color to white
+                //   - Ensures visibility on black background (opacity 0.9)
                 Text("Debug Log")
                     .font(.headline)
                     .foregroundColor(.white)
 
                 // Spacer pushes controls to the right
                 //
-                // Spacer는 가능한 모든 공간을 차지합니다.
+                // Spacer takes up all available space.
                 //
-                // HStack에서 Spacer의 역할:
+                // Spacer's role in HStack:
                 // [Text] [======= Spacer =======] [Toggle] [Button]
                 //
-                // 결과: Toggle과 Button이 오른쪽 끝으로 밀려남
+                // Result: Toggle and Button are pushed to the right edge
                 Spacer()
 
                 // Auto-scroll toggle
                 //
-                // 자동 스크롤 기능을 On/Off 할 수 있는 토글 버튼입니다.
+                // Toggle button that can turn auto-scroll functionality On/Off
                 //
-                // **Toggle의 작동 원리:**
+                // **How Toggle works:**
                 //
                 // ```swift
                 // Toggle("Auto-scroll", isOn: $autoScroll)
                 // //      ~~~~~~~~~~~~         ~~~~~~~~~~~
-                // //      레이블 텍스트        바인딩된 상태
+                // //      Label text           Bound state
                 // ```
                 //
-                // **$ 기호의 의미 (Binding):**
+                // **Meaning of $ symbol (Binding):**
                 //
-                // $autoScroll은 autoScroll 변수에 대한 "바인딩"을 생성합니다.
+                // $autoScroll creates a "binding" to the autoScroll variable.
                 //
-                // 바인딩(Binding)이란?
-                //   - 양방향 연결 (Two-way binding)
-                //   - Toggle이 값을 읽고 쓸 수 있음
-                //   - 값이 변경되면 자동으로 동기화
+                // What is Binding?
+                //   - Two-way binding
+                //   - Toggle can read and write the value
+                //   - Automatically synchronizes when value changes
                 //
-                // 데이터 흐름:
+                // Data flow:
                 // ```
-                // Toggle 스위치 클릭
+                // Toggle switch clicked
                 //       ↓
-                // $autoScroll을 통해 값 변경 (true → false)
+                // Value changes through $autoScroll (true → false)
                 //       ↓
-                // @State가 변경 감지
+                // @State detects change
                 //       ↓
-                // SwiftUI가 View 재렌더링
+                // SwiftUI re-renders View
                 //       ↓
-                // 새로운 상태로 UI 업데이트
+                // UI updates with new state
                 // ```
                 //
                 // **.toggleStyle(.switch):**
-                //   - macOS의 스위치 스타일 (iOS와 유사한 On/Off 스위치)
-                //   - 다른 스타일: .checkbox (체크박스), .button (버튼)
+                //   - macOS switch style (On/Off switch similar to iOS)
+                //   - Other styles: .checkbox (checkbox), .button (button)
                 //
                 // **.controlSize(.mini):**
-                //   - 컨트롤 크기를 mini로 설정
-                //   - 크기 옵션: .mini < .small < .regular < .large
-                //   - 헤더에 들어가므로 작게 표시
+                //   - Sets control size to mini
+                //   - Size options: .mini < .small < .regular < .large
+                //   - Display small since it goes in header
                 //
                 Toggle("Auto-scroll", isOn: $autoScroll)
                     .toggleStyle(.switch)
@@ -309,41 +309,41 @@ struct DebugLogView: View {
 
                 // Clear button
                 //
-                // 모든 로그를 삭제하는 버튼입니다.
+                // Button that deletes all logs
                 //
-                // **Button의 구조:**
+                // **Button structure:**
                 //
                 // ```swift
-                // Button(action: { /* 실행할 코드 */ }) {
-                //     /* 버튼의 외형 */
+                // Button(action: { /* code to execute */ }) {
+                //     /* button appearance */
                 // }
                 // ```
                 //
-                // **action 클로저:**
+                // **action closure:**
                 //
                 // { logManager.clear() }
-                //   - 버튼 클릭 시 실행되는 코드
-                //   - LogManager의 clear() 메서드 호출
-                //   - 모든 로그 엔트리를 배열에서 제거
+                //   - Code executed when button is clicked
+                //   - Calls LogManager's clear() method
+                //   - Removes all log entries from array
                 //
                 // **SF Symbols:**
                 //
                 // Image(systemName: "trash")
-                //   - Apple의 SF Symbols 아이콘 사용
-                //   - "trash" = 휴지통 아이콘
-                //   - 30,000개 이상의 아이콘 제공
-                //   - 벡터 기반이라 모든 크기에서 선명함
+                //   - Uses Apple's SF Symbols icons
+                //   - "trash" = trash can icon
+                //   - Provides over 30,000 icons
+                //   - Vector-based so sharp at all sizes
                 //
-                // **버튼 스타일링:**
+                // **Button styling:**
                 //
                 // .buttonStyle(.plain)
-                //   - 기본 버튼 스타일 제거
-                //   - macOS의 버튼은 기본적으로 파란색 배경이 있음
-                //   - plain 스타일로 투명한 버튼 만들기
+                //   - Removes default button style
+                //   - macOS buttons have blue background by default
+                //   - Creates transparent button with plain style
                 //
                 // .help("Clear logs")
-                //   - 마우스 호버 시 툴팁 표시
-                //   - 사용자에게 버튼 기능 설명
+                //   - Shows tooltip on mouse hover
+                //   - Explains button function to user
                 //
                 Button(action: { logManager.clear() }) {
                     Image(systemName: "trash")
@@ -357,152 +357,152 @@ struct DebugLogView: View {
 
             // Header/Body separator
             //
-            // 헤더와 로그 리스트 사이의 구분선입니다.
+            // Separator line between header and log list
             //
-            // Divider는:
-            //   - 얇은 수평선 (HStack 내에서는 수직선)
-            //   - 시스템 색상 사용 (자동으로 라이트/다크 모드 대응)
-            //   - 시각적 구분을 위해 사용
+            // Divider:
+            //   - Thin horizontal line (vertical in HStack)
+            //   - Uses system color (automatically adapts to light/dark mode)
+            //   - Used for visual separation
             Divider()
 
             // Log list with auto-scroll
             //
-            // 로그 항목들을 스크롤 가능한 리스트로 표시합니다.
+            // Displays log entries in a scrollable list
             //
-            // **ScrollViewReader란?**
+            // **What is ScrollViewReader?**
             //
-            // ScrollViewReader는 프로그래밍 방식으로 스크롤 위치를 제어할 수 있게 해주는 컨테이너입니다.
+            // ScrollViewReader is a container that enables programmatic control of scroll position.
             //
-            // 기본 구조:
+            // Basic structure:
             // ```swift
             // ScrollViewReader { proxy in
             //     ScrollView {
-            //         // 콘텐츠...
+            //         // content...
             //     }
             //     .onChange(...) {
-            //         proxy.scrollTo(targetID)  // 특정 항목으로 스크롤
+            //         proxy.scrollTo(targetID)  // scroll to specific item
             //     }
             // }
             // ```
             //
-            // **proxy란?**
+            // **What is proxy?**
             //
-            // proxy는 ScrollViewProxy 타입의 객체입니다:
-            //   - scrollTo() 메서드 제공
-            //   - 특정 ID를 가진 View로 스크롤
-            //   - 애니메이션 포함 가능
+            // proxy is an object of type ScrollViewProxy:
+            //   - Provides scrollTo() method
+            //   - Scrolls to View with specific ID
+            //   - Can include animation
             //
-            // **왜 필요한가?**
+            // **Why is it needed?**
             //
-            // 일반 ScrollView는 사용자가 수동으로만 스크롤할 수 있습니다.
-            // ScrollViewReader를 사용하면:
-            //   - 새 로그 추가 시 자동으로 맨 아래로 스크롤
-            //   - 특정 로그로 점프
-            //   - 검색 결과로 스크롤
+            // Regular ScrollView only allows manual scrolling by user.
+            // With ScrollViewReader:
+            //   - Automatically scroll to bottom when new log is added
+            //   - Jump to specific log
+            //   - Scroll to search results
             //
             ScrollViewReader { proxy in
                 ScrollView {
                     // **LazyVStack vs VStack:**
                     //
                     // LazyVStack:
-                    //   - 화면에 보이는 항목만 렌더링 (Lazy loading)
-                    //   - 수천 개의 로그가 있어도 성능 유지
-                    //   - 스크롤 시 필요할 때만 View 생성
+                    //   - Only renders visible items (Lazy loading)
+                    //   - Maintains performance even with thousands of logs
+                    //   - Creates Views only when needed during scroll
                     //
                     // VStack:
-                    //   - 모든 항목을 즉시 렌더링
-                    //   - 항목이 많으면 느려짐
-                    //   - 항목이 적고 고정적일 때 사용
+                    //   - Renders all items immediately
+                    //   - Slows down with many items
+                    //   - Use when items are few and fixed
                     //
-                    // 성능 비교:
+                    // Performance comparison:
                     // ```
-                    // 10,000개 로그 기준
+                    // Based on 10,000 logs
                     //
                     // VStack:
-                    //   - 초기 렌더링: 10,000개 모두 생성
-                    //   - 메모리: 높음
-                    //   - 스크롤 성능: 느림
+                    //   - Initial render: creates all 10,000
+                    //   - Memory: high
+                    //   - Scroll performance: slow
                     //
                     // LazyVStack:
-                    //   - 초기 렌더링: 화면에 보이는 ~20개만 생성
-                    //   - 메모리: 낮음
-                    //   - 스크롤 성능: 빠름
+                    //   - Initial render: creates only ~20 visible
+                    //   - Memory: low
+                    //   - Scroll performance: fast
                     // ```
                     //
                     // **alignment: .leading:**
-                    //   - 모든 항목을 왼쪽 정렬
-                    //   - 로그 텍스트는 일반적으로 왼쪽 정렬
+                    //   - Aligns all items to the left
+                    //   - Log text is typically left-aligned
                     //
                     // **spacing: 4:**
-                    //   - 항목 간 4pt 간격
-                    //   - 너무 촘촘하지 않고 너무 넓지 않게
+                    //   - 4pt spacing between items
+                    //   - Not too tight, not too wide
                     //
                     LazyVStack(alignment: .leading, spacing: 4) {
-                        // **ForEach로 로그 항목 렌더링:**
+                        // **Rendering log items with ForEach:**
                         //
-                        // ForEach는 컬렉션의 각 항목에 대해 View를 생성합니다.
+                        // ForEach creates a View for each item in the collection.
                         //
-                        // 기본 구조:
+                        // Basic structure:
                         // ```swift
                         // ForEach(collection) { item in
-                        //     // item을 사용한 View
+                        //     // View using item
                         // }
                         // ```
                         //
-                        // **Identifiable 프로토콜:**
+                        // **Identifiable protocol:**
                         //
-                        // LogEntry가 Identifiable을 채택하면:
-                        //   - ForEach가 각 항목을 고유하게 식별
-                        //   - id 프로퍼티 자동 사용
-                        //   - SwiftUI가 효율적으로 업데이트 추적
+                        // When LogEntry adopts Identifiable:
+                        //   - ForEach uniquely identifies each item
+                        //   - Automatically uses id property
+                        //   - SwiftUI efficiently tracks updates
                         //
-                        // LogEntry 예시:
+                        // LogEntry example:
                         // ```swift
                         // struct LogEntry: Identifiable {
-                        //     let id = UUID()  // 고유 ID
+                        //     let id = UUID()  // unique ID
                         //     let message: String
                         //     let timestamp: Date
                         //     let level: LogLevel
                         // }
                         // ```
                         //
-                        // **왜 ID가 중요한가?**
+                        // **Why is ID important?**
                         //
-                        // ID 없이:
+                        // Without ID:
                         // ```
-                        // 로그 10개 → 1개 추가 → 전체 11개 재렌더링 ❌
+                        // 10 logs → add 1 → re-render all 11 ❌
                         // ```
                         //
-                        // ID 있으면:
+                        // With ID:
                         // ```
-                        // 로그 10개 → 1개 추가 → 새 항목 1개만 렌더링 ✓
+                        // 10 logs → add 1 → render only 1 new item ✓
                         // ```
                         //
                         ForEach(logManager.logs) { entry in
-                            // **LogEntryRow 서브뷰:**
+                            // **LogEntryRow sub-view:**
                             //
-                            // 각 로그 엔트리를 표시하는 재사용 가능한 서브뷰입니다.
+                            // Reusable sub-view that displays each log entry
                             //
-                            // 서브뷰로 분리하는 이유:
-                            //   1. 코드 재사용성 (다른 곳에서도 사용 가능)
-                            //   2. 가독성 향상 (각 부분이 명확히 구분)
-                            //   3. 유지보수 용이 (한 곳에서만 수정)
-                            //   4. 성능 최적화 (SwiftUI가 더 작은 단위로 업데이트)
+                            // Reasons for separating into sub-view:
+                            //   1. Code reusability (can use elsewhere)
+                            //   2. Improved readability (each part clearly separated)
+                            //   3. Easy maintenance (modify in one place)
+                            //   4. Performance optimization (SwiftUI updates in smaller units)
                             //
                             LogEntryRow(entry: entry)
                                 // **.id(entry.id):**
                                 //
-                                // View에 명시적으로 ID를 할당합니다.
+                                // Explicitly assigns an ID to the View
                                 //
-                                // 이미 ForEach가 ID를 사용하는데 왜 또 필요한가?
-                                //   - ScrollViewProxy.scrollTo()에서 사용하기 위해
-                                //   - 특정 로그로 스크롤할 때 타겟 지정
+                                // Why is this needed when ForEach already uses ID?
+                                //   - For use in ScrollViewProxy.scrollTo()
+                                //   - Specifies target when scrolling to specific log
                                 //
-                                // 예시:
+                                // Example:
                                 // ```swift
                                 // proxy.scrollTo(lastLog.id)
                                 // //             ~~~~~~~~~~
-                                // //             이 ID를 가진 View로 스크롤
+                                // //             Scroll to View with this ID
                                 // ```
                                 //
                                 .id(entry.id)
@@ -511,152 +511,152 @@ struct DebugLogView: View {
                     .padding(8)
                 }
                 .background(Color.black.opacity(0.8))
-                // **onChange 모디파이어:**
+                // **onChange modifier:**
                 //
-                // 특정 값의 변경을 감지하고 반응하는 모디파이어입니다.
+                // Modifier that detects and reacts to changes in specific values
                 //
-                // 기본 구조:
+                // Basic structure:
                 // ```swift
-                // .onChange(of: 관찰할_값) { 새_값 in
-                //     // 값이 변경되었을 때 실행할 코드
+                // .onChange(of: value_to_observe) { new_value in
+                //     // code to execute when value changes
                 // }
                 // ```
                 //
-                // **이 코드의 onChange:**
+                // **onChange in this code:**
                 //
                 // ```swift
                 // .onChange(of: logManager.logs.count) { _ in
-                //     // 로그 개수가 변경되면 실행
+                //     // executes when log count changes
                 // }
                 // ```
                 //
-                // **언제 실행되는가?**
+                // **When does it execute?**
                 //
-                // 로그 추가:
+                // Adding log:
                 // ```
-                // 로그 5개 → LogManager.log() 호출 → 로그 6개
+                // 5 logs → LogManager.log() called → 6 logs
                 //              ↓
-                //         logs.count 변경 (5 → 6)
+                //         logs.count changes (5 → 6)
                 //              ↓
-                //         onChange 클로저 실행
+                //         onChange closure executes
                 //              ↓
-                //         자동 스크롤 수행
-                // ```
-                //
-                // 로그 삭제:
-                // ```
-                // 로그 10개 → LogManager.clear() 호출 → 로그 0개
-                //              ↓
-                //         logs.count 변경 (10 → 0)
-                //              ↓
-                //         onChange 클로저 실행 (하지만 lastLog가 nil이므로 스크롤 안 함)
+                //         Performs auto-scroll
                 // ```
                 //
-                // **자동 스크롤 로직:**
+                // Clearing logs:
+                // ```
+                // 10 logs → LogManager.clear() called → 0 logs
+                //              ↓
+                //         logs.count changes (10 → 0)
+                //              ↓
+                //         onChange closure executes (but no scroll since lastLog is nil)
+                // ```
+                //
+                // **Auto-scroll logic:**
                 //
                 .onChange(of: logManager.logs.count) { _ in
-                    // **조건 체크: if autoScroll, let lastLog = ...**
+                    // **Condition check: if autoScroll, let lastLog = ...**
                     //
-                    // 이 한 줄에 두 가지 조건이 있습니다:
+                    // This one line has two conditions:
                     //
-                    // 1. autoScroll이 true인가?
-                    //    - 사용자가 자동 스크롤을 켰을 때만
-                    //    - false면 스크롤 안 함
+                    // 1. Is autoScroll true?
+                    //    - Only when user has enabled auto-scroll
+                    //    - No scroll if false
                     //
                     // 2. lastLog = logManager.logs.last
-                    //    - logs 배열의 마지막 항목을 가져옴
-                    //    - Optional Binding (옵셔널 언래핑)
-                    //    - 로그가 없으면 (빈 배열) nil이므로 if 블록 실행 안 함
+                    //    - Gets last item of logs array
+                    //    - Optional Binding (optional unwrapping)
+                    //    - If no logs (empty array) is nil, so if block doesn't execute
                     //
-                    // **Optional Binding이란?**
+                    // **What is Optional Binding?**
                     //
-                    // logs.last는 Optional<LogEntry>를 반환합니다:
-                    //   - 배열이 비어있으면 nil
-                    //   - 항목이 있으면 Optional(마지막_항목)
+                    // logs.last returns Optional<LogEntry>:
+                    //   - nil if array is empty
+                    //   - Optional(last_item) if items exist
                     //
-                    // if let을 사용하면:
-                    //   - nil이 아닐 때만 블록 실행
-                    //   - lastLog는 언래핑된 값 (LogEntry 타입)
+                    // Using if let:
+                    //   - Block executes only when not nil
+                    //   - lastLog is unwrapped value (LogEntry type)
                     //
-                    // 예시:
+                    // Example:
                     // ```swift
-                    // // 로그가 있는 경우
+                    // // When logs exist
                     // logs = [log1, log2, log3]
                     // logs.last = Optional(log3)
-                    // if let lastLog = logs.last {  // 성공, lastLog = log3
-                    //     // 이 블록 실행
+                    // if let lastLog = logs.last {  // success, lastLog = log3
+                    //     // this block executes
                     // }
                     //
-                    // // 로그가 없는 경우
+                    // // When no logs
                     // logs = []
                     // logs.last = nil
-                    // if let lastLog = logs.last {  // 실패
-                    //     // 이 블록 실행 안 됨
+                    // if let lastLog = logs.last {  // fails
+                    //     // this block doesn't execute
                     // }
                     // ```
                     //
                     if autoScroll, let lastLog = logManager.logs.last {
-                        // **withAnimation으로 부드러운 스크롤:**
+                        // **Smooth scrolling with withAnimation:**
                         //
-                        // withAnimation은 블록 내의 상태 변경을 애니메이션 처리합니다.
+                        // withAnimation animates state changes within the block
                         //
-                        // withAnimation 없이:
+                        // Without withAnimation:
                         // ```
                         // proxy.scrollTo(lastLog.id)
-                        // // 즉시 점프 (딱딱한 움직임)
+                        // // instant jump (abrupt movement)
                         // ```
                         //
-                        // withAnimation 있으면:
+                        // With withAnimation:
                         // ```
                         // withAnimation {
                         //     proxy.scrollTo(lastLog.id)
                         // }
-                        // // 부드럽게 스크롤 (자연스러운 움직임)
+                        // // smooth scroll (natural movement)
                         // ```
                         //
-                        // **scrollTo 메서드:**
+                        // **scrollTo method:**
                         //
                         // ```swift
                         // proxy.scrollTo(lastLog.id, anchor: .bottom)
                         // //             ~~~~~~~~~~~  ~~~~~~~~~~~~~
-                        // //             타겟 ID      정렬 위치
+                        // //             Target ID    Alignment position
                         // ```
                         //
-                        // **anchor: .bottom의 의미:**
+                        // **Meaning of anchor: .bottom:**
                         //
-                        // anchor는 스크롤할 항목을 화면의 어디에 위치시킬지 결정합니다:
+                        // anchor determines where to position the scrolled item on screen:
                         //
-                        // .top: 항목을 화면 맨 위에 위치
+                        // .top: position item at top of screen
                         // ```
                         // ┌──────────────┐
-                        // │ [타겟 항목]  │ ← 여기에 위치
+                        // │ [Target item]│ ← positioned here
                         // │              │
                         // │              │
                         // └──────────────┘
                         // ```
                         //
-                        // .bottom: 항목을 화면 맨 아래에 위치
+                        // .bottom: position item at bottom of screen
                         // ```
                         // ┌──────────────┐
                         // │              │
                         // │              │
-                        // │ [타겟 항목]  │ ← 여기에 위치
+                        // │ [Target item]│ ← positioned here
                         // └──────────────┘
                         // ```
                         //
-                        // .center: 항목을 화면 중앙에 위치
+                        // .center: position item at center of screen
                         // ```
                         // ┌──────────────┐
                         // │              │
-                        // │ [타겟 항목]  │ ← 여기에 위치
+                        // │ [Target item]│ ← positioned here
                         // │              │
                         // └──────────────┘
                         // ```
                         //
-                        // 로그 뷰어에서는 .bottom을 사용하는 이유:
-                        //   - 채팅 앱처럼 새 항목이 아래에 추가됨
-                        //   - 최신 로그가 항상 화면 아래쪽에 보임
-                        //   - 자연스러운 읽기 흐름 (위→아래)
+                        // Why use .bottom in log viewer:
+                        //   - Like chat apps, new items are added at bottom
+                        //   - Latest log always visible at bottom of screen
+                        //   - Natural reading flow (top → bottom)
                         //
                         withAnimation {
                             proxy.scrollTo(lastLog.id, anchor: .bottom)
@@ -674,53 +674,53 @@ struct DebugLogView: View {
 // MARK: - Log Entry Row
 
 /// @struct LogEntryRow
-/// @brief 개별 로그 엔트리 행 표시 컴포넌트
+/// @brief Individual log entry row display component
 ///
 /// @details
-/// 개별 로그 엔트리를 표시하는 서브뷰입니다.
+/// Sub-view that displays individual log entries
 ///
-/// **private struct를 사용하는 이유:**
+/// **Why use private struct:**
 ///
 /// ```swift
 /// private struct LogEntryRow: View { ... }
 /// //~~~~~~
 /// ```
 ///
-/// private 키워드는 이 struct가 현재 파일에서만 사용 가능함을 의미합니다:
+/// The private keyword means this struct can only be used within the current file:
 ///
-/// ✓ 캡슐화 (Encapsulation)
-///   → 외부 파일에서 접근 불가
-///   → 내부 구현 세부사항 숨김
+/// ✓ Encapsulation
+///   → Not accessible from external files
+///   → Hides internal implementation details
 ///
-/// ✓ 네임스페이스 관리
-///   → 다른 파일에 같은 이름의 struct가 있어도 충돌 안 함
-///   → 명확한 사용 범위
+/// ✓ Namespace management
+///   → No conflicts even if another file has a struct with same name
+///   → Clear scope of use
 ///
-/// ✓ 컴파일 최적화
-///   → 컴파일러가 더 공격적으로 최적화 가능
-///   → private이면 외부 사용이 없다는 것을 알기 때문
+/// ✓ Compilation optimization
+///   → Compiler can optimize more aggressively
+///   → Knows there's no external usage when private
 ///
-/// **언제 private struct를 만드는가?**
+/// **When to create private struct?**
 ///
-/// - 해당 View에서만 사용되는 서브뷰
-/// - 다른 파일에서 재사용할 필요가 없을 때
-/// - View를 작은 조각으로 분리하고 싶을 때
+/// - Sub-views only used within that View
+/// - When no need to reuse in other files
+/// - When wanting to separate View into smaller pieces
 ///
-/// **예시:**
+/// **Example:**
 /// ```swift
-/// // 파일 A
+/// // File A
 /// struct DebugLogView: View {
 ///     var body: some View {
-///         LogEntryRow(entry: someEntry)  // ✓ 사용 가능
+///         LogEntryRow(entry: someEntry)  // ✓ can use
 ///     }
 /// }
 ///
 /// private struct LogEntryRow: View { ... }
 ///
-/// // 파일 B
+/// // File B
 /// struct OtherView: View {
 ///     var body: some View {
-///         LogEntryRow(entry: someEntry)  // ❌ 사용 불가 (private)
+///         LogEntryRow(entry: someEntry)  // ❌ cannot use (private)
 ///     }
 /// }
 /// ```
@@ -729,16 +729,16 @@ private struct LogEntryRow: View {
     // MARK: - Properties
 
     /// @var entry
-    /// @brief 표시할 로그 엔트리 데이터
+    /// @brief Log entry data to display
     ///
     /// **let vs var:**
     ///
-    /// let을 사용하는 이유:
-    ///   - LogEntry는 한 번 받으면 변경되지 않음
-    ///   - 불변성 (immutability) 보장
-    ///   - 의도를 명확히 표현 ("이 값은 변하지 않는다")
+    /// Why use let:
+    ///   - LogEntry doesn't change once received
+    ///   - Guarantees immutability
+    ///   - Clearly expresses intent ("this value doesn't change")
     ///
-    /// **LogEntry 구조:**
+    /// **LogEntry structure:**
     /// ```swift
     /// struct LogEntry: Identifiable {
     ///     let id: UUID
@@ -760,87 +760,87 @@ private struct LogEntryRow: View {
     var body: some View {
         // **Text View:**
         //
-        // 로그 메시지를 표시하는 텍스트 뷰입니다.
+        // Text view that displays log message
         //
         // entry.formattedMessage:
-        //   - LogEntry의 computed property
-        //   - 타임스탬프 + 레벨 + 메시지를 포맷팅
-        //   - 예: "[14:23:05] [INFO] Application started"
+        //   - LogEntry's computed property
+        //   - Formats timestamp + level + message
+        //   - Example: "[14:23:05] [INFO] Application started"
         //
         Text(entry.formattedMessage)
             // **.font(.system(size:design:)):**
             //
-            // 시스템 폰트의 세부 설정을 지정합니다.
+            // Specifies detailed settings for system font
             //
             // **size: 11**
-            //   - 작은 폰트 크기 (기본은 ~17pt)
-            //   - 로그는 많은 정보를 표시해야 하므로 작게
-            //   - 너무 작으면 가독성 저하
+            //   - Small font size (default is ~17pt)
+            //   - Logs need to display lots of information, so keep small
+            //   - Too small reduces readability
             //
             // **design: .monospaced**
-            //   - 고정폭 폰트 (Monospaced font)
-            //   - 모든 문자가 같은 너비
-            //   - 로그 정렬이 깔끔하게 맞음
+            //   - Monospaced font (fixed-width font)
+            //   - All characters have same width
+            //   - Logs align cleanly
             //
-            // **Monospaced vs Proportional 비교:**
+            // **Monospaced vs Proportional comparison:**
             //
-            // Proportional (일반 폰트):
+            // Proportional (regular font):
             // ```
             // [14:23:05] [INFO   ] Message 1
             // [14:23:06] [WARNING] Message 2
             // [14:23:07] [ERROR  ] Message 3
-            // //        ~~~~~~~~~ 정렬 안 맞음
+            // //        ~~~~~~~~~ misaligned
             // ```
             //
-            // Monospaced (고정폭 폰트):
+            // Monospaced (fixed-width font):
             // ```
             // [14:23:05] [INFO   ] Message 1
             // [14:23:06] [WARNING] Message 2
             // [14:23:07] [ERROR  ] Message 3
-            // //        ~~~~~~~~~ 정렬 맞음
+            // //        ~~~~~~~~~ aligned
             // ```
             //
-            // **왜 로그에 Monospaced 폰트를 사용하는가?**
+            // **Why use Monospaced font for logs?**
             //
-            // ✓ 정렬 (Alignment)
-            //   → 타임스탬프, 레벨, 메시지가 세로로 깔끔하게 정렬
+            // ✓ Alignment
+            //   → Timestamps, levels, messages align cleanly vertically
             //
-            // ✓ 가독성 (Readability)
-            //   → 패턴을 쉽게 인식 가능
-            //   → 숫자, 코드가 명확하게 보임
+            // ✓ Readability
+            //   → Easy to recognize patterns
+            //   → Numbers and code are clearly visible
             //
-            // ✓ 개발자 친화적
-            //   → 대부분의 IDE와 터미널에서 사용
-            //   → 익숙한 스타일
+            // ✓ Developer-friendly
+            //   → Used in most IDEs and terminals
+            //   → Familiar style
             //
             .font(.system(size: 11, design: .monospaced))
 
             // **.foregroundColor(textColor):**
             //
-            // 텍스트 색상을 로그 레벨에 따라 설정합니다.
+            // Sets text color based on log level
             //
-            // textColor는 아래의 computed property에서 결정됩니다.
+            // textColor is determined by the computed property below
             //
             .foregroundColor(textColor)
 
             // **.textSelection(.enabled):**
             //
-            // 사용자가 텍스트를 선택(복사)할 수 있게 합니다.
+            // Enables user to select (copy) text
             //
-            // **왜 필요한가?**
+            // **Why is this needed?**
             //
-            // 로그를 복사해야 하는 경우가 많습니다:
-            //   - 버그 리포트에 붙여넣기
-            //   - Slack/이메일로 공유
-            //   - 외부 도구로 분석
+            // Often need to copy logs:
+            //   - Paste into bug reports
+            //   - Share via Slack/email
+            //   - Analyze with external tools
             //
-            // .enabled 없이:
-            //   - 텍스트를 드래그해도 선택 안 됨
-            //   - 복사 불가능
+            // Without .enabled:
+            //   - Text doesn't get selected even when dragged
+            //   - Cannot copy
             //
-            // .enabled 있으면:
-            //   - 마우스 드래그로 선택 가능
-            //   - Cmd+C로 복사 가능
+            // With .enabled:
+            //   - Can select by mouse drag
+            //   - Can copy with Cmd+C
             //
             .textSelection(.enabled)
     }
@@ -849,84 +849,84 @@ private struct LogEntryRow: View {
 
     /// Text color based on log level
     ///
-    /// 로그 레벨에 따른 텍스트 색상을 반환합니다.
+    /// Returns text color based on log level
     ///
-    /// **Computed Property란?**
+    /// **What is Computed Property?**
     ///
     /// ```swift
     /// private var textColor: Color {
-    ///     // 저장하지 않고 계산만 함
+    ///     // computes without storing
     ///     return someColor
     /// }
     /// ```
     ///
-    /// Computed property는 값을 저장하지 않고, 요청될 때마다 계산합니다.
+    /// Computed property calculates value on each request without storing it.
     ///
     /// **Stored Property vs Computed Property:**
     ///
     /// Stored Property:
     /// ```swift
-    /// let entry: LogEntry  // 메모리에 저장됨
+    /// let entry: LogEntry  // stored in memory
     /// ```
     ///
     /// Computed Property:
     /// ```swift
-    /// var textColor: Color {  // 매번 계산됨
+    /// var textColor: Color {  // calculated each time
     ///     switch entry.level { ... }
     /// }
     /// ```
     ///
-    /// **왜 Computed Property를 사용하는가?**
+    /// **Why use Computed Property?**
     ///
-    /// ✓ 중복 저장 방지
-    ///   → entry.level에서 이미 정보 있음
-    ///   → 색상을 따로 저장할 필요 없음
+    /// ✓ Prevents duplicate storage
+    ///   → Information already exists in entry.level
+    ///   → No need to store color separately
     ///
-    /// ✓ 동기화 보장
-    ///   → entry.level이 변경되면 색상도 자동으로 변경
-    ///   → 불일치 문제 없음
+    /// ✓ Guarantees synchronization
+    ///   → Color automatically changes when entry.level changes
+    ///   → No inconsistency issues
     ///
-    /// ✓ 메모리 효율
-    ///   → 색상 값을 저장하지 않음
-    ///   → 계산 비용이 낮음 (단순 switch문)
+    /// ✓ Memory efficiency
+    ///   → Doesn't store color value
+    ///   → Low computation cost (simple switch statement)
     ///
-    /// **로그 레벨별 색상 디자인:**
+    /// **Color design by log level:**
     ///
-    /// 색상은 정보의 중요도와 긴급성을 시각적으로 전달합니다:
+    /// Colors visually convey information importance and urgency:
     ///
-    /// .debug → .gray (회색)
-    ///   - 상세한 디버그 정보
-    ///   - 덜 중요함
-    ///   - 배경에 섞이도록
+    /// .debug → .gray
+    ///   - Detailed debug information
+    ///   - Less important
+    ///   - Blends into background
     ///
-    /// .info → .white (흰색)
-    ///   - 일반적인 정보성 메시지
-    ///   - 중간 중요도
-    ///   - 명확하게 보임
+    /// .info → .white
+    ///   - General informational messages
+    ///   - Medium importance
+    ///   - Clearly visible
     ///
-    /// .warning → .yellow (노란색)
-    ///   - 경고 메시지
-    ///   - 주의 필요
-    ///   - 눈에 띄지만 긴급하지는 않음
+    /// .warning → .yellow
+    ///   - Warning messages
+    ///   - Requires attention
+    ///   - Noticeable but not urgent
     ///
-    /// .error → .red (빨간색)
-    ///   - 오류 메시지
-    ///   - 즉시 확인 필요
-    ///   - 강하게 눈에 띔
+    /// .error → .red
+    ///   - Error messages
+    ///   - Requires immediate attention
+    ///   - Highly noticeable
     ///
-    /// **색상 선택의 원칙:**
+    /// **Principles of color selection:**
     ///
-    /// 1. 직관성 (Intuitiveness)
-    ///    - 빨강 = 위험, 노랑 = 주의 (보편적 인식)
+    /// 1. Intuitiveness
+    ///    - Red = danger, Yellow = caution (universal recognition)
     ///
-    /// 2. 대비 (Contrast)
-    ///    - 검은 배경에서 잘 보이는 색상
+    /// 2. Contrast
+    ///    - Colors that are visible on black background
     ///
-    /// 3. 구분성 (Distinctiveness)
-    ///    - 각 색상이 명확히 구별됨
+    /// 3. Distinctiveness
+    ///    - Each color is clearly distinguishable
     ///
-    /// 4. 접근성 (Accessibility)
-    ///    - 색맹 사용자도 구분 가능 (밝기 차이)
+    /// 4. Accessibility
+    ///    - Distinguishable for colorblind users (brightness difference)
     ///
     private var textColor: Color {
         switch entry.level {
@@ -946,111 +946,111 @@ private struct LogEntryRow: View {
 
 /// SwiftUI Preview
 ///
-/// Xcode의 Canvas에서 DebugLogView를 미리 볼 수 있게 해주는 프리뷰입니다.
+/// Preview that enables DebugLogView to be previewed in Xcode's Canvas
 ///
-/// **PreviewProvider란?**
+/// **What is PreviewProvider?**
 ///
-/// PreviewProvider는 SwiftUI의 프리뷰 기능을 제공하는 프로토콜입니다.
+/// PreviewProvider is a protocol that provides SwiftUI's preview functionality.
 ///
-/// 프리뷰의 장점:
-///   ✓ 실시간 미리보기 - 코드 변경 시 즉시 반영
-///   ✓ 빠른 반복 - 앱 전체를 빌드하지 않아도 UI 확인
-///   ✓ 다양한 환경 테스트 - 다크 모드, 다른 기기 크기 등
+/// Preview advantages:
+///   ✓ Real-time preview - instantly reflects code changes
+///   ✓ Fast iteration - can check UI without building entire app
+///   ✓ Test various environments - dark mode, different device sizes, etc.
 ///
-/// **Preview 작동 방식:**
+/// **How Preview works:**
 ///
 /// ```
-/// 1. Xcode가 코드 감지
+/// 1. Xcode detects code
 ///    ↓
-/// 2. PreviewProvider의 previews 프로퍼티 실행
+/// 2. Executes PreviewProvider's previews property
 ///    ↓
-/// 3. 반환된 View를 Canvas에 렌더링
+/// 3. Renders returned View in Canvas
 ///    ↓
-/// 4. 코드 변경 감지하면 자동 재렌더링
+/// 4. Automatically re-renders when code changes detected
 /// ```
 ///
-/// **이 Preview의 구성:**
+/// **This Preview's composition:**
 ///
 /// ```
 /// ZStack {
-///     Color.blue          ← 배경 (파란색, 앱의 메인 UI 시뮬레이션)
+///     Color.blue          ← Background (blue, simulates app's main UI)
 ///     VStack {
-///         Spacer()        ← 위쪽 공간 (DebugLogView를 아래로 밀기)
-///         DebugLogView()  ← 테스트할 View
+///         Spacer()        ← Top space (pushes DebugLogView down)
+///         DebugLogView()  ← View to test
 ///     }
 /// }
 /// ```
 ///
-/// **ZStack의 역할:**
+/// **ZStack's role:**
 ///
-/// ZStack은 View를 Z축(깊이)으로 쌓습니다:
+/// ZStack stacks Views along Z-axis (depth):
 /// ```
-/// Z축 (앞 ← 뒤)
-/// DebugLogView (앞)
+/// Z-axis (front ← back)
+/// DebugLogView (front)
 ///     ↓
-/// Color.blue (뒤)
+/// Color.blue (back)
 /// ```
 ///
-/// 실제 사용 환경을 시뮬레이션:
-///   - 파란색 배경 = 메인 앱 화면
-///   - DebugLogView = 그 위에 오버레이
+/// Simulates actual usage environment:
+///   - Blue background = main app screen
+///   - DebugLogView = overlay on top
 ///
-/// **VStack + Spacer의 역할:**
+/// **VStack + Spacer's role:**
 ///
-/// VStack 내부:
+/// Inside VStack:
 /// ```
 /// ┌──────────────────┐
 /// │                  │
-/// │     Spacer()     │ ← 가능한 모든 공간 차지
+/// │     Spacer()     │ ← Takes up all available space
 /// │                  │
 /// ├──────────────────┤
-/// │  DebugLogView()  │ ← 맨 아래에 위치
+/// │  DebugLogView()  │ ← Positioned at bottom
 /// └──────────────────┘
 /// ```
 ///
-/// 결과: DebugLogView가 화면 하단에 고정됨
+/// Result: DebugLogView is fixed at bottom of screen
 ///
-/// **onAppear 모디파이어:**
+/// **onAppear modifier:**
 ///
-/// onAppear는 View가 화면에 나타날 때 실행되는 클로저입니다.
+/// onAppear is a closure that executes when View appears on screen
 ///
 /// ```swift
 /// .onAppear {
-///     // View가 나타나면 실행
+///     // executes when View appears
 /// }
 /// ```
 ///
-/// **이 Preview에서 onAppear를 사용하는 이유:**
+/// **Why use onAppear in this Preview:**
 ///
-/// LogManager에 샘플 로그를 추가하기 위해:
-///   - 프리뷰가 로드되면
-///   - 자동으로 4개의 샘플 로그 추가
-///   - DebugLogView에 로그가 표시됨
+/// To add sample logs to LogManager:
+///   - When preview loads
+///   - Automatically adds 4 sample logs
+///   - Logs appear in DebugLogView
 ///
-/// 샘플 로그가 없으면:
-///   - 빈 화면만 보임
-///   - UI가 제대로 작동하는지 확인 불가
+/// Without sample logs:
+///   - Only see empty screen
+///   - Cannot verify UI works properly
 ///
-/// 샘플 로그가 있으면:
-///   - 각 로그 레벨의 색상 확인
-///   - 레이아웃 확인
-///   - 스크롤 기능 테스트
+/// With sample logs:
+///   - Verify color for each log level
+///   - Check layout
+///   - Test scroll functionality
 ///
-/// **4개의 샘플 로그:**
+/// **4 sample logs:**
 ///
 /// 1. .info - "Application started"
-///    → 흰색, 일반 시작 메시지
+///    → White, general startup message
 ///
 /// 2. .debug - "Loading video file: test.mp4"
-///    → 회색, 디버그 정보
+///    → Gray, debug information
 ///
 /// 3. .warning - "Warning: Low buffer detected"
-///    → 노란색, 경고 메시지
+///    → Yellow, warning message
 ///
 /// 4. .error - "Error: Failed to decode frame"
-///    → 빨간색, 오류 메시지
+///    → Red, error message
 ///
-/// 이렇게 모든 레벨을 포함하면 색상 구분이 잘 되는지 확인 가능합니다.
+/// Including all levels allows verification that color distinction works well.
 ///
 struct DebugLogView_Previews: PreviewProvider {
     static var previews: some View {

@@ -1,18 +1,18 @@
 /// @file VideoPlayerViewModel.swift
-/// @brief 비디오 플레이어 ViewModel
+/// @brief Video Player ViewModel
 /// @author BlackboxPlayer Development Team
-/// @details 비디오 플레이어의 상태와 재생 로직을 관리하는 ViewModel 클래스입니다.
+/// @details ViewModel class that manages video player state and playback logic.
 ///
-/// ## MVVM 패턴이란?
-/// Model-View-ViewModel 패턴은 UI(View)와 비즈니스 로직(ViewModel)을 분리하여 관리합니다.
+/// ## What is the MVVM Pattern?
+/// The Model-View-ViewModel pattern manages UI (View) and business logic (ViewModel) separately.
 ///
 /// ```
 /// ┌─────────┐     @Published     ┌──────────────┐
-/// │  Model  │ ──────────────────> │  ViewModel   │ (이 클래스)
-/// │(데이터)  │                     │(비즈니스 로직)│
+/// │  Model  │ ──────────────────> │  ViewModel   │ (This class)
+/// │ (Data)  │                     │(Business Logic)│
 /// └─────────┘                     └──────────────┘
 ///                                        ↑ ↓ @Published
-///                                  자동 업데이트 (Combine)
+///                                  Auto Update (Combine)
 ///                                        ↓ ↑
 ///                                 ┌──────────────┐
 ///                                 │     View     │
@@ -20,181 +20,181 @@
 ///                                 └──────────────┘
 /// ```
 ///
-/// ## 주요 기능
-/// - **비디오 로딩**: VideoFile → VideoDecoder 초기화 → 첫 프레임 로드
-/// - **재생 제어**: play(), pause(), stop(), seek(), stepForward/Backward()
-/// - **상태 관리**: playbackState, currentTime, playbackPosition, currentFrame 등 @Published로 자동 업데이트
-/// - **오디오 동기화**: AudioPlayer와 연동하여 비디오/오디오 동기화 재생
-/// - **타이머 기반 재생**: 프레임율(FPS)에 맞춰 주기적으로 프레임 디코딩
+/// ## Key Features
+/// - **Video Loading**: VideoFile → Initialize VideoDecoder → Load first frame
+/// - **Playback Control**: play(), pause(), stop(), seek(), stepForward/Backward()
+/// - **State Management**: Auto-update playbackState, currentTime, playbackPosition, currentFrame etc. via @Published
+/// - **Audio Synchronization**: Synchronized video/audio playback via AudioPlayer integration
+/// - **Timer-based Playback**: Periodic frame decoding according to frame rate (FPS)
 ///
-/// ## ObservableObject와 @Published란?
+/// ## What are ObservableObject and @Published?
 /// ### ObservableObject
-/// - SwiftUI에서 관찰 가능한 객체를 정의하는 프로토콜
-/// - @Published 속성이 변경되면 View에 자동으로 알림
+/// - Protocol that defines an observable object in SwiftUI
+/// - Automatically notifies View when @Published properties change
 ///
 /// ### @Published
-/// - 속성 값이 변경될 때마다 SwiftUI에 알림
-/// - View가 자동으로 재렌더링됨
+/// - Notifies SwiftUI whenever property value changes
+/// - View automatically re-renders
 ///
-/// **동작 흐름:**
+/// **Operation Flow:**
 /// ```swift
-/// // ViewModel (이 클래스)
+/// // ViewModel (This class)
 /// class VideoPlayerViewModel: ObservableObject {
-///     @Published var currentTime: TimeInterval = 0.0  // 변경 감지
+///     @Published var currentTime: TimeInterval = 0.0  // Detect changes
 /// }
 ///
 /// // View (SwiftUI)
 /// struct PlayerView: View {
-///     @ObservedObject var viewModel: VideoPlayerViewModel  // 관찰
+///     @ObservedObject var viewModel: VideoPlayerViewModel  // Observe
 ///
 ///     var body: some View {
-///         Text("\(viewModel.currentTime)")  // currentTime 변경 시 자동 재렌더링
+///         Text("\(viewModel.currentTime)")  // Auto re-render when currentTime changes
 ///     }
 /// }
 ///
-/// // 동작 예시
-/// viewModel.currentTime = 5.0  // 값 변경
-///      ↓ @Published가 감지
-/// Combine 프레임워크가 알림 전송
+/// // Operation Example
+/// viewModel.currentTime = 5.0  // Value changes
+///      ↓ @Published detects
+/// Combine framework sends notification
 ///      ↓
-/// @ObservedObject가 알림 수신
+/// @ObservedObject receives notification
 ///      ↓
-/// View 자동 재렌더링 (Text가 "5.0"으로 업데이트)
+/// View auto re-renders (Text updates to "5.0")
 /// ```
 ///
-/// ## 재생 알고리즘
-/// ### 타이머 기반 재생
+/// ## Playback Algorithm
+/// ### Timer-based Playback
 /// ```
-/// 1. play() 호출
+/// 1. Call play()
 ///      ↓
-/// 2. startPlaybackTimer() → Timer 생성
-///      ↓ 주기: (1 / 프레임율) / 재생속도 초마다 실행
-/// 3. updatePlayback() 반복 호출
+/// 2. startPlaybackTimer() → Create Timer
+///      ↓ Period: Execute every (1 / frameRate) / playbackSpeed seconds
+/// 3. Repeatedly call updatePlayback()
 ///      ↓
-/// 4. decoder.decodeNextFrame() → 다음 프레임 디코딩
+/// 4. decoder.decodeNextFrame() → Decode next frame
 ///      ↓
-/// 5. currentFrame, currentTime 업데이트 (@Published → View 자동 갱신)
+/// 5. Update currentFrame, currentTime (@Published → Auto refresh View)
 ///      ↓
-/// 6. audioPlayer.enqueue(audioFrame) → 오디오 재생
+/// 6. audioPlayer.enqueue(audioFrame) → Play audio
 ///      ↓
-/// 7. 파일 끝(EOF)에 도달하면 stop()
+/// 7. stop() when end of file (EOF) is reached
 /// ```
 ///
-/// **프레임율 계산 예시:**
+/// **Frame Rate Calculation Example:**
 /// ```swift
 /// targetFrameRate = 30.0  // 30 FPS
-/// playbackSpeed = 1.0     // 1배속
+/// playbackSpeed = 1.0     // 1x speed
 ///
-/// interval = (1.0 / 30.0) / 1.0 = 0.0333초 (약 33ms)
-/// → 33ms마다 updatePlayback() 호출
+/// interval = (1.0 / 30.0) / 1.0 = 0.0333 seconds (approx 33ms)
+/// → Call updatePlayback() every 33ms
 ///
-/// playbackSpeed = 2.0     // 2배속
-/// interval = (1.0 / 30.0) / 2.0 = 0.0167초 (약 17ms)
-/// → 17ms마다 updatePlayback() 호출 (2배 빠름)
+/// playbackSpeed = 2.0     // 2x speed
+/// interval = (1.0 / 30.0) / 2.0 = 0.0167 seconds (approx 17ms)
+/// → Call updatePlayback() every 17ms (2x faster)
 /// ```
 ///
-/// ## Seek 알고리즘
+/// ## Seek Algorithm
 /// ```
-/// 1. seek(to: position) 호출
-///      ↓ position을 0.0~1.0으로 clamp
-/// 2. targetTime = position * duration 계산
+/// 1. Call seek(to: position)
+///      ↓ Clamp position to 0.0~1.0
+/// 2. Calculate targetTime = position * duration
 ///      ↓
-/// 3. decoder.seek(to: targetTime) → 디코더 시크
+/// 3. decoder.seek(to: targetTime) → Decoder seek
 ///      ↓
-/// 4. audioPlayer.flush() → 오디오 버퍼 비우기
+/// 4. audioPlayer.flush() → Clear audio buffer
 ///      ↓
-/// 5. loadFrameAt(time:) → 해당 시간의 프레임 로드
+/// 5. loadFrameAt(time:) → Load frame at that time
 ///      ↓
-/// 6. currentTime, playbackPosition 업데이트
+/// 6. Update currentTime, playbackPosition
 /// ```
 ///
-/// ## 사용 예시
+/// ## Usage Example
 /// ```swift
-/// // 1. ViewModel 생성
+/// // 1. Create ViewModel
 /// let viewModel = VideoPlayerViewModel()
 ///
-/// // 2. 비디오 로드
+/// // 2. Load video
 /// let videoFile = VideoFile(...)
 /// viewModel.loadVideo(videoFile)
-/// //   → decoder 초기화
-/// //   → 첫 프레임 로드
+/// //   → Initialize decoder
+/// //   → Load first frame
 /// //   → playbackState = .paused
 ///
-/// // 3. 재생 시작
+/// // 3. Start playback
 /// viewModel.play()
 /// //   → playbackState = .playing
-/// //   → Timer 시작 (프레임 단위로 updatePlayback 호출)
+/// //   → Start Timer (call updatePlayback frame by frame)
 ///
-/// // 4. 특정 위치로 시크
-/// viewModel.seek(to: 0.5)  // 50% 위치로 이동
+/// // 4. Seek to specific position
+/// viewModel.seek(to: 0.5)  // Move to 50% position
 /// //   → currentTime = duration * 0.5
-/// //   → 해당 위치의 프레임 로드
+/// //   → Load frame at that position
 ///
-/// // 5. 재생 속도 조절
-/// viewModel.setPlaybackSpeed(2.0)  // 2배속
-/// //   → Timer 간격 재조정 (2배 빠르게)
+/// // 5. Adjust playback speed
+/// viewModel.setPlaybackSpeed(2.0)  // 2x speed
+/// //   → Readjust Timer interval (2x faster)
 ///
-/// // 6. 일시정지
+/// // 6. Pause
 /// viewModel.pause()
 /// //   → playbackState = .paused
-/// //   → Timer 중지
+/// //   → Stop Timer
 ///
-/// // 7. 정지
+/// // 7. Stop
 /// viewModel.stop()
 /// //   → playbackState = .stopped
-/// //   → 모든 리소스 해제
+/// //   → Release all resources
 /// ```
 ///
-/// ## 실제 사용 시나리오
-/// **시나리오 1: 비디오 로딩 및 재생**
+/// ## Real Usage Scenarios
+/// **Scenario 1: Video Loading and Playback**
 /// ```
-/// 1. loadVideo(videoFile) 호출
+/// 1. Call loadVideo(videoFile)
 ///      ↓
-/// 2. VideoDecoder 초기화 (FFmpeg)
+/// 2. Initialize VideoDecoder (FFmpeg)
 ///      ↓
-/// 3. 비디오 정보 가져오기 (duration, frameRate)
+/// 3. Get video information (duration, frameRate)
 ///      ↓
-/// 4. AudioPlayer 초기화 (오디오 스트림 있을 경우)
+/// 4. Initialize AudioPlayer (if audio stream exists)
 ///      ↓
-/// 5. 첫 프레임 로드 (time: 0)
+/// 5. Load first frame (time: 0)
 ///      ↓
-/// 6. playbackState = .paused (재생 준비 완료)
-///      ↓ View에서 Play 버튼 활성화
-/// 7. play() 호출 (사용자가 Play 버튼 클릭)
+/// 6. playbackState = .paused (Ready to play)
+///      ↓ Enable Play button in View
+/// 7. Call play() (User clicks Play button)
 ///      ↓
-/// 8. Timer 시작 → 프레임 단위로 재생
-/// ```
-///
-/// **시나리오 2: 특정 순간으로 이동 (Seek)**
-/// ```
-/// 1. 사용자가 타임라인 슬라이더를 드래그
-///      ↓
-/// 2. seek(to: 0.75) 호출 (75% 위치)
-///      ↓
-/// 3. targetTime = 90 * 0.75 = 67.5초 계산
-///      ↓
-/// 4. decoder.seek(to: 67.5) → FFmpeg seek 수행
-///      ↓
-/// 5. audioPlayer.flush() → 오디오 버퍼 비우기
-///      ↓
-/// 6. loadFrameAt(time: 67.5) → 67.5초의 프레임 디코딩
-///      ↓
-/// 7. currentTime = 67.5, playbackPosition = 0.75 업데이트
-///      ↓ @Published → View 자동 갱신
-/// 8. 타임라인 슬라이더가 75% 위치로 이동
+/// 8. Start Timer → Play frame by frame
 /// ```
 ///
-/// **시나리오 3: 프레임 단위 이동 (Step Forward)**
+/// **Scenario 2: Move to Specific Moment (Seek)**
 /// ```
-/// 1. stepForward() 호출
+/// 1. User drags timeline slider
 ///      ↓
-/// 2. frameTime = 1.0 / 30.0 = 0.0333초 계산 (30 FPS)
+/// 2. Call seek(to: 0.75) (75% position)
 ///      ↓
-/// 3. seekToTime(currentTime + frameTime) 호출
-///      ↓ currentTime = 5.0초
-/// 4. seekToTime(5.0333) → 다음 프레임으로 이동
+/// 3. Calculate targetTime = 90 * 0.75 = 67.5 seconds
 ///      ↓
-/// 5. 해당 프레임 디코딩 및 표시
+/// 4. decoder.seek(to: 67.5) → Execute FFmpeg seek
+///      ↓
+/// 5. audioPlayer.flush() → Clear audio buffer
+///      ↓
+/// 6. loadFrameAt(time: 67.5) → Decode frame at 67.5 seconds
+///      ↓
+/// 7. Update currentTime = 67.5, playbackPosition = 0.75
+///      ↓ @Published → Auto refresh View
+/// 8. Timeline slider moves to 75% position
+/// ```
+///
+/// **Scenario 3: Frame-by-Frame Movement (Step Forward)**
+/// ```
+/// 1. Call stepForward()
+///      ↓
+/// 2. Calculate frameTime = 1.0 / 30.0 = 0.0333 seconds (30 FPS)
+///      ↓
+/// 3. Call seekToTime(currentTime + frameTime)
+///      ↓ currentTime = 5.0 seconds
+/// 4. seekToTime(5.0333) → Move to next frame
+///      ↓
+/// 5. Decode and display corresponding frame
 /// ```
 //
 //  VideoPlayerViewModel.swift
@@ -208,25 +208,25 @@ import Combine
 import SwiftUI
 
 /// @class VideoPlayerViewModel
-/// @brief 비디오 플레이어 상태 관리 ViewModel
-/// @details MVVM 패턴을 사용하여 비디오 재생 로직과 상태를 관리합니다.
+/// @brief Video Player State Management ViewModel
+/// @details Manages video playback logic and state using the MVVM pattern.
 ///
 /// ## ObservableObject
-/// - SwiftUI의 @ObservedObject, @StateObject와 함께 사용
-/// - @Published 속성 변경 시 View에 자동 알림
+/// - Used with SwiftUI's @ObservedObject and @StateObject
+/// - Automatically notifies View when @Published properties change
 ///
-/// **사용 예시:**
+/// **Usage Example:**
 /// ```swift
 /// struct PlayerView: View {
 ///     @StateObject private var viewModel = VideoPlayerViewModel()
 ///
 ///     var body: some View {
 ///         VStack {
-///             // currentTime이 변경되면 자동으로 Text 업데이트
+///             // Text automatically updates when currentTime changes
 ///             Text("\(viewModel.currentTimeString)")
 ///
 ///             Button("Play") {
-///                 viewModel.play()  // 재생 시작
+///                 viewModel.play()  // Start playback
 ///             }
 ///         }
 ///     }
@@ -236,190 +236,190 @@ class VideoPlayerViewModel: ObservableObject {
     // MARK: - Published Properties
 
     /// @var playbackState
-    /// @brief 현재 재생 상태
-    /// @details stopped, playing, paused 중 하나의 상태를 저장합니다.
+    /// @brief Current playback state
+    /// @details Stores one of three states: stopped, playing, or paused.
     ///
     /// ## PlaybackState
-    /// - .stopped: 정지 상태 (비디오 로드 전 또는 정지 후)
-    /// - .playing: 재생 중 (Timer 동작 중)
-    /// - .paused: 일시정지 (Timer 중지, 상태 유지)
+    /// - .stopped: Stopped state (before video load or after stop)
+    /// - .playing: Playing (Timer running)
+    /// - .paused: Paused (Timer stopped, state maintained)
     ///
     /// ## @Published
-    /// - 값이 변경되면 View에 자동으로 알림
-    /// - View가 재렌더링되어 UI 업데이트
+    /// - Automatically notifies View when value changes
+    /// - View re-renders to update UI
     ///
-    /// **상태 전환 예시:**
+    /// **State Transition Examples:**
     /// ```
-    /// loadVideo() → .paused   (로딩 완료, 재생 준비)
-    /// play()      → .playing  (재생 시작)
-    /// pause()     → .paused   (일시정지)
-    /// stop()      → .stopped  (정지 및 리소스 해제)
-    /// EOF 도달    → .stopped  (파일 끝)
+    /// loadVideo() → .paused   (Loading complete, ready to play)
+    /// play()      → .playing  (Start playback)
+    /// pause()     → .paused   (Pause)
+    /// stop()      → .stopped  (Stop and release resources)
+    /// EOF reached → .stopped  (End of file)
     /// ```
     ///
-    /// **View에서 사용:**
+    /// **Usage in View:**
     /// ```swift
     /// if viewModel.playbackState == .playing {
-    ///     Image(systemName: "pause.fill")  // 재생 중 → 일시정지 아이콘
+    ///     Image(systemName: "pause.fill")  // Playing → Pause icon
     /// } else {
-    ///     Image(systemName: "play.fill")   // 정지/일시정지 → 재생 아이콘
+    ///     Image(systemName: "play.fill")   // Stopped/Paused → Play icon
     /// }
     /// ```
     @Published var playbackState: PlaybackState = .stopped
 
     /// @var playbackPosition
-    /// @brief 현재 재생 위치 (0.0 ~ 1.0)
-    /// @details 비디오 재생 위치를 비율로 표현합니다.
+    /// @brief Current playback position (0.0 ~ 1.0)
+    /// @details Expresses video playback position as a ratio.
     ///
-    /// ## 비율 표현
-    /// - 0.0: 시작 지점 (0%)
-    /// - 0.5: 중간 지점 (50%)
-    /// - 1.0: 끝 지점 (100%)
+    /// ## Ratio Representation
+    /// - 0.0: Start position (0%)
+    /// - 0.5: Middle position (50%)
+    /// - 1.0: End position (100%)
     ///
-    /// ## 계산 공식
+    /// ## Calculation Formula
     /// ```swift
     /// playbackPosition = currentTime / duration
     /// ```
     ///
-    /// **예시:**
+    /// **Examples:**
     /// ```swift
-    /// currentTime = 45초, duration = 90초
+    /// currentTime = 45 seconds, duration = 90 seconds
     /// playbackPosition = 45 / 90 = 0.5 (50%)
     ///
-    /// currentTime = 90초, duration = 90초
+    /// currentTime = 90 seconds, duration = 90 seconds
     /// playbackPosition = 90 / 90 = 1.0 (100%)
     /// ```
     ///
-    /// **View에서 사용:**
+    /// **Usage in View:**
     /// ```swift
-    /// Slider(value: $viewModel.playbackPosition)  // 타임라인 슬라이더
+    /// Slider(value: $viewModel.playbackPosition)  // Timeline slider
     ///     .onChange(of: playbackPosition) { newValue in
-    ///         viewModel.seek(to: newValue)  // 슬라이더 드래그 시 시크
+    ///         viewModel.seek(to: newValue)  // Seek on slider drag
     ///     }
     /// ```
     @Published var playbackPosition: Double = 0.0
 
     /// @var currentTime
-    /// @brief 현재 재생 시간 (초 단위)
-    /// @details Double 타입으로 소수점 이하 시간도 표현 가능합니다.
+    /// @brief Current playback time (in seconds)
+    /// @details Double type allows decimal time representation.
     ///
     /// ## TimeInterval
-    /// - Double 타입 (소수점 가능)
-    /// - 단위: 초 (seconds)
+    /// - Double type (decimal values allowed)
+    /// - Unit: seconds
     ///
-    /// **예시:**
+    /// **Examples:**
     /// ```swift
-    /// currentTime = 0.0    → 시작 지점
-    /// currentTime = 45.5   → 45.5초 (0분 45.5초)
-    /// currentTime = 125.0  → 125초 (2분 5초)
+    /// currentTime = 0.0    → Start position
+    /// currentTime = 45.5   → 45.5 seconds (0 min 45.5 sec)
+    /// currentTime = 125.0  → 125 seconds (2 min 5 sec)
     /// ```
     ///
-    /// **View에서 사용:**
+    /// **Usage in View:**
     /// ```swift
-    /// Text(viewModel.currentTimeString)  // "02:05" 형태로 표시
+    /// Text(viewModel.currentTimeString)  // Display as "02:05" format
     /// ```
     @Published var currentTime: TimeInterval = 0.0
 
-    /// 전체 재생 시간 (초 단위)
+    /// Total playback time (in seconds)
     ///
-    /// ## 비디오 길이
-    /// - VideoDecoder.getDuration() 또는 VideoFile.duration에서 가져옴
-    /// - 파일 전체 길이를 나타냄
+    /// ## Video Length
+    /// - Obtained from VideoDecoder.getDuration() or VideoFile.duration
+    /// - Represents total file length
     ///
-    /// **예시:**
+    /// **Examples:**
     /// ```swift
-    /// duration = 90.0   → 1분 30초 길이 비디오
-    /// duration = 600.0  → 10분 길이 비디오
+    /// duration = 90.0   → 1 minute 30 seconds video
+    /// duration = 600.0  → 10 minutes video
     /// ```
     ///
-    /// **View에서 사용:**
+    /// **Usage in View:**
     /// ```swift
     /// Text("\(viewModel.currentTimeString) / \(viewModel.durationString)")
-    /// // "01:30 / 10:00" 형태로 표시
+    /// // Display as "01:30 / 10:00" format
     /// ```
     @Published var duration: TimeInterval = 0.0
 
     /// @var currentFrame
-    /// @brief 현재 비디오 프레임
-    /// @details 디코딩된 VideoFrame 객체를 저장합니다.
+    /// @brief Current video frame
+    /// @details Stores the decoded VideoFrame object.
     ///
     /// ## VideoFrame
-    /// - 디코딩된 비디오 프레임 (이미지 + 타임스탬프)
-    /// - updatePlayback()에서 decoder.decodeNextFrame()로 얻음
+    /// - Decoded video frame (image + timestamp)
+    /// - Obtained from decoder.decodeNextFrame() in updatePlayback()
     ///
-    /// ## Optional인 이유
-    /// - 비디오 로드 전: nil
-    /// - 디코딩 실패: nil
-    /// - 정지 상태: nil
+    /// ## Why Optional
+    /// - Before video load: nil
+    /// - Decoding failure: nil
+    /// - Stopped state: nil
     ///
-    /// **예시:**
+    /// **Examples:**
     /// ```swift
-    /// // 비디오 로드 전
+    /// // Before video load
     /// currentFrame = nil
     ///
-    /// // 재생 중
+    /// // During playback
     /// currentFrame = VideoFrame(image: CGImage(...), timestamp: 1.5)
     ///
-    /// // View에서 사용
+    /// // Usage in View
     /// if let frame = viewModel.currentFrame {
     ///     Image(frame.image, scale: 1.0, label: Text("Video"))
     /// }
     /// ```
     @Published var currentFrame: VideoFrame?
 
-    /// 재생 속도 (0.5x ~ 4.0x)
+    /// Playback speed (0.5x ~ 4.0x)
     ///
-    /// ## 배속
-    /// - 0.5: 0.5배속 (느리게)
-    /// - 1.0: 정상 속도 (기본)
-    /// - 2.0: 2배속 (빠르게)
+    /// ## Speed Multiplier
+    /// - 0.5: 0.5x speed (slower)
+    /// - 1.0: Normal speed (default)
+    /// - 2.0: 2x speed (faster)
     ///
-    /// ## 속도 조절 방식
-    /// - Timer 간격을 조정하여 구현
+    /// ## Speed Control Implementation
+    /// - Implemented by adjusting Timer interval
     /// - interval = (1.0 / frameRate) / playbackSpeed
     ///
-    /// **예시:**
+    /// **Examples:**
     /// ```swift
     /// frameRate = 30.0, playbackSpeed = 1.0
-    /// interval = (1.0 / 30.0) / 1.0 = 0.0333초 (33ms)
+    /// interval = (1.0 / 30.0) / 1.0 = 0.0333 seconds (33ms)
     ///
     /// frameRate = 30.0, playbackSpeed = 2.0
-    /// interval = (1.0 / 30.0) / 2.0 = 0.0167초 (17ms) ← 2배 빠름
+    /// interval = (1.0 / 30.0) / 2.0 = 0.0167 seconds (17ms) ← 2x faster
     ///
     /// frameRate = 30.0, playbackSpeed = 0.5
-    /// interval = (1.0 / 30.0) / 0.5 = 0.0667초 (67ms) ← 2배 느림
+    /// interval = (1.0 / 30.0) / 0.5 = 0.0667 seconds (67ms) ← 2x slower
     /// ```
     ///
-    /// **View에서 사용:**
+    /// **Usage in View:**
     /// ```swift
     /// Menu {
     ///     Button("0.5x") { viewModel.setPlaybackSpeed(0.5) }
     ///     Button("1.0x") { viewModel.setPlaybackSpeed(1.0) }
     ///     Button("2.0x") { viewModel.setPlaybackSpeed(2.0) }
     /// } label: {
-    ///     Text(viewModel.playbackSpeedString)  // "1.0x" 표시
+    ///     Text(viewModel.playbackSpeedString)  // Display "1.0x"
     /// }
     /// ```
     @Published var playbackSpeed: Double = 1.0
 
-    /// 음량 (0.0 ~ 1.0)
+    /// Volume (0.0 ~ 1.0)
     ///
-    /// ## 볼륨 범위
-    /// - 0.0: 무음 (mute)
-    /// - 0.5: 50% 볼륨
-    /// - 1.0: 최대 볼륨 (100%)
+    /// ## Volume Range
+    /// - 0.0: Mute
+    /// - 0.5: 50% volume
+    /// - 1.0: Maximum volume (100%)
     ///
-    /// ## 오디오 플레이어 연동
-    /// - audioPlayer.setVolume(Float(volume))로 전달
+    /// ## Audio Player Integration
+    /// - Passed via audioPlayer.setVolume(Float(volume))
     ///
-    /// **예시:**
+    /// **Examples:**
     /// ```swift
-    /// volume = 0.0   → audioPlayer.setVolume(0.0) → 무음
-    /// volume = 0.75  → audioPlayer.setVolume(0.75) → 75% 볼륨
-    /// volume = 1.0   → audioPlayer.setVolume(1.0) → 최대 볼륨
+    /// volume = 0.0   → audioPlayer.setVolume(0.0) → Mute
+    /// volume = 0.75  → audioPlayer.setVolume(0.75) → 75% volume
+    /// volume = 1.0   → audioPlayer.setVolume(1.0) → Maximum volume
     /// ```
     ///
-    /// **View에서 사용:**
+    /// **Usage in View:**
     /// ```swift
     /// Slider(value: $viewModel.volume, in: 0...1)
     ///     .onChange(of: volume) { newValue in
@@ -428,292 +428,292 @@ class VideoPlayerViewModel: ObservableObject {
     /// ```
     @Published var volume: Double = 1.0
 
-    /// 버퍼링 중 여부
+    /// Whether buffering is in progress
     ///
-    /// ## 버퍼링 상태
-    /// - true: 프레임 로딩 중 (loadFrameAt 실행 중)
-    /// - false: 로딩 완료 또는 로딩 없음
+    /// ## Buffering State
+    /// - true: Frame loading in progress (loadFrameAt executing)
+    /// - false: Loading complete or no loading
     ///
-    /// ## 사용 목적
-    /// - UI에 로딩 인디케이터 표시
-    /// - 시크 중임을 사용자에게 알림
+    /// ## Purpose
+    /// - Display loading indicator in UI
+    /// - Notify user that seek is in progress
     ///
-    /// **동작 예시:**
+    /// **Operation Example:**
     /// ```
-    /// seekToTime(30.0) 호출
+    /// Call seekToTime(30.0)
     ///      ↓
-    /// isBuffering = true (버퍼링 시작)
+    /// isBuffering = true (Buffering starts)
     ///      ↓
-    /// decoder.seek(to: 30.0) → FFmpeg seek 수행
+    /// decoder.seek(to: 30.0) → Execute FFmpeg seek
     ///      ↓
-    /// decoder.decodeNextFrame() → 프레임 디코딩
+    /// decoder.decodeNextFrame() → Decode frame
     ///      ↓
-    /// isBuffering = false (버퍼링 완료)
+    /// isBuffering = false (Buffering complete)
     /// ```
     ///
-    /// **View에서 사용:**
+    /// **Usage in View:**
     /// ```swift
     /// if viewModel.isBuffering {
-    ///     ProgressView()  // 로딩 인디케이터 표시
+    ///     ProgressView()  // Display loading indicator
     /// }
     /// ```
     @Published var isBuffering: Bool = false
 
-    /// 에러 메시지
+    /// Error message
     ///
-    /// ## Optional인 이유
-    /// - 에러 없음: nil
-    /// - 에러 발생: 에러 메시지 문자열
+    /// ## Why Optional
+    /// - No error: nil
+    /// - Error occurred: Error message string
     ///
-    /// ## 에러 발생 시점
-    /// - 비디오 로딩 실패
-    /// - 디코딩 에러
-    /// - 시크 실패
+    /// ## Error Occurrence Timing
+    /// - Video loading failure
+    /// - Decoding error
+    /// - Seek failure
     ///
-    /// **예시:**
+    /// **Examples:**
     /// ```swift
-    /// // 정상 상태
+    /// // Normal state
     /// errorMessage = nil
     ///
-    /// // 에러 발생
+    /// // Error occurred
     /// errorMessage = "Failed to load video: File not found"
     /// errorMessage = "Seek failed: Invalid timestamp"
     /// errorMessage = "Cannot play corrupted video file"
     /// ```
     ///
-    /// **View에서 사용:**
+    /// **Usage in View:**
     /// ```swift
     /// if let error = viewModel.errorMessage {
     ///     Text(error)
-    ///         .foregroundColor(.red)  // 에러 메시지 빨간색 표시
+    ///         .foregroundColor(.red)  // Display error message in red
     /// }
     /// ```
     @Published var errorMessage: String?
 
-    /// 구간 시작점 (In Point)
+    /// Segment start point (In Point)
     ///
-    /// ## 구간 추출
-    /// - 추출할 구간의 시작 시간 (초)
-    /// - nil: 시작점 미설정
-    /// - 0.0 ~ duration 범위
+    /// ## Segment Extraction
+    /// - Start time of segment to extract (seconds)
+    /// - nil: Start point not set
+    /// - Range: 0.0 ~ duration
     ///
-    /// **사용 예시:**
+    /// **Usage Examples:**
     /// ```swift
-    /// viewModel.setInPoint()         // 현재 시간을 시작점으로
-    /// viewModel.inPoint              // 5.0 (5초)
-    /// viewModel.clearInPoint()       // nil로 초기화
+    /// viewModel.setInPoint()         // Set current time as start point
+    /// viewModel.inPoint              // 5.0 (5 seconds)
+    /// viewModel.clearInPoint()       // Reset to nil
     /// ```
     @Published var inPoint: TimeInterval?
 
-    /// 구간 끝점 (Out Point)
+    /// Segment end point (Out Point)
     ///
-    /// ## 구간 추출
-    /// - 추출할 구간의 끝 시간 (초)
-    /// - nil: 끝점 미설정
-    /// - 0.0 ~ duration 범위
-    /// - inPoint보다 커야 함
+    /// ## Segment Extraction
+    /// - End time of segment to extract (seconds)
+    /// - nil: End point not set
+    /// - Range: 0.0 ~ duration
+    /// - Must be greater than inPoint
     ///
-    /// **사용 예시:**
+    /// **Usage Examples:**
     /// ```swift
-    /// viewModel.setOutPoint()        // 현재 시간을 끝점으로
-    /// viewModel.outPoint             // 15.0 (15초)
-    /// viewModel.clearOutPoint()      // nil로 초기화
+    /// viewModel.setOutPoint()        // Set current time as end point
+    /// viewModel.outPoint             // 15.0 (15 seconds)
+    /// viewModel.clearOutPoint()      // Reset to nil
     /// ```
     @Published var outPoint: TimeInterval?
 
     // MARK: - Private Properties
 
-    /// 비디오 디코더 (FFmpeg wrapper)
+    /// Video decoder (FFmpeg wrapper)
     ///
     /// ## VideoDecoder
-    /// - FFmpeg을 래핑한 비디오/오디오 디코더
-    /// - 비디오 파일 디코딩, 시크, 프레임 추출 담당
+    /// - Video/audio decoder wrapping FFmpeg
+    /// - Handles video file decoding, seeking, frame extraction
     ///
-    /// ## Optional인 이유
-    /// - 비디오 로드 전: nil
-    /// - 로딩 실패: nil
-    /// - stop() 호출 시: nil로 초기화 (리소스 해제)
+    /// ## Why Optional
+    /// - Before video load: nil
+    /// - Loading failure: nil
+    /// - When stop() called: Reset to nil (release resources)
     private var decoder: VideoDecoder?
 
-    /// 현재 로드된 비디오 파일 정보
+    /// Currently loaded video file information
     ///
     /// ## VideoFile
-    /// - 파일 경로, 메타데이터, 채널 정보 등 포함
-    /// - loadVideo()에서 전달받음
+    /// - Contains file path, metadata, channel information, etc.
+    /// - Received from loadVideo()
     ///
-    /// ## 사용 목적
-    /// - 비디오 정보 참조 (duration, channels 등)
-    /// - 메타데이터 접근 (GPS, 가속도 데이터)
-    /// - 구간 추출 시 채널 정보 접근
+    /// ## Usage Purpose
+    /// - Reference video information (duration, channels, etc.)
+    /// - Access metadata (GPS, acceleration data)
+    /// - Access channel information during segment extraction
     ///
-    /// ## 접근 제어
-    /// - internal: PlayerControlsView에서 구간 추출 시 접근 필요
+    /// ## Access Control
+    /// - internal: Needs to be accessed from PlayerControlsView for segment extraction
     var videoFile: VideoFile?
 
-    /// 재생 타이머
+    /// Playback timer
     ///
     /// ## Timer
-    /// - Foundation의 Timer 클래스
-    /// - 일정 간격마다 updatePlayback() 호출
+    /// - Foundation's Timer class
+    /// - Calls updatePlayback() at regular intervals
     ///
-    /// ## 동작 원리
+    /// ## Operation Principle
     /// ```
     /// startPlaybackTimer()
     ///      ↓
     /// Timer.scheduledTimer(withTimeInterval: 0.0333, repeats: true)
-    ///      ↓ 33ms마다 반복 실행 (30 FPS)
-    /// updatePlayback() 호출
+    ///      ↓ Repeats every 33ms (30 FPS)
+    /// Call updatePlayback()
     ///      ↓
-    /// decoder.decodeNextFrame() → 프레임 디코딩
+    /// decoder.decodeNextFrame() → Decode frame
     ///      ↓
-    /// currentFrame, currentTime 업데이트
+    /// Update currentFrame, currentTime
     /// ```
     ///
-    /// ## Optional인 이유
-    /// - 정지/일시정지 상태: nil (타이머 없음)
-    /// - 재생 중: Timer 객체 (타이머 동작)
+    /// ## Why Optional
+    /// - Stopped/paused state: nil (no timer)
+    /// - Playing: Timer object (timer active)
     private var playbackTimer: Timer?
 
-    /// 목표 프레임율 (FPS)
+    /// Target frame rate (FPS)
     ///
-    /// ## 프레임율
-    /// - VideoDecoder.videoInfo.frameRate에서 가져옴
-    /// - 단위: fps (frames per second)
+    /// ## Frame Rate
+    /// - Obtained from VideoDecoder.videoInfo.frameRate
+    /// - Unit: fps (frames per second)
     ///
-    /// **예시:**
+    /// **Examples:**
     /// ```swift
-    /// targetFrameRate = 30.0  → 30 FPS (1초에 30프레임)
-    /// targetFrameRate = 60.0  → 60 FPS (1초에 60프레임)
+    /// targetFrameRate = 30.0  → 30 FPS (30 frames per second)
+    /// targetFrameRate = 60.0  → 60 FPS (60 frames per second)
     /// ```
     ///
-    /// ## 사용 목적
-    /// - Timer 간격 계산: interval = (1.0 / targetFrameRate) / playbackSpeed
+    /// ## Usage Purpose
+    /// - Timer interval calculation: interval = (1.0 / targetFrameRate) / playbackSpeed
     /// - stepForward/Backward: frameTime = 1.0 / targetFrameRate
     private var targetFrameRate: Double = 30.0
 
-    /// 오디오 플레이어
+    /// Audio player
     ///
     /// ## AudioPlayer
-    /// - 오디오 프레임을 재생하는 플레이어
-    /// - VideoDecoder에서 오디오 프레임을 받아 재생
+    /// - Player that plays audio frames
+    /// - Receives and plays audio frames from VideoDecoder
     ///
-    /// ## Optional인 이유
-    /// - 오디오 스트림 없음: nil
-    /// - 오디오 플레이어 초기화 실패: nil
-    /// - 비디오만 재생할 경우: nil
+    /// ## Why Optional
+    /// - No audio stream: nil
+    /// - Audio player initialization failure: nil
+    /// - When playing video only: nil
     ///
-    /// ## 동기화 방식
+    /// ## Synchronization Method
     /// ```
     /// updatePlayback()
     ///      ↓
     /// decoder.decodeNextFrame() → { video: VideoFrame, audio: AudioFrame }
     ///      ↓
-    /// currentFrame = videoFrame (비디오 표시)
-    /// audioPlayer.enqueue(audioFrame) (오디오 재생)
+    /// currentFrame = videoFrame (Display video)
+    /// audioPlayer.enqueue(audioFrame) (Play audio)
     ///      ↓
-    /// 비디오와 오디오가 동기화되어 재생
+    /// Video and audio play synchronized
     /// ```
     private var audioPlayer: AudioPlayer?
 
     // ============================================
-    // MARK: 성능 최적화 (큰 파일 처리)
+    // MARK: Performance Optimization (Large File Handling)
     // ============================================
 
     /// @var frameCache
-    /// @brief 최근 디코딩된 프레임 캐시
+    /// @brief Recently decoded frame cache
     ///
-    /// ## 프레임 캐시의 목적
-    /// - 최근 재생한 프레임을 메모리에 보관
-    /// - 역방향 재생, 반복 재생 시 성능 향상
-    /// - 시크 후 즉시 프레임 표시 가능
+    /// ## Purpose of Frame Cache
+    /// - Keep recently played frames in memory
+    /// - Improve performance for reverse playback, repeat playback
+    /// - Enable immediate frame display after seek
     ///
-    /// ## 캐시 키
-    /// - 타임스탬프를 100ms 단위로 반올림한 값
-    /// - 예: 1.234초 → 1.2초, 1.278초 → 1.3초
+    /// ## Cache Key
+    /// - Timestamp rounded to 100ms units
+    /// - Example: 1.234 seconds → 1.2 seconds, 1.278 seconds → 1.3 seconds
     ///
-    /// ## 메모리 관리
-    /// - 최대 캐시 크기 제한 (maxFrameCacheSize)
-    /// - 오래된 항목 자동 제거 (LRU 방식)
+    /// ## Memory Management
+    /// - Maximum cache size limit (maxFrameCacheSize)
+    /// - Automatic removal of old entries (LRU method)
     ///
-    /// **예시:**
+    /// **Examples:**
     /// ```
-    /// 1080p RGBA 프레임 = 약 8.3MB
-    /// 캐시 30개 = 약 249MB
-    /// 캐시 60개 = 약 498MB
+    /// 1080p RGBA frame = approx 8.3MB
+    /// Cache 30 frames = approx 249MB
+    /// Cache 60 frames = approx 498MB
     /// ```
     private var frameCache: [TimeInterval: VideoFrame] = [:]
 
     /// @var maxFrameCacheSize
-    /// @brief 최대 프레임 캐시 크기
+    /// @brief Maximum frame cache size
     ///
-    /// ## 캐시 크기 결정
-    /// - 기본값: 30프레임
-    /// - 30fps 영상 기준 약 1초분
-    /// - 메모리 사용량: 약 250MB (1080p RGBA 기준)
+    /// ## Cache Size Determination
+    /// - Default: 30 frames
+    /// - Approximately 1 second for 30fps video
+    /// - Memory usage: approx 250MB (1080p RGBA basis)
     ///
-    /// ## 크기 조정 고려사항
-    /// - 메모리가 많은 시스템: 60~120 프레임
-    /// - 메모리가 적은 시스템: 15~20 프레임
-    /// - 고해상도 (4K): 10~15 프레임
+    /// ## Size Adjustment Considerations
+    /// - High-memory systems: 60~120 frames
+    /// - Low-memory systems: 15~20 frames
+    /// - High resolution (4K): 10~15 frames
     private let maxFrameCacheSize: Int = 30
 
     /// @var lastCacheCleanupTime
-    /// @brief 마지막 캐시 정리 시간
+    /// @brief Last cache cleanup time
     ///
-    /// ## 정기 캐시 정리
-    /// - 일정 시간마다 오래된 캐시 항목 제거
-    /// - 메모리 압력 완화
+    /// ## Periodic Cache Cleanup
+    /// - Remove old cache entries at regular intervals
+    /// - Relieve memory pressure
     private var lastCacheCleanupTime = Date()
 
     /// @var memoryWarningObserver
-    /// @brief 메모리 경고 알림 관찰자
+    /// @brief Memory warning notification observer
     ///
-    /// ## 메모리 경고 처리
-    /// - iOS/macOS에서 메모리 부족 시 알림 발송
-    /// - 알림 수신 시 프레임 캐시 즉시 정리
-    /// - 메모리 압력 완화로 앱 강제 종료 방지
+    /// ## Memory Warning Handling
+    /// - iOS/macOS sends notification when memory is low
+    /// - Immediately clean frame cache when notification received
+    /// - Prevent app termination by relieving memory pressure
     ///
-    /// **메모리 경고 발생 시나리오:**
-    /// - 다른 앱들이 많은 메모리 사용
-    /// - 큰 비디오 파일 재생 중
-    /// - 여러 채널 동시 재생
-    /// - 시스템 가용 메모리 부족
+    /// **Memory Warning Scenarios:**
+    /// - Other apps using a lot of memory
+    /// - Playing large video files
+    /// - Multiple channels playing simultaneously
+    /// - System available memory low
     private var memoryWarningObserver: NSObjectProtocol?
 
     // MARK: - Initialization
 
-    /// ViewModel 초기화
+    /// Initialize ViewModel
     ///
-    /// ## 빈 초기화
-    /// - 모든 속성은 기본값으로 초기화됨
-    /// - 비디오는 loadVideo()로 별도 로드
-    /// - 메모리 경고 관찰자 등록
+    /// ## Empty Initialization
+    /// - All properties initialized with default values
+    /// - Video loaded separately via loadVideo()
+    /// - Register memory warning observer
     ///
-    /// **사용 예시:**
+    /// **Usage Example:**
     /// ```swift
     /// let viewModel = VideoPlayerViewModel()
-    /// viewModel.loadVideo(videoFile)  // 비디오 로드
+    /// viewModel.loadVideo(videoFile)  // Load video
     /// ```
     init() {
-        /// 메모리 경고 관찰자 등록
+        /// Register memory warning observer
         ///
         /// ## NotificationCenter
-        /// - iOS/macOS의 알림 시스템
-        /// - 앱 전체에서 이벤트 방송/구독 가능
+        /// - iOS/macOS notification system
+        /// - Broadcast/subscribe to events across the app
         ///
         /// ## didReceiveMemoryWarningNotification
-        /// - UIApplication (iOS) 또는 NSApplication (macOS)에서 발송
-        /// - 메모리 부족 시 모든 구독자에게 알림
+        /// - Sent by UIApplication (iOS) or NSApplication (macOS)
+        /// - Notifies all subscribers when memory is low
         ///
-        /// **동작:**
+        /// **Operation:**
         /// ```
-        /// 시스템 메모리 부족 감지
+        /// System detects low memory
         ///      ↓
-        /// didReceiveMemoryWarningNotification 발송
+        /// Send didReceiveMemoryWarningNotification
         ///      ↓
-        /// handleMemoryWarning() 자동 호출
+        /// Automatically call handleMemoryWarning()
         ///      ↓
-        /// 프레임 캐시 정리 (최대 250MB 해제)
+        /// Clean frame cache (release up to 250MB)
         /// ```
         memoryWarningObserver = NotificationCenter.default.addObserver(
             forName: NSNotification.Name("NSApplicationDidReceiveMemoryWarningNotification"),
@@ -724,201 +724,201 @@ class VideoPlayerViewModel: ObservableObject {
         }
     }
 
-    /// ViewModel 메모리 해제 시 호출
+    /// Called when ViewModel is deallocated
     ///
     /// ## deinit
-    /// - 객체가 메모리에서 해제될 때 자동 호출
-    /// - 리소스 정리 (타이머, 디코더, 오디오 플레이어 등)
-    /// - 메모리 경고 관찰자 해제
+    /// - Automatically called when object is deallocated from memory
+    /// - Clean up resources (timer, decoder, audio player, etc.)
+    /// - Remove memory warning observer
     ///
-    /// **동작:**
+    /// **Operation:**
     /// ```
-    /// viewModel = nil (ViewModel 해제)
+    /// viewModel = nil (Deallocate ViewModel)
     ///      ↓
-    /// deinit 자동 호출
+    /// deinit automatically called
     ///      ↓
-    /// 메모리 경고 관찰자 해제
+    /// Remove memory warning observer
     ///      ↓
-    /// stop() → 타이머 중지, 오디오 정지, 디코더 해제
+    /// stop() → Stop timer, stop audio, release decoder
     /// ```
     deinit {
-        /// 메모리 경고 관찰자 해제
+        /// Remove memory warning observer
         ///
         /// ## removeObserver
-        /// - NotificationCenter에서 관찰자 제거
-        /// - 메모리 누수 방지 (순환 참조 해제)
-        /// - 해제하지 않으면 ViewModel이 메모리에 남아있을 수 있음
+        /// - Remove observer from NotificationCenter
+        /// - Prevent memory leak (break retain cycle)
+        /// - ViewModel may remain in memory if not removed
         if let observer = memoryWarningObserver {
             NotificationCenter.default.removeObserver(observer)
         }
 
-        /// 기존 리소스 정리
+        /// Clean up existing resources
         stop()
     }
 
     // MARK: - Public Methods
 
-    /// 비디오 파일 로드
+    /// Load video file
     ///
-    /// ## 로딩 프로세스
+    /// ## Loading Process
     /// ```
-    /// 1. 기존 재생 중지 (stop())
+    /// 1. Stop current playback (stop())
     ///      ↓
-    /// 2. 파일 손상 여부 확인 (videoFile.isCorrupted)
+    /// 2. Check file corruption (videoFile.isCorrupted)
     ///      ↓
-    /// 3. 전면 카메라 채널 선택 (or 첫 번째 채널)
+    /// 3. Select front camera channel (or first channel)
     ///      ↓
-    /// 4. VideoDecoder 초기화 (FFmpeg)
+    /// 4. Initialize VideoDecoder (FFmpeg)
     ///      ↓
-    /// 5. duration, frameRate 가져오기
+    /// 5. Get duration, frameRate
     ///      ↓
-    /// 6. 첫 프레임 로드 (time: 0)
+    /// 6. Load first frame (time: 0)
     ///      ↓
-    /// 7. AudioPlayer 초기화 (오디오 스트림 있을 경우)
+    /// 7. Initialize AudioPlayer (if audio stream exists)
     ///      ↓
-    /// 8. playbackState = .paused (재생 준비 완료)
+    /// 8. playbackState = .paused (Ready to play)
     /// ```
     ///
-    /// ## 에러 처리
-    /// - 손상된 파일: errorMessage 설정, playbackState = .stopped
-    /// - 채널 없음: errorMessage 설정
-    /// - 디코더 초기화 실패: errorMessage 설정, playbackState = .stopped
+    /// ## Error Handling
+    /// - Corrupted file: Set errorMessage, playbackState = .stopped
+    /// - No channel: Set errorMessage
+    /// - Decoder initialization failure: Set errorMessage, playbackState = .stopped
     ///
-    /// - Parameter videoFile: 로드할 비디오 파일
+    /// - Parameter videoFile: Video file to load
     ///
-    /// **사용 예시:**
+    /// **Usage Example:**
     /// ```swift
     /// let videoFile = VideoFile(filePath: "/path/to/video.mp4", ...)
     /// viewModel.loadVideo(videoFile)
     ///
-    /// // 성공 시
+    /// // On success
     /// // playbackState = .paused
-    /// // currentFrame = 첫 프레임
-    /// // duration = 90.0 (90초)
+    /// // currentFrame = First frame
+    /// // duration = 90.0 (90 seconds)
     ///
-    /// // 실패 시
+    /// // On failure
     /// // playbackState = .stopped
     /// // errorMessage = "Failed to load video: ..."
     /// ```
     func loadVideo(_ videoFile: VideoFile) {
-        /// 1단계: 기존 재생 중지
+        /// Step 1: Stop current playback
         ///
         /// ## stop()
-        /// - 재생 중이던 비디오가 있다면 정리
-        /// - 타이머, 디코더, 오디오 플레이어 해제
+        /// - Clean up if a video is currently playing
+        /// - Release timer, decoder, audio player
         stop()
 
-        /// 2단계: 파일 정보 저장
+        /// Step 2: Store file information
         self.videoFile = videoFile
 
-        /// 3단계: 파일 손상 여부 확인
+        /// Step 3: Check file corruption
         ///
         /// ## videoFile.isCorrupted
-        /// - 파일 스캔 중 손상 감지된 경우 true
-        /// - 손상된 파일은 재생 불가
+        /// - true if corruption detected during file scan
+        /// - Corrupted files cannot be played
         ///
-        /// **손상 예시:**
-        /// - 파일 헤더 손상
-        /// - 불완전한 다운로드
-        /// - 저장 중 에러
+        /// **Corruption Examples:**
+        /// - File header corruption
+        /// - Incomplete download
+        /// - Error during save
         if videoFile.isCorrupted {
             errorMessage = "Cannot play corrupted video file. The file may be damaged or incomplete."
             playbackState = .stopped
             return
         }
 
-        /// 4단계: 전면 카메라 채널 선택
+        /// Step 4: Select front camera channel
         ///
-        /// ## 채널 선택 우선순위
-        /// 1. 전면 카메라 (.front) - 기본 채널
-        /// 2. 첫 번째 채널 (channels.first) - 전면 카메라 없을 경우
+        /// ## Channel Selection Priority
+        /// 1. Front camera (.front) - Default channel
+        /// 2. First channel (channels.first) - If no front camera
         ///
-        /// **예시:**
+        /// **Example:**
         /// ```swift
         /// videoFile.channels = [
         ///     ChannelInfo(position: .front, filePath: "/front.mp4"),
         ///     ChannelInfo(position: .rear, filePath: "/rear.mp4")
         /// ]
         ///
-        /// channel(for: .front) → /front.mp4 선택
+        /// channel(for: .front) → Select /front.mp4
         /// ```
         ///
         /// ## guard let
-        /// - Optional Binding으로 안전하게 추출
-        /// - nil일 경우 early return
+        /// - Safely extract with Optional Binding
+        /// - Early return if nil
         guard let frontChannel = videoFile.channel(for: .front) ?? videoFile.channels.first else {
             errorMessage = "No video channel available"
             return
         }
 
-        /// 5단계: VideoDecoder 생성
+        /// Step 5: Create VideoDecoder
         ///
         /// ## VideoDecoder
-        /// - FFmpeg을 래핑한 비디오 디코더
-        /// - filePath로 비디오 파일 열기
+        /// - Video decoder wrapping FFmpeg
+        /// - Open video file with filePath
         let decoder = VideoDecoder(filePath: frontChannel.filePath)
 
-        /// 6단계: 디코더 초기화 (do-catch)
+        /// Step 6: Initialize decoder (do-catch)
         ///
         /// ## try decoder.initialize()
-        /// - FFmpeg avformat_open_input, avformat_find_stream_info 호출
-        /// - 비디오/오디오 스트림 정보 파싱
-        /// - 코덱 초기화
+        /// - Call FFmpeg avformat_open_input, avformat_find_stream_info
+        /// - Parse video/audio stream information
+        /// - Initialize codec
         ///
-        /// ## 에러 발생 시
-        /// - catch 블록에서 errorMessage 설정
+        /// ## On Error
+        /// - Set errorMessage in catch block
         /// - playbackState = .stopped
         do {
             try decoder.initialize()
             self.decoder = decoder
 
-            /// 7단계: duration 설정
+            /// Step 7: Set duration
             ///
-            /// ## duration 우선순위
-            /// 1. decoder.getDuration() - FFmpeg에서 직접 가져온 값 (정확)
-            /// 2. videoFile.duration - 파일 정보에서 가져온 값 (fallback)
+            /// ## duration Priority
+            /// 1. decoder.getDuration() - Value from FFmpeg directly (accurate)
+            /// 2. videoFile.duration - Value from file info (fallback)
             if let videoDuration = decoder.getDuration() {
                 self.duration = videoDuration
             } else {
                 self.duration = videoFile.duration
             }
 
-            /// 8단계: 프레임율 가져오기
+            /// Step 8: Get frame rate
             ///
             /// ## videoInfo
-            /// - 비디오 스트림 정보 (해상도, 프레임율, 코덱 등)
-            /// - targetFrameRate에 저장하여 Timer 간격 계산에 사용
+            /// - Video stream information (resolution, frame rate, codec, etc.)
+            /// - Store in targetFrameRate for Timer interval calculation
             if let videoInfo = decoder.videoInfo {
                 self.targetFrameRate = videoInfo.frameRate
             }
 
-            /// 9단계: 첫 프레임 로드
+            /// Step 9: Load first frame
             ///
             /// ## loadFrameAt(time: 0)
-            /// - time: 0초의 프레임 디코딩
-            /// - currentFrame에 할당 → View에 표시
+            /// - Decode frame at time: 0 seconds
+            /// - Assign to currentFrame → Display in View
             loadFrameAt(time: 0)
 
-            /// 10단계: AudioPlayer 초기화
+            /// Step 10: Initialize AudioPlayer
             ///
             /// ## decoder.audioInfo
-            /// - 오디오 스트림 정보 (샘플레이트, 채널 수, 코덱 등)
-            /// - nil이면 오디오 없음 (비디오만 재생)
+            /// - Audio stream information (sample rate, channel count, codec, etc.)
+            /// - nil means no audio (video only playback)
             ///
-            /// **초기화 프로세스:**
+            /// **Initialization Process:**
             /// ```
-            /// AudioPlayer() 생성
+            /// Create AudioPlayer()
             ///      ↓
-            /// audioPlayer.start() → 오디오 재생 준비
+            /// audioPlayer.start() → Prepare audio playback
             ///      ↓
-            /// audioPlayer.setVolume(volume) → 볼륨 설정
+            /// audioPlayer.setVolume(volume) → Set volume
             ///      ↓
-            /// self.audioPlayer = audioPlayer (저장)
+            /// self.audioPlayer = audioPlayer (Store)
             /// ```
             ///
-            /// ## 실패 처리
-            /// - print()로 경고 메시지 출력
-            /// - audioPlayer = nil (비디오만 재생 계속)
+            /// ## Failure Handling
+            /// - Print warning message
+            /// - audioPlayer = nil (Continue video-only playback)
             if decoder.audioInfo != nil {
                 let audioPlayer = AudioPlayer()
                 do {
@@ -931,19 +931,19 @@ class VideoPlayerViewModel: ObservableObject {
                 }
             }
 
-            /// 11단계: 상태 업데이트
-            playbackState = .paused  // 재생 준비 완료 (일시정지 상태)
-            errorMessage = nil       // 에러 메시지 초기화
+            /// Step 11: Update state
+            playbackState = .paused  // Ready to play (paused state)
+            errorMessage = nil       // Clear error message
 
         } catch {
-            /// 에러 처리
+            /// Error handling
             ///
-            /// ## catch 블록
-            /// - decoder.initialize() 실패 시 실행
-            /// - errorMessage에 에러 내용 저장
+            /// ## catch Block
+            /// - Executed when decoder.initialize() fails
+            /// - Store error details in errorMessage
             /// - playbackState = .stopped
             ///
-            /// **에러 예시:**
+            /// **Error Examples:**
             /// ```
             /// "Failed to load video: File not found"
             /// "Failed to load video: Unsupported codec"
@@ -954,81 +954,81 @@ class VideoPlayerViewModel: ObservableObject {
         }
     }
 
-    /// 재생 시작 또는 재개
+    /// Start or resume playback
     ///
-    /// ## 동작 조건
-    /// - playbackState != .playing (이미 재생 중이 아님)
-    /// - decoder != nil (비디오 로드됨)
+    /// ## Operation Conditions
+    /// - playbackState != .playing (not already playing)
+    /// - decoder != nil (video loaded)
     ///
-    /// ## 동작
+    /// ## Operation
     /// 1. playbackState = .playing
-    /// 2. audioPlayer.resume() → 오디오 재생 시작
-    /// 3. startPlaybackTimer() → 타이머 시작 (프레임 단위로 재생)
+    /// 2. audioPlayer.resume() → Start audio playback
+    /// 3. startPlaybackTimer() → Start timer (play frame by frame)
     ///
-    /// **사용 예시:**
+    /// **Usage Examples:**
     /// ```swift
-    /// // 로딩 후 재생
+    /// // Play after loading
     /// viewModel.loadVideo(videoFile)
-    /// viewModel.play()  // 재생 시작
+    /// viewModel.play()  // Start playback
     ///
-    /// // 일시정지 후 재개
+    /// // Resume after pause
     /// viewModel.pause()
-    /// viewModel.play()  // 재생 재개
+    /// viewModel.play()  // Resume playback
     /// ```
     func play() {
-        /// guard 조건 체크
+        /// Check guard conditions
         ///
         /// ## playbackState != .playing
-        /// - 이미 재생 중이면 실행 안 함 (중복 방지)
+        /// - Don't execute if already playing (prevent duplication)
         ///
         /// ## decoder != nil
-        /// - 비디오가 로드되지 않았으면 실행 안 함
+        /// - Don't execute if video not loaded
         guard playbackState != .playing, decoder != nil else { return }
 
         playbackState = .playing
-        audioPlayer?.resume()  // 오디오 재생 재개 (일시정지 상태였을 경우)
-        startPlaybackTimer()   // Timer 시작 → 프레임 단위 재생
+        audioPlayer?.resume()  // Resume audio playback (if was paused)
+        startPlaybackTimer()   // Start Timer → Play frame by frame
     }
 
-    /// 재생 일시정지
+    /// Pause playback
     ///
-    /// ## 동작 조건
-    /// - playbackState == .playing (재생 중일 때만)
+    /// ## Operation Conditions
+    /// - playbackState == .playing (only when playing)
     ///
-    /// ## 동작
+    /// ## Operation
     /// 1. playbackState = .paused
-    /// 2. audioPlayer.pause() → 오디오 일시정지
-    /// 3. stopPlaybackTimer() → 타이머 중지
+    /// 2. audioPlayer.pause() → Pause audio
+    /// 3. stopPlaybackTimer() → Stop timer
     ///
-    /// ## 상태 유지
-    /// - currentTime, playbackPosition, currentFrame 유지
-    /// - play() 호출 시 현재 위치에서 재개
+    /// ## State Preservation
+    /// - Preserve currentTime, playbackPosition, currentFrame
+    /// - Resume from current position when play() is called
     ///
-    /// **사용 예시:**
+    /// **Usage Example:**
     /// ```swift
-    /// viewModel.play()   // 재생 시작
-    /// // ... 재생 중 ...
-    /// viewModel.pause()  // 일시정지
-    /// // currentTime = 5.0 (유지됨)
-    /// viewModel.play()   // 5.0초부터 재개
+    /// viewModel.play()   // Start playback
+    /// // ... playing ...
+    /// viewModel.pause()  // Pause
+    /// // currentTime = 5.0 (preserved)
+    /// viewModel.play()   // Resume from 5.0 seconds
     /// ```
     func pause() {
         guard playbackState == .playing else { return }
 
         playbackState = .paused
-        audioPlayer?.pause()  // 오디오 일시정지 (버퍼는 유지)
-        stopPlaybackTimer()   // Timer 중지
+        audioPlayer?.pause()  // Pause audio (keep buffer)
+        stopPlaybackTimer()   // Stop Timer
     }
 
-    /// 재생/일시정지 토글
+    /// Toggle play/pause
     ///
-    /// ## 토글 동작
-    /// - .playing → pause() 호출
-    /// - .paused 또는 .stopped → play() 호출
+    /// ## Toggle Operation
+    /// - .playing → Call pause()
+    /// - .paused or .stopped → Call play()
     ///
-    /// **사용 예시:**
+    /// **Usage Example:**
     /// ```swift
-    /// // Play/Pause 버튼 구현
+    /// // Implement Play/Pause button
     /// Button(action: {
     ///     viewModel.togglePlayPause()
     /// }) {
@@ -1043,83 +1043,83 @@ class VideoPlayerViewModel: ObservableObject {
         }
     }
 
-    /// 재생 정지 및 리소스 해제
+    /// Stop playback and release resources
     ///
-    /// ## 정지 프로세스
+    /// ## Stop Process
     /// ```
-    /// 1. stopPlaybackTimer() → Timer 중지 및 해제
+    /// 1. stopPlaybackTimer() → Stop and release Timer
     ///      ↓
-    /// 2. audioPlayer.stop() → 오디오 정지 및 버퍼 비우기
+    /// 2. audioPlayer.stop() → Stop audio and clear buffer
     ///      ↓
-    /// 3. audioPlayer = nil → AudioPlayer 해제
+    /// 3. audioPlayer = nil → Release AudioPlayer
     ///      ↓
-    /// 4. frameCache.removeAll() → 프레임 캐시 정리
+    /// 4. frameCache.removeAll() → Clean frame cache
     ///      ↓
-    /// 5. 상태 초기화 (playbackState, currentTime, playbackPosition, currentFrame)
+    /// 5. Reset state (playbackState, currentTime, playbackPosition, currentFrame)
     ///      ↓
-    /// 6. decoder = nil → VideoDecoder 해제 (FFmpeg 리소스 정리)
+    /// 6. decoder = nil → Release VideoDecoder (clean up FFmpeg resources)
     ///      ↓
-    /// 7. videoFile = nil → 파일 정보 해제
+    /// 7. videoFile = nil → Release file information
     /// ```
     ///
-    /// ## 캐시 정리 이유
-    /// - 비디오 정지 시 캐시 유지 불필요
-    /// - 메모리 해제 (최대 250MB)
-    /// - 다른 비디오 로드 시 깨끗한 상태 시작
+    /// ## Why Clean Cache
+    /// - Cache unnecessary when video is stopped
+    /// - Release memory (up to 250MB)
+    /// - Start with clean state when loading another video
     ///
-    /// ## 사용 시점
-    /// - 사용자가 정지 버튼 클릭
-    /// - 다른 비디오 로드 (loadVideo 시작 부분)
-    /// - 파일 끝(EOF) 도달
-    /// - ViewModel 메모리 해제 (deinit)
+    /// ## When to Use
+    /// - User clicks stop button
+    /// - Load another video (beginning of loadVideo)
+    /// - End of file (EOF) reached
+    /// - ViewModel deallocated (deinit)
     ///
-    /// **사용 예시:**
+    /// **Usage Example:**
     /// ```swift
-    /// viewModel.play()  // 재생 중
-    /// viewModel.stop()  // 정지 → 모든 리소스 해제
+    /// viewModel.play()  // Playing
+    /// viewModel.stop()  // Stop → Release all resources
     ///
-    /// // 상태 확인
+    /// // Check state
     /// viewModel.playbackState  // .stopped
     /// viewModel.currentTime    // 0.0
     /// viewModel.currentFrame   // nil
     /// ```
     func stop() {
-        stopPlaybackTimer()       // Timer 중지
-        audioPlayer?.stop()       // 오디오 정지
-        audioPlayer = nil         // AudioPlayer 해제
-        frameCache.removeAll()    // 프레임 캐시 정리 (메모리 해제)
-        playbackState = .stopped  // 상태: 정지
-        currentTime = 0.0         // 시간 초기화
-        playbackPosition = 0.0    // 위치 초기화
-        currentFrame = nil        // 프레임 초기화
-        decoder = nil             // VideoDecoder 해제 (FFmpeg 정리)
-        videoFile = nil           // 파일 정보 해제
+        stopPlaybackTimer()       // Stop Timer
+        audioPlayer?.stop()       // Stop audio
+        audioPlayer = nil         // Release AudioPlayer
+        frameCache.removeAll()    // Clean frame cache (release memory)
+        playbackState = .stopped  // State: stopped
+        currentTime = 0.0         // Reset time
+        playbackPosition = 0.0    // Reset position
+        currentFrame = nil        // Reset frame
+        decoder = nil             // Release VideoDecoder (clean FFmpeg)
+        videoFile = nil           // Release file info
     }
 
-    /// 특정 위치로 시크 (비율 기반)
+    /// Seek to specific position (ratio-based)
     ///
-    /// ## 시크 알고리즘
+    /// ## Seek Algorithm
     /// ```
-    /// 1. position을 0.0~1.0으로 clamp
+    /// 1. Clamp position to 0.0~1.0
     ///      ↓
-    /// 2. targetTime = position * duration 계산
+    /// 2. Calculate targetTime = position * duration
     ///      ↓
-    /// 3. seekToTime(targetTime) 호출
+    /// 3. Call seekToTime(targetTime)
     /// ```
     ///
-    /// - Parameter position: 시크 위치 (0.0 = 시작, 1.0 = 끝)
+    /// - Parameter position: Seek position (0.0 = start, 1.0 = end)
     ///
-    /// **사용 예시:**
+    /// **Usage Examples:**
     /// ```swift
-    /// // duration = 90초
-    /// viewModel.seek(to: 0.0)   → seekToTime(0초)   (시작)
-    /// viewModel.seek(to: 0.5)   → seekToTime(45초)  (중간)
-    /// viewModel.seek(to: 1.0)   → seekToTime(90초)  (끝)
-    /// viewModel.seek(to: 1.5)   → seekToTime(90초)  (clamp)
-    /// viewModel.seek(to: -0.1)  → seekToTime(0초)   (clamp)
+    /// // duration = 90 seconds
+    /// viewModel.seek(to: 0.0)   → seekToTime(0 sec)   (start)
+    /// viewModel.seek(to: 0.5)   → seekToTime(45 sec)  (middle)
+    /// viewModel.seek(to: 1.0)   → seekToTime(90 sec)  (end)
+    /// viewModel.seek(to: 1.5)   → seekToTime(90 sec)  (clamp)
+    /// viewModel.seek(to: -0.1)  → seekToTime(0 sec)   (clamp)
     /// ```
     ///
-    /// **View에서 사용 (타임라인 슬라이더):**
+    /// **Usage in View (Timeline Slider):**
     /// ```swift
     /// Slider(value: $viewModel.playbackPosition, in: 0...1)
     ///     .onChange(of: playbackPosition) { newPosition in
@@ -1127,159 +1127,159 @@ class VideoPlayerViewModel: ObservableObject {
     ///     }
     /// ```
     func seek(to position: Double) {
-        /// position을 0.0~1.0 범위로 제한
+        /// Limit position to 0.0~1.0 range
         ///
         /// ## max(0.0, min(1.0, position))
         /// - position < 0.0 → 0.0
         /// - position > 1.0 → 1.0
-        /// - 0.0 <= position <= 1.0 → position (그대로)
+        /// - 0.0 <= position <= 1.0 → position (as is)
         let clampedPosition = max(0.0, min(1.0, position))
 
-        /// targetTime 계산
+        /// Calculate targetTime
         ///
-        /// ## position을 실제 시간으로 변환
+        /// ## Convert position to actual time
         /// ```
-        /// duration = 90초, position = 0.5
-        /// targetTime = 0.5 * 90 = 45초
+        /// duration = 90 seconds, position = 0.5
+        /// targetTime = 0.5 * 90 = 45 seconds
         /// ```
         let targetTime = clampedPosition * duration
 
-        /// 실제 시크 수행
+        /// Perform actual seek
         seekToTime(targetTime)
     }
 
-    /// 특정 시간으로 시크 (초 단위)
+    /// Seek to specific time (in seconds)
     ///
-    /// ## 시크 프로세스
+    /// ## Seek Process
     /// ```
-    /// 1. time을 0~duration 범위로 clamp
+    /// 1. Clamp time to 0~duration range
     ///      ↓
-    /// 2. frameCache 무효화 (캐시 전체 제거)
+    /// 2. Invalidate frameCache (remove all cache)
     ///      ↓
-    /// 3. decoder.seek(to: time) → FFmpeg seek 수행
+    /// 3. decoder.seek(to: time) → Execute FFmpeg seek
     ///      ↓
-    /// 4. currentTime, playbackPosition 업데이트
+    /// 4. Update currentTime, playbackPosition
     ///      ↓
-    /// 5. audioPlayer.flush() → 오디오 버퍼 비우기
+    /// 5. audioPlayer.flush() → Clear audio buffer
     ///      ↓
-    /// 6. loadFrameAt(time:) → 해당 시간의 프레임 로드
-    /// ```
-    ///
-    /// ## 캐시 무효화 이유
-    /// - 시크는 멀리 떨어진 위치로 이동
-    /// - 기존 캐시된 프레임은 더 이상 유용하지 않음
-    /// - 새로운 위치 주변의 프레임을 다시 캐싱
-    ///
-    /// **예시:**
-    /// ```
-    /// currentTime = 10초 (캐시: 5~15초 프레임)
-    /// seekToTime(50초) 호출
-    ///      ↓
-    /// 캐시 무효화 (5~15초 프레임 제거)
-    ///      ↓
-    /// 50초로 이동
-    ///      ↓
-    /// 새로운 캐시 생성 (45~55초 프레임)
+    /// 6. loadFrameAt(time:) → Load frame at that time
     /// ```
     ///
-    /// - Parameter time: 시크할 시간 (초)
+    /// ## Why Invalidate Cache
+    /// - Seek moves to distant position
+    /// - Previously cached frames are no longer useful
+    /// - Re-cache frames around new position
     ///
-    /// **사용 예시:**
+    /// **Example:**
+    /// ```
+    /// currentTime = 10 sec (cache: 5~15 sec frames)
+    /// Call seekToTime(50 sec)
+    ///      ↓
+    /// Invalidate cache (remove 5~15 sec frames)
+    ///      ↓
+    /// Move to 50 sec
+    ///      ↓
+    /// Create new cache (45~55 sec frames)
+    /// ```
+    ///
+    /// - Parameter time: Time to seek (seconds)
+    ///
+    /// **Usage Examples:**
     /// ```swift
-    /// // duration = 90초
-    /// viewModel.seekToTime(0.0)    → 시작으로 이동
-    /// viewModel.seekToTime(45.0)   → 45초로 이동
-    /// viewModel.seekToTime(90.0)   → 끝으로 이동
-    /// viewModel.seekToTime(100.0)  → 90초로 clamp (끝)
-    /// viewModel.seekToTime(-5.0)   → 0초로 clamp (시작)
+    /// // duration = 90 seconds
+    /// viewModel.seekToTime(0.0)    → Move to start
+    /// viewModel.seekToTime(45.0)   → Move to 45 sec
+    /// viewModel.seekToTime(90.0)   → Move to end
+    /// viewModel.seekToTime(100.0)  → Clamp to 90 sec (end)
+    /// viewModel.seekToTime(-5.0)   → Clamp to 0 sec (start)
     /// ```
     func seekToTime(_ time: TimeInterval) {
         guard let decoder = decoder else { return }
 
-        /// time을 0~duration 범위로 제한
+        /// Limit time to 0~duration range
         ///
         /// ## max(0.0, min(duration, time))
-        /// - time < 0.0 → 0.0 (시작)
-        /// - time > duration → duration (끝)
-        /// - 0.0 <= time <= duration → time (그대로)
+        /// - time < 0.0 → 0.0 (start)
+        /// - time > duration → duration (end)
+        /// - 0.0 <= time <= duration → time (as is)
         let clampedTime = max(0.0, min(duration, time))
 
-        /// 캐시 무효화
+        /// Invalidate cache
         ///
         /// ## frameCache.removeAll()
-        /// - 모든 캐시된 프레임 제거
-        /// - 메모리 즉시 해제 (ARC)
+        /// - Remove all cached frames
+        /// - Immediately release memory (ARC)
         ///
-        /// **무효화 이유:**
-        /// - 시크는 멀리 떨어진 위치로 이동하는 경우가 많음
-        /// - 기존 캐시는 더 이상 유효하지 않음
-        /// - 새로운 위치 주변의 프레임을 다시 캐싱하는 것이 효율적
+        /// **Why Invalidate:**
+        /// - Seek often moves to distant positions
+        /// - Existing cache is no longer valid
+        /// - More efficient to re-cache frames around new position
         ///
-        /// **예외:**
-        /// - stepForward/stepBackward는 seekToTime 호출하지만 짧은 거리
-        /// - 이 경우에도 캐시 무효화하지만, loadFrameAt에서 즉시 다시 캐싱됨
-        /// - 큰 손해 없음 (단 1프레임 디코딩)
+        /// **Exception:**
+        /// - stepForward/stepBackward call seekToTime but for short distances
+        /// - Cache still invalidated, but immediately re-cached in loadFrameAt
+        /// - No big loss (just 1 frame decoding)
         frameCache.removeAll()
 
-        /// 시크 수행 (do-catch)
+        /// Perform seek (do-catch)
         do {
-            /// 1. FFmpeg seek 수행
+            /// 1. Execute FFmpeg seek
             ///
             /// ## decoder.seek(to: clampedTime)
-            /// - av_seek_frame() 호출
-            /// - 해당 시간의 keyframe으로 이동
-            /// - 디코더 내부 버퍼 초기화
+            /// - Call av_seek_frame()
+            /// - Move to keyframe at that time
+            /// - Initialize decoder internal buffer
             try decoder.seek(to: clampedTime)
 
-            /// 2. 상태 업데이트
+            /// 2. Update state
             currentTime = clampedTime
             playbackPosition = duration > 0 ? clampedTime / duration : 0.0
 
-            /// 3. 오디오 버퍼 비우기
+            /// 3. Clear audio buffer
             ///
             /// ## audioPlayer.flush()
-            /// - 재생 대기 중인 오디오 프레임 제거
-            /// - 시크 후 이전 오디오가 재생되는 것 방지
+            /// - Remove audio frames waiting to play
+            /// - Prevent old audio from playing after seek
             audioPlayer?.flush()
 
-            /// 4. 해당 시간의 프레임 로드
+            /// 4. Load frame at that time
             ///
             /// ## loadFrameAt(time: clampedTime)
-            /// - 시크한 위치의 비디오 프레임 디코딩
-            /// - currentFrame 업데이트 → View에 표시
+            /// - Decode video frame at seek position
+            /// - Update currentFrame → Display in View
             loadFrameAt(time: clampedTime)
 
         } catch {
-            /// 시크 실패 처리
+            /// Handle seek failure
             ///
-            /// **실패 예시:**
-            /// - 손상된 비디오 파일
-            /// - 잘못된 timestamp
-            /// - FFmpeg 내부 에러
+            /// **Failure Examples:**
+            /// - Corrupted video file
+            /// - Invalid timestamp
+            /// - FFmpeg internal error
             errorMessage = "Seek failed: \(error.localizedDescription)"
         }
     }
 
-    /// 한 프레임 앞으로 이동
+    /// Move forward one frame
     ///
-    /// ## 프레임 단위 이동
-    /// - frameTime = 1.0 / targetFrameRate 계산
-    /// - seekToTime(currentTime + frameTime) 호출
+    /// ## Frame-by-Frame Movement
+    /// - Calculate frameTime = 1.0 / targetFrameRate
+    /// - Call seekToTime(currentTime + frameTime)
     ///
-    /// **계산 예시:**
+    /// **Calculation Example:**
     /// ```swift
     /// targetFrameRate = 30.0
-    /// frameTime = 1.0 / 30.0 = 0.0333초 (약 33ms)
+    /// frameTime = 1.0 / 30.0 = 0.0333 seconds (approx 33ms)
     ///
-    /// currentTime = 5.0초
-    /// stepForward() → seekToTime(5.0333초) → 다음 프레임
+    /// currentTime = 5.0 seconds
+    /// stepForward() → seekToTime(5.0333 sec) → Next frame
     /// ```
     ///
-    /// **사용 예시:**
+    /// **Usage Example:**
     /// ```swift
-    /// // 한 프레임씩 이동 버튼
+    /// // Frame-by-frame button
     /// Button(action: { viewModel.stepForward() }) {
-    ///     Image(systemName: "forward.frame")  // ▶| 아이콘
+    ///     Image(systemName: "forward.frame")  // ▶| icon
     /// }
     /// ```
     func stepForward() {
@@ -1287,26 +1287,26 @@ class VideoPlayerViewModel: ObservableObject {
         seekToTime(currentTime + frameTime)
     }
 
-    /// 한 프레임 뒤로 이동
+    /// Move backward one frame
     ///
-    /// ## 프레임 단위 이동
-    /// - frameTime = 1.0 / targetFrameRate 계산
-    /// - seekToTime(currentTime - frameTime) 호출
+    /// ## Frame-by-Frame Movement
+    /// - Calculate frameTime = 1.0 / targetFrameRate
+    /// - Call seekToTime(currentTime - frameTime)
     ///
-    /// **계산 예시:**
+    /// **Calculation Example:**
     /// ```swift
     /// targetFrameRate = 30.0
-    /// frameTime = 1.0 / 30.0 = 0.0333초 (약 33ms)
+    /// frameTime = 1.0 / 30.0 = 0.0333 seconds (approx 33ms)
     ///
-    /// currentTime = 5.0초
-    /// stepBackward() → seekToTime(4.9667초) → 이전 프레임
+    /// currentTime = 5.0 seconds
+    /// stepBackward() → seekToTime(4.9667 sec) → Previous frame
     /// ```
     ///
-    /// **사용 예시:**
+    /// **Usage Example:**
     /// ```swift
-    /// // 한 프레임씩 이동 버튼
+    /// // Frame-by-frame button
     /// Button(action: { viewModel.stepBackward() }) {
-    ///     Image(systemName: "backward.frame")  // |◀ 아이콘
+    ///     Image(systemName: "backward.frame")  // |◀ icon
     /// }
     /// ```
     func stepBackward() {
@@ -1314,43 +1314,43 @@ class VideoPlayerViewModel: ObservableObject {
         seekToTime(currentTime - frameTime)
     }
 
-    /// 재생 속도 설정
+    /// Set playback speed
     ///
-    /// ## 속도 범위
-    /// - 최소: 0.1x (10배 느리게)
-    /// - 최대: 4.0x (4배 빠르게)
+    /// ## Speed Range
+    /// - Minimum: 0.1x (10x slower)
+    /// - Maximum: 4.0x (4x faster)
     ///
-    /// ## 속도 변경 동작
-    /// 1. speed를 0.1~4.0으로 clamp
-    /// 2. playbackSpeed에 저장
-    /// 3. 재생 중이면 Timer 재시작 (새로운 간격 적용)
+    /// ## Speed Change Operation
+    /// 1. Clamp speed to 0.1~4.0
+    /// 2. Store in playbackSpeed
+    /// 3. Restart Timer if playing (apply new interval)
     ///
-    /// - Parameter speed: 재생 속도 (0.5x, 1.0x, 2.0x 등)
+    /// - Parameter speed: Playback speed (0.5x, 1.0x, 2.0x, etc.)
     ///
-    /// **사용 예시:**
+    /// **Usage Examples:**
     /// ```swift
-    /// viewModel.setPlaybackSpeed(0.5)  // 0.5배속 (느리게)
-    /// viewModel.setPlaybackSpeed(1.0)  // 정상 속도
-    /// viewModel.setPlaybackSpeed(2.0)  // 2배속 (빠르게)
-    /// viewModel.setPlaybackSpeed(5.0)  // 4.0으로 clamp (최대)
+    /// viewModel.setPlaybackSpeed(0.5)  // 0.5x speed (slower)
+    /// viewModel.setPlaybackSpeed(1.0)  // Normal speed
+    /// viewModel.setPlaybackSpeed(2.0)  // 2x speed (faster)
+    /// viewModel.setPlaybackSpeed(5.0)  // Clamp to 4.0 (max)
     /// ```
     func setPlaybackSpeed(_ speed: Double) {
-        /// speed를 0.1~4.0 범위로 제한
+        /// Limit speed to 0.1~4.0 range
         playbackSpeed = max(0.1, min(4.0, speed))
 
-        /// 재생 중이면 Timer 재시작
+        /// Restart Timer if playing
         ///
-        /// ## Timer 간격 재계산
+        /// ## Recalculate Timer Interval
         /// ```
-        /// // 이전: speed = 1.0x, interval = 0.0333초
-        /// // 변경: speed = 2.0x, interval = 0.0167초 (2배 빠름)
+        /// // Before: speed = 1.0x, interval = 0.0333 sec
+        /// // After: speed = 2.0x, interval = 0.0167 sec (2x faster)
         /// ```
         ///
-        /// **동작:**
+        /// **Operation:**
         /// ```
-        /// stopPlaybackTimer() → 기존 Timer 중지
+        /// stopPlaybackTimer() → Stop existing Timer
         ///      ↓
-        /// startPlaybackTimer() → 새로운 간격으로 Timer 시작
+        /// startPlaybackTimer() → Start Timer with new interval
         /// ```
         if playbackState == .playing {
             stopPlaybackTimer()
@@ -1358,85 +1358,85 @@ class VideoPlayerViewModel: ObservableObject {
         }
     }
 
-    /// 음량 설정
+    /// Set volume
     ///
-    /// ## 음량 범위
-    /// - 최소: 0.0 (무음)
-    /// - 최대: 1.0 (최대 볼륨)
+    /// ## Volume Range
+    /// - Minimum: 0.0 (mute)
+    /// - Maximum: 1.0 (max volume)
     ///
-    /// ## 음량 변경 동작
-    /// 1. volume을 0.0~1.0으로 clamp
-    /// 2. self.volume에 저장
-    /// 3. audioPlayer.setVolume() 호출
+    /// ## Volume Change Operation
+    /// 1. Clamp volume to 0.0~1.0
+    /// 2. Store in self.volume
+    /// 3. Call audioPlayer.setVolume()
     ///
-    /// - Parameter volume: 음량 (0.0 ~ 1.0)
+    /// - Parameter volume: Volume (0.0 ~ 1.0)
     ///
-    /// **사용 예시:**
+    /// **Usage Examples:**
     /// ```swift
-    /// viewModel.setVolume(0.0)   // 무음
-    /// viewModel.setVolume(0.5)   // 50% 볼륨
-    /// viewModel.setVolume(1.0)   // 최대 볼륨
-    /// viewModel.setVolume(1.5)   // 1.0으로 clamp (최대)
+    /// viewModel.setVolume(0.0)   // Mute
+    /// viewModel.setVolume(0.5)   // 50% volume
+    /// viewModel.setVolume(1.0)   // Max volume
+    /// viewModel.setVolume(1.5)   // Clamp to 1.0 (max)
     /// ```
     func setVolume(_ volume: Double) {
-        /// volume을 0.0~1.0 범위로 제한
+        /// Limit volume to 0.0~1.0 range
         self.volume = max(0.0, min(1.0, volume))
 
-        /// AudioPlayer에 볼륨 전달
+        /// Pass volume to AudioPlayer
         ///
-        /// ## Float 변환
-        /// - AudioPlayer는 Float 타입 사용
-        /// - Double → Float 캐스팅 필요
+        /// ## Float Conversion
+        /// - AudioPlayer uses Float type
+        /// - Double → Float casting required
         audioPlayer?.setVolume(Float(self.volume))
     }
 
-    /// 상대적인 시간만큼 시크
+    /// Seek by relative time amount
     ///
-    /// ## 상대 시크
-    /// - 현재 시간 기준으로 앞/뒤로 이동
-    /// - seconds > 0: 앞으로 (forward)
-    /// - seconds < 0: 뒤로 (backward)
+    /// ## Relative Seek
+    /// - Move forward/backward from current time
+    /// - seconds > 0: Forward
+    /// - seconds < 0: Backward
     ///
-    /// - Parameter seconds: 이동할 시간 (초, 양수=앞으로, 음수=뒤로)
+    /// - Parameter seconds: Time to move (seconds, positive=forward, negative=backward)
     ///
-    /// **사용 예시:**
+    /// **Usage Examples:**
     /// ```swift
-    /// // currentTime = 30초
-    /// viewModel.seekBySeconds(10)   → seekToTime(40초)  (10초 앞으로)
-    /// viewModel.seekBySeconds(-5)   → seekToTime(35초)  (5초 뒤로)
-    /// viewModel.seekBySeconds(100)  → seekToTime(90초)  (clamp to duration)
+    /// // currentTime = 30 seconds
+    /// viewModel.seekBySeconds(10)   → seekToTime(40 sec)  (10 sec forward)
+    /// viewModel.seekBySeconds(-5)   → seekToTime(35 sec)  (5 sec backward)
+    /// viewModel.seekBySeconds(100)  → seekToTime(90 sec)  (clamp to duration)
     /// ```
     ///
-    /// **View에서 사용 (키보드 단축키):**
+    /// **Usage in View (Keyboard Shortcuts):**
     /// ```swift
-    /// .onKeyPress(.rightArrow) { viewModel.seekBySeconds(5) }   // ← 5초 앞으로
-    /// .onKeyPress(.leftArrow) { viewModel.seekBySeconds(-5) }   // → 5초 뒤로
+    /// .onKeyPress(.rightArrow) { viewModel.seekBySeconds(5) }   // → 5 sec forward
+    /// .onKeyPress(.leftArrow) { viewModel.seekBySeconds(-5) }   // ← 5 sec backward
     /// ```
     func seekBySeconds(_ seconds: Double) {
         seekToTime(currentTime + seconds)
     }
 
-    /// 음량 조절 (상대값)
+    /// Adjust volume (relative value)
     ///
-    /// ## 상대 음량 조절
-    /// - 현재 음량 기준으로 증가/감소
-    /// - delta > 0: 증가
-    /// - delta < 0: 감소
+    /// ## Relative Volume Adjustment
+    /// - Increase/decrease from current volume
+    /// - delta > 0: Increase
+    /// - delta < 0: Decrease
     ///
-    /// - Parameter delta: 음량 변화량 (-1.0 ~ 1.0)
+    /// - Parameter delta: Volume change amount (-1.0 ~ 1.0)
     ///
-    /// **사용 예시:**
+    /// **Usage Examples:**
     /// ```swift
     /// // volume = 0.5
-    /// viewModel.adjustVolume(by: 0.1)   → setVolume(0.6)  (10% 증가)
-    /// viewModel.adjustVolume(by: -0.2)  → setVolume(0.4)  (20% 감소)
+    /// viewModel.adjustVolume(by: 0.1)   → setVolume(0.6)  (10% increase)
+    /// viewModel.adjustVolume(by: -0.2)  → setVolume(0.4)  (20% decrease)
     /// viewModel.adjustVolume(by: 0.8)   → setVolume(1.0)  (clamp to max)
     /// ```
     ///
-    /// **View에서 사용 (키보드 단축키):**
+    /// **Usage in View (Keyboard Shortcuts):**
     /// ```swift
-    /// .onKeyPress(.upArrow) { viewModel.adjustVolume(by: 0.1) }     // ↑ 볼륨 증가
-    /// .onKeyPress(.downArrow) { viewModel.adjustVolume(by: -0.1) }  // ↓ 볼륨 감소
+    /// .onKeyPress(.upArrow) { viewModel.adjustVolume(by: 0.1) }     // ↑ Increase volume
+    /// .onKeyPress(.downArrow) { viewModel.adjustVolume(by: -0.1) }  // ↓ Decrease volume
     /// ```
     func adjustVolume(by delta: Double) {
         setVolume(volume + delta)
@@ -1444,52 +1444,52 @@ class VideoPlayerViewModel: ObservableObject {
 
     // MARK: - Snapshot Methods
 
-    /// 현재 프레임을 NSImage로 캡처
+    /// Capture current frame as NSImage
     ///
-    /// ## 스냅샷 캡처
-    /// - 현재 표시 중인 비디오 프레임을 이미지로 변환
-    /// - CGImage → NSImage 변환
+    /// ## Snapshot Capture
+    /// - Convert currently displayed video frame to image
+    /// - CGImage → NSImage conversion
     ///
-    /// - Returns: NSImage, 캡처 실패 시 nil
+    /// - Returns: NSImage, nil if capture fails
     ///
-    /// **사용 예시:**
+    /// **Usage Example:**
     /// ```swift
     /// if let snapshot = viewModel.captureCurrentFrame() {
-    ///     // 이미지 저장 또는 표시
+    ///     // Save or display image
     ///     saveImage(snapshot, to: url)
     /// }
     /// ```
     func captureCurrentFrame() -> NSImage? {
-        // currentFrame이 없으면 nil 반환
+        // Return nil if no currentFrame
         guard let frame = currentFrame else {
             return nil
         }
 
-        // VideoFrame → CGImage 변환
+        // VideoFrame → CGImage conversion
         guard let cgImage = frame.toCGImage() else {
             return nil
         }
 
-        // CGImage → NSImage 변환
+        // CGImage → NSImage conversion
         let size = NSSize(width: frame.width, height: frame.height)
         return NSImage(cgImage: cgImage, size: size)
     }
 
     // MARK: - Segment Selection Methods
 
-    /// 현재 시간을 In Point로 설정
+    /// Set current time as In Point
     ///
-    /// ## In Point 설정
-    /// - 현재 재생 위치를 구간 시작점으로 저장
-    /// - outPoint가 이미 설정되어 있고 currentTime보다 작으면 outPoint 제거
+    /// ## In Point Setting
+    /// - Save current playback position as segment start point
+    /// - Remove outPoint if already set and earlier than currentTime
     ///
-    /// **사용 예시:**
+    /// **Usage Example:**
     /// ```swift
     /// // currentTime = 5.0
     /// viewModel.setInPoint()
     /// // inPoint = 5.0
     ///
-    /// // 버튼 구현
+    /// // Button implementation
     /// Button("Set In") {
     ///     viewModel.setInPoint()
     /// }
@@ -1497,31 +1497,31 @@ class VideoPlayerViewModel: ObservableObject {
     func setInPoint() {
         inPoint = currentTime
 
-        // Out Point가 In Point보다 앞에 있으면 제거
+        // Remove Out Point if it's before In Point
         if let out = outPoint, out <= currentTime {
             outPoint = nil
         }
     }
 
-    /// 현재 시간을 Out Point로 설정
+    /// Set current time as Out Point
     ///
-    /// ## Out Point 설정
-    /// - 현재 재생 위치를 구간 끝점으로 저장
-    /// - inPoint가 설정되어 있지 않거나 currentTime보다 크면 설정 불가
+    /// ## Out Point Setting
+    /// - Save current playback position as segment end point
+    /// - Cannot set if inPoint not set or currentTime is earlier
     ///
-    /// **사용 예시:**
+    /// **Usage Example:**
     /// ```swift
     /// // currentTime = 15.0, inPoint = 5.0
     /// viewModel.setOutPoint()
     /// // outPoint = 15.0
     ///
-    /// // 버튼 구현
+    /// // Button implementation
     /// Button("Set Out") {
     ///     viewModel.setOutPoint()
     /// }
     /// ```
     func setOutPoint() {
-        // In Point가 설정되어 있고 현재 시간이 그보다 뒤일 때만 설정
+        // Only set if In Point is set and current time is after it
         guard let inTime = inPoint, currentTime > inTime else {
             return
         }
@@ -1529,48 +1529,48 @@ class VideoPlayerViewModel: ObservableObject {
         outPoint = currentTime
     }
 
-    /// In Point 제거
+    /// Remove In Point
     ///
-    /// ## 초기화
-    /// - inPoint를 nil로 초기화
-    /// - outPoint도 함께 제거 (구간이 무효화됨)
+    /// ## Reset
+    /// - Reset inPoint to nil
+    /// - Also remove outPoint (segment becomes invalid)
     ///
-    /// **사용 예시:**
+    /// **Usage Example:**
     /// ```swift
     /// viewModel.clearInPoint()
     /// // inPoint = nil, outPoint = nil
     /// ```
     func clearInPoint() {
         inPoint = nil
-        outPoint = nil  // Out Point도 함께 제거
+        outPoint = nil  // Also remove Out Point
     }
 
-    /// Out Point 제거
+    /// Remove Out Point
     ///
-    /// ## 초기화
-    /// - outPoint를 nil로 초기화
-    /// - inPoint는 유지 (다시 Out Point 설정 가능)
+    /// ## Reset
+    /// - Reset outPoint to nil
+    /// - Keep inPoint (can set Out Point again)
     ///
-    /// **사용 예시:**
+    /// **Usage Example:**
     /// ```swift
     /// viewModel.clearOutPoint()
-    /// // outPoint = nil, inPoint는 유지
+    /// // outPoint = nil, inPoint is kept
     /// ```
     func clearOutPoint() {
         outPoint = nil
     }
 
-    /// 선택된 구간 초기화
+    /// Reset selected segment
     ///
-    /// ## 전체 초기화
-    /// - inPoint와 outPoint 모두 nil로 초기화
+    /// ## Full Reset
+    /// - Reset both inPoint and outPoint to nil
     ///
-    /// **사용 예시:**
+    /// **Usage Example:**
     /// ```swift
     /// viewModel.clearSegment()
     /// // inPoint = nil, outPoint = nil
     ///
-    /// // 버튼 구현
+    /// // Button implementation
     /// Button("Clear") {
     ///     viewModel.clearSegment()
     /// }
@@ -1580,18 +1580,18 @@ class VideoPlayerViewModel: ObservableObject {
         outPoint = nil
     }
 
-    /// 선택된 구간이 유효한지 확인
+    /// Check if selected segment is valid
     ///
-    /// ## 유효성 검사
-    /// - inPoint와 outPoint 모두 설정되어 있음
-    /// - outPoint > inPoint (구간 길이 > 0)
+    /// ## Validation
+    /// - Both inPoint and outPoint are set
+    /// - outPoint > inPoint (segment length > 0)
     ///
-    /// - Returns: 구간이 유효하면 true
+    /// - Returns: true if segment is valid
     ///
-    /// **사용 예시:**
+    /// **Usage Example:**
     /// ```swift
     /// if viewModel.hasValidSegment {
-    ///     // Export 버튼 활성화
+    ///     // Enable Export button
     /// }
     /// ```
     var hasValidSegment: Bool {
@@ -1601,20 +1601,20 @@ class VideoPlayerViewModel: ObservableObject {
         return outTime > inTime
     }
 
-    /// 선택된 구간 길이 (초)
+    /// Selected segment length (seconds)
     ///
-    /// ## 구간 길이 계산
+    /// ## Segment Length Calculation
     /// - segmentDuration = outPoint - inPoint
-    /// - 유효하지 않으면 0.0 반환
+    /// - Return 0.0 if invalid
     ///
-    /// - Returns: 구간 길이 (초)
+    /// - Returns: Segment length (seconds)
     ///
-    /// **사용 예시:**
+    /// **Usage Example:**
     /// ```swift
     /// // inPoint = 5.0, outPoint = 15.0
     /// viewModel.segmentDuration  // 10.0
     ///
-    /// // UI 표시
+    /// // UI display
     /// Text("Segment: \(formatTime(viewModel.segmentDuration))")
     /// // "Segment: 00:10"
     /// ```
@@ -1627,156 +1627,156 @@ class VideoPlayerViewModel: ObservableObject {
 
     // MARK: - Private Methods
 
-    /// 재생 타이머 시작
+    /// Start playback timer
     ///
-    /// ## Timer 생성 및 시작
+    /// ## Create and Start Timer
     /// ```
-    /// 1. 기존 Timer 중지 (stopPlaybackTimer)
+    /// 1. Stop existing Timer (stopPlaybackTimer)
     ///      ↓
-    /// 2. interval 계산: (1.0 / targetFrameRate) / playbackSpeed
+    /// 2. Calculate interval: (1.0 / targetFrameRate) / playbackSpeed
     ///      ↓
-    /// 3. Timer.scheduledTimer 생성 (repeats: true)
-    ///      ↓ interval마다 반복 실행
-    /// 4. updatePlayback() 호출 → 프레임 디코딩 및 표시
+    /// 3. Create Timer.scheduledTimer (repeats: true)
+    ///      ↓ Repeat execution at interval
+    /// 4. Call updatePlayback() → Decode and display frames
     /// ```
     ///
-    /// ## interval 계산 예시
+    /// ## Interval Calculation Examples
     /// ```swift
-    /// // 30 FPS, 1.0x 속도
+    /// // 30 FPS, 1.0x speed
     /// targetFrameRate = 30.0, playbackSpeed = 1.0
-    /// interval = (1.0 / 30.0) / 1.0 = 0.0333초 (33ms)
+    /// interval = (1.0 / 30.0) / 1.0 = 0.0333 seconds (33ms)
     ///
-    /// // 30 FPS, 2.0x 속도 (2배 빠름)
+    /// // 30 FPS, 2.0x speed (2x faster)
     /// targetFrameRate = 30.0, playbackSpeed = 2.0
-    /// interval = (1.0 / 30.0) / 2.0 = 0.0167초 (17ms)
+    /// interval = (1.0 / 30.0) / 2.0 = 0.0167 seconds (17ms)
     ///
-    /// // 60 FPS, 0.5x 속도 (2배 느림)
+    /// // 60 FPS, 0.5x speed (2x slower)
     /// targetFrameRate = 60.0, playbackSpeed = 0.5
-    /// interval = (1.0 / 60.0) / 0.5 = 0.0333초 (33ms)
+    /// interval = (1.0 / 60.0) / 0.5 = 0.0333 seconds (33ms)
     /// ```
     private func startPlaybackTimer() {
-        /// 기존 Timer 정리
+        /// Clean up existing Timer
         stopPlaybackTimer()
 
-        /// Timer 간격 계산
+        /// Calculate Timer interval
         ///
         /// ## (1.0 / targetFrameRate) / playbackSpeed
-        /// - (1.0 / targetFrameRate): 한 프레임 시간 (초)
-        /// - / playbackSpeed: 재생 속도 적용
+        /// - (1.0 / targetFrameRate): One frame time (seconds)
+        /// - / playbackSpeed: Apply playback speed
         let interval = (1.0 / targetFrameRate) / playbackSpeed
 
-        /// Timer 생성 및 시작
+        /// Create and start Timer
         ///
         /// ## Timer.scheduledTimer
-        /// - withTimeInterval: interval초마다 실행
-        /// - repeats: true → 계속 반복 (false면 한 번만 실행)
-        /// - [weak self]: 순환 참조 방지 (메모리 누수 방지)
+        /// - withTimeInterval: Execute every interval seconds
+        /// - repeats: true → Keep repeating (false for one-time execution)
+        /// - [weak self]: Prevent retain cycle (prevent memory leak)
         ///
-        /// **weak self 필요성:**
+        /// **Why weak self is needed:**
         /// ```
         /// Timer → closure → self (ViewModel)
         ///   ↑__________________________|
-        /// 순환 참조 발생! (메모리 해제 안 됨)
+        /// Retain cycle occurs! (Memory not released)
         ///
-        /// [weak self]로 해결:
+        /// Solved with [weak self]:
         /// Timer → closure --weak--> self
-        /// (Timer 해제 → closure 해제 → self 해제 가능)
+        /// (Timer release → closure release → self can be released)
         /// ```
         playbackTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
             self?.updatePlayback()
         }
     }
 
-    /// 재생 타이머 중지
+    /// Stop playback timer
     ///
-    /// ## Timer 정리
+    /// ## Clean up Timer
     /// ```
-    /// 1. playbackTimer?.invalidate() → Timer 중지 및 해제
+    /// 1. playbackTimer?.invalidate() → Stop and release Timer
     ///      ↓
-    /// 2. playbackTimer = nil → 참조 제거
+    /// 2. playbackTimer = nil → Remove reference
     /// ```
     ///
     /// ## invalidate()
-    /// - Timer를 RunLoop에서 제거
-    /// - 더 이상 클로저가 호출되지 않음
-    /// - Timer 메모리 해제
+    /// - Remove Timer from RunLoop
+    /// - Closure no longer called
+    /// - Release Timer memory
     private func stopPlaybackTimer() {
         playbackTimer?.invalidate()
         playbackTimer = nil
     }
 
-    /// 재생 업데이트 (Timer 콜백)
+    /// Update playback (Timer callback)
     ///
-    /// ## 호출 시점
-    /// - playbackTimer가 주기적으로 호출 (프레임율 + 재생속도 기반)
+    /// ## Invocation Point
+    /// - Called periodically by playbackTimer (based on frame rate + playback speed)
     ///
-    /// ## 업데이트 프로세스
+    /// ## Update Process
     /// ```
-    /// 1. decoder.decodeNextFrame() → 다음 프레임 디코딩
+    /// 1. decoder.decodeNextFrame() → Decode next frame
     ///      ↓
-    /// 2. 비디오 프레임 처리
-    ///    - currentFrame 업데이트 (@Published → View 갱신)
-    ///    - currentTime 업데이트
-    ///    - playbackPosition 업데이트
+    /// 2. Process video frame
+    ///    - Update currentFrame (@Published → View refreshes)
+    ///    - Update currentTime
+    ///    - Update playbackPosition
     ///      ↓
-    /// 3. 오디오 프레임 처리
-    ///    - audioPlayer.enqueue(audioFrame) → 오디오 재생
+    /// 3. Process audio frame
+    ///    - audioPlayer.enqueue(audioFrame) → Play audio
     ///      ↓
-    /// 4. EOF 체크
-    ///    - 파일 끝 도달 시 stop() 호출
+    /// 4. Check EOF
+    ///    - Call stop() when end of file reached
     /// ```
     ///
-    /// ## 에러 처리
-    /// - EOF 에러: stop() 호출, currentTime/playbackPosition을 끝으로 설정
-    /// - 기타 에러: errorMessage 설정, stop() 호출
+    /// ## Error Handling
+    /// - EOF error: Call stop(), set currentTime/playbackPosition to end
+    /// - Other errors: Set errorMessage, call stop()
     private func updatePlayback() {
-        /// decoder 존재 확인
+        /// Check decoder exists
         ///
         /// ## guard let
-        /// - decoder가 nil이면 stop() 호출 후 return
-        /// - 비디오가 언로드된 상태
+        /// - If decoder is nil, call stop() and return
+        /// - Video is unloaded
         guard let decoder = decoder else {
             stop()
             return
         }
 
-        /// 프레임 디코딩 (do-catch)
+        /// Decode frame (do-catch)
         do {
-            /// 다음 프레임 디코딩
+            /// Decode next frame
             ///
             /// ## decoder.decodeNextFrame()
-            /// - FFmpeg av_read_frame(), avcodec_send_packet(), avcodec_receive_frame() 호출
-            /// - 반환: DecodeResult? (video: VideoFrame?, audio: AudioFrame?)
-            /// - nil 반환: EOF (파일 끝)
+            /// - Calls FFmpeg av_read_frame(), avcodec_send_packet(), avcodec_receive_frame()
+            /// - Returns: DecodeResult? (video: VideoFrame?, audio: AudioFrame?)
+            /// - Returns nil: EOF (end of file)
             ///
-            /// **반환 예시:**
+            /// **Return Examples:**
             /// ```swift
-            /// // 비디오 + 오디오
+            /// // Video + Audio
             /// DecodeResult(video: VideoFrame(...), audio: AudioFrame(...))
             ///
-            /// // 비디오만
+            /// // Video only
             /// DecodeResult(video: VideoFrame(...), audio: nil)
             ///
             /// // EOF
             /// nil
             /// ```
             if let result = try decoder.decodeNextFrame() {
-                /// 비디오 프레임 처리
+                /// Process video frame
                 if let videoFrame = result.video {
-                    currentFrame = videoFrame  // @Published → View 자동 갱신
+                    currentFrame = videoFrame  // @Published → View auto-refreshes
                     currentTime = videoFrame.timestamp
                     playbackPosition = duration > 0 ? currentTime / duration : 0.0
                 }
 
-                /// 오디오 프레임 처리
+                /// Process audio frame
                 ///
                 /// ## audioPlayer.enqueue(audioFrame)
-                /// - 오디오 프레임을 재생 큐에 추가
-                /// - AudioPlayer가 자동으로 재생
+                /// - Add audio frame to playback queue
+                /// - AudioPlayer plays automatically
                 ///
-                /// ## do-catch 내부 에러
-                /// - 오디오 재생 실패 시 경고 메시지만 출력
-                /// - 비디오 재생은 계속 진행 (오디오 없이)
+                /// ## Inner do-catch error
+                /// - Only print warning message if audio playback fails
+                /// - Continue video playback (without audio)
                 if let audioFrame = result.audio {
                     do {
                         try audioPlayer?.enqueue(audioFrame)
@@ -1786,25 +1786,25 @@ class VideoPlayerViewModel: ObservableObject {
                     }
                 }
             } else {
-                /// EOF (파일 끝) 도달
+                /// EOF (end of file) reached
                 ///
-                /// ## decodeNextFrame() 반환 nil
-                /// - 더 이상 디코딩할 프레임 없음
-                /// - 재생 종료
+                /// ## decodeNextFrame() returns nil
+                /// - No more frames to decode
+                /// - End playback
                 stop()
-                currentTime = duration        // 끝 시간으로 설정
-                playbackPosition = 1.0        // 100% 위치
+                currentTime = duration        // Set to end time
+                playbackPosition = 1.0        // 100% position
             }
         } catch {
-            /// 디코딩 에러 처리
+            /// Handle decoding error
             ///
             /// ## DecoderError.endOfFile
-            /// - EOF 에러 (파일 끝)
-            /// - stop() 호출, 시간/위치를 끝으로 설정
+            /// - EOF error (end of file)
+            /// - Call stop(), set time/position to end
             ///
-            /// ## 기타 에러
-            /// - 디코딩 실패, 손상된 프레임 등
-            /// - errorMessage 설정, stop() 호출
+            /// ## Other errors
+            /// - Decoding failure, corrupted frame, etc.
+            /// - Set errorMessage, call stop()
             if case DecoderError.endOfFile = error {
                 stop()
                 currentTime = duration
@@ -1816,119 +1816,119 @@ class VideoPlayerViewModel: ObservableObject {
         }
     }
 
-    /// 특정 시간의 프레임 로드 (캐시 지원)
+    /// Load frame at specific time (with cache support)
     ///
-    /// ## 사용 시점
-    /// - 비디오 로딩 후 첫 프레임 표시 (loadVideo)
-    /// - 시크 후 해당 위치 프레임 표시 (seekToTime)
-    /// - 프레임 단위 이동 (stepForward/stepBackward)
+    /// ## Usage Points
+    /// - Display first frame after video load (loadVideo)
+    /// - Display frame at position after seek (seekToTime)
+    /// - Frame-by-frame movement (stepForward/stepBackward)
     ///
-    /// ## 로딩 프로세스 (캐시 있을 때)
+    /// ## Loading Process (with cache)
     /// ```
-    /// 1. cacheKey(for: time) 계산 (100ms 단위로 반올림)
+    /// 1. Calculate cacheKey(for: time) (round to 100ms units)
     ///      ↓
-    /// 2. frameCache에서 조회
+    /// 2. Query frameCache
     ///      ↓
-    /// 3. 캐시 히트 → 즉시 반환 (디코딩 스킵) ✅ 빠름!
+    /// 3. Cache hit → Return immediately (skip decoding) ✅ Fast!
     /// ```
     ///
-    /// ## 로딩 프로세스 (캐시 없을 때)
+    /// ## Loading Process (without cache)
     /// ```
-    /// 1. isBuffering = true (로딩 시작)
+    /// 1. isBuffering = true (start loading)
     ///      ↓
     /// 2. decoder.seek(to: time) → FFmpeg seek
     ///      ↓
-    /// 3. decoder.decodeNextFrame() → 프레임 디코딩
+    /// 3. decoder.decodeNextFrame() → Decode frame
     ///      ↓
-    /// 4. currentFrame 업데이트 (@Published → View 갱신)
+    /// 4. Update currentFrame (@Published → View refreshes)
     ///      ↓
-    /// 5. addToCache(frame, at: cacheKey) → 캐시에 저장
+    /// 5. addToCache(frame, at: cacheKey) → Save to cache
     ///      ↓
-    /// 6. isBuffering = false (로딩 완료)
+    /// 6. isBuffering = false (loading complete)
     /// ```
     ///
-    /// ## 성능 개선
-    /// - 캐시 히트 시: 디코딩 시간 0ms (즉시 반환)
-    /// - 캐시 미스 시: 디코딩 + 캐시 저장 (다음번에 빠름)
-    /// - 프레임 단위 이동 시 매우 유용 (stepForward/stepBackward)
+    /// ## Performance Improvement
+    /// - Cache hit: 0ms decoding time (immediate return)
+    /// - Cache miss: Decode + save to cache (fast next time)
+    /// - Very useful for frame-by-frame movement (stepForward/stepBackward)
     ///
-    /// - Parameter time: 로드할 시간 (초)
+    /// - Parameter time: Time to load (seconds)
     private func loadFrameAt(time: TimeInterval) {
         guard let decoder = decoder else { return }
 
-        /// 1단계: 캐시 조회
+        /// Step 1: Query cache
         ///
-        /// ## cacheKey 계산
-        /// - 100ms 단위로 반올림 (0.1초 정밀도)
-        /// - 1.234초 → 1.2초
-        /// - 1.278초 → 1.3초
+        /// ## Calculate cacheKey
+        /// - Round to 100ms units (0.1 second precision)
+        /// - 1.234 sec → 1.2 sec
+        /// - 1.278 sec → 1.3 sec
         let key = cacheKey(for: time)
 
-        /// ## 캐시 히트 체크
-        /// - frameCache[key]가 nil이 아니면 캐시 히트
-        /// - 디코딩 없이 즉시 반환 → 성능 향상!
+        /// ## Check cache hit
+        /// - Cache hit if frameCache[key] is not nil
+        /// - Return immediately without decoding → Performance boost!
         if let cachedFrame = frameCache[key] {
-            currentFrame = cachedFrame  // @Published → View 갱신
-            return  // 디코딩 스킵
+            currentFrame = cachedFrame  // @Published → View refreshes
+            return  // Skip decoding
         }
 
-        /// 2단계: 캐시 미스 - 디코딩 수행
+        /// Step 2: Cache miss - perform decoding
         ///
         /// ## isBuffering = true
-        /// - @Published → View에 로딩 인디케이터 표시
+        /// - @Published → Display loading indicator in View
         isBuffering = true
 
-        /// 프레임 로드 (do-catch)
+        /// Load frame (do-catch)
         do {
-            /// 3. 해당 시간으로 시크
+            /// 3. Seek to that time
             try decoder.seek(to: time)
 
-            /// 4. 프레임 디코딩
+            /// 4. Decode frame
             ///
-            /// ## if let 중첩
-            /// - result가 nil이 아니고
-            /// - result.video가 nil이 아닐 때만 실행
+            /// ## Nested if let
+            /// - Execute only when result is not nil
+            /// - AND result.video is not nil
             ///
-            /// **조건 체크:**
+            /// **Condition Check:**
             /// ```swift
-            /// result = nil               → 실행 안 함 (EOF)
-            /// result = DecodeResult(video: nil, ...) → 실행 안 함 (비디오 없음)
-            /// result = DecodeResult(video: VideoFrame(...), ...) → 실행 ✅
+            /// result = nil               → Does not execute (EOF)
+            /// result = DecodeResult(video: nil, ...) → Does not execute (no video)
+            /// result = DecodeResult(video: VideoFrame(...), ...) → Executes ✅
             /// ```
             if let result = try decoder.decodeNextFrame(),
                let videoFrame = result.video {
-                currentFrame = videoFrame  // @Published → View 갱신
+                currentFrame = videoFrame  // @Published → View refreshes
 
-                /// 5. 캐시에 저장
+                /// 5. Save to cache
                 ///
                 /// ## addToCache
-                /// - 디코딩된 프레임을 캐시에 저장
-                /// - 다음번 동일 시간 접근 시 빠르게 반환
-                /// - LRU 방식으로 오래된 항목 자동 제거
+                /// - Save decoded frame to cache
+                /// - Return quickly on next access to same time
+                /// - Automatically remove old entries using LRU method
                 addToCache(frame: videoFrame, at: key)
             }
 
-            /// 버퍼링 완료
+            /// Buffering complete
             isBuffering = false
         } catch {
-            /// 로드 실패 처리
+            /// Handle load failure
             errorMessage = "Failed to load frame: \(error.localizedDescription)"
             isBuffering = false
         }
     }
 
-    /// 캐시 키 계산 (100ms 단위 반올림)
+    /// Calculate cache key (round to 100ms units)
     ///
-    /// ## 반올림 알고리즘
+    /// ## Rounding Algorithm
     /// ```
-    /// 1. time * 10.0 (0.1초 → 1.0)
+    /// 1. time * 10.0 (0.1 sec → 1.0)
     ///      ↓
-    /// 2. round() (반올림)
+    /// 2. round() (round)
     ///      ↓
-    /// 3. / 10.0 (다시 초 단위로)
+    /// 3. / 10.0 (back to seconds)
     /// ```
     ///
-    /// ## 예시
+    /// ## Examples
     /// ```swift
     /// cacheKey(for: 1.234) → 1.2
     /// cacheKey(for: 1.278) → 1.3
@@ -1936,72 +1936,72 @@ class VideoPlayerViewModel: ObservableObject {
     /// cacheKey(for: 5.555) → 5.6
     /// ```
     ///
-    /// ## 100ms 정밀도를 선택한 이유
-    /// - 30fps 영상: 프레임 간격 33ms → 100ms면 3프레임 범위
-    /// - 60fps 영상: 프레임 간격 17ms → 100ms면 6프레임 범위
-    /// - 너무 작으면: 캐시 미스 증가 (메모리 낭비)
-    /// - 너무 크면: 시간 정확도 저하
+    /// ## Why 100ms Precision
+    /// - 30fps video: Frame interval 33ms → 100ms covers 3 frames
+    /// - 60fps video: Frame interval 17ms → 100ms covers 6 frames
+    /// - Too small: Increased cache misses (memory waste)
+    /// - Too large: Reduced time accuracy
     ///
-    /// - Parameter time: 원본 시간 (초)
-    /// - Returns: 100ms 단위로 반올림된 시간
+    /// - Parameter time: Original time (seconds)
+    /// - Returns: Time rounded to 100ms units
     private func cacheKey(for time: TimeInterval) -> TimeInterval {
         return round(time * 10.0) / 10.0
     }
 
-    /// 프레임을 캐시에 추가 (LRU 방식)
+    /// Add frame to cache (LRU method)
     ///
-    /// ## 캐시 추가 프로세스
+    /// ## Cache Addition Process
     /// ```
-    /// 1. frameCache에 프레임 추가
+    /// 1. Add frame to frameCache
     ///      ↓
-    /// 2. 캐시 크기 확인
+    /// 2. Check cache size
     ///      ↓ frameCache.count > maxFrameCacheSize
-    /// 3. 오래된 항목 제거 (LRU)
+    /// 3. Remove old entries (LRU)
     ///      ↓
-    /// 4. 정기 캐시 정리 (5초마다)
+    /// 4. Periodic cache cleanup (every 5 seconds)
     /// ```
     ///
     /// ## LRU (Least Recently Used)
-    /// - 가장 오래 사용되지 않은 항목 제거
-    /// - 최근에 사용된 프레임은 유지
-    /// - 자주 접근하는 영역의 프레임 유지
+    /// - Remove least recently used entries
+    /// - Keep recently used frames
+    /// - Maintain frames in frequently accessed areas
     ///
-    /// - Parameter frame: 저장할 비디오 프레임
-    /// - Parameter key: 캐시 키 (100ms 단위 시간)
+    /// - Parameter frame: Video frame to save
+    /// - Parameter key: Cache key (time in 100ms units)
     private func addToCache(frame: VideoFrame, at key: TimeInterval) {
-        /// 1. 캐시에 추가
+        /// 1. Add to cache
         frameCache[key] = frame
 
-        /// 2. 캐시 크기 초과 시 정리
+        /// 2. Cleanup if cache size exceeded
         ///
-        /// ## maxFrameCacheSize 초과 체크
-        /// - 30개 초과 시 가장 오래된 항목 제거
-        /// - 메모리 사용량 제한
+        /// ## Check maxFrameCacheSize exceeded
+        /// - Remove oldest entry when exceeds 30
+        /// - Limit memory usage
         if frameCache.count > maxFrameCacheSize {
-            /// LRU 방식 제거
+            /// LRU removal
             ///
-            /// ## 제거 알고리즘
-            /// 1. 모든 키를 정렬 (시간 순서)
-            /// 2. 첫 번째 키 (가장 오래된 시간) 제거
+            /// ## Removal Algorithm
+            /// 1. Sort all keys (time order)
+            /// 2. Remove first key (oldest time)
             ///
-            /// **예시:**
+            /// **Example:**
             /// ```
             /// frameCache.keys = [1.0, 5.0, 3.0, 8.0, ...]
             /// sorted() → [1.0, 3.0, 5.0, 8.0, ...]
-            /// first → 1.0 (가장 오래된 시간)
-            /// remove(1.0) → 해당 프레임 제거
+            /// first → 1.0 (oldest time)
+            /// remove(1.0) → Remove that frame
             /// ```
             if let oldestKey = frameCache.keys.sorted().first {
                 frameCache.removeValue(forKey: oldestKey)
             }
         }
 
-        /// 3. 정기 캐시 정리 (5초마다)
+        /// 3. Periodic cache cleanup (every 5 seconds)
         ///
-        /// ## 정기 정리의 목적
-        /// - 메모리 압력 완화
-        /// - 더 이상 사용하지 않을 오래된 프레임 제거
-        /// - 재생 중인 영역과 멀리 떨어진 프레임 제거
+        /// ## Purpose of Periodic Cleanup
+        /// - Relieve memory pressure
+        /// - Remove old frames no longer needed
+        /// - Remove frames far from current playback position
         let now = Date()
         if now.timeIntervalSince(lastCacheCleanupTime) > 5.0 {
             cleanupCache()
@@ -2009,116 +2009,116 @@ class VideoPlayerViewModel: ObservableObject {
         }
     }
 
-    /// 캐시 정리 (오래된 항목 제거)
+    /// Cleanup cache (remove old entries)
     ///
-    /// ## 정리 알고리즘
+    /// ## Cleanup Algorithm
     /// ```
-    /// 1. 현재 재생 시간 기준으로 범위 설정
+    /// 1. Set range based on current playback time
     ///      ↓
-    /// 2. currentTime ± 5초 범위 밖의 프레임 제거
-    ///      ↓ 예: currentTime = 10초
-    /// 3. 5초 ~ 15초 범위의 프레임만 유지
+    /// 2. Remove frames outside currentTime ± 5 second range
+    ///      ↓ Example: currentTime = 10 seconds
+    /// 3. Keep only frames in 5 ~ 15 second range
     ///      ↓
-    /// 4. 나머지 제거 (메모리 해제)
+    /// 4. Remove the rest (free memory)
     /// ```
     ///
-    /// ## 범위 선택 이유
-    /// - ±5초: 프레임 단위 이동 시 충분한 범위
-    /// - 30fps 기준 약 150프레임 범위
-    /// - 메모리 사용량: 약 1.2GB (1080p RGBA 기준)
+    /// ## Reason for Range Selection
+    /// - ±5 seconds: Sufficient range for frame-by-frame movement
+    /// - Approximately 150 frames for 30fps
+    /// - Memory usage: approximately 1.2GB (1080p RGBA basis)
     ///
-    /// ## 호출 시점
-    /// - addToCache()에서 5초마다 자동 호출
-    /// - seekToTime()에서 캐시 전체 제거 시 호출 안 함
+    /// ## Invocation Points
+    /// - Called automatically every 5 seconds from addToCache()
+    /// - Not called when entire cache is removed in seekToTime()
     private func cleanupCache() {
-        /// 현재 시간 기준 범위 설정
+        /// Set range based on current time
         ///
-        /// ## 유지 범위: currentTime ± 5초
+        /// ## Retention range: currentTime ± 5 seconds
         /// - lowerBound = currentTime - 5.0
         /// - upperBound = currentTime + 5.0
         let lowerBound = currentTime - 5.0
         let upperBound = currentTime + 5.0
 
-        /// 범위 밖의 키 찾기
+        /// Find keys outside range
         ///
         /// ## filter
-        /// - 조건: key < lowerBound || key > upperBound
-        /// - 결과: 제거할 키 배열
+        /// - Condition: key < lowerBound || key > upperBound
+        /// - Result: Array of keys to remove
         let keysToRemove = frameCache.keys.filter { key in
             key < lowerBound || key > upperBound
         }
 
-        /// 범위 밖의 프레임 제거
+        /// Remove frames outside range
         ///
         /// ## removeValue(forKey:)
-        /// - Dictionary에서 키-값 쌍 제거
-        /// - VideoFrame 메모리 자동 해제 (ARC)
+        /// - Remove key-value pair from Dictionary
+        /// - VideoFrame memory automatically released (ARC)
         for key in keysToRemove {
             frameCache.removeValue(forKey: key)
         }
     }
 
-    /// 메모리 경고 처리
+    /// Handle memory warning
     ///
-    /// ## 메모리 경고 대응
+    /// ## Memory Warning Response
     /// ```
-    /// 시스템 메모리 부족
+    /// System low on memory
     ///      ↓
-    /// NSApplicationDidReceiveMemoryWarningNotification 발송
+    /// Send NSApplicationDidReceiveMemoryWarningNotification
     ///      ↓
-    /// handleMemoryWarning() 호출
+    /// Call handleMemoryWarning()
     ///      ↓
-    /// 프레임 캐시 전체 제거 (최대 250MB 해제)
+    /// Remove entire frame cache (free up to 250MB)
     ///      ↓
-    /// 메모리 압력 완화
+    /// Relieve memory pressure
     /// ```
     ///
-    /// ## 제거되는 메모리
-    /// - 프레임 캐시: 최대 30개 프레임
-    /// - 1080p RGBA 기준: 약 250MB
-    /// - 4K RGBA 기준: 약 1GB
+    /// ## Memory Freed
+    /// - Frame cache: Maximum 30 frames
+    /// - 1080p RGBA basis: Approximately 250MB
+    /// - 4K RGBA basis: Approximately 1GB
     ///
-    /// ## 제거하지 않는 것
-    /// - currentFrame (현재 표시 중인 프레임은 유지)
-    /// - decoder, audioPlayer (재생 계속 가능)
+    /// ## What is Not Removed
+    /// - currentFrame (currently displayed frame is kept)
+    /// - decoder, audioPlayer (playback can continue)
     ///
-    /// ## 영향
-    /// - 캐시 히트율 감소 (일시적)
-    /// - 프레임 단위 이동 시 약간 느려짐 (일시적)
-    /// - 재생 자체는 정상 동작 (새로 캐싱됨)
+    /// ## Impact
+    /// - Reduced cache hit rate (temporary)
+    /// - Slightly slower frame-by-frame movement (temporary)
+    /// - Playback itself operates normally (re-caches)
     ///
-    /// ## 호출 시점
-    /// - init()에서 NotificationCenter에 등록
-    /// - 시스템이 메모리 부족 감지 시 자동 호출
+    /// ## Invocation Points
+    /// - Registered with NotificationCenter in init()
+    /// - Called automatically when system detects low memory
     ///
-    /// **사용 예시:**
+    /// **Usage Example:**
     /// ```swift
-    /// // 사용자가 직접 호출하지 않음
-    /// // 시스템이 자동으로 호출
+    /// // Not called directly by user
+    /// // Called automatically by system
     /// ```
     private func handleMemoryWarning() {
-        /// 프레임 캐시 전체 제거
+        /// Remove entire frame cache
         ///
         /// ## removeAll()
-        /// - Dictionary의 모든 항목 제거
-        /// - VideoFrame 메모리 즉시 해제 (ARC)
-        /// - 최대 250MB (1080p) ~ 1GB (4K) 해제
+        /// - Remove all items from Dictionary
+        /// - VideoFrame memory released immediately (ARC)
+        /// - Free up to 250MB (1080p) ~ 1GB (4K)
         ///
-        /// **메모리 해제 계산:**
+        /// **Memory Release Calculation:**
         /// ```
-        /// 1080p RGBA 프레임 = 1920 × 1080 × 4 bytes = 8.3MB
-        /// 캐시 30개 = 8.3MB × 30 = 249MB
+        /// 1080p RGBA frame = 1920 × 1080 × 4 bytes = 8.3MB
+        /// Cache 30 frames = 8.3MB × 30 = 249MB
         ///
-        /// 4K RGBA 프레임 = 3840 × 2160 × 4 bytes = 33MB
-        /// 캐시 30개 = 33MB × 30 = 990MB
+        /// 4K RGBA frame = 3840 × 2160 × 4 bytes = 33MB
+        /// Cache 30 frames = 33MB × 30 = 990MB
         /// ```
         frameCache.removeAll()
 
-        /// 디버그 로그
+        /// Debug log
         ///
         /// ## print
-        /// - 개발 중 메모리 경고 발생 확인용
-        /// - 릴리즈 빌드에서는 제거 고려
+        /// - For checking memory warning occurrence during development
+        /// - Consider removing in release build
         print("Memory warning received: Frame cache cleared")
     }
 }
@@ -2126,19 +2126,19 @@ class VideoPlayerViewModel: ObservableObject {
 // MARK: - Supporting Types
 
 /// @enum PlaybackState
-/// @brief 재생 상태 열거형
-/// @details 비디오 플레이어의 재생 상태를 표현합니다.
+/// @brief Playback state enumeration
+/// @details Represents the playback state of the video player.
 ///
-/// ## 상태 종류
-/// - .stopped: 정지 상태 (비디오 없음 또는 재생 종료)
-/// - .playing: 재생 중 (Timer 동작)
-/// - .paused: 일시정지 (상태 유지)
+/// ## State Types
+/// - .stopped: Stopped state (no video or playback ended)
+/// - .playing: Playing (Timer running)
+/// - .paused: Paused (state maintained)
 ///
 /// ## Equatable
-/// - == 연산자로 비교 가능
-/// - if문에서 상태 확인 가능
+/// - Can be compared with == operator
+/// - Can check state in if statements
 ///
-/// **상태 전환 다이어그램:**
+/// **State Transition Diagram:**
 /// ```
 ///          loadVideo()
 ///  .stopped ────────────> .paused
@@ -2148,61 +2148,61 @@ class VideoPlayerViewModel: ObservableObject {
 ///     └────── stop() ────── .paused
 /// ```
 ///
-/// **사용 예시:**
+/// **Usage Examples:**
 /// ```swift
 /// if viewModel.playbackState == .playing {
-///     print("재생 중")
+///     print("Playing")
 /// }
 ///
 /// switch viewModel.playbackState {
 /// case .stopped:
-///     print("정지됨")
+///     print("Stopped")
 /// case .playing:
-///     print("재생 중")
+///     print("Playing")
 /// case .paused:
-///     print("일시정지됨")
+///     print("Paused")
 /// }
 /// ```
 enum PlaybackState: Equatable {
-    /// 정지 상태
+    /// Stopped state
     ///
-    /// ## 진입 시점
-    /// - 초기 상태 (비디오 로드 전)
-    /// - stop() 호출 후
-    /// - EOF 도달 후
-    /// - 로딩 실패 후
+    /// ## Entry Points
+    /// - Initial state (before video load)
+    /// - After stop() called
+    /// - After EOF reached
+    /// - After loading failure
     case stopped
 
-    /// 재생 중
+    /// Playing
     ///
-    /// ## 진입 시점
-    /// - play() 호출 후
-    /// - togglePlayPause() 호출 시 (paused → playing)
+    /// ## Entry Points
+    /// - After play() called
+    /// - When togglePlayPause() called (paused → playing)
     ///
-    /// ## 특징
-    /// - Timer 동작 중 (updatePlayback 반복 호출)
-    /// - AudioPlayer 재생 중
+    /// ## Characteristics
+    /// - Timer running (updatePlayback called repeatedly)
+    /// - AudioPlayer playing
     case playing
 
-    /// 일시정지
+    /// Paused
     ///
-    /// ## 진입 시점
-    /// - loadVideo() 완료 후 (재생 준비 완료)
-    /// - pause() 호출 후
-    /// - togglePlayPause() 호출 시 (playing → paused)
+    /// ## Entry Points
+    /// - After loadVideo() completes (ready to play)
+    /// - After pause() called
+    /// - When togglePlayPause() called (playing → paused)
     ///
-    /// ## 특징
-    /// - Timer 중지
-    /// - AudioPlayer 일시정지
-    /// - currentTime, playbackPosition, currentFrame 유지
+    /// ## Characteristics
+    /// - Timer stopped
+    /// - AudioPlayer paused
+    /// - currentTime, playbackPosition, currentFrame preserved
     case paused
 
-    /// 상태 표시 이름
+    /// State display name
     ///
     /// ## displayName
-    /// - UI에 표시할 문자열 반환
+    /// - Returns string to display in UI
     ///
-    /// **예시:**
+    /// **Examples:**
     /// ```swift
     /// PlaybackState.stopped.displayName  // "Stopped"
     /// PlaybackState.playing.displayName  // "Playing"
@@ -2222,19 +2222,19 @@ enum PlaybackState: Equatable {
 
 // MARK: - Computed Properties
 
-/// VideoPlayerViewModel 확장 - 시간 포맷팅 Computed Properties
+/// VideoPlayerViewModel Extension - Time Formatting Computed Properties
 ///
 /// ## Extension
-/// - 기존 클래스에 기능 추가
-/// - 원본 코드 수정 없이 메서드/속성 추가
+/// - Add functionality to existing class
+/// - Add methods/properties without modifying original code
 ///
-/// **이 Extension의 목적:**
-/// - 시간(TimeInterval)을 "MM:SS" 형식 문자열로 변환
-/// - View에서 직접 사용 가능한 문자열 제공
+/// **Purpose of this Extension:**
+/// - Convert time (TimeInterval) to "MM:SS" format string
+/// - Provide strings directly usable in View
 extension VideoPlayerViewModel {
-    /// 현재 시간을 포맷팅한 문자열 (MM:SS)
+    /// Current time formatted string (MM:SS)
     ///
-    /// ## 포맷 예시
+    /// ## Format Examples
     /// ```swift
     /// currentTime = 0.0    → "00:00"
     /// currentTime = 5.5    → "00:05"
@@ -2242,7 +2242,7 @@ extension VideoPlayerViewModel {
     /// currentTime = 125.0  → "02:05"
     /// ```
     ///
-    /// **View에서 사용:**
+    /// **Usage in View:**
     /// ```swift
     /// Text(viewModel.currentTimeString)  // "02:05"
     /// ```
@@ -2250,16 +2250,16 @@ extension VideoPlayerViewModel {
         return formatTime(currentTime)
     }
 
-    /// 전체 재생 시간을 포맷팅한 문자열 (MM:SS)
+    /// Total playback time formatted string (MM:SS)
     ///
-    /// ## 포맷 예시
+    /// ## Format Examples
     /// ```swift
     /// duration = 90.0   → "01:30"
     /// duration = 600.0  → "10:00"
-    /// duration = 3665.0 → "61:05" (1시간 1분 5초)
+    /// duration = 3665.0 → "61:05" (1 hour 1 minute 5 seconds)
     /// ```
     ///
-    /// **View에서 사용:**
+    /// **Usage in View:**
     /// ```swift
     /// Text("\(viewModel.currentTimeString) / \(viewModel.durationString)")
     /// // "02:05 / 10:00"
@@ -2268,52 +2268,52 @@ extension VideoPlayerViewModel {
         return formatTime(duration)
     }
 
-    /// 남은 시간을 포맷팅한 문자열 (-MM:SS)
+    /// Remaining time formatted string (-MM:SS)
     ///
-    /// ## 계산
+    /// ## Calculation
     /// - remaining = duration - currentTime
-    /// - 음수 방지: max(0, remaining)
-    /// - "-" 접두사 추가
+    /// - Prevent negative: max(0, remaining)
+    /// - Add "-" prefix
     ///
-    /// **포맷 예시:**
+    /// **Format Examples:**
     /// ```swift
-    /// duration = 90초, currentTime = 30초
-    /// remaining = 90 - 30 = 60초
+    /// duration = 90 sec, currentTime = 30 sec
+    /// remaining = 90 - 30 = 60 sec
     /// → "-01:00"
     ///
-    /// duration = 90초, currentTime = 85초
-    /// remaining = 90 - 85 = 5초
+    /// duration = 90 sec, currentTime = 85 sec
+    /// remaining = 90 - 85 = 5 sec
     /// → "-00:05"
     ///
-    /// duration = 90초, currentTime = 90초
-    /// remaining = 90 - 90 = 0초
+    /// duration = 90 sec, currentTime = 90 sec
+    /// remaining = 90 - 90 = 0 sec
     /// → "-00:00"
     /// ```
     ///
-    /// **View에서 사용:**
+    /// **Usage in View:**
     /// ```swift
-    /// Text(viewModel.remainingTimeString)  // "-01:00" (남은 시간)
+    /// Text(viewModel.remainingTimeString)  // "-01:00" (remaining time)
     /// ```
     var remainingTimeString: String {
         let remaining = max(0, duration - currentTime)
         return "-\(formatTime(remaining))"
     }
 
-    /// 재생 속도를 포맷팅한 문자열 (예: "1.0x")
+    /// Playback speed formatted string (e.g., "1.0x")
     ///
-    /// ## 포맷
+    /// ## Format
     /// - String(format: "%.1fx", playbackSpeed)
-    /// - 소수점 1자리 + "x" 접미사
+    /// - 1 decimal place + "x" suffix
     ///
-    /// **포맷 예시:**
+    /// **Format Examples:**
     /// ```swift
     /// playbackSpeed = 0.5  → "0.5x"
     /// playbackSpeed = 1.0  → "1.0x"
     /// playbackSpeed = 2.0  → "2.0x"
-    /// playbackSpeed = 1.75 → "1.8x" (반올림)
+    /// playbackSpeed = 1.75 → "1.8x" (rounded)
     /// ```
     ///
-    /// **View에서 사용:**
+    /// **Usage in View:**
     /// ```swift
     /// Menu {
     ///     Button("0.5x") { ... }
@@ -2327,62 +2327,62 @@ extension VideoPlayerViewModel {
         return String(format: "%.1fx", playbackSpeed)
     }
 
-    /// 시간(TimeInterval)을 "MM:SS" 형식 문자열로 변환
+    /// Convert time (TimeInterval) to "MM:SS" format string
     ///
-    /// ## 변환 알고리즘
+    /// ## Conversion Algorithm
     /// ```
-    /// 1. TimeInterval(Double) → Int 변환 (소수점 버림)
+    /// 1. Convert TimeInterval(Double) → Int (truncate decimal)
     ///      ↓
-    /// 2. 분(minutes) = totalSeconds / 60
+    /// 2. minutes = totalSeconds / 60
     ///      ↓
-    /// 3. 초(seconds) = totalSeconds % 60
+    /// 3. seconds = totalSeconds % 60
     ///      ↓
     /// 4. String(format: "%02d:%02d", minutes, seconds)
     /// ```
     ///
-    /// ## 포맷 설명
-    /// - %02d: 2자리 정수, 앞자리는 0으로 채움
-    /// - 예: 5 → "05", 12 → "12"
+    /// ## Format Explanation
+    /// - %02d: 2-digit integer, pad with 0
+    /// - Example: 5 → "05", 12 → "12"
     ///
-    /// - Parameter time: 변환할 시간 (초 단위)
-    /// - Returns: "MM:SS" 형식 문자열
+    /// - Parameter time: Time to convert (in seconds)
+    /// - Returns: "MM:SS" format string
     ///
-    /// **변환 예시:**
+    /// **Conversion Examples:**
     /// ```swift
     /// formatTime(0.0)    → "00:00"
-    /// formatTime(5.7)    → "00:05" (소수점 버림)
-    /// formatTime(65.0)   → "01:05" (1분 5초)
-    /// formatTime(125.0)  → "02:05" (2분 5초)
-    /// formatTime(3665.0) → "61:05" (61분 5초)
+    /// formatTime(5.7)    → "00:05" (truncate decimal)
+    /// formatTime(65.0)   → "01:05" (1 minute 5 seconds)
+    /// formatTime(125.0)  → "02:05" (2 minutes 5 seconds)
+    /// formatTime(3665.0) → "61:05" (61 minutes 5 seconds)
     /// ```
     private func formatTime(_ time: TimeInterval) -> String {
-        /// 1. TimeInterval(Double) → Int 변환
+        /// 1. Convert TimeInterval(Double) → Int
         ///
         /// ## Int(time)
-        /// - 소수점 버림 (truncate)
+        /// - Truncate decimal
         /// - 5.7 → 5, 125.9 → 125
         let totalSeconds = Int(time)
 
-        /// 2. 분 계산
+        /// 2. Calculate minutes
         ///
         /// ## totalSeconds / 60
-        /// - 정수 나눗셈 (몫만)
-        /// - 65 / 60 = 1 (1분)
-        /// - 125 / 60 = 2 (2분)
+        /// - Integer division (quotient only)
+        /// - 65 / 60 = 1 (1 minute)
+        /// - 125 / 60 = 2 (2 minutes)
         let minutes = totalSeconds / 60
 
-        /// 3. 초 계산
+        /// 3. Calculate seconds
         ///
         /// ## totalSeconds % 60
-        /// - 나머지 연산
-        /// - 65 % 60 = 5 (5초)
-        /// - 125 % 60 = 5 (5초)
+        /// - Remainder operation
+        /// - 65 % 60 = 5 (5 seconds)
+        /// - 125 % 60 = 5 (5 seconds)
         let seconds = totalSeconds % 60
 
-        /// 4. 포맷팅
+        /// 4. Format
         ///
         /// ## String(format: "%02d:%02d", minutes, seconds)
-        /// - %02d: 2자리 정수, 앞자리 0 채움
+        /// - %02d: 2-digit integer, pad with 0
         /// - minutes=1, seconds=5 → "01:05"
         /// - minutes=2, seconds=5 → "02:05"
         return String(format: "%02d:%02d", minutes, seconds)

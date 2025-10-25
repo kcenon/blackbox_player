@@ -1,170 +1,170 @@
 /// @file FileListView.swift
-/// @brief 블랙박스 비디오 파일 목록 표시 및 관리 View
+/// @brief Dashcam video file list display and management View
 /// @author BlackboxPlayer Development Team
 /// @details
-/// 블랙박스 비디오 파일 목록을 표시하고 검색/필터링/선택 기능을 제공하는 메인 리스트 View입니다.
+/// Main list View that displays dashcam video file list and provides search/filtering/selection functionality.
 ///
-/// ## 주요 기능
-/// - **검색**: 파일명, 타임스탬프로 실시간 검색 (대소문자 무시)
-/// - **이벤트 필터**: Normal, Parking, Event 등 이벤트 타입별 필터링
-/// - **정렬**: 최신순 (timestamp 내림차순) 자동 정렬
-/// - **선택**: 파일 선택 시 부모 View에 양방향 바인딩으로 전달
-/// - **상태 표시**: "X of Y videos" 카운터로 필터 결과 요약
+/// ## Key Features
+/// - **Search**: Real-time search by filename and timestamp (case-insensitive)
+/// - **Event Filter**: Filtering by event type such as Normal, Parking, Event
+/// - **Sorting**: Automatic sorting by newest first (timestamp descending)
+/// - **Selection**: Two-way binding to parent View when file is selected
+/// - **Status Display**: Filter results summary with "X of Y videos" counter
 ///
-/// ## 레이아웃 구조
+/// ## Layout Structure
 /// ```
 /// ┌──────────────────────────────────┐
-/// │  🔍 [Search videos...]      [X]  │ ← 검색바 (searchText)
+/// │  🔍 [Search videos...]      [X]  │ ← Search bar (searchText)
 /// ├──────────────────────────────────┤
-/// │  [All] [Normal] [Parking] [Event]│ ← 필터 버튼 (가로 스크롤)
+/// │  [All] [Normal] [Parking] [Event]│ ← Filter buttons (horizontal scroll)
 /// ├──────────────────────────────────┤
 /// │  ┌────────────────────────────┐  │
-/// │  │ 📹 파일1  2024-01-15 14:30 │  │ ← FileRow (선택 가능)
+/// │  │ 📹 File1  2024-01-15 14:30 │  │ ← FileRow (selectable)
 /// │  ├────────────────────────────┤  │
-/// │  │ 📹 파일2  2024-01-15 13:15 │  │
+/// │  │ 📹 File2  2024-01-15 13:15 │  │
 /// │  ├────────────────────────────┤  │
-/// │  │ 📹 파일3  2024-01-15 12:00 │  │
+/// │  │ 📹 File3  2024-01-15 12:00 │  │
 /// │  └────────────────────────────┘  │
 /// ├──────────────────────────────────┤
-/// │  3 of 100 videos                 │ ← 상태바
+/// │  3 of 100 videos                 │ ← Status bar
 /// └──────────────────────────────────┘
 /// ```
 ///
-/// ## SwiftUI 핵심 개념
-/// ### 1. @Binding으로 부모 View와 데이터 동기화
-/// @Binding은 부모 View의 @State를 참조하여 양방향으로 데이터를 동기화합니다.
+/// ## SwiftUI Core Concepts
+/// ### 1. Data Synchronization with Parent View using @Binding
+/// @Binding references the parent View's @State to synchronize data bidirectionally.
 ///
-/// **동작 원리:**
+/// **How it works:**
 /// ```
-/// 부모 View (ContentView)          자식 View (FileListView)
+/// Parent View (ContentView)        Child View (FileListView)
 /// ┌──────────────────────┐         ┌──────────────────────┐
 /// │ @State var files = []│────────>│ @Binding var files   │
 /// │ @State var selected  │<────────│ @Binding var selected│
 /// └──────────────────────┘         └──────────────────────┘
 ///         ↓                                    ↓
-///    원본 데이터 소유                      참조만 보유
-///    (Source of Truth)                   (읽기/쓰기 가능)
+///   Owns original data                  Only holds reference
+///   (Source of Truth)                   (Read/Write enabled)
 /// ```
 ///
-/// **사용 예시:**
+/// **Usage Example:**
 /// ```swift
-/// // 부모 View
+/// // Parent View
 /// struct ParentView: View {
 ///     @State private var files: [VideoFile] = []
 ///     @State private var selected: VideoFile?
 ///
 ///     var body: some View {
-///         FileListView(videoFiles: $files,     // $ 붙여서 Binding 전달
+///         FileListView(videoFiles: $files,     // Pass Binding with $
 ///                      selectedFile: $selected)
 ///     }
 /// }
 ///
-/// // 자식 View
+/// // Child View
 /// struct FileListView: View {
-///     @Binding var videoFiles: [VideoFile]    // 부모의 files 참조
-///     @Binding var selectedFile: VideoFile?   // 부모의 selected 참조
+///     @Binding var videoFiles: [VideoFile]    // References parent's files
+///     @Binding var selectedFile: VideoFile?   // References parent's selected
 ///
 ///     var body: some View {
-///         // selectedFile을 변경하면 부모의 selected도 자동 변경됨
+///         // Changing selectedFile automatically updates parent's selected
 ///         List(videoFiles, selection: $selectedFile) { ... }
 ///     }
 /// }
 /// ```
 ///
-/// ### 2. Computed Property로 실시간 필터링
-/// Computed Property는 의존하는 @State 값이 변경될 때마다 자동으로 재계산됩니다.
+/// ### 2. Real-time Filtering with Computed Property
+/// Computed Property is automatically recalculated whenever its dependent @State values change.
 ///
-/// **filteredFiles의 재계산 시점:**
+/// **When filteredFiles is recalculated:**
 /// ```
-/// searchText 변경 ──┐
-///                   ├──> filteredFiles 재계산 ──> body 재렌더링
-/// selectedEventType ┘
+/// searchText changes ──┐
+///                      ├──> filteredFiles recalculated ──> body re-rendered
+/// selectedEventType ───┘
 /// ```
 ///
-/// **계산 흐름:**
+/// **Calculation Flow:**
 /// ```swift
 /// // 1. searchText = "2024"
-/// videoFiles: [파일1, 파일2, 파일3, 파일4] (100개)
+/// videoFiles: [File1, File2, File3, File4] (100 files)
 ///      ↓ filter { baseFilename.contains("2024") }
-/// files: [파일1, 파일3, 파일4] (50개)
+/// files: [File1, File3, File4] (50 files)
 ///
 /// // 2. selectedEventType = .event
-/// files: [파일1, 파일3, 파일4] (50개)
+/// files: [File1, File3, File4] (50 files)
 ///      ↓ filter { eventType == .event }
-/// files: [파일3] (5개)
+/// files: [File3] (5 files)
 ///
 /// // 3. sorted { timestamp > ... }
-/// files: [파일3] (최신순 정렬)
+/// files: [File3] (sorted by newest)
 ///      ↓
-/// return [파일3] ──> List에 표시
+/// return [File3] ──> Displayed in List
 /// ```
 ///
-/// ### 3. List selection 바인딩
-/// List의 selection 파라미터에 @Binding을 전달하면 선택된 항목이 자동으로 동기화됩니다.
+/// ### 3. List Selection Binding
+/// Passing @Binding to List's selection parameter automatically synchronizes the selected item.
 ///
-/// **동작 원리:**
+/// **How it works:**
 /// ```swift
 /// List(filteredFiles, selection: $selectedFile) { file in
 ///     FileRow(videoFile: file)
-///         .tag(file)  // tag()로 선택 시 반환될 값 지정
+///         .tag(file)  // Specify value to return when selected via tag()
 /// }
 /// ```
 ///
-/// **선택 흐름:**
+/// **Selection Flow:**
 /// ```
-/// 1. 사용자가 FileRow 클릭
+/// 1. User clicks FileRow
 ///      ↓
-/// 2. .tag(file)에 지정된 VideoFile 객체를 가져옴
+/// 2. Get VideoFile object specified in .tag(file)
 ///      ↓
-/// 3. $selectedFile에 할당 (Binding 업데이트)
+/// 3. Assign to $selectedFile (Binding updated)
 ///      ↓
-/// 4. 부모 View의 @State selected도 자동 업데이트
+/// 4. Parent View's @State selected also automatically updated
 ///      ↓
-/// 5. 부모 View에서 선택된 파일로 영상 재생 시작
+/// 5. Parent View starts playing video with selected file
 /// ```
 ///
-/// ### 4. 조건부 View 렌더링
-/// if-else로 다른 View를 렌더링하여 상태에 따라 UI를 전환합니다.
+/// ### 4. Conditional View Rendering
+/// Use if-else to render different Views and switch UI based on state.
 ///
-/// **예시:**
+/// **Example:**
 /// ```swift
 /// if filteredFiles.isEmpty {
-///     EmptyStateView()        // 검색 결과 없을 때
+///     EmptyStateView()        // When no search results
 /// } else {
-///     List(filteredFiles) { ... }  // 검색 결과 있을 때
+///     List(filteredFiles) { ... }  // When search results exist
 /// }
 /// ```
 ///
-/// **전환 흐름:**
+/// **Transition Flow:**
 /// ```
-/// searchText = "존재하지않는단어"
+/// searchText = "nonexistentword"
 ///      ↓
 /// filteredFiles.isEmpty == true
 ///      ↓
-/// List 사라짐 ──> EmptyStateView 표시
+/// List disappears ──> EmptyStateView displayed
 ///      ↓
-/// searchText = "" (초기화)
+/// searchText = "" (reset)
 ///      ↓
 /// filteredFiles.isEmpty == false
 ///      ↓
-/// EmptyStateView 사라짐 ──> List 표시
+/// EmptyStateView disappears ──> List displayed
 /// ```
 ///
-/// ## 사용 예시
+/// ## Usage Examples
 /// ```swift
-/// // 1. ContentView에서 FileListView 사용
+/// // 1. Using FileListView in ContentView
 /// struct ContentView: View {
 ///     @State private var files: [VideoFile] = []
 ///     @State private var selectedFile: VideoFile?
 ///
 ///     var body: some View {
 ///         HSplitView {
-///             // 좌측: 파일 리스트
+///             // Left: File list
 ///             FileListView(videoFiles: $files,
 ///                          selectedFile: $selectedFile)
 ///                 .frame(minWidth: 300)
 ///
-///             // 우측: 선택된 파일 재생
+///             // Right: Play selected file
 ///             if let file = selectedFile {
 ///                 VideoPlayerView(videoFile: file)
 ///             }
@@ -172,58 +172,58 @@
 ///     }
 /// }
 ///
-/// // 2. 검색 기능 사용
-/// // searchText = "2024-01-15" 입력
-/// //   → baseFilename에 "2024-01-15" 포함된 파일만 표시
+/// // 2. Using search feature
+/// // Enter searchText = "2024-01-15"
+/// //   → Display only files with "2024-01-15" in baseFilename
 ///
-/// // 3. 필터 기능 사용
-/// // [Event] 버튼 클릭
+/// // 3. Using filter feature
+/// // Click [Event] button
 /// //   → selectedEventType = .event
-/// //   → eventType == .event인 파일만 표시
+/// //   → Display only files where eventType == .event
 ///
-/// // 4. 파일 선택
-/// // FileRow 클릭
-/// //   → selectedFile = 클릭한 VideoFile 객체
-/// //   → ContentView의 selectedFile도 자동 업데이트
-/// //   → VideoPlayerView에서 해당 파일 재생 시작
+/// // 4. Selecting a file
+/// // Click FileRow
+/// //   → selectedFile = clicked VideoFile object
+/// //   → ContentView's selectedFile also automatically updated
+/// //   → VideoPlayerView starts playing the selected file
 /// ```
 ///
-/// ## 실제 사용 시나리오
-/// **시나리오 1: 특정 날짜 영상 검색**
+/// ## Real-World Usage Scenarios
+/// **Scenario 1: Search for videos on specific date**
 /// ```
-/// 1. 검색바에 "2024-01-15" 입력
+/// 1. Enter "2024-01-15" in search bar
 ///      ↓
-/// 2. filteredFiles가 자동 재계산
+/// 2. filteredFiles automatically recalculated
 ///      ↓ baseFilename.contains("2024-01-15")
-/// 3. 해당 날짜 파일 10개만 리스트에 표시
+/// 3. Display only 10 files from that date in list
 ///      ↓
-/// 4. 상태바에 "10 of 100 videos" 표시
+/// 4. Status bar shows "10 of 100 videos"
 /// ```
 ///
-/// **시나리오 2: 이벤트 영상만 필터링**
+/// **Scenario 2: Filter only event videos**
 /// ```
-/// 1. [Event] 필터 버튼 클릭
+/// 1. Click [Event] filter button
 ///      ↓
-/// 2. selectedEventType = .event 설정
+/// 2. Set selectedEventType = .event
 ///      ↓
-/// 3. filteredFiles가 자동 재계산
+/// 3. filteredFiles automatically recalculated
 ///      ↓ eventType == .event
-/// 4. 이벤트 영상 5개만 리스트에 표시
+/// 4. Display only 5 event videos in list
 ///      ↓
-/// 5. 상태바에 "5 of 100 videos" 표시
+/// 5. Status bar shows "5 of 100 videos"
 /// ```
 ///
-/// **시나리오 3: 검색 + 필터 조합**
+/// **Scenario 3: Combine search + filter**
 /// ```
-/// 1. 검색바에 "2024-01" 입력
+/// 1. Enter "2024-01" in search bar
 ///      ↓ baseFilename.contains("2024-01")
-/// 2. 1월 영상 30개로 필터링
+/// 2. Filtered to 30 January videos
 ///      ↓
-/// 3. [Parking] 필터 버튼 클릭
+/// 3. Click [Parking] filter button
 ///      ↓ eventType == .parking
-/// 4. 1월 + 주차 영상 3개만 표시
+/// 4. Display only 3 January + Parking videos
 ///      ↓
-/// 5. 상태바에 "3 of 100 videos" 표시
+/// 5. Status bar shows "3 of 100 videos"
 /// ```
 //
 //  FileListView.swift
@@ -235,178 +235,178 @@
 import SwiftUI
 
 /// @struct FileListView
-/// @brief 블랙박스 비디오 파일 목록 표시 및 관리 View
+/// @brief Dashcam video file list display and management View
 ///
 /// @details
-/// 블랙박스 비디오 파일 목록을 표시하고 검색/필터링 기능을 제공하는 메인 View입니다.
-/// 검색, 이벤트 타입 필터링, 정렬 기능을 지원하며 부모 View와 양방향 바인딩으로 연결됩니다.
+/// Main View that displays dashcam video file list and provides search/filtering functionality.
+/// Supports search, event type filtering, sorting, and connects with parent View via two-way binding.
 struct FileListView: View {
     /// @var videoFiles
-    /// @brief 부모 View로부터 전달받은 비디오 파일 배열 (양방향 바인딩)
+    /// @brief Video file array received from parent View (two-way binding)
     ///
-    /// ## @Binding이 필요한 이유
-    /// - 부모 View(ContentView)가 파일 목록의 원본 데이터를 소유
-    /// - FileListView는 이 데이터를 읽고 표시만 함
-    /// - 하지만 정렬이나 업데이트 시 부모에게 알려야 하므로 @Binding 사용
+    /// ## Why @Binding is needed
+    /// - Parent View (ContentView) owns the original file list data
+    /// - FileListView only reads and displays this data
+    /// - However, @Binding is used to notify parent when sorting or updating
     ///
-    /// **예시:**
+    /// **Example:**
     /// ```swift
-    /// // ContentView (부모)
+    /// // ContentView (parent)
     /// @State private var files: [VideoFile] = loadFiles()
     ///
-    /// // FileListView (자식)
-    /// FileListView(videoFiles: $files, ...)  // $ 붙여서 Binding 전달
+    /// // FileListView (child)
+    /// FileListView(videoFiles: $files, ...)  // Pass Binding with $
     /// ```
     @Binding var videoFiles: [VideoFile]
 
     /// @var selectedFile
-    /// @brief 현재 선택된 비디오 파일 (양방향 바인딩)
+    /// @brief Currently selected video file (two-way binding)
     ///
-    /// ## 선택 동기화 동작
-    /// 1. 사용자가 List에서 파일 클릭
+    /// ## Selection Synchronization Behavior
+    /// 1. User clicks file in List
     ///      ↓
-    /// 2. selectedFile에 해당 VideoFile 할당
+    /// 2. Assign corresponding VideoFile to selectedFile
     ///      ↓
-    /// 3. @Binding으로 부모 View의 @State도 자동 업데이트
+    /// 3. Parent View's @State also automatically updated via @Binding
     ///      ↓
-    /// 4. 부모 View에서 선택된 파일로 VideoPlayerView 업데이트
+    /// 4. Parent View updates VideoPlayerView with selected file
     ///
-    /// **예시:**
+    /// **Example:**
     /// ```swift
-    /// // 파일 선택 전
+    /// // Before file selection
     /// selectedFile = nil
     ///
-    /// // List에서 파일1 클릭
-    /// selectedFile = 파일1
+    /// // Click File1 in List
+    /// selectedFile = File1
     ///
-    /// // 부모 View도 자동 업데이트
-    /// ContentView.selectedFile = 파일1  // VideoPlayerView에 반영됨
+    /// // Parent View also automatically updated
+    /// ContentView.selectedFile = File1  // Reflected in VideoPlayerView
     /// ```
     @Binding var selectedFile: VideoFile?
 
     /// @var searchText
-    /// @brief 검색창 입력 텍스트 (로컬 상태)
+    /// @brief Search field input text (local state)
     ///
-    /// ## @State vs @Binding 선택 기준
-    /// - searchText는 FileListView 내부에서만 사용 → @State 사용
-    /// - 부모 View는 검색어를 알 필요 없음
-    /// - TextField와 양방향 바인딩하여 실시간 검색 가능
+    /// ## @State vs @Binding Selection Criteria
+    /// - searchText is only used inside FileListView → use @State
+    /// - Parent View doesn't need to know the search term
+    /// - Two-way binding with TextField enables real-time search
     ///
-    /// **동작:**
+    /// **How it works:**
     /// ```swift
-    /// // 사용자가 "2024" 입력
+    /// // User enters "2024"
     /// searchText = "2024"
-    ///      ↓ TextField($searchText)로 양방향 바인딩
-    /// TextField에 "2024" 표시됨
-    ///      ↓ searchText 변경 → filteredFiles 재계산
-    /// List가 자동으로 필터링된 파일로 업데이트
+    ///      ↓ Two-way binding via TextField($searchText)
+    /// TextField displays "2024"
+    ///      ↓ searchText changes → filteredFiles recalculated
+    /// List automatically updates with filtered files
     /// ```
     @State private var searchText = ""
 
     /// @var selectedEventType
-    /// @brief 선택된 이벤트 타입 필터 (로컬 상태)
+    /// @brief Selected event type filter (local state)
     ///
-    /// ## Optional 타입인 이유
-    /// - nil: "All" 필터 (모든 이벤트 타입 표시)
-    /// - .normal: Normal 이벤트만 표시
-    /// - .parking: Parking 이벤트만 표시
-    /// - .event: Event 이벤트만 표시
+    /// ## Why Optional Type
+    /// - nil: "All" filter (display all event types)
+    /// - .normal: Display only Normal events
+    /// - .parking: Display only Parking events
+    /// - .event: Display only Event events
     ///
-    /// **예시:**
+    /// **Example:**
     /// ```swift
-    /// // 초기 상태: 모든 타입 표시
+    /// // Initial state: display all types
     /// selectedEventType = nil
     ///
-    /// // [Event] 버튼 클릭
+    /// // Click [Event] button
     /// selectedEventType = .event
     ///      ↓
-    /// filteredFiles에서 eventType == .event인 파일만 필터링
+    /// filteredFiles filters only files where eventType == .event
     /// ```
     @State private var selectedEventType: EventType?
 
-    /// 검색어와 이벤트 타입으로 필터링된 파일 배열 (Computed Property)
+    /// File array filtered by search term and event type (Computed Property)
     ///
-    /// ## Computed Property란?
-    /// - 저장하지 않고 매번 계산하는 속성 (저장 공간 없음)
-    /// - 의존하는 값(searchText, selectedEventType, videoFiles)이 변경되면 자동 재계산
-    /// - SwiftUI가 자동으로 감지하여 body 재렌더링
+    /// ## What is Computed Property?
+    /// - Property calculated each time without storing (no storage space)
+    /// - Automatically recalculated when dependent values (searchText, selectedEventType, videoFiles) change
+    /// - SwiftUI automatically detects changes and re-renders body
     ///
-    /// ## 필터링 알고리즘 단계
+    /// ## Filtering Algorithm Steps
     /// ```
-    /// 1. videoFiles 복사
+    /// 1. Copy videoFiles
     ///      ↓
-    /// 2. searchText로 필터링 (파일명 + 타임스탬프)
+    /// 2. Filter by searchText (filename + timestamp)
     ///      ↓
-    /// 3. selectedEventType으로 필터링 (이벤트 타입)
+    /// 3. Filter by selectedEventType (event type)
     ///      ↓
-    /// 4. timestamp 내림차순 정렬 (최신순)
+    /// 4. Sort by timestamp descending (newest first)
     ///      ↓
-    /// 5. return 정렬된 배열
+    /// 5. return sorted array
     /// ```
     ///
-    /// ## 필터링 예시
-    /// **초기 상태:**
+    /// ## Filtering Examples
+    /// **Initial State:**
     /// ```swift
-    /// videoFiles = [파일1(normal), 파일2(event), 파일3(parking), 파일4(event)]
+    /// videoFiles = [File1(normal), File2(event), File3(parking), File4(event)]
     /// searchText = ""
     /// selectedEventType = nil
     ///      ↓
-    /// filteredFiles = [파일4, 파일3, 파일2, 파일1] (최신순 정렬)
+    /// filteredFiles = [File4, File3, File2, File1] (sorted by newest)
     /// ```
     ///
-    /// **검색 후:**
+    /// **After Search:**
     /// ```swift
     /// searchText = "2024-01-15"
     ///      ↓ filter { baseFilename.contains("2024-01-15") }
-    /// filteredFiles = [파일2, 파일1] (2024-01-15가 포함된 파일만)
+    /// filteredFiles = [File2, File1] (only files containing 2024-01-15)
     /// ```
     ///
-    /// **필터 후:**
+    /// **After Filter:**
     /// ```swift
     /// selectedEventType = .event
     ///      ↓ filter { eventType == .event }
-    /// filteredFiles = [파일2] (event 타입만)
+    /// filteredFiles = [File2] (only event type)
     /// ```
     ///
-    /// ## 성능 최적화
-    /// - Computed Property는 접근할 때마다 계산
-    /// - body에서 여러 번 접근하면 여러 번 계산됨
-    /// - 하지만 SwiftUI의 View 업데이트는 효율적으로 최적화되어 있음
-    /// - 필요시 @State로 캐싱 가능:
+    /// ## Performance Optimization
+    /// - Computed Property is calculated each time it's accessed
+    /// - Multiple accesses in body result in multiple calculations
+    /// - However, SwiftUI's View updates are efficiently optimized
+    /// - Can cache with @State if needed:
     ///   ```swift
     ///   @State private var cachedFilteredFiles: [VideoFile] = []
     ///   .onChange(of: searchText) { cachedFilteredFiles = calculateFiltered() }
     ///   ```
     private var filteredFiles: [VideoFile] {
-        /// 1단계: videoFiles 배열을 복사하여 시작
+        /// Step 1: Start by copying videoFiles array
         var files = videoFiles
 
-        /// 2단계: 검색어로 필터링
+        /// Step 2: Filter by search term
         ///
-        /// ## localizedCaseInsensitiveContains란?
-        /// - 대소문자 구분 없이 문자열 포함 여부 확인
-        /// - 로케일(언어) 설정을 고려하여 비교 (한글, 일본어 등 지원)
+        /// ## What is localizedCaseInsensitiveContains?
+        /// - Check if string contains substring without case sensitivity
+        /// - Considers locale (language) settings for comparison (supports Korean, Japanese, etc.)
         ///
-        /// **비교 예시:**
+        /// **Comparison Examples:**
         /// ```swift
-        /// "ABC".contains("abc")                           // false (대소문자 구분)
-        /// "ABC".localizedCaseInsensitiveContains("abc")  // true  (대소문자 무시)
+        /// "ABC".contains("abc")                           // false (case-sensitive)
+        /// "ABC".localizedCaseInsensitiveContains("abc")  // true  (case-insensitive)
         ///
         /// "Hello".contains("lo")                          // true
         /// "Hello".localizedCaseInsensitiveContains("LO") // true
         /// ```
         ///
-        /// ## 필터링 조건
-        /// - baseFilename에 검색어 포함 OR
-        /// - timestampString에 검색어 포함
+        /// ## Filtering Conditions
+        /// - baseFilename contains search term OR
+        /// - timestampString contains search term
         ///
-        /// **예시:**
+        /// **Example:**
         /// ```swift
         /// searchText = "2024"
         ///
-        /// 파일1: baseFilename = "2024-01-15_14-30.mp4"  → 포함 ✅
-        /// 파일2: baseFilename = "video.mp4", timestampString = "2024-01-15" → 포함 ✅
-        /// 파일3: baseFilename = "old_video.mp4", timestampString = "2023-12-01" → 제외 ❌
+        /// File1: baseFilename = "2024-01-15_14-30.mp4"  → included ✅
+        /// File2: baseFilename = "video.mp4", timestampString = "2024-01-15" → included ✅
+        /// File3: baseFilename = "old_video.mp4", timestampString = "2023-12-01" → excluded ❌
         /// ```
         if !searchText.isEmpty {
             files = files.filter { file in
@@ -415,39 +415,39 @@ struct FileListView: View {
             }
         }
 
-        /// 3단계: 이벤트 타입으로 필터링
+        /// Step 3: Filter by event type
         ///
-        /// ## Optional Binding으로 안전하게 처리
+        /// ## Safe Handling with Optional Binding
         /// ```swift
         /// if let eventType = selectedEventType {
-        ///     // selectedEventType이 nil이 아닐 때만 실행
-        ///     // eventType 변수에 unwrapped 값 할당됨
+        ///     // Only executes when selectedEventType is not nil
+        ///     // Unwrapped value assigned to eventType variable
         /// }
         /// ```
         ///
-        /// **예시:**
+        /// **Example:**
         /// ```swift
-        /// selectedEventType = nil          → 이 블록 실행 안 됨 (모든 파일 유지)
-        /// selectedEventType = .event       → eventType == .event인 파일만 유지
+        /// selectedEventType = nil          → This block not executed (all files kept)
+        /// selectedEventType = .event       → Only files where eventType == .event kept
         ///
-        /// 필터링 전: [파일1(normal), 파일2(event), 파일3(parking)]
+        /// Before filtering: [File1(normal), File2(event), File3(parking)]
         ///      ↓
-        /// 필터링 후: [파일2(event)]
+        /// After filtering: [File2(event)]
         /// ```
         if let eventType = selectedEventType {
             files = files.filter { $0.eventType == eventType }
         }
 
-        /// 4단계: 타임스탬프 내림차순 정렬 (최신순)
+        /// Step 4: Sort by timestamp descending (newest first)
         ///
-        /// ## sorted 메서드
-        /// - 클로저로 정렬 기준 지정
-        /// - { $0.timestamp > $1.timestamp }: 타임스탬프가 큰 것이 앞으로
-        /// - 원본 배열은 변경되지 않고 새 배열 반환
+        /// ## sorted Method
+        /// - Specify sorting criteria with closure
+        /// - { $0.timestamp > $1.timestamp }: Larger timestamp goes first
+        /// - Original array unchanged, returns new array
         ///
-        /// **정렬 예시:**
+        /// **Sorting Example:**
         /// ```swift
-        /// // 정렬 전
+        /// // Before sorting
         /// files = [
         ///     VideoFile(timestamp: Date("2024-01-15 14:30")),
         ///     VideoFile(timestamp: Date("2024-01-15 12:00")),
@@ -456,196 +456,196 @@ struct FileListView: View {
         ///
         /// // sorted { $0.timestamp > $1.timestamp }
         /// //     ↓
-        /// // 16:45 > 14:30? → 16:45를 앞으로
-        /// // 14:30 > 12:00? → 14:30을 앞으로
+        /// // 16:45 > 14:30? → 16:45 goes first
+        /// // 14:30 > 12:00? → 14:30 goes first
         ///
-        /// // 정렬 후 (최신순)
+        /// // After sorting (newest first)
         /// files = [
-        ///     VideoFile(timestamp: Date("2024-01-15 16:45")),  // 1위
-        ///     VideoFile(timestamp: Date("2024-01-15 14:30")),  // 2위
-        ///     VideoFile(timestamp: Date("2024-01-15 12:00"))   // 3위
+        ///     VideoFile(timestamp: Date("2024-01-15 16:45")),  // 1st
+        ///     VideoFile(timestamp: Date("2024-01-15 14:30")),  // 2nd
+        ///     VideoFile(timestamp: Date("2024-01-15 12:00"))   // 3rd
         /// ]
         /// ```
         ///
-        /// ## 다른 정렬 예시
+        /// ## Other Sorting Examples
         /// ```swift
-        /// // 오래된 순 (오름차순)
+        /// // Oldest first (ascending)
         /// files.sorted { $0.timestamp < $1.timestamp }
         ///
-        /// // 파일명 알파벳 순
+        /// // Alphabetical by filename
         /// files.sorted { $0.baseFilename < $1.baseFilename }
         ///
-        /// // 파일 크기 큰 순
+        /// // Largest file size first
         /// files.sorted { $0.totalFileSize > $1.totalFileSize }
         /// ```
         return files.sorted { $0.timestamp > $1.timestamp }
     }
 
-    /// FileListView의 메인 레이아웃
+    /// FileListView's Main Layout
     ///
-    /// ## VStack(spacing: 0) 구조
-    /// spacing: 0으로 설정하여 컴포넌트 사이 기본 간격을 제거합니다.
-    /// 각 컴포넌트가 자신의 padding을 직접 관리하여 더 정확한 레이아웃 제어 가능.
+    /// ## VStack(spacing: 0) Structure
+    /// Set spacing: 0 to remove default spacing between components.
+    /// Each component manages its own padding for more precise layout control.
     ///
-    /// **레이아웃 구성 요소:**
+    /// **Layout Components:**
     /// ```
     /// ┌────────────────────────┐
-    /// │  검색바                │ ← HStack (TextField + 버튼)
+    /// │  Search bar            │ ← HStack (TextField + button)
     /// ├────────────────────────┤
-    /// │  필터 버튼 (가로 스크롤)│ ← ScrollView(.horizontal)
+    /// │  Filter buttons (horiz)│ ← ScrollView(.horizontal)
     /// ├────────────────────────┤ ← Divider()
     /// │                        │
-    /// │   파일 리스트          │ ← List 또는 EmptyStateView
+    /// │   File list            │ ← List or EmptyStateView
     /// │                        │
     /// ├────────────────────────┤ ← Divider()
-    /// │  상태바                │ ← StatusBar
+    /// │  Status bar            │ ← StatusBar
     /// └────────────────────────┘
     /// ```
     var body: some View {
         VStack(spacing: 0) {
-            /// 검색바 (Search bar)
+            /// Search bar
             ///
-            /// ## HStack 레이아웃
+            /// ## HStack Layout
             /// [🔍] [        Search videos...        ] [(X)]
             ///  ↑              ↑                        ↑
-            /// 아이콘       TextField                 Clear 버튼
+            /// Icon         TextField                Clear button
             ///
-            /// ## 조건부 버튼 렌더링
-            /// - searchText.isEmpty == false일 때만 Clear 버튼 표시
-            /// - 버튼 클릭 시 searchText = "" 초기화
+            /// ## Conditional Button Rendering
+            /// - Display Clear button only when searchText.isEmpty == false
+            /// - Reset searchText = "" when button clicked
             ///
-            /// **동작 흐름:**
+            /// **Action Flow:**
             /// ```
-            /// 1. 사용자가 "2024" 입력
+            /// 1. User enters "2024"
             ///      ↓
             /// 2. searchText = "2024"
-            ///      ↓ TextField($searchText)로 양방향 바인딩
-            /// 3. TextField에 "2024" 표시됨
-            ///      ↓ searchText 변경 감지
-            /// 4. filteredFiles 자동 재계산
+            ///      ↓ Two-way binding via TextField($searchText)
+            /// 3. TextField displays "2024"
+            ///      ↓ searchText change detected
+            /// 4. filteredFiles automatically recalculated
             ///      ↓
-            /// 5. List 업데이트 (필터링된 파일만 표시)
+            /// 5. List updated (display only filtered files)
             ///      ↓
-            /// 6. [X] 버튼 나타남 (!searchText.isEmpty)
-            ///      ↓ 버튼 클릭
-            /// 7. searchText = "" 초기화
+            /// 6. [X] button appears (!searchText.isEmpty)
+            ///      ↓ Button clicked
+            /// 7. searchText = "" reset
             ///      ↓
-            /// 8. filteredFiles 재계산 (모든 파일 표시)
+            /// 8. filteredFiles recalculated (display all files)
             ///      ↓
-            /// 9. [X] 버튼 사라짐
+            /// 9. [X] button disappears
             /// ```
             HStack {
-                /// 검색 아이콘
+                /// Search icon
                 ///
                 /// ## SF Symbols
-                /// - "magnifyingglass": macOS/iOS 기본 제공 아이콘
-                /// - .foregroundColor(.secondary): 회색 계열 색상 (시스템 테마 따름)
+                /// - "magnifyingglass": Default icon provided by macOS/iOS
+                /// - .foregroundColor(.secondary): Gray color (follows system theme)
                 ///
-                /// **색상 예시:**
+                /// **Color Examples:**
                 /// ```swift
-                /// .foregroundColor(.primary)    // 기본 텍스트 색상 (검정/흰색)
-                /// .foregroundColor(.secondary)  // 보조 텍스트 색상 (회색)
-                /// .foregroundColor(.blue)       // 파랑
+                /// .foregroundColor(.primary)    // Default text color (black/white)
+                /// .foregroundColor(.secondary)  // Secondary text color (gray)
+                /// .foregroundColor(.blue)       // Blue
                 /// ```
                 Image(systemName: "magnifyingglass")
                     .foregroundColor(.secondary)
 
-                /// 검색 입력 필드
+                /// Search input field
                 ///
-                /// ## TextField 파라미터
-                /// - "Search videos...": placeholder 텍스트 (입력 전 표시)
-                /// - text: $searchText: 양방향 바인딩 ($는 Binding으로 변환)
+                /// ## TextField Parameters
+                /// - "Search videos...": placeholder text (displayed before input)
+                /// - text: $searchText: Two-way binding ($ converts to Binding)
                 ///
                 /// ## .textFieldStyle(.plain)
-                /// - macOS 기본 TextField 스타일 제거 (테두리, 배경 제거)
-                /// - 커스텀 배경(.background)과 함께 사용하여 일관된 디자인
+                /// - Remove macOS default TextField style (remove border, background)
+                /// - Use with custom background (.background) for consistent design
                 ///
-                /// **TextField 바인딩 동작:**
+                /// **TextField Binding Behavior:**
                 /// ```swift
-                /// // 사용자가 "A" 입력
-                /// TextField 내부: "A" 표시
+                /// // User enters "A"
+                /// TextField internal: displays "A"
                 ///      ↓
-                /// searchText = "A" 업데이트
+                /// searchText = "A" updated
                 ///      ↓
-                /// SwiftUI가 변경 감지
+                /// SwiftUI detects change
                 ///      ↓
-                /// body 재실행 → filteredFiles 재계산
+                /// body re-executed → filteredFiles recalculated
                 ///      ↓
-                /// List 업데이트
+                /// List updated
                 /// ```
                 TextField("Search videos...", text: $searchText)
                     .textFieldStyle(.plain)
 
-                /// Clear 버튼 (조건부 렌더링)
+                /// Clear button (conditional rendering)
                 ///
-                /// ## if 조건부 View
-                /// - searchText가 비어있지 않을 때만 버튼 표시
-                /// - 버튼 클릭 시 searchText 초기화
+                /// ## if Conditional View
+                /// - Display button only when searchText is not empty
+                /// - Reset searchText when button clicked
                 ///
-                /// **조건부 렌더링 동작:**
+                /// **Conditional Rendering Behavior:**
                 /// ```swift
-                /// searchText = ""     → if false → 버튼 없음
-                /// searchText = "abc"  → if true  → 버튼 표시
-                /// 버튼 클릭           → searchText = "" → 버튼 사라짐
+                /// searchText = ""     → if false → no button
+                /// searchText = "abc"  → if true  → button displayed
+                /// Button clicked      → searchText = "" → button disappears
                 /// ```
                 if !searchText.isEmpty {
                     Button(action: { searchText = "" }) {
                         Image(systemName: "xmark.circle.fill")
                             .foregroundColor(.secondary)
                     }
-                    .buttonStyle(.plain)  // 버튼 기본 스타일 제거
+                    .buttonStyle(.plain)  // Remove default button style
                 }
             }
-            .padding(8)  // HStack 내부 여백
-            .background(Color(nsColor: .controlBackgroundColor))  // macOS 시스템 배경색
-            .cornerRadius(6)  // 모서리 둥글게
-            .padding()  // HStack 외부 여백
+            .padding(8)  // HStack internal padding
+            .background(Color(nsColor: .controlBackgroundColor))  // macOS system background color
+            .cornerRadius(6)  // Round corners
+            .padding()  // HStack external padding
 
-            /// 이벤트 타입 필터 버튼 (Event type filter)
+            /// Event type filter buttons
             ///
             /// ## ScrollView(.horizontal)
-            /// - 가로 방향 스크롤 가능
-            /// - showsIndicators: false로 스크롤바 숨김
-            /// - 필터 버튼이 많아도 가로 스크롤로 모두 접근 가능
+            /// - Enables horizontal scrolling
+            /// - showsIndicators: false hides scrollbar
+            /// - All filter buttons accessible via horizontal scroll even if many
             ///
-            /// ## HStack 레이아웃
+            /// ## HStack Layout
             /// ```
             /// [All] [Normal] [Parking] [Event] ...
             ///   ↑      ↑        ↑        ↑
-            ///  선택됨  미선택    미선택    미선택
+            /// Selected Unsel   Unsel    Unsel
             /// ```
             ///
-            /// **스크롤 동작:**
+            /// **Scroll Behavior:**
             /// ```
-            /// 화면 너비: 400px
-            /// 버튼 4개 너비: 500px
+            /// Screen width: 400px
+            /// 4 buttons width: 500px
             ///      ↓
-            /// 가로 스크롤 자동 활성화
+            /// Horizontal scroll automatically enabled
             ///
             /// [All] [Normal] [Parking] [Ev...] →
-            ///                            스크롤 →
+            ///                            Scroll →
             /// ```
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
-                    /// "All" 필터 버튼
+                    /// "All" filter button
                     ///
-                    /// ## isSelected 조건
-                    /// - selectedEventType == nil: 모든 이벤트 타입 표시
-                    /// - 버튼 클릭 시 selectedEventType = nil로 초기화
+                    /// ## isSelected Condition
+                    /// - selectedEventType == nil: Display all event types
+                    /// - Reset selectedEventType = nil when button clicked
                     ///
-                    /// **선택 상태 변화:**
+                    /// **Selection State Change:**
                     /// ```swift
-                    /// // 초기 상태
+                    /// // Initial state
                     /// selectedEventType = nil
-                    /// isSelected = true (All 버튼 선택됨)
+                    /// isSelected = true (All button selected)
                     ///
-                    /// // [Event] 버튼 클릭
+                    /// // [Event] button clicked
                     /// selectedEventType = .event
-                    /// isSelected = false (All 버튼 선택 해제)
+                    /// isSelected = false (All button deselected)
                     ///
-                    /// // [All] 버튼 클릭
+                    /// // [All] button clicked
                     /// selectedEventType = nil
-                    /// isSelected = true (All 버튼 다시 선택)
+                    /// isSelected = true (All button selected again)
                     /// ```
                     FilterButton(
                         title: "All",
@@ -653,43 +653,43 @@ struct FileListView: View {
                         action: { selectedEventType = nil }
                     )
 
-                    /// 각 이벤트 타입별 필터 버튼
+                    /// Filter button for each event type
                     ///
-                    /// ## ForEach로 동적 버튼 생성
+                    /// ## Dynamic Button Generation with ForEach
                     /// - EventType.allCases: [.normal, .parking, .event, ...]
-                    /// - id: \.self: 각 EventType을 고유 식별자로 사용
+                    /// - id: \.self: Use each EventType as unique identifier
                     ///
-                    /// ## 버튼 속성
-                    /// - title: eventType.displayName (예: "Normal", "Parking")
-                    /// - color: 이벤트 타입별 색상 (hex 코드에서 변환)
-                    /// - isSelected: 현재 선택된 타입인지 확인
-                    /// - action: 버튼 클릭 시 selectedEventType 업데이트
+                    /// ## Button Properties
+                    /// - title: eventType.displayName (e.g., "Normal", "Parking")
+                    /// - color: Color for each event type (converted from hex code)
+                    /// - isSelected: Check if currently selected type
+                    /// - action: Update selectedEventType when button clicked
                     ///
-                    /// **ForEach 생성 예시:**
+                    /// **ForEach Generation Example:**
                     /// ```swift
                     /// EventType.allCases = [.normal, .parking, .event]
                     ///
-                    /// // ForEach가 생성하는 View
+                    /// // Views created by ForEach
                     /// FilterButton(title: "Normal", color: .green, isSelected: false, ...)
                     /// FilterButton(title: "Parking", color: .blue, isSelected: false, ...)
                     /// FilterButton(title: "Event", color: .red, isSelected: false, ...)
                     /// ```
                     ///
-                    /// **버튼 클릭 흐름:**
+                    /// **Button Click Flow:**
                     /// ```
-                    /// 1. [Event] 버튼 클릭
+                    /// 1. [Event] button clicked
                     ///      ↓
-                    /// 2. action: { selectedEventType = .event } 실행
+                    /// 2. action: { selectedEventType = .event } executed
                     ///      ↓
-                    /// 3. selectedEventType = .event 할당
+                    /// 3. selectedEventType = .event assigned
                     ///      ↓
-                    /// 4. SwiftUI가 변경 감지
+                    /// 4. SwiftUI detects change
                     ///      ↓
-                    /// 5. body 재실행 → filteredFiles 재계산
+                    /// 5. body re-executed → filteredFiles recalculated
                     ///      ↓
-                    /// 6. [Event] 버튼 isSelected = true로 스타일 변경
+                    /// 6. [Event] button style changed to isSelected = true
                     ///      ↓
-                    /// 7. List에 event 타입 파일만 표시
+                    /// 7. Display only event type files in List
                     /// ```
                     ForEach(EventType.allCases, id: \.self) { eventType in
                         FilterButton(
@@ -700,105 +700,105 @@ struct FileListView: View {
                         )
                     }
                 }
-                .padding(.horizontal)  // HStack 좌우 여백
+                .padding(.horizontal)  // HStack left/right padding
             }
-            .padding(.bottom, 8)  // ScrollView 하단 여백
+            .padding(.bottom, 8)  // ScrollView bottom padding
 
-            /// 구분선
+            /// Divider
             ///
             /// ## Divider()
-            /// - 수평선으로 UI 영역 구분
-            /// - 시스템 테마에 따라 자동으로 색상 조정
+            /// - Separate UI areas with horizontal line
+            /// - Color automatically adjusted according to system theme
             Divider()
 
-            /// 파일 리스트 또는 빈 상태 View
+            /// File list or empty state View
             ///
-            /// ## 조건부 View 렌더링
-            /// - filteredFiles.isEmpty: 필터링 결과 없을 때 EmptyStateView 표시
-            /// - 그 외: List로 파일 목록 표시
+            /// ## Conditional View Rendering
+            /// - filteredFiles.isEmpty: Display EmptyStateView when no filtering results
+            /// - Otherwise: Display file list with List
             ///
-            /// **렌더링 흐름:**
+            /// **Rendering Flow:**
             /// ```
-            /// // 초기 상태 (파일 100개)
-            /// filteredFiles = [파일1, 파일2, ..., 파일100]
-            /// isEmpty = false → List 렌더링
+            /// // Initial state (100 files)
+            /// filteredFiles = [File1, File2, ..., File100]
+            /// isEmpty = false → List rendered
             ///
-            /// // 검색어 입력: "존재하지않는파일"
+            /// // Search input: "nonexistentfile"
             /// filteredFiles = []
-            /// isEmpty = true → EmptyStateView 렌더링
+            /// isEmpty = true → EmptyStateView rendered
             ///
-            /// // 검색어 초기화
-            /// filteredFiles = [파일1, 파일2, ..., 파일100]
-            /// isEmpty = false → List 렌더링
+            /// // Reset search
+            /// filteredFiles = [File1, File2, ..., File100]
+            /// isEmpty = false → List rendered
             /// ```
             if filteredFiles.isEmpty {
-                /// 빈 상태 View
+                /// Empty state View
                 ///
-                /// ## EmptyStateView 표시 시점
-                /// - 검색 결과 없음
-                /// - 필터링 결과 없음
-                /// - 원본 videoFiles 배열이 비어있음
+                /// ## When EmptyStateView is Displayed
+                /// - No search results
+                /// - No filtering results
+                /// - Original videoFiles array is empty
                 ///
-                /// **표시 내용:**
-                /// - 🎥 아이콘 (video.slash)
-                /// - "No Videos Found" 메시지
-                /// - "Try adjusting your search or filters" 안내
+                /// **Display Content:**
+                /// - 🎥 Icon (video.slash)
+                /// - "No Videos Found" message
+                /// - "Try adjusting your search or filters" guidance
                 EmptyStateView()
             } else {
-                /// 파일 리스트
+                /// File list
                 ///
                 /// ## List(_, selection:)
-                /// - filteredFiles: 표시할 데이터 배열
-                /// - selection: $selectedFile: 선택된 항목을 양방향 바인딩
+                /// - filteredFiles: Data array to display
+                /// - selection: $selectedFile: Two-way binding of selected item
                 ///
-                /// ## selection 바인딩 동작
+                /// ## selection Binding Behavior
                 /// ```
-                /// 1. 사용자가 FileRow 클릭
+                /// 1. User clicks FileRow
                 ///      ↓
-                /// 2. .tag(file)에 지정된 VideoFile 가져옴
+                /// 2. Get VideoFile specified in .tag(file)
                 ///      ↓
-                /// 3. $selectedFile에 할당
+                /// 3. Assign to $selectedFile
                 ///      ↓
-                /// 4. @Binding으로 부모 View의 @State도 업데이트
+                /// 4. Parent View's @State also updated via @Binding
                 ///      ↓
-                /// 5. 부모 View에서 selectedFile 감지 → VideoPlayerView 업데이트
+                /// 5. Parent View detects selectedFile → VideoPlayerView updated
                 /// ```
                 ///
                 /// ## .tag() modifier
-                /// - List의 각 항목에 고유 값 지정
-                /// - selection에 바인딩될 때 이 값이 사용됨
+                /// - Specify unique value for each List item
+                /// - This value is used when binding to selection
                 ///
-                /// **tag 동작 예시:**
+                /// **tag Behavior Example:**
                 /// ```swift
-                /// List([파일1, 파일2, 파일3], selection: $selectedFile) { file in
+                /// List([File1, File2, File3], selection: $selectedFile) { file in
                 ///     Text(file.name).tag(file)
-                ///     //              ↑ 클릭 시 file 객체를 selectedFile에 할당
+                ///     //              ↑ Assign file object to selectedFile when clicked
                 /// }
                 ///
-                /// // 파일2 클릭
-                /// selectedFile = 파일2  // .tag(파일2)의 값이 할당됨
+                /// // Click File2
+                /// selectedFile = File2  // Value from .tag(File2) is assigned
                 /// ```
                 ///
                 /// ## .listRowInsets
-                /// - List 각 행의 내부 여백 커스터마이징
+                /// - Customize internal padding of each List row
                 /// - EdgeInsets(top:, leading:, bottom:, trailing:)
                 ///
-                /// **여백 예시:**
+                /// **Padding Example:**
                 /// ```
-                /// 기본 여백:
+                /// Default padding:
                 /// ┌────────────────────────┐
                 /// │  [     FileRow      ]  │ ← top: 8, leading: 16
                 /// └────────────────────────┘
                 ///
-                /// 커스텀 여백 (top: 4, leading: 8, bottom: 4, trailing: 8):
+                /// Custom padding (top: 4, leading: 8, bottom: 4, trailing: 8):
                 /// ┌────────────────────────┐
-                /// │ [      FileRow      ]  │ ← 여백 줄어듦
+                /// │ [      FileRow      ]  │ ← Reduced padding
                 /// └────────────────────────┘
                 /// ```
                 ///
                 /// ## .listStyle(.plain)
-                /// - List 기본 스타일 제거 (배경, 구분선 등)
-                /// - FileRow가 자체 스타일을 완전히 제어 가능
+                /// - Remove List default style (background, dividers, etc.)
+                /// - FileRow can fully control its own style
                 List(filteredFiles, selection: $selectedFile) { file in
                     FileRow(videoFile: file, isSelected: selectedFile?.id == file.id)
                         .tag(file)
@@ -807,24 +807,24 @@ struct FileListView: View {
                 .listStyle(.plain)
             }
 
-            /// 구분선
+            /// Divider
             Divider()
 
-            /// 상태바
+            /// Status bar
             ///
-            /// ## StatusBar 표시 내용
-            /// - fileCount: filteredFiles.count (필터링 후 파일 개수)
-            /// - totalCount: videoFiles.count (전체 파일 개수)
+            /// ## StatusBar Display Content
+            /// - fileCount: filteredFiles.count (file count after filtering)
+            /// - totalCount: videoFiles.count (total file count)
             ///
-            /// **표시 예시:**
+            /// **Display Examples:**
             /// ```
-            /// // 초기 상태
+            /// // Initial state
             /// "100 of 100 videos"
             ///
-            /// // 검색 후
+            /// // After search
             /// "10 of 100 videos"
             ///
-            /// // 필터 후
+            /// // After filter
             /// "5 of 100 videos"
             /// ```
             StatusBar(fileCount: filteredFiles.count, totalCount: videoFiles.count)
@@ -835,160 +835,160 @@ struct FileListView: View {
 // MARK: - Filter Button
 
 /// @struct FilterButton
-/// @brief 이벤트 타입 필터 토글 버튼 컴포넌트
+/// @brief Event type filter toggle button component
 ///
 /// @details
-/// 이벤트 타입 필터를 위한 토글 버튼입니다.
-/// 선택 상태에 따라 배경색과 폰트 두께가 변경됩니다.
+/// Toggle button for event type filtering.
+/// Background color and font weight change according to selection state.
 ///
-/// ## 주요 기능
-/// - **선택 상태 시각화**: isSelected에 따라 배경색, 폰트 두께 변경
-/// - **커스텀 색상**: 이벤트 타입별로 다른 색상 지정 가능
-/// - **액션 처리**: 버튼 클릭 시 콜백 함수 실행
+/// ## Key Features
+/// - **Selection State Visualization**: Changes background color and font weight based on isSelected
+/// - **Custom Color**: Can specify different colors for each event type
+/// - **Action Handling**: Executes callback function when button clicked
 ///
-/// ## 선택/비선택 스타일 차이
+/// ## Selected/Unselected Style Difference
 /// ```
-/// 선택됨:                     비선택:
+/// Selected:                   Unselected:
 /// ┌───────────────┐          ┌───────────────┐
 /// │ Event (Bold)  │          │ Event         │
-/// │ 배경: 빨강     │          │ 배경: 회색     │
-/// │ 텍스트: 흰색   │          │ 텍스트: 빨강   │
+/// │ Background: Red│          │ Background: Gray│
+/// │ Text: White   │          │ Text: Red      │
 /// └───────────────┘          └───────────────┘
 /// ```
 ///
-/// ## 사용 예시
+/// ## Usage Examples
 /// ```swift
-/// // "All" 버튼 (색상 없음)
+/// // "All" button (no color)
 /// FilterButton(title: "All",
 ///              isSelected: true,
 ///              action: { print("All clicked") })
 ///
-/// // "Event" 버튼 (빨간색)
+/// // "Event" button (red)
 /// FilterButton(title: "Event",
 ///              color: .red,
 ///              isSelected: false,
 ///              action: { selectedEventType = .event })
 /// ```
 struct FilterButton: View {
-    /// 버튼 제목 (예: "All", "Normal", "Parking", "Event")
+    /// Button title (e.g., "All", "Normal", "Parking", "Event")
     let title: String
 
-    /// 버튼 색상 (Optional)
+    /// Button color (Optional)
     ///
-    /// ## nil일 때
-    /// - 선택됨: .accentColor (시스템 강조색, 보통 파랑)
-    /// - 비선택: .primary (기본 텍스트 색상)
+    /// ## When nil
+    /// - Selected: .accentColor (system accent color, usually blue)
+    /// - Unselected: .primary (default text color)
     ///
-    /// ## 값이 있을 때 (예: .red)
-    /// - 선택됨: .red 배경 + 흰색 텍스트
-    /// - 비선택: .red 텍스트 + 회색 배경
+    /// ## When has value (e.g., .red)
+    /// - Selected: .red background + white text
+    /// - Unselected: .red text + gray background
     var color: Color?
 
-    /// 선택 상태 여부
+    /// Selection state
     ///
-    /// ## 선택 상태 판별
+    /// ## Determining Selection State
     /// ```swift
-    /// // "All" 버튼
+    /// // "All" button
     /// isSelected = (selectedEventType == nil)
     ///
-    /// // "Event" 버튼
+    /// // "Event" button
     /// isSelected = (selectedEventType == .event)
     /// ```
     let isSelected: Bool
 
-    /// 버튼 클릭 시 실행할 액션
+    /// Action to execute when button clicked
     ///
-    /// ## 클로저 타입
-    /// () -> Void: 파라미터 없고 반환값 없는 함수
+    /// ## Closure Type
+    /// () -> Void: Function with no parameters and no return value
     ///
-    /// **액션 예시:**
+    /// **Action Examples:**
     /// ```swift
-    /// action: { selectedEventType = nil }        // "All" 버튼
-    /// action: { selectedEventType = .event }     // "Event" 버튼
-    /// action: { print("Button clicked") }        // 로그 출력
+    /// action: { selectedEventType = nil }        // "All" button
+    /// action: { selectedEventType = .event }     // "Event" button
+    /// action: { print("Button clicked") }        // Log output
     /// ```
     let action: () -> Void
 
-    /// FilterButton의 메인 레이아웃
+    /// FilterButton's Main Layout
     ///
-    /// ## 버튼 스타일 결정 로직
+    /// ## Button Style Decision Logic
     /// ```
     /// isSelected == true:
-    ///   - 배경: color ?? .accentColor (색상 우선, 없으면 시스템 강조색)
-    ///   - 텍스트: .white (선택 상태는 항상 흰색)
-    ///   - 폰트: .bold (선택 상태는 굵게)
+    ///   - Background: color ?? .accentColor (color priority, system accent if none)
+    ///   - Text: .white (always white when selected)
+    ///   - Font: .bold (bold when selected)
     ///
     /// isSelected == false:
-    ///   - 배경: .controlBackgroundColor (회색 계열)
-    ///   - 텍스트: color ?? .primary (색상 우선, 없으면 기본 텍스트 색상)
-    ///   - 폰트: .regular (일반 두께)
+    ///   - Background: .controlBackgroundColor (gray)
+    ///   - Text: color ?? .primary (color priority, default text color if none)
+    ///   - Font: .regular (regular weight)
     /// ```
     var body: some View {
         Button(action: action) {
             Text(title)
                 /// ## .font(.caption)
-                /// - caption: 작은 크기 폰트 (보통 12pt)
-                /// - 버튼이 많이 배치되므로 작은 폰트 사용
+                /// - caption: Small font size (usually 12pt)
+                /// - Use small font as many buttons are arranged
                 .font(.caption)
 
-                /// ## 선택 상태에 따른 폰트 두께
+                /// ## Font weight based on selection state
                 /// ```swift
                 /// isSelected ? .bold : .regular
-                /// //   true  → .bold    (굵게)
-                /// //   false → .regular (일반)
+                /// //   true  → .bold    (bold)
+                /// //   false → .regular (normal)
                 /// ```
                 .fontWeight(isSelected ? .bold : .regular)
 
-                /// ## 선택 상태에 따른 텍스트 색상
+                /// ## Text color based on selection state
                 /// ```swift
                 /// isSelected ? .white : (color ?? .primary)
-                /// //   true  → .white (선택 상태는 항상 흰색)
-                /// //   false → color가 있으면 color, 없으면 .primary
+                /// //   true  → .white (always white when selected)
+                /// //   false → color if exists, .primary otherwise
                 /// ```
                 ///
-                /// **색상 예시:**
+                /// **Color Examples:**
                 /// ```swift
-                /// // "All" 버튼 (color = nil)
+                /// // "All" button (color = nil)
                 /// isSelected = true  → .white
-                /// isSelected = false → .primary (검정/흰색)
+                /// isSelected = false → .primary (black/white)
                 ///
-                /// // "Event" 버튼 (color = .red)
+                /// // "Event" button (color = .red)
                 /// isSelected = true  → .white
                 /// isSelected = false → .red
                 /// ```
                 .foregroundColor(isSelected ? .white : (color ?? .primary))
-                .padding(.horizontal, 12)  // 좌우 여백
-                .padding(.vertical, 6)     // 상하 여백
+                .padding(.horizontal, 12)  // Left/right padding
+                .padding(.vertical, 6)     // Top/bottom padding
 
-                /// ## 선택 상태에 따른 배경색
-                /// - RoundedRectangle: 둥근 모서리 사각형 (cornerRadius: 12)
-                /// - .fill(): 배경색으로 채우기
+                /// ## Background color based on selection state
+                /// - RoundedRectangle: Rounded corner rectangle (cornerRadius: 12)
+                /// - .fill(): Fill with background color
                 ///
-                /// **배경색 결정:**
+                /// **Background Color Decision:**
                 /// ```swift
                 /// isSelected ? (color ?? .accentColor) : .controlBackgroundColor
-                /// //   true  → color가 있으면 color, 없으면 .accentColor
-                /// //   false → .controlBackgroundColor (회색)
+                /// //   true  → color if exists, .accentColor otherwise
+                /// //   false → .controlBackgroundColor (gray)
                 /// ```
                 ///
-                /// **배경 예시:**
+                /// **Background Examples:**
                 /// ```
-                /// // "All" 버튼 (color = nil)
+                /// // "All" button (color = nil)
                 /// isSelected = true:  ┌──────────┐
-                ///                     │   All    │ 배경: 파랑 (.accentColor)
+                ///                     │   All    │ Background: Blue (.accentColor)
                 ///                     └──────────┘
                 ///
                 /// isSelected = false: ┌──────────┐
-                ///                     │   All    │ 배경: 회색
+                ///                     │   All    │ Background: Gray
                 ///                     └──────────┘
                 ///
-                /// // "Event" 버튼 (color = .red)
+                /// // "Event" button (color = .red)
                 /// isSelected = true:  ┌──────────┐
-                ///                     │  Event   │ 배경: 빨강
+                ///                     │  Event   │ Background: Red
                 ///                     └──────────┘
                 ///
                 /// isSelected = false: ┌──────────┐
-                ///                     │  Event   │ 배경: 회색, 텍스트: 빨강
+                ///                     │  Event   │ Background: Gray, Text: Red
                 ///                     └──────────┘
                 /// ```
                 .background(
@@ -997,8 +997,8 @@ struct FilterButton: View {
                 )
         }
         /// ## .buttonStyle(.plain)
-        /// - Button 기본 스타일 제거 (기본 배경, 호버 효과 등)
-        /// - 커스텀 배경(.background)이 정확하게 적용되도록 함
+        /// - Remove Button default style (default background, hover effect, etc.)
+        /// - Ensures custom background (.background) is applied accurately
         .buttonStyle(.plain)
     }
 }
@@ -1006,88 +1006,88 @@ struct FilterButton: View {
 // MARK: - Empty State
 
 /// @struct EmptyStateView
-/// @brief 검색/필터링 결과 없음 표시 View
+/// @brief Display View for no search/filtering results
 ///
 /// @details
-/// 검색 또는 필터링 결과가 없을 때 표시되는 빈 상태 View입니다.
+/// Empty state View displayed when search or filtering results are empty.
 ///
-/// ## 표시 시점
+/// ## When Displayed
 /// - filteredFiles.isEmpty == true
-/// - 검색어로 파일을 찾지 못함
-/// - 필터 조건에 맞는 파일이 없음
-/// - 원본 videoFiles 배열이 비어있음
+/// - No files found with search term
+/// - No files matching filter criteria
+/// - Original videoFiles array is empty
 ///
-/// ## UI 구성
+/// ## UI Structure
 /// ```
 /// ┌────────────────────────────┐
 /// │                            │
 /// │         🎥 (48pt)          │ ← SF Symbol: video.slash
 /// │                            │
-/// │    No Videos Found         │ ← 제목 (.title2, bold)
+/// │    No Videos Found         │ ← Title (.title2, bold)
 /// │                            │
-/// │  Try adjusting your search │ ← 안내 메시지 (.caption)
+/// │  Try adjusting your search │ ← Guidance message (.caption)
 /// │     or filters             │
 /// │                            │
 /// └────────────────────────────┘
 /// ```
 ///
-/// ## 사용자 경험 개선
-/// - 빈 화면 대신 명확한 안내 제공
-/// - 문제 해결 방법 제시 ("조정해보세요")
-/// - 시각적 아이콘으로 상태 명확화
+/// ## User Experience Improvement
+/// - Provide clear guidance instead of blank screen
+/// - Suggest problem solution ("try adjusting")
+/// - Clarify state with visual icon
 struct EmptyStateView: View {
     var body: some View {
         VStack(spacing: 16) {
-            /// 비디오 없음 아이콘
+            /// No videos icon
             ///
             /// ## SF Symbol: video.slash
-            /// - 비디오 아이콘에 슬래시가 그어진 모양
-            /// - "비디오 없음" 상태를 직관적으로 표현
+            /// - Video icon with slash through it
+            /// - Intuitively expresses "no videos" state
             ///
-            /// **아이콘 예시:**
+            /// **Icon Examples:**
             /// ```
-            /// video.slash:  📹/  (비디오에 슬래시)
-            /// video.fill:   📹   (일반 비디오)
-            /// photo.slash:  🖼️/  (사진에 슬래시)
+            /// video.slash:  📹/  (video with slash)
+            /// video.fill:   📹   (normal video)
+            /// photo.slash:  🖼️/  (photo with slash)
             /// ```
             Image(systemName: "video.slash")
-                .font(.system(size: 48))        // 큰 아이콘 (48pt)
-                .foregroundColor(.secondary)    // 회색 계열
+                .font(.system(size: 48))        // Large icon (48pt)
+                .foregroundColor(.secondary)    // Gray
 
-            /// 제목 텍스트
+            /// Title text
             ///
             /// ## .title2
-            /// - 큰 제목 폰트 (보통 22pt)
-            /// - 메인 메시지로 사용
+            /// - Large title font (usually 22pt)
+            /// - Used as main message
             Text("No Videos Found")
                 .font(.title2)
-                .fontWeight(.medium)  // 중간 두께
+                .fontWeight(.medium)  // Medium weight
 
-            /// 안내 메시지
+            /// Guidance message
             ///
             /// ## .caption
-            /// - 작은 폰트 (보통 12pt)
-            /// - 보조 설명으로 사용
+            /// - Small font (usually 12pt)
+            /// - Used as supplementary description
             ///
-            /// **메시지 의도:**
-            /// - "검색어를 바꿔보세요"
-            /// - "필터를 조정해보세요"
-            /// - 문제 해결 방법 제시
+            /// **Message Intent:**
+            /// - "Try changing the search term"
+            /// - "Try adjusting the filters"
+            /// - Suggest problem solution
             Text("Try adjusting your search or filters")
                 .font(.caption)
                 .foregroundColor(.secondary)
         }
         /// ## .frame(maxWidth:, maxHeight:)
-        /// - .infinity: 부모 View의 전체 공간 차지
-        /// - VStack이 화면 중앙에 배치됨
+        /// - .infinity: Take up entire parent View space
+        /// - VStack positioned at screen center
         ///
-        /// **레이아웃 예시:**
+        /// **Layout Example:**
         /// ```
-        /// 부모 View (List 영역):
+        /// Parent View (List area):
         /// ┌────────────────────────────┐
-        /// │                            │ ← .infinity로 전체 공간 차지
+        /// │                            │ ← Take up entire space with .infinity
         /// │                            │
-        /// │        VStack 중앙         │ ← VStack이 자동으로 중앙 정렬
+        /// │      VStack centered       │ ← VStack automatically centered
         /// │                            │
         /// │                            │
         /// └────────────────────────────┘
@@ -1099,59 +1099,59 @@ struct EmptyStateView: View {
 // MARK: - Status Bar
 
 /// @struct StatusBar
-/// @brief 파일 리스트 하단 상태바
+/// @brief File list bottom status bar
 ///
 /// @details
-/// 파일 리스트 하단에 표시되는 상태바로, 필터링 결과를 요약합니다.
+/// Status bar displayed at the bottom of file list, summarizes filtering results.
 ///
-/// ## 표시 내용
-/// - "X of Y videos": 필터링된 파일 개수 / 전체 파일 개수
+/// ## Display Content
+/// - "X of Y videos": Filtered file count / Total file count
 ///
-/// ## UI 구성
+/// ## UI Structure
 /// ```
 /// ┌────────────────────────────────┐
-/// │ 10 of 100 videos        [TODO] │ ← 좌측: 카운터, 우측: 추가 정보 (미구현)
+/// │ 10 of 100 videos        [TODO] │ ← Left: Counter, Right: Additional info (not implemented)
 /// └────────────────────────────────┘
 /// ```
 ///
-/// ## 사용 예시
+/// ## Usage Examples
 /// ```swift
-/// // 초기 상태 (필터 없음)
+/// // Initial state (no filter)
 /// StatusBar(fileCount: 100, totalCount: 100)
-/// // 표시: "100 of 100 videos"
+/// // Display: "100 of 100 videos"
 ///
-/// // 검색 후
+/// // After search
 /// StatusBar(fileCount: 10, totalCount: 100)
-/// // 표시: "10 of 100 videos"
+/// // Display: "10 of 100 videos"
 ///
-/// // 필터 + 검색
+/// // Filter + search
 /// StatusBar(fileCount: 3, totalCount: 100)
-/// // 표시: "3 of 100 videos"
+/// // Display: "3 of 100 videos"
 /// ```
 struct StatusBar: View {
-    /// 필터링 후 파일 개수
+    /// File count after filtering
     ///
-    /// ## 값 예시
-    /// - 초기 상태 (필터 없음): fileCount == totalCount
-    /// - 검색 후: fileCount < totalCount
-    /// - 검색 결과 없음: fileCount == 0
+    /// ## Value Examples
+    /// - Initial state (no filter): fileCount == totalCount
+    /// - After search: fileCount < totalCount
+    /// - No search results: fileCount == 0
     let fileCount: Int
 
-    /// 전체 파일 개수 (필터링 전)
+    /// Total file count (before filtering)
     ///
-    /// ## 값 예시
-    /// - videoFiles.count (변하지 않음)
+    /// ## Value Examples
+    /// - videoFiles.count (does not change)
     let totalCount: Int
 
     var body: some View {
         HStack {
-            /// 파일 카운터 텍스트
+            /// File counter text
             ///
             /// ## String Interpolation
             /// "\(fileCount) of \(totalCount) videos"
-            /// - \(변수): 변수 값을 문자열에 삽입
+            /// - \(variable): Insert variable value into string
             ///
-            /// **예시:**
+            /// **Examples:**
             /// ```swift
             /// fileCount = 10, totalCount = 100
             /// "\(fileCount) of \(totalCount) videos"
@@ -1162,117 +1162,117 @@ struct StatusBar: View {
             /// → "0 of 100 videos"
             /// ```
             Text("\(fileCount) of \(totalCount) videos")
-                .font(.caption)              // 작은 폰트
-                .foregroundColor(.secondary)  // 회색 계열
+                .font(.caption)              // Small font
+                .foregroundColor(.secondary)  // Gray
 
             /// ## Spacer()
-            /// - 남은 공간을 모두 차지
-            /// - 왼쪽 텍스트를 좌측 정렬, 오른쪽 컨텐츠를 우측 정렬
+            /// - Takes up all remaining space
+            /// - Left aligns text on left, right aligns content on right
             ///
-            /// **레이아웃 효과:**
+            /// **Layout Effect:**
             /// ```
-            /// Spacer 없음:
+            /// Without Spacer:
             /// [10 of 100 videos][TODO]
             ///
-            /// Spacer 있음:
+            /// With Spacer:
             /// [10 of 100 videos]           [TODO]
-            ///                   ↑ Spacer가 공간 차지
+            ///                   ↑ Spacer takes up space
             /// ```
             Spacer()
 
-            /// TODO: 추가 상태 정보
+            /// TODO: Additional status information
             ///
-            /// ## 향후 추가 가능한 정보
-            /// - 총 파일 크기: "Total: 10.5 GB"
-            /// - 총 재생 시간: "Duration: 2h 30m"
-            /// - 마지막 업데이트: "Updated: 2024-01-15"
+            /// ## Possible Future Additions
+            /// - Total file size: "Total: 10.5 GB"
+            /// - Total playback time: "Duration: 2h 30m"
+            /// - Last update: "Updated: 2024-01-15"
             ///
-            /// **구현 예시:**
+            /// **Implementation Example:**
             /// ```swift
             /// Text("Total: \(totalSize)")
             ///     .font(.caption)
             ///     .foregroundColor(.secondary)
             /// ```
         }
-        .padding(.horizontal)  // 좌우 여백
-        .padding(.vertical, 8)  // 상하 여백
-        .background(Color(nsColor: .controlBackgroundColor))  // macOS 시스템 배경색
+        .padding(.horizontal)  // Left/right padding
+        .padding(.vertical, 8)  // Top/bottom padding
+        .background(Color(nsColor: .controlBackgroundColor))  // macOS system background color
     }
 }
 
 // MARK: - Placeholder Views
 
-/// PlaceholderView 구조체
-/// 비디오 파일이 선택되지 않았을 때 표시되는 플레이스홀더 View입니다.
+/// PlaceholderView struct
+/// Placeholder View displayed when no video file is selected.
 ///
-/// ## 표시 시점
-/// - selectedFile == nil (선택된 파일 없음)
-/// - 앱 첫 실행 시
-/// - 선택 해제 후
+/// ## When Displayed
+/// - selectedFile == nil (no file selected)
+/// - When app is first launched
+/// - After deselection
 ///
-/// ## UI 구성
+/// ## UI Structure
 /// ```
 /// ┌────────────────────────────┐
 /// │                            │
 /// │         📹 (64pt)          │ ← SF Symbol: video.fill
 /// │                            │
-/// │  Select a video to view    │ ← 안내 메시지 (.title2, bold)
+/// │  Select a video to view    │ ← Guidance message (.title2, bold)
 /// │       details              │
 /// │                            │
 /// └────────────────────────────┘
 /// ```
 ///
-/// ## 사용 예시
+/// ## Usage Example
 /// ```swift
-/// // ContentView에서 조건부 렌더링
+/// // Conditional rendering in ContentView
 /// if let file = selectedFile {
-///     VideoPlayerView(videoFile: file)  // 선택된 파일 재생
+///     VideoPlayerView(videoFile: file)  // Play selected file
 /// } else {
-///     PlaceholderView()  // 선택 안내 표시
+///     PlaceholderView()  // Display selection guidance
 /// }
 /// ```
 struct PlaceholderView: View {
     var body: some View {
         VStack(spacing: 16) {
-            /// 비디오 아이콘
+            /// Video icon
             ///
             /// ## SF Symbol: video.fill
-            /// - 채워진 비디오 아이콘
-            /// - 비디오 관련 UI임을 명확히 표현
+            /// - Filled video icon
+            /// - Clearly expresses video-related UI
             Image(systemName: "video.fill")
-                .font(.system(size: 64))        // 큰 아이콘 (64pt)
-                .foregroundColor(.secondary)    // 회색 계열
+                .font(.system(size: 64))        // Large icon (64pt)
+                .foregroundColor(.secondary)    // Gray
 
-            /// 안내 메시지
+            /// Guidance message
             ///
-            /// ## 메시지 의도
-            /// - "비디오를 선택하세요"
-            /// - 사용자에게 다음 행동 안내
+            /// ## Message Intent
+            /// - "Select a video"
+            /// - Guide user to next action
             Text("Select a video to view details")
-                .font(.title2)               // 큰 폰트
-                .fontWeight(.medium)         // 중간 두께
-                .foregroundColor(.secondary) // 회색 계열
+                .font(.title2)               // Large font
+                .fontWeight(.medium)         // Medium weight
+                .foregroundColor(.secondary) // Gray
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)  // 화면 전체 차지
+        .frame(maxWidth: .infinity, maxHeight: .infinity)  // Take up entire screen
     }
 }
 
-/// FileDetailView 구조체
-/// 선택된 비디오 파일의 상세 정보를 표시하는 View입니다.
+/// FileDetailView struct
+/// View that displays detailed information of selected video file.
 ///
-/// ## 표시 정보
-/// - **기본 정보**: 파일명, 이벤트 타입, 타임스탬프, 재생 시간, 파일 크기, 채널 개수
-/// - **채널 목록**: 각 채널의 카메라 위치, 해상도, 프레임율
-/// - **메타데이터**: GPS 이동 거리, 평균/최고 속도, 충격 이벤트 개수, 최대 G-Force
-/// - **노트**: 사용자 메모
+/// ## Display Information
+/// - **Basic Info**: Filename, event type, timestamp, playback time, file size, channel count
+/// - **Channel List**: Camera position, resolution, frame rate for each channel
+/// - **Metadata**: GPS distance, average/max speed, impact event count, max G-Force
+/// - **Notes**: User memo
 ///
-/// ## UI 구조
+/// ## UI Structure
 /// ```
 /// ┌────────────────────────────────┐
-/// │ 📹 video_20240115_1430.mp4     │ ← 파일명 (.title, bold)
-/// │ [Event] 2024-01-15 14:30       │ ← 이벤트 배지 + 타임스탬프
+/// │ 📹 video_20240115_1430.mp4     │ ← Filename (.title, bold)
+/// │ [Event] 2024-01-15 14:30       │ ← Event badge + timestamp
 /// ├────────────────────────────────┤ ← Divider
-/// │ File Information               │ ← 섹션 제목 (.headline)
+/// │ File Information               │ ← Section title (.headline)
 /// │ Duration      00:01:30         │ ← DetailRow
 /// │ Size          512 MB           │
 /// │ Channels      4                │
@@ -1289,48 +1289,48 @@ struct PlaceholderView: View {
 /// │ Max G-Force   3.5 G            │
 /// ├────────────────────────────────┤
 /// │ Notes                          │
-/// │ 고속도로 주행 중 급정거         │ ← 사용자 메모
+/// │ Sudden stop on highway         │ ← User memo
 /// └────────────────────────────────┘
 /// ```
 ///
-/// ## 조건부 섹션 렌더링
-/// - Channels: videoFile.channels.isEmpty == false일 때만 표시
-/// - Metadata: videoFile.hasGPSData || videoFile.hasAccelerationData일 때만 표시
-/// - Notes: videoFile.notes != nil일 때만 표시
+/// ## Conditional Section Rendering
+/// - Channels: Display only when videoFile.channels.isEmpty == false
+/// - Metadata: Display only when videoFile.hasGPSData || videoFile.hasAccelerationData
+/// - Notes: Display only when videoFile.notes != nil
 struct FileDetailView: View {
-    /// 표시할 비디오 파일 정보
+    /// Video file information to display
     let videoFile: VideoFile
 
     var body: some View {
         /// ## ScrollView
-        /// - 내용이 화면을 넘어갈 때 스크롤 가능
-        /// - 파일 정보가 많을 때 대응
+        /// - Scrollable when content exceeds screen
+        /// - Handles cases with much file information
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                /// 기본 정보 섹션
+                /// Basic information section
                 VStack(alignment: .leading, spacing: 8) {
-                    /// 파일명
+                    /// Filename
                     ///
                     /// ## videoFile.baseFilename
-                    /// - 예: "video_20240115_1430.mp4"
-                    /// - 경로 없이 파일명만 표시
+                    /// - Example: "video_20240115_1430.mp4"
+                    /// - Display only filename without path
                     Text(videoFile.baseFilename)
-                        .font(.title)        // 큰 폰트
-                        .fontWeight(.bold)   // 굵게
+                        .font(.title)        // Large font
+                        .fontWeight(.bold)   // Bold
 
                     HStack {
-                        /// 이벤트 타입 배지
+                        /// Event type badge
                         ///
                         /// ## EventBadge
-                        /// - 색상 있는 배지로 이벤트 타입 표시
-                        /// - 예: [Normal], [Parking], [Event]
+                        /// - Display event type with colored badge
+                        /// - Examples: [Normal], [Parking], [Event]
                         EventBadge(eventType: videoFile.eventType)
 
-                        /// 타임스탬프
+                        /// Timestamp
                         ///
                         /// ## videoFile.timestampString
-                        /// - 예: "2024-01-15 14:30:15"
-                        /// - 파일 촬영 시각
+                        /// - Example: "2024-01-15 14:30:15"
+                        /// - File recording time
                         Text(videoFile.timestampString)
                             .font(.subheadline)
                             .foregroundColor(.secondary)
@@ -1339,32 +1339,32 @@ struct FileDetailView: View {
 
                 Divider()
 
-                /// 파일 정보 섹션
+                /// File information section
                 VStack(alignment: .leading, spacing: 12) {
                     Text("File Information")
-                        .font(.headline)  // 섹션 제목
+                        .font(.headline)  // Section title
 
-                    /// 재생 시간
+                    /// Playback time
                     ///
                     /// ## DetailRow
-                    /// - 레이블-값 쌍을 표시하는 컴포넌트
-                    /// - HStack으로 레이블 좌측, 값 우측 정렬
+                    /// - Component displaying label-value pairs
+                    /// - HStack with label left-aligned, value right-aligned
                     ///
-                    /// **표시 예시:**
+                    /// **Display Example:**
                     /// ```
                     /// Duration      00:01:30
-                    /// ↑ 레이블      ↑ 값 (우측 정렬)
+                    /// ↑ Label       ↑ Value (right-aligned)
                     /// ```
                     DetailRow(label: "Duration", value: videoFile.durationString)
                     DetailRow(label: "Size", value: videoFile.totalFileSizeString)
                     DetailRow(label: "Channels", value: "\(videoFile.channelCount)")
                 }
 
-                /// 채널 목록 섹션 (조건부 렌더링)
+                /// Channel list section (conditional rendering)
                 ///
-                /// ## 표시 조건
+                /// ## Display Condition
                 /// - videoFile.channels.isEmpty == false
-                /// - 채널이 하나라도 있을 때만 표시
+                /// - Display only when at least one channel exists
                 if !videoFile.channels.isEmpty {
                     Divider()
 
@@ -1372,20 +1372,20 @@ struct FileDetailView: View {
                         Text("Channels")
                             .font(.headline)
 
-                        /// 각 채널을 ChannelRow로 표시
+                        /// Display each channel as ChannelRow
                         ///
                         /// ## ForEach
-                        /// - videoFile.channels 배열 순회
-                        /// - 각 ChannelInfo를 ChannelRow로 렌더링
+                        /// - Iterate through videoFile.channels array
+                        /// - Render each ChannelInfo as ChannelRow
                         ///
-                        /// **렌더링 예시:**
+                        /// **Rendering Example:**
                         /// ```swift
                         /// channels = [
                         ///     ChannelInfo(position: .front, ...),
                         ///     ChannelInfo(position: .rear, ...)
                         /// ]
                         ///
-                        /// // ForEach가 생성하는 View
+                        /// // Views created by ForEach
                         /// ChannelRow(channel: ChannelInfo(position: .front, ...))
                         /// ChannelRow(channel: ChannelInfo(position: .rear, ...))
                         /// ```
@@ -1395,12 +1395,12 @@ struct FileDetailView: View {
                     }
                 }
 
-                /// 메타데이터 요약 섹션 (조건부 렌더링)
+                /// Metadata summary section (conditional rendering)
                 ///
-                /// ## 표시 조건
-                /// - videoFile.hasGPSData: GPS 데이터가 있을 때
-                /// - videoFile.hasAccelerationData: 가속도 데이터가 있을 때
-                /// - 둘 중 하나라도 true이면 표시
+                /// ## Display Condition
+                /// - videoFile.hasGPSData: When GPS data exists
+                /// - videoFile.hasAccelerationData: When acceleration data exists
+                /// - Display if either is true
                 if videoFile.hasGPSData || videoFile.hasAccelerationData {
                     Divider()
 
@@ -1408,22 +1408,22 @@ struct FileDetailView: View {
                         Text("Metadata")
                             .font(.headline)
 
-                        /// metadata.summary에서 통계 가져오기
+                        /// Get statistics from metadata.summary
                         ///
                         /// ## VideoMetadata.Summary
-                        /// - GPS 데이터: 이동 거리, 평균/최고 속도
-                        /// - 가속도 데이터: 충격 이벤트 개수, 최대 G-Force
+                        /// - GPS data: Distance traveled, average/max speed
+                        /// - Acceleration data: Impact event count, max G-Force
                         let summary = videoFile.metadata.summary
 
-                        /// GPS 데이터 표시 (조건부)
+                        /// Display GPS data (conditional)
                         if videoFile.hasGPSData {
                             DetailRow(label: "Distance", value: summary.distanceString)
 
-                            /// Optional Binding으로 안전하게 표시
+                            /// Safe display with Optional Binding
                             ///
                             /// ## if let
-                            /// - summary.averageSpeedString이 nil이 아닐 때만 실행
-                            /// - avgSpeed 변수에 unwrapped 값 할당
+                            /// - Executes only when summary.averageSpeedString is not nil
+                            /// - Unwrapped value assigned to avgSpeed variable
                             if let avgSpeed = summary.averageSpeedString {
                                 DetailRow(label: "Avg Speed", value: avgSpeed)
                             }
@@ -1432,7 +1432,7 @@ struct FileDetailView: View {
                             }
                         }
 
-                        /// 가속도 데이터 표시 (조건부)
+                        /// Display acceleration data (conditional)
                         if videoFile.hasAccelerationData {
                             DetailRow(label: "Impact Events", value: "\(summary.impactEventCount)")
                             if let maxGForce = summary.maximumGForceString {
@@ -1442,17 +1442,17 @@ struct FileDetailView: View {
                     }
                 }
 
-                /// 노트 섹션 (조건부 렌더링)
+                /// Notes section (conditional rendering)
                 ///
-                /// ## 표시 조건
+                /// ## Display Condition
                 /// - videoFile.notes != nil
-                /// - 사용자가 작성한 메모가 있을 때만 표시
+                /// - Display only when user has written memo
                 ///
                 /// ## Optional Binding
                 /// ```swift
                 /// if let notes = videoFile.notes {
-                ///     // notes가 nil이 아닐 때만 실행
-                ///     // notes 변수는 String 타입 (Optional 아님)
+                ///     // Executes only when notes is not nil
+                ///     // notes variable is String type (not Optional)
                 /// }
                 /// ```
                 if let notes = videoFile.notes {
@@ -1468,80 +1468,80 @@ struct FileDetailView: View {
                     }
                 }
             }
-            .padding()  // VStack 외부 여백
+            .padding()  // VStack external padding
         }
     }
 }
 
-/// DetailRow 구조체
-/// 레이블-값 쌍을 표시하는 간단한 행 컴포넌트입니다.
+/// DetailRow struct
+/// Simple row component displaying label-value pairs.
 ///
-/// ## UI 레이아웃
+/// ## UI Layout
 /// ```
 /// ┌────────────────────────────────┐
 /// │ Duration            00:01:30   │ ← HStack
-/// │ ↑ 레이블 (좌측)      ↑ 값 (우측)│
+/// │ ↑ Label (left)      ↑ Value (right) │
 /// └────────────────────────────────┘
 /// ```
 ///
-/// ## 사용 예시
+/// ## Usage Examples
 /// ```swift
 /// DetailRow(label: "Duration", value: "00:01:30")
 /// DetailRow(label: "Size", value: "512 MB")
 /// DetailRow(label: "Channels", value: "4")
 /// ```
 struct DetailRow: View {
-    /// 레이블 텍스트 (왼쪽)
+    /// Label text (left)
     let label: String
 
-    /// 값 텍스트 (오른쪽)
+    /// Value text (right)
     let value: String
 
     var body: some View {
         HStack {
-            /// 레이블
+            /// Label
             ///
             /// ## .foregroundColor(.secondary)
-            /// - 회색 계열 색상
-            /// - 레이블은 보조 정보이므로 덜 강조
+            /// - Gray color
+            /// - Label is supplementary information so less emphasized
             Text(label)
                 .foregroundColor(.secondary)
 
             /// ## Spacer()
-            /// - 레이블과 값 사이 공간 확보
-            /// - 레이블 좌측 정렬, 값 우측 정렬
+            /// - Secure space between label and value
+            /// - Left align label, right align value
             Spacer()
 
-            /// 값
+            /// Value
             ///
             /// ## .fontWeight(.medium)
-            /// - 중간 두께 폰트
-            /// - 값은 주요 정보이므로 더 강조
+            /// - Medium weight font
+            /// - Value is main information so more emphasized
             Text(value)
                 .fontWeight(.medium)
         }
-        .font(.subheadline)  // 약간 작은 폰트
+        .font(.subheadline)  // Slightly smaller font
     }
 }
 
-/// ChannelRow 구조체
-/// 비디오 채널 정보를 표시하는 행 컴포넌트입니다.
+/// ChannelRow struct
+/// Row component displaying video channel information.
 ///
-/// ## 표시 정보
-/// - 카메라 위치: Front, Rear, Left, Right
-/// - 해상도: 1920x1080, 1280x720 등
-/// - 프레임율: 30fps, 60fps 등
+/// ## Display Information
+/// - Camera position: Front, Rear, Left, Right
+/// - Resolution: 1920x1080, 1280x720, etc.
+/// - Frame rate: 30fps, 60fps, etc.
 ///
-/// ## UI 레이아웃
+/// ## UI Layout
 /// ```
 /// ┌────────────────────────────────┐
-/// │ 📹 Front    1920x1080    30fps │ ← HStack (회색 배경)
+/// │ 📹 Front    1920x1080    30fps │ ← HStack (gray background)
 /// │ ↑   ↑          ↑           ↑   │
-/// │ 아이콘 위치    해상도     FPS  │
+/// │ Icon Position  Resolution  FPS │
 /// └────────────────────────────────┘
 /// ```
 ///
-/// ## 사용 예시
+/// ## Usage Example
 /// ```swift
 /// let channel = ChannelInfo(
 ///     position: .front,
@@ -1551,52 +1551,52 @@ struct DetailRow: View {
 /// ChannelRow(channel: channel)
 /// ```
 struct ChannelRow: View {
-    /// 채널 정보 (카메라 위치, 해상도, 프레임율 등)
+    /// Channel information (camera position, resolution, frame rate, etc.)
     let channel: ChannelInfo
 
     var body: some View {
         HStack {
-            /// 비디오 아이콘
+            /// Video icon
             Image(systemName: "video.fill")
                 .foregroundColor(.secondary)
 
-            /// 카메라 위치
+            /// Camera position
             ///
             /// ## channel.position.displayName
-            /// - CameraPosition enum의 표시 이름
-            /// - 예: "Front", "Rear", "Left", "Right"
+            /// - Display name of CameraPosition enum
+            /// - Examples: "Front", "Rear", "Left", "Right"
             ///
-            /// **예시:**
+            /// **Examples:**
             /// ```swift
             /// CameraPosition.front.displayName  → "Front"
             /// CameraPosition.rear.displayName   → "Rear"
             /// ```
             Text(channel.position.displayName)
-                .fontWeight(.medium)  // 위치는 더 강조
+                .fontWeight(.medium)  // Position more emphasized
 
             Spacer()
 
-            /// 해상도
+            /// Resolution
             ///
             /// ## channel.resolutionName
-            /// - 예: "1920x1080", "1280x720", "3840x2160" (4K)
+            /// - Examples: "1920x1080", "1280x720", "3840x2160" (4K)
             Text(channel.resolutionName)
                 .font(.caption)
                 .foregroundColor(.secondary)
 
-            /// 프레임율
+            /// Frame rate
             ///
             /// ## channel.frameRateString
-            /// - 예: "30fps", "60fps", "120fps"
+            /// - Examples: "30fps", "60fps", "120fps"
             Text(channel.frameRateString)
                 .font(.caption)
                 .foregroundColor(.secondary)
         }
-        .font(.subheadline)  // 기본 폰트 크기
-        .padding(.vertical, 4)     // 상하 여백
-        .padding(.horizontal, 8)   // 좌우 여백
-        .background(Color(nsColor: .controlBackgroundColor))  // 회색 배경
-        .cornerRadius(6)  // 모서리 둥글게
+        .font(.subheadline)  // Default font size
+        .padding(.vertical, 4)     // Top/bottom padding
+        .padding(.horizontal, 8)   // Left/right padding
+        .background(Color(nsColor: .controlBackgroundColor))  // Gray background
+        .cornerRadius(6)  // Round corners
     }
 }
 
@@ -1604,19 +1604,19 @@ struct ChannelRow: View {
 
 /// SwiftUI Preview
 ///
-/// ## PreviewProvider란?
-/// - Xcode의 Canvas에서 View를 미리 볼 수 있게 해주는 프로토콜
-/// - 실제 앱 빌드 없이 UI 확인 가능
-/// - 다양한 조건(디바이스, 다크모드 등)에서 테스트 가능
+/// ## What is PreviewProvider?
+/// - Protocol that allows viewing Views in Xcode Canvas
+/// - Can check UI without actual app build
+/// - Can test in various conditions (device, dark mode, etc.)
 ///
-/// ## 사용 방법
-/// 1. Xcode Canvas 활성화 (⌘ + Option + Enter)
-/// 2. Canvas에서 자동으로 previews 렌더링
-/// 3. 코드 수정 시 실시간으로 Preview 업데이트
+/// ## How to Use
+/// 1. Activate Xcode Canvas (⌘ + Option + Enter)
+/// 2. Canvas automatically renders previews
+/// 3. Preview updates in real-time when code is modified
 ///
-/// ## 주의사항
-/// - PreviewProvider는 Debug 빌드에서만 컴파일됨
-/// - Release 빌드에서는 자동으로 제외됨 (앱 크기 절약)
+/// ## Notes
+/// - PreviewProvider only compiles in Debug builds
+/// - Automatically excluded from Release builds (saves app size)
 struct FileListView_Previews: PreviewProvider {
     static var previews: some View {
         FileListViewPreviewWrapper()
@@ -1625,25 +1625,25 @@ struct FileListView_Previews: PreviewProvider {
 
 /// FileListView Preview Wrapper
 ///
-/// ## @State가 필요한 이유
-/// FileListView는 @Binding을 받으므로, Preview에서 @State로 원본 데이터를 제공해야 합니다.
+/// ## Why @State is Needed
+/// FileListView accepts @Binding, so Preview must provide original data with @State.
 ///
-/// **Preview 구조:**
+/// **Preview Structure:**
 /// ```
 /// FileListViewPreviewWrapper (Wrapper)
-/// └─ @State var videoFiles        ← 원본 데이터 소유
+/// └─ @State var videoFiles        ← Owns original data
 /// └─ @State var selectedFile
-///     ↓ $ 붙여서 Binding 전달
-/// FileListView (실제 View)
-/// └─ @Binding var videoFiles      ← 참조만 보유
+///     ↓ Pass Binding with $
+/// FileListView (Actual View)
+/// └─ @Binding var videoFiles      ← Only holds reference
 /// └─ @Binding var selectedFile
 /// ```
 ///
 /// ## VideoFile.allSamples
-/// - 테스트용 샘플 데이터
-/// - 다양한 이벤트 타입, 메타데이터를 가진 가짜 VideoFile 배열
+/// - Sample data for testing
+/// - Fake VideoFile array with various event types and metadata
 ///
-/// **샘플 데이터 예시:**
+/// **Sample Data Example:**
 /// ```swift
 /// VideoFile.allSamples = [
 ///     VideoFile(baseFilename: "video1.mp4", eventType: .normal, ...),
@@ -1652,26 +1652,26 @@ struct FileListView_Previews: PreviewProvider {
 /// ]
 /// ```
 private struct FileListViewPreviewWrapper: View {
-    /// Preview용 비디오 파일 배열
+    /// Video file array for Preview
     ///
     /// ## VideoFile.allSamples
-    /// - Models/VideoFile.swift에 정의된 샘플 데이터
-    /// - Preview에서 다양한 시나리오 테스트 가능
+    /// - Sample data defined in Models/VideoFile.swift
+    /// - Can test various scenarios in Preview
     @State private var videoFiles: [VideoFile] = VideoFile.allSamples
 
-    /// Preview용 선택된 파일
+    /// Selected file for Preview
     ///
-    /// ## nil로 초기화
-    /// - 초기에는 선택된 파일 없음
-    /// - Preview에서 파일 클릭 시 자동으로 업데이트
+    /// ## Initialize as nil
+    /// - No file selected initially
+    /// - Automatically updates when file clicked in Preview
     @State private var selectedFile: VideoFile?
 
     var body: some View {
-        /// FileListView를 400x600 크기로 Preview
+        /// Preview FileListView at 400x600 size
         ///
         /// ## .frame(width:, height:)
-        /// - Preview 창 크기 고정
-        /// - 실제 사용 시 크기 확인 가능
+        /// - Fix Preview window size
+        /// - Can check size in actual use
         FileListView(videoFiles: $videoFiles, selectedFile: $selectedFile)
             .frame(width: 400, height: 600)
     }

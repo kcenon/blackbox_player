@@ -1,15 +1,15 @@
 /// @file GraphOverlayView.swift
 /// @brief Graph overlay showing acceleration data
 /// @author BlackboxPlayer Development Team
-/// @details 가속도 센서 데이터를 실시간 그래프로 표시하는 오버레이 View입니다.
+/// @details An overlay View that displays acceleration sensor data as a real-time graph.
 
 import SwiftUI
 
 /// # GraphOverlayView
 ///
-/// 가속도 센서 데이터를 실시간 그래프로 표시하는 오버레이 View입니다.
+/// An overlay View that displays acceleration sensor data as a real-time graph.
 ///
-/// ## 화면 구조
+/// ## Screen Layout
 /// ```
 /// ┌─────────────────────────────────────────────────┐
 /// │                                                  │
@@ -22,20 +22,20 @@ import SwiftUI
 /// │  │       ╲ ╱                               │     │
 /// │  │ ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄│     │
 /// │  └────────────────────────────────────────┘     │
-/// │  ^X(빨강), Y(초록), Z(파랑) 축 + 충격 마커^     │
+/// │  ^X(red), Y(green), Z(blue) axes + impact markers^     │
 /// └─────────────────────────────────────────────────┘
 /// ```
 ///
-/// ## 주요 기능
-/// - **3축 그래프**: X, Y, Z 축 데이터를 각각 빨강, 초록, 파랑 선으로 표시
-/// - **시간 윈도우**: 최근 10초 데이터만 표시 (슬라이딩 윈도우)
-/// - **충격 이벤트**: 4G 이상 충격 지점에 배경 하이라이트 + 점선 마커
-/// - **현재 시간**: 노란색 점선으로 현재 재생 위치 표시
-/// - **그리드**: 배경 격자로 가독성 향상
+/// ## Key Features
+/// - **3-axis Graph**: X, Y, Z axis data displayed as red, green, and blue lines respectively
+/// - **Time Window**: Shows only the most recent 10 seconds of data (sliding window)
+/// - **Impact Events**: Background highlight + dashed marker at 4G+ impact points
+/// - **Current Time**: Yellow dashed line showing current playback position
+/// - **Grid**: Background grid for improved readability
 ///
-/// ## SwiftUI 핵심 개념
+/// ## Core SwiftUI Concepts
 ///
-/// ### 1. GeometryReader로 동적 그래프 그리기
+/// ### 1. Drawing Dynamic Graphs with GeometryReader
 /// ```swift
 /// GeometryReader { geometry in
 ///     Path { path in
@@ -46,59 +46,59 @@ import SwiftUI
 /// }
 /// ```
 ///
-/// **GeometryReader란?**
-/// - 부모 View의 크기와 위치 정보를 제공
-/// - 자식 View가 동적으로 크기를 계산할 수 있게 해줌
-/// - 그래프처럼 화면 크기에 따라 변하는 UI에 필수
+/// **What is GeometryReader?**
+/// - Provides the size and position information of the parent View
+/// - Enables child Views to dynamically calculate their size
+/// - Essential for UI that changes based on screen size, like graphs
 ///
-/// **왜 필요한가?**
-/// - 그래프는 고정 크기가 아님
-/// - 화면 크기에 맞춰 점의 위치를 계산해야 함
-/// - geometry.size를 사용해 픽셀 좌표 계산
+/// **Why is it needed?**
+/// - Graphs don't have a fixed size
+/// - Point positions must be calculated based on screen size
+/// - Use geometry.size to calculate pixel coordinates
 ///
-/// ### 2. Path로 라인 그래프 그리기
+/// ### 2. Drawing Line Graphs with Path
 /// ```swift
 /// Path { path in
-///     path.move(to: CGPoint(x: x1, y: y1))  // 시작점
-///     path.addLine(to: CGPoint(x: x2, y: y2))  // 다음 점
-///     path.addLine(to: CGPoint(x: x3, y: y3))  // 다음 점
+///     path.move(to: CGPoint(x: x1, y: y1))  // Starting point
+///     path.addLine(to: CGPoint(x: x2, y: y2))  // Next point
+///     path.addLine(to: CGPoint(x: x3, y: y3))  // Next point
 /// }
 /// .stroke(Color.red, lineWidth: 2)
 /// ```
 ///
-/// **Path란?**
-/// - SwiftUI에서 커스텀 도형을 그리는 방법
-/// - move(to:): 펜을 이동 (그리지 않음)
-/// - addLine(to:): 선을 그으며 이동
+/// **What is Path?**
+/// - A way to draw custom shapes in SwiftUI
+/// - move(to:): Move the pen (without drawing)
+/// - addLine(to:): Draw a line while moving
 ///
-/// **그래프 그리는 과정:**
-/// 1. 첫 데이터 포인트로 move
-/// 2. 나머지 포인트들로 addLine
-/// 3. stroke로 선 그리기
+/// **Graph drawing process:**
+/// 1. Move to the first data point
+/// 2. Use addLine for the remaining points
+/// 3. Draw the line with stroke
 ///
-/// ### 3. KeyPath로 동적 속성 접근
+/// ### 3. Dynamic Property Access with KeyPath
 /// ```swift
 /// func linePath(for keyPath: KeyPath<AccelerationData, Double>, ...) {
 ///     let value = data[keyPath: keyPath]  // \.x, \.y, \.z
 /// }
 ///
-/// // 사용 예:
-/// linePath(for: \.x, color: .red)    // X축 그래프
-/// linePath(for: \.y, color: .green)  // Y축 그래프
-/// linePath(for: \.z, color: .blue)   // Z축 그래프
+/// // Usage example:
+/// linePath(for: \.x, color: .red)    // X-axis graph
+/// linePath(for: \.y, color: .green)  // Y-axis graph
+/// linePath(for: \.z, color: .blue)   // Z-axis graph
 /// ```
 ///
-/// **KeyPath란?**
-/// - 타입의 속성을 참조하는 방법
-/// - `\.x`는 AccelerationData의 x 속성을 가리킴
-/// - 동적으로 속성에 접근 가능
+/// **What is KeyPath?**
+/// - A way to reference properties of a type
+/// - `\.x` points to the x property of AccelerationData
+/// - Enables dynamic property access
 ///
-/// **왜 사용하나?**
-/// - 중복 코드 제거
-/// - X, Y, Z 축 그래프를 하나의 함수로 처리
-/// - 같은 로직을 다른 속성에 적용
+/// **Why use it?**
+/// - Eliminates code duplication
+/// - Handles X, Y, Z axis graphs with a single function
+/// - Applies the same logic to different properties
 ///
-/// ### 4. Time Window 패턴 (슬라이딩 윈도우)
+/// ### 4. Time Window Pattern (Sliding Window)
 /// ```swift
 /// private let timeWindow: TimeInterval = 10.0
 ///
@@ -109,25 +109,25 @@ import SwiftUI
 /// }
 /// ```
 ///
-/// **Time Window란?**
-/// - 일정 시간 범위의 데이터만 표시
-/// - 10초 윈도우: 현재 시간 기준 최근 10초
-/// - 슬라이딩: currentTime이 증가하면 윈도우도 이동
+/// **What is Time Window?**
+/// - Displays only data within a specific time range
+/// - 10-second window: Most recent 10 seconds based on current time
+/// - Sliding: Window moves as currentTime increases
 ///
-/// **시각적 표현:**
+/// **Visual representation:**
 /// ```
-/// 전체 데이터: [0초──────30초──────60초──────90초]
+/// Full data: [0s──────30s──────60s──────90s]
 ///
-/// currentTime = 30초, timeWindow = 10초
-/// visibleData: [20초──────30초]
+/// currentTime = 30s, timeWindow = 10s
+/// visibleData: [20s──────30s]
 ///                ^startTime ^endTime
 ///
-/// currentTime = 40초 (1초 후)
-/// visibleData:    [30초──────40초]
-///                   ^윈도우가 오른쪽으로 이동
+/// currentTime = 40s (1 second later)
+/// visibleData:    [30s──────40s]
+///                   ^window moves to the right
 /// ```
 ///
-/// ### 5. 좌표 변환 (데이터 → 픽셀)
+/// ### 5. Coordinate Transformation (Data → Pixels)
 /// ```swift
 /// func xPosition(for time: TimeInterval, startTime: TimeInterval, in geometry: GeometryProxy) -> CGFloat {
 ///     let relativeTime = time - startTime
@@ -142,36 +142,36 @@ import SwiftUI
 /// }
 /// ```
 ///
-/// **X 좌표 변환 (시간 → 픽셀):**
+/// **X Coordinate Transformation (Time → Pixels):**
 /// ```
-/// timeWindow = 10초
+/// timeWindow = 10s
 /// geometry.size.width = 400px
 ///
-/// time = 25초, startTime = 20초
-/// relativeTime = 25 - 20 = 5초
-/// ratio = 5 / 10 = 0.5 (50% 위치)
-/// x = 0.5 * 400 = 200px (중앙)
+/// time = 25s, startTime = 20s
+/// relativeTime = 25 - 20 = 5s
+/// ratio = 5 / 10 = 0.5 (50% position)
+/// x = 0.5 * 400 = 200px (center)
 /// ```
 ///
-/// **Y 좌표 변환 (값 → 픽셀):**
+/// **Y Coordinate Transformation (Value → Pixels):**
 /// ```
-/// maxValue = 3.0 (±3G 범위)
+/// maxValue = 3.0 (±3G range)
 /// geometry.size.height = 120px
 ///
 /// value = 1.5G
 /// ratio = (1.5 + 3) / 6 = 0.75
-/// y = 120 * (1 - 0.75) = 30px (위쪽)
+/// y = 120 * (1 - 0.75) = 30px (top)
 ///
 /// value = 0G
 /// ratio = (0 + 3) / 6 = 0.5
-/// y = 120 * (1 - 0.5) = 60px (중앙)
+/// y = 120 * (1 - 0.5) = 60px (center)
 ///
 /// value = -3G
 /// ratio = (-3 + 3) / 6 = 0
-/// y = 120 * (1 - 0) = 120px (아래쪽)
+/// y = 120 * (1 - 0) = 120px (bottom)
 /// ```
 ///
-/// ### 6. ForEach로 동적 요소 그리기
+/// ### 6. Drawing Dynamic Elements with ForEach
 /// ```swift
 /// ForEach([-2, -1, 0, 1, 2], id: \.self) { value in
 ///     let y = yPosition(for: Double(value), in: geometry)
@@ -183,14 +183,14 @@ import SwiftUI
 /// }
 /// ```
 ///
-/// **ForEach의 활용:**
-/// - 배열의 각 요소에 대해 View 생성
-/// - 그리드 선 5개를 동적으로 생성 (-2G, -1G, 0G, 1G, 2G)
-/// - id: \.self로 값 자체를 식별자로 사용
+/// **Using ForEach:**
+/// - Creates a View for each element in the array
+/// - Dynamically generates 5 grid lines (-2G, -1G, 0G, 1G, 2G)
+/// - Uses the value itself as identifier with id: \.self
 ///
-/// ## 사용 예제
+/// ## Usage Examples
 ///
-/// ### 예제 1: VideoPlayerView에서 사용
+/// ### Example 1: Usage in VideoPlayerView
 /// ```swift
 /// struct VideoPlayerView: View {
 ///     @StateObject private var gsensorService = GSensorService()
@@ -209,7 +209,7 @@ import SwiftUI
 /// }
 /// ```
 ///
-/// ### 예제 2: 토글 가능한 그래프
+/// ### Example 2: Toggleable Graph
 /// ```swift
 /// @State private var showGraph = true
 ///
@@ -233,9 +233,9 @@ import SwiftUI
 /// }
 /// ```
 ///
-/// ## 실무 응용
+/// ## Practical Applications
 ///
-/// ### 시간 윈도우 조절 기능
+/// ### Time Window Adjustment Feature
 /// ```swift
 /// @State private var timeWindow: TimeInterval = 10.0
 ///
@@ -254,7 +254,7 @@ import SwiftUI
 /// }
 /// ```
 ///
-/// ### 축 선택 기능 (X, Y, Z 개별 표시)
+/// ### Axis Selection Feature (Individual X, Y, Z Display)
 /// ```swift
 /// @State private var showX = true
 /// @State private var showY = true
@@ -271,7 +271,7 @@ import SwiftUI
 /// }
 /// ```
 ///
-/// ### 줌 기능 (Y축 범위 조절)
+/// ### Zoom Feature (Y-axis Range Adjustment)
 /// ```swift
 /// @State private var yAxisRange: Double = 3.0
 ///
@@ -281,86 +281,86 @@ import SwiftUI
 /// }
 /// ```
 ///
-/// ## 성능 최적화
+/// ## Performance Optimization
 ///
-/// ### 1. 데이터 샘플링 (너무 많은 점 방지)
+/// ### 1. Data Sampling (Prevent Too Many Points)
 /// ```swift
 /// var visibleAccelerationData: [AccelerationData] {
 ///     let allData = gsensorService.getData(from: startTime, to: endTime)
-///     // 최대 100개 포인트로 제한
+///     // Limit to maximum 100 points
 ///     let stride = max(1, allData.count / 100)
 ///     return Array(allData.enumerated().filter { $0.offset % stride == 0 }.map { $0.element })
 /// }
 /// ```
 ///
-/// ### 2. DrawingGroup으로 Metal 렌더링
+/// ### 2. Metal Rendering with DrawingGroup
 /// ```swift
 /// ZStack {
-///     // 그래프 요소들
+///     // Graph elements
 /// }
-/// .drawingGroup()  // ✅ Metal로 렌더링 (성능 향상)
+/// .drawingGroup()  // ✅ Render with Metal (performance boost)
 /// ```
 ///
-/// ### 3. 변경되지 않는 요소 캐싱
+/// ### 3. Caching Unchanging Elements
 /// ```swift
-/// // 그리드는 변하지 않으므로 한 번만 그리기
+/// // Draw grid only once since it doesn't change
 /// @State private var gridView: some View = gridLines()
 ///
 /// ZStack {
-///     gridView  // ✅ 캐시된 그리드
-///     // 동적 그래프들
+///     gridView  // ✅ Cached grid
+///     // Dynamic graphs
 /// }
 /// ```
 ///
 /// @struct GraphOverlayView
-/// @brief 가속도 센서 데이터를 그래프로 표시하는 View
+/// @brief View that displays acceleration sensor data as a graph
 struct GraphOverlayView: View {
     // MARK: - Properties
 
     /// @var gsensorService
-    /// @brief G-Sensor 서비스 (@ObservedObject)
+    /// @brief G-Sensor service (@ObservedObject)
     ///
-    /// **GSensorService란?**
-    /// - 가속도 센서 데이터를 관리하는 서비스 클래스
-    /// - 충격 이벤트 감지 및 관리
-    /// - @Published 속성 변경 시 View 자동 업데이트
+    /// **What is GSensorService?**
+    /// - A service class that manages acceleration sensor data
+    /// - Detects and manages impact events
+    /// - Automatically updates View when @Published properties change
     ///
-    /// **주요 기능:**
-    /// - `hasData`: 가속도 데이터 존재 여부
-    /// - `currentAcceleration`: 현재 시간의 가속도 데이터
-    /// - `getData(from:to:)`: 특정 시간 범위의 데이터 가져오기
-    /// - `getImpacts(from:to:minSeverity:)`: 충격 이벤트 가져오기
+    /// **Key features:**
+    /// - `hasData`: Whether acceleration data exists
+    /// - `currentAcceleration`: Acceleration data at current time
+    /// - `getData(from:to:)`: Get data within a specific time range
+    /// - `getImpacts(from:to:minSeverity:)`: Get impact events
     @ObservedObject var gsensorService: GSensorService
 
     /// @var currentTime
-    /// @brief 현재 재생 시간
+    /// @brief Current playback time
     ///
-    /// **용도:**
-    /// - 시간 윈도우의 끝점 (endTime = currentTime)
-    /// - 현재 시간 인디케이터 표시 위치
-    /// - 보이는 데이터 범위 계산
+    /// **Purpose:**
+    /// - End point of time window (endTime = currentTime)
+    /// - Position to display current time indicator
+    /// - Calculate visible data range
     let currentTime: TimeInterval
 
     /// @var timeWindow
-    /// @brief 시간 윈도우 (표시할 시간 범위)
+    /// @brief Time window (time range to display)
     ///
-    /// **TimeInterval이란?**
-    /// - Double의 typealias (초 단위)
-    /// - 10.0 = 10초
+    /// **What is TimeInterval?**
+    /// - A typealias for Double (in seconds)
+    /// - 10.0 = 10 seconds
     ///
-    /// **Time Window란?**
-    /// - 그래프에 표시할 시간 범위
-    /// - 10초: 최근 10초 데이터만 표시
-    /// - 슬라이딩 윈도우: currentTime이 증가하면 함께 이동
+    /// **What is Time Window?**
+    /// - The time range to display on the graph
+    /// - 10 seconds: Display only the most recent 10 seconds of data
+    /// - Sliding window: Moves together as currentTime increases
     ///
-    /// **예시:**
+    /// **Example:**
     /// ```
     /// timeWindow = 10.0
     /// currentTime = 30.0
-    /// → 표시 범위: 20.0초 ~ 30.0초
+    /// → Display range: 20.0s ~ 30.0s
     ///
-    /// currentTime = 35.0 (5초 후)
-    /// → 표시 범위: 25.0초 ~ 35.0초
+    /// currentTime = 35.0 (5 seconds later)
+    /// → Display range: 25.0s ~ 35.0s
     /// ```
     private let timeWindow: TimeInterval = 10.0
 
@@ -371,9 +371,9 @@ struct GraphOverlayView: View {
             Spacer()
 
             HStack {
-                // 가속도 데이터가 있을 때만 그래프 표시
+                // Display graph only when acceleration data is available
                 //
-                // gsensorService.hasData: 가속도 데이터 1개 이상 있는지 확인
+                // gsensorService.hasData: Check if at least one acceleration data exists
                 if gsensorService.hasData {
                     accelerationGraph
                         .frame(width: 400, height: 180)
@@ -391,24 +391,24 @@ struct GraphOverlayView: View {
     // MARK: - Acceleration Graph
 
     /// @var accelerationGraph
-    /// @brief 가속도 그래프
+    /// @brief Acceleration graph
     ///
-    /// ## 구조
+    /// ## Structure
     /// ```
     /// ┌────────────────────────────────────────┐
-    /// │ 📊 G-Force         2.3G    X Y Z       │  ← 헤더
-    /// │ ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄│  ← 그리드
-    /// │        ╱╲              ⚠                │  ← 그래프
-    /// │ ━━━━━━━  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━│  ← 0G 라인
-    /// │       ╲ ╱                               │  ← 그래프
-    /// │ ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄│  ← 그리드
+    /// │ 📊 G-Force         2.3G    X Y Z       │  ← Header
+    /// │ ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄│  ← Grid
+    /// │        ╱╲              ⚠                │  ← Graph
+    /// │ ━━━━━━━  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━│  ← 0G line
+    /// │       ╲ ╱                               │  ← Graph
+    /// │ ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄│  ← Grid
     /// └────────────────────────────────────────┘
     /// ```
     ///
-    /// ## 헤더 구성
-    /// - **왼쪽**: 📊 아이콘 + "G-Force" 라벨
-    /// - **중앙**: 현재 G-Force 값 + 충격 정도
-    /// - **오른쪽**: X, Y, Z 축 범례 (빨강, 초록, 파랑)
+    /// ## Header Layout
+    /// - **Left**: 📊 icon + "G-Force" label
+    /// - **Center**: Current G-Force value + impact severity
+    /// - **Right**: X, Y, Z axis legend (red, green, blue)
     ///
     /// ## EnhancedAccelerationGraphView
     /// ```swift
@@ -420,11 +420,11 @@ struct GraphOverlayView: View {
     /// )
     /// ```
     ///
-    /// **전달하는 데이터:**
-    /// - visibleAccelerationData: 보이는 범위의 가속도 데이터
-    /// - visibleImpactEvents: 보이는 범위의 충격 이벤트
-    /// - currentTime: 현재 재생 시간
-    /// - timeWindow: 시간 윈도우 (10초)
+    /// **Data passed:**
+    /// - visibleAccelerationData: Acceleration data in visible range
+    /// - visibleImpactEvents: Impact events in visible range
+    /// - currentTime: Current playback time
+    /// - timeWindow: Time window (10 seconds)
     private var accelerationGraph: some View {
         VStack(spacing: 8) {
             // Title and Current G-Force
@@ -439,7 +439,7 @@ struct GraphOverlayView: View {
 
                 // Current G-Force Display
                 //
-                // 현재 시간의 G-Force 크기와 충격 정도 표시
+                // Display current time's G-Force magnitude and impact severity
                 if let currentAccel = gsensorService.currentAcceleration {
                     VStack(alignment: .trailing, spacing: 2) {
                         Text(currentAccel.magnitudeString)
@@ -447,7 +447,7 @@ struct GraphOverlayView: View {
                             .fontWeight(.bold)
                             .foregroundColor(gforceColor(for: currentAccel.magnitude))
 
-                        // 충격 이벤트일 때만 표시
+                        // Display only during impact events
                         if currentAccel.isImpact {
                             Text(currentAccel.impactSeverity.displayName)
                                 .font(.caption2)
@@ -456,9 +456,9 @@ struct GraphOverlayView: View {
                     }
                 }
 
-                // Legend (범례)
+                // Legend
                 //
-                // X, Y, Z 축 색상 안내
+                // Color guide for X, Y, Z axes
                 HStack(spacing: 12) {
                     legendItem(color: .red, label: "X")
                     legendItem(color: .green, label: "Y")
@@ -472,7 +472,7 @@ struct GraphOverlayView: View {
 
             // Graph
             //
-            // 실제 그래프를 그리는 View
+            // View that actually draws the graph
             EnhancedAccelerationGraphView(
                 accelerationData: visibleAccelerationData,
                 impactEvents: visibleImpactEvents,
@@ -484,22 +484,22 @@ struct GraphOverlayView: View {
         }
     }
 
-    /// @brief G-Force 크기에 따른 색상
+    /// @brief Color based on G-Force magnitude
     ///
-    /// ## 색상 임계값
+    /// ## Color Thresholds
     /// ```
-    /// 0.0 ~ 1.5G  → 녹색 (정상)
-    /// 1.5 ~ 2.5G  → 노란색 (경고)
-    /// 2.5 ~ 4.0G  → 주황색 (주의)
-    /// 4.0G 이상   → 빨간색 (위험)
+    /// 0.0 ~ 1.5G  → Green (normal)
+    /// 1.5 ~ 2.5G  → Yellow (warning)
+    /// 2.5 ~ 4.0G  → Orange (caution)
+    /// 4.0G+       → Red (danger)
     /// ```
     ///
-    /// **사용 위치:**
-    /// - 현재 G-Force 값 표시 색상
+    /// **Where it's used:**
+    /// - Color for displaying current G-Force value
     ///
-    /// **MetadataOverlayView의 gforceColor와 동일:**
-    /// - 일관된 색상 체계 유지
-    /// - 사용자에게 익숙한 시각적 피드백
+    /// **Same as gforceColor in MetadataOverlayView:**
+    /// - Maintains consistent color scheme
+    /// - Provides familiar visual feedback to users
     private func gforceColor(for magnitude: Double) -> Color {
         if magnitude > 4.0 {
             return .red
@@ -512,25 +512,25 @@ struct GraphOverlayView: View {
         }
     }
 
-    /// @brief 범례 항목
+    /// @brief Legend item
     ///
-    /// ## 구조
+    /// ## Structure
     /// ```
     /// ● X
     /// ^  ^
-    /// │  └─ 라벨 (X, Y, Z)
-    /// └──── 색상 원 (빨강, 초록, 파랑)
+    /// │  └─ Label (X, Y, Z)
+    /// └──── Color circle (red, green, blue)
     /// ```
     ///
     /// **Circle().fill(color):**
-    /// - 색상으로 채워진 원
-    /// - .frame(width: 6, height: 6): 작은 점
+    /// - Circle filled with color
+    /// - .frame(width: 6, height: 6): Small dot
     ///
-    /// **사용 예:**
+    /// **Usage example:**
     /// ```swift
-    /// legendItem(color: .red, label: "X")   → ● X (빨간 점)
-    /// legendItem(color: .green, label: "Y") → ● Y (초록 점)
-    /// legendItem(color: .blue, label: "Z")  → ● Z (파란 점)
+    /// legendItem(color: .red, label: "X")   → ● X (red dot)
+    /// legendItem(color: .green, label: "Y") → ● Y (green dot)
+    /// legendItem(color: .blue, label: "Z")  → ● Z (blue dot)
     /// ```
     private func legendItem(color: Color, label: String) -> some View {
         HStack(spacing: 4) {
@@ -544,36 +544,36 @@ struct GraphOverlayView: View {
     // MARK: - Helper Methods
 
     /// @var visibleAccelerationData
-    /// @brief 보이는 범위의 가속도 데이터
+    /// @brief Acceleration data in visible range
     ///
     /// ## Computed Property
-    /// - currentTime이 변경되면 자동으로 재계산
-    /// - View 업데이트 시마다 호출됨
+    /// - Automatically recalculated when currentTime changes
+    /// - Called every time View updates
     ///
-    /// ## 시간 범위 계산
+    /// ## Time Range Calculation
     /// ```swift
     /// let startTime = max(0, currentTime - timeWindow)
     /// let endTime = currentTime
     /// ```
     ///
-    /// **max(0, ...)를 사용하는 이유:**
-    /// - currentTime이 10초 미만일 때 음수 방지
-    /// - 예: currentTime = 5초, timeWindow = 10초
-    ///   → startTime = max(0, 5 - 10) = max(0, -5) = 0초
+    /// **Why use max(0, ...)?**
+    /// - Prevents negative values when currentTime is less than 10 seconds
+    /// - Example: currentTime = 5s, timeWindow = 10s
+    ///   → startTime = max(0, 5 - 10) = max(0, -5) = 0s
     ///
-    /// **예시:**
+    /// **Example:**
     /// ```
-    /// currentTime = 30초, timeWindow = 10초
-    /// startTime = max(0, 30 - 10) = 20초
-    /// endTime = 30초
-    /// → getData(from: 20, to: 30) 호출
-    /// → 20초~30초 데이터 반환
+    /// currentTime = 30s, timeWindow = 10s
+    /// startTime = max(0, 30 - 10) = 20s
+    /// endTime = 30s
+    /// → Calls getData(from: 20, to: 30)
+    /// → Returns data from 20s~30s
     /// ```
     ///
     /// ## getData(from:to:)
-    /// - GSensorService의 메서드
-    /// - 특정 시간 범위의 가속도 데이터 반환
-    /// - 필터링 + 정렬된 배열 반환
+    /// - Method of GSensorService
+    /// - Returns acceleration data in specific time range
+    /// - Returns filtered + sorted array
     private var visibleAccelerationData: [AccelerationData] {
         let startTime = max(0, currentTime - timeWindow)
         let endTime = currentTime
@@ -581,35 +581,35 @@ struct GraphOverlayView: View {
     }
 
     /// @var visibleImpactEvents
-    /// @brief 보이는 범위의 충격 이벤트
+    /// @brief Impact events in visible range
     ///
     /// ## Computed Property
-    /// - currentTime이 변경되면 자동으로 재계산
-    /// - 충격 이벤트만 필터링
+    /// - Automatically recalculated when currentTime changes
+    /// - Filters impact events only
     ///
     /// ## getImpacts(from:to:minSeverity:)
     /// ```swift
     /// gsensorService.getImpacts(from: startTime, to: endTime, minSeverity: .moderate)
     /// ```
     ///
-    /// **minSeverity: .moderate란?**
-    /// - 최소 충격 강도 필터링
-    /// - .moderate 이상만 표시 (보통, 높음, 심각)
-    /// - .low는 제외 (너무 많은 마커 방지)
+    /// **What is minSeverity: .moderate?**
+    /// - Filters by minimum impact severity
+    /// - Shows only .moderate and above (moderate, high, severe)
+    /// - Excludes .low (prevents too many markers)
     ///
-    /// **ImpactSeverity 레벨:**
+    /// **ImpactSeverity levels:**
     /// ```
-    /// .none     → 충격 없음 (4G 미만)
-    /// .low      → 경미 (4~6G) ← 제외
-    /// .moderate → 보통 (6~8G) ← 포함
-    /// .high     → 높음 (8~10G) ← 포함
-    /// .severe   → 심각 (10G 이상) ← 포함
+    /// .none     → No impact (<4G)
+    /// .low      → Minor (4~6G) ← Excluded
+    /// .moderate → Moderate (6~8G) ← Included
+    /// .high     → High (8~10G) ← Included
+    /// .severe   → Severe (10G+) ← Included
     /// ```
     ///
-    /// **왜 .moderate 이상만?**
-    /// - 그래프가 너무 복잡해지는 것 방지
-    /// - 중요한 충격만 강조
-    /// - 시각적 노이즈 감소
+    /// **Why only .moderate and above?**
+    /// - Prevents graph from becoming too complex
+    /// - Emphasizes only important impacts
+    /// - Reduces visual noise
     private var visibleImpactEvents: [AccelerationData] {
         let startTime = max(0, currentTime - timeWindow)
         let endTime = currentTime
@@ -621,17 +621,17 @@ struct GraphOverlayView: View {
 
 /// # EnhancedAccelerationGraphView
 ///
-/// 가속도 데이터를 그래프로 렌더링하는 View입니다.
+/// A View that renders acceleration data as a graph.
 ///
-/// ## 그래프 요소
-/// 1. **배경 그리드**: 가로/세로 격자선 (0.1 opacity)
-/// 2. **0G 라인**: 중앙 수평선 (0.3 opacity)
-/// 3. **충격 배경**: 충격 지점에 반투명 배경
-/// 4. **X, Y, Z 축 선**: 각각 빨강, 초록, 파랑
-/// 5. **충격 마커**: 점선 수직선
-/// 6. **현재 시간**: 노란색 점선 (오른쪽 끝)
+/// ## Graph Elements
+/// 1. **Background Grid**: Horizontal/vertical grid lines (0.1 opacity)
+/// 2. **0G Line**: Center horizontal line (0.3 opacity)
+/// 3. **Impact Background**: Semi-transparent background at impact points
+/// 4. **X, Y, Z Axis Lines**: Red, green, and blue respectively
+/// 5. **Impact Markers**: Dashed vertical lines
+/// 6. **Current Time**: Yellow dashed line (right edge)
 ///
-/// ## Path로 그래프 그리기
+/// ## Drawing Graphs with Path
 /// ```swift
 /// Path { path in
 ///     path.move(to: CGPoint(x: x1, y: y1))
@@ -641,48 +641,48 @@ struct GraphOverlayView: View {
 /// .stroke(Color.red, lineWidth: 2)
 /// ```
 ///
-/// **작동 방식:**
-/// 1. move(to:): 시작점으로 이동 (선 그리지 않음)
-/// 2. addLine(to:): 현재 위치에서 새 위치까지 선 그리기
-/// 3. stroke: 선의 색상과 두께 지정
+/// **How it works:**
+/// 1. move(to:): Move to starting point (without drawing)
+/// 2. addLine(to:): Draw line from current position to new position
+/// 3. stroke: Specify line color and thickness
 ///
 /// @struct EnhancedAccelerationGraphView
-/// @brief 가속도 데이터 그래프 렌더링 View
+/// @brief View for rendering acceleration data graph
 struct EnhancedAccelerationGraphView: View {
     // MARK: - Properties
 
     /// @var accelerationData
-    /// @brief 가속도 데이터 배열
+    /// @brief Array of acceleration data
     ///
-    /// **보이는 범위의 데이터:**
-    /// - visibleAccelerationData에서 전달됨
-    /// - 최근 10초 (timeWindow) 범위
-    /// - 시간순으로 정렬됨
+    /// **Data in visible range:**
+    /// - Passed from visibleAccelerationData
+    /// - Most recent 10 seconds (timeWindow) range
+    /// - Sorted chronologically
     let accelerationData: [AccelerationData]
 
     /// @var impactEvents
-    /// @brief 충격 이벤트 배열
+    /// @brief Array of impact events
     ///
-    /// **충격만 필터링:**
-    /// - visibleImpactEvents에서 전달됨
-    /// - .moderate 이상 충격만 포함
-    /// - 배경 하이라이트 + 점선 마커로 표시
+    /// **Filtered impacts only:**
+    /// - Passed from visibleImpactEvents
+    /// - Contains only .moderate and above impacts
+    /// - Displayed as background highlight + dashed marker
     let impactEvents: [AccelerationData]
 
     /// @var currentTime
-    /// @brief 현재 재생 시간
+    /// @brief Current playback time
     ///
-    /// **용도:**
-    /// - 현재 시간 인디케이터 위치 계산
-    /// - X 좌표 변환의 기준점
+    /// **Purpose:**
+    /// - Calculate current time indicator position
+    /// - Reference point for X coordinate transformation
     let currentTime: TimeInterval
 
     /// @var timeWindow
-    /// @brief 시간 윈도우
+    /// @brief Time window
     ///
-    /// **용도:**
-    /// - X 좌표 변환 시 사용
-    /// - 시간 → 픽셀 비율 계산
+    /// **Purpose:**
+    /// - Used in X coordinate transformation
+    /// - Calculate time → pixel ratio
     let timeWindow: TimeInterval
 
     // MARK: - Body
@@ -692,12 +692,12 @@ struct EnhancedAccelerationGraphView: View {
             ZStack {
                 // Background grid
                 //
-                // 배경 격자선 (가로/세로)
+                // Background grid lines (horizontal/vertical)
                 gridLines(in: geometry)
 
                 // Zero line
                 //
-                // 0G 기준선 (중앙 수평선)
+                // 0G baseline (center horizontal line)
                 Path { path in
                     let y = geometry.size.height / 2
                     path.move(to: CGPoint(x: 0, y: y))
@@ -707,26 +707,26 @@ struct EnhancedAccelerationGraphView: View {
 
                 // Impact event background highlights
                 //
-                // 충격 이벤트 배경 하이라이트
+                // Impact event background highlights
                 impactHighlights(in: geometry)
 
-                // X axis line (빨강)
+                // X axis line (red)
                 linePath(for: \.x, in: geometry, color: .red)
 
-                // Y axis line (초록)
+                // Y axis line (green)
                 linePath(for: \.y, in: geometry, color: .green)
 
-                // Z axis line (파랑)
+                // Z axis line (blue)
                 linePath(for: \.z, in: geometry, color: .blue)
 
                 // Impact markers
                 //
-                // 충격 이벤트 점선 마커
+                // Impact event dashed markers
                 impactMarkers(in: geometry)
 
                 // Current time indicator
                 //
-                // 현재 시간 인디케이터 (노란색 점선)
+                // Current time indicator (yellow dashed line)
                 currentTimeIndicator(in: geometry)
             }
         }
@@ -735,40 +735,40 @@ struct EnhancedAccelerationGraphView: View {
 
     // MARK: - Grid Lines
 
-    /// @brief 배경 그리드 선
+    /// @brief Background grid lines
     ///
-    /// ## 가로 격자선
+    /// ## Horizontal Grid Lines
     /// ```swift
     /// ForEach([-2, -1, 0, 1, 2], id: \.self) { value in
     ///     let y = yPosition(for: Double(value), in: geometry)
-    ///     // 수평선 그리기
+    ///     // Draw horizontal line
     /// }
     /// ```
     ///
-    /// **그려지는 선:**
-    /// - -2G 위치 (위쪽)
-    /// - -1G 위치
-    /// - 0G 위치 (중앙)
-    /// - 1G 위치
-    /// - 2G 위치 (아래쪽)
+    /// **Lines drawn:**
+    /// - -2G position (top)
+    /// - -1G position
+    /// - 0G position (center)
+    /// - 1G position
+    /// - 2G position (bottom)
     ///
-    /// ## 세로 격자선
+    /// ## Vertical Grid Lines
     /// ```swift
     /// ForEach(0..<Int(timeWindow / 2), id: \.self) { index in
     ///     let x = CGFloat(index) * (geometry.size.width / CGFloat(timeWindow / 2))
-    ///     // 수직선 그리기
+    ///     // Draw vertical line
     /// }
     /// ```
     ///
-    /// **그려지는 선:**
-    /// - timeWindow = 10초
-    /// - 2초마다 선 그리기
-    /// - 0초, 2초, 4초, 6초, 8초 위치
+    /// **Lines drawn:**
+    /// - timeWindow = 10s
+    /// - Draw line every 2 seconds
+    /// - At 0s, 2s, 4s, 6s, 8s positions
     ///
-    /// **계산:**
+    /// **Calculation:**
     /// ```
-    /// timeWindow = 10초
-    /// timeWindow / 2 = 5초 간격으로 나눔
+    /// timeWindow = 10s
+    /// timeWindow / 2 = Divide into 5s intervals
     /// geometry.size.width = 400px
     ///
     /// index = 0: x = 0 * (400 / 5) = 0px
@@ -778,16 +778,16 @@ struct EnhancedAccelerationGraphView: View {
     /// ```
     ///
     /// ## opacity(0.1)
-    /// - 매우 투명한 흰색
-    /// - 배경 역할 (눈에 거슬리지 않음)
-    /// - 그래프 가독성 향상
+    /// - Very transparent white
+    /// - Serves as background (not distracting)
+    /// - Improves graph readability
     private func gridLines(in geometry: GeometryProxy) -> some View {
         let gridColor = Color.white.opacity(0.1)
 
         return ZStack {
             // Horizontal grid lines
             //
-            // 가로 격자선 (-2G, -1G, 0G, 1G, 2G)
+            // Horizontal grid lines (-2G, -1G, 0G, 1G, 2G)
             ForEach([-2, -1, 0, 1, 2], id: \.self) { value in
                 let y = yPosition(for: Double(value), in: geometry)
                 Path { path in
@@ -799,7 +799,7 @@ struct EnhancedAccelerationGraphView: View {
 
             // Vertical grid lines (every 2 seconds)
             //
-            // 세로 격자선 (2초마다)
+            // Vertical grid lines (every 2 seconds)
             ForEach(0..<Int(timeWindow / 2), id: \.self) { index in
                 let x = CGFloat(index) * (geometry.size.width / CGFloat(timeWindow / 2))
                 Path { path in
@@ -813,64 +813,64 @@ struct EnhancedAccelerationGraphView: View {
 
     // MARK: - Line Path
 
-    /// @brief 라인 그래프 경로
+    /// @brief Line graph path
     ///
-    /// ## KeyPath로 동적 속성 접근
+    /// ## Dynamic Property Access with KeyPath
     /// ```swift
     /// func linePath(for keyPath: KeyPath<AccelerationData, Double>, ...)
     /// ```
     ///
-    /// **KeyPath란?**
-    /// - 타입의 속성을 참조하는 방법
-    /// - `\.x`, `\.y`, `\.z`로 각 축 지정
-    /// - data[keyPath: keyPath]로 값 접근
+    /// **What is KeyPath?**
+    /// - A way to reference properties of a type
+    /// - Specify each axis with `\.x`, `\.y`, `\.z`
+    /// - Access values with data[keyPath: keyPath]
     ///
-    /// **사용 예:**
+    /// **Usage example:**
     /// ```swift
-    /// linePath(for: \.x, color: .red)    // X축 그래프
-    /// linePath(for: \.y, color: .green)  // Y축 그래프
-    /// linePath(for: \.z, color: .blue)   // Z축 그래프
+    /// linePath(for: \.x, color: .red)    // X-axis graph
+    /// linePath(for: \.y, color: .green)  // Y-axis graph
+    /// linePath(for: \.z, color: .blue)   // Z-axis graph
     /// ```
     ///
-    /// ## 그래프 그리기 과정
+    /// ## Graph Drawing Process
     /// ```swift
     /// for (index, data) in accelerationData.enumerated() {
     ///     let x = xPosition(for: dataTime, startTime: startTime, in: geometry)
     ///     let y = yPosition(for: data[keyPath: keyPath], in: geometry)
     ///
     ///     if index == 0 {
-    ///         path.move(to: point)  // 첫 점: 이동만
+    ///         path.move(to: point)  // First point: move only
     ///     } else {
-    ///         path.addLine(to: point)  // 이후: 선 그리기
+    ///         path.addLine(to: point)  // Subsequent: draw line
     ///     }
     /// }
     /// ```
     ///
-    /// **왜 index == 0일 때 move를 사용하나?**
-    /// - 첫 점은 시작점일 뿐
-    /// - 이전 점이 없으므로 선을 그릴 수 없음
-    /// - move로 펜을 위치시킨 후 addLine 시작
+    /// **Why use move when index == 0?**
+    /// - First point is just a starting point
+    /// - Can't draw a line without a previous point
+    /// - Position pen with move, then start addLine
     ///
-    /// ## 시간 계산
+    /// ## Time Calculation
     /// ```swift
     /// let dataTime = data.timestamp.timeIntervalSince1970
     ///                - accelerationData.first!.timestamp.timeIntervalSince1970
     ///                + startTime
     /// ```
     ///
-    /// **왜 이렇게 복잡하게 계산하나?**
-    /// - data.timestamp: 절대 시간 (1970년 1월 1일 기준)
-    /// - 상대 시간으로 변환 필요 (첫 데이터 기준)
-    /// - startTime을 더해 윈도우 내 위치 계산
+    /// **Why calculate this way?**
+    /// - data.timestamp: Absolute time (since January 1, 1970)
+    /// - Need to convert to relative time (based on first data)
+    /// - Add startTime to calculate position within window
     ///
-    /// **예시:**
+    /// **Example:**
     /// ```
-    /// first.timestamp: 2024-01-15 14:23:20 (1705303400초)
-    /// data.timestamp:  2024-01-15 14:23:25 (1705303405초)
-    /// startTime: 20초
+    /// first.timestamp: 2024-01-15 14:23:20 (1705303400s)
+    /// data.timestamp:  2024-01-15 14:23:25 (1705303405s)
+    /// startTime: 20s
     ///
-    /// 상대 시간 = 1705303405 - 1705303400 = 5초
-    /// dataTime = 5 + 20 = 25초
+    /// Relative time = 1705303405 - 1705303400 = 5s
+    /// dataTime = 5 + 20 = 25s
     /// ```
     private func linePath(for keyPath: KeyPath<AccelerationData, Double>, in geometry: GeometryProxy, color: Color) -> some View {
         Path { path in
@@ -897,33 +897,33 @@ struct EnhancedAccelerationGraphView: View {
 
     // MARK: - Current Time Indicator
 
-    /// @brief 현재 시간 인디케이터
+    /// @brief Current time indicator
     ///
-    /// ## 노란색 점선
+    /// ## Yellow Dashed Line
     /// ```swift
     /// Path { path in
-    ///     let x = geometry.size.width  // 오른쪽 끝
+    ///     let x = geometry.size.width  // Right edge
     ///     path.move(to: CGPoint(x: x, y: 0))
     ///     path.addLine(to: CGPoint(x: x, y: geometry.size.height))
     /// }
     /// .stroke(Color.yellow, style: StrokeStyle(lineWidth: 2, dash: [5, 3]))
     /// ```
     ///
-    /// **왜 오른쪽 끝인가?**
-    /// - 그래프는 과거 → 현재 방향 (왼쪽 → 오른쪽)
-    /// - 현재 시간은 항상 오른쪽 끝
-    /// - x = geometry.size.width (최대 X 좌표)
+    /// **Why the right edge?**
+    /// - Graph flows past → present (left → right)
+    /// - Current time is always at the right edge
+    /// - x = geometry.size.width (maximum X coordinate)
     ///
     /// ## StrokeStyle(dash:)
     /// ```swift
     /// dash: [5, 3]
     /// ```
     ///
-    /// **점선 패턴:**
-    /// - [5, 3]: 5px 선 → 3px 공백 → 반복
-    /// - [10, 5]: 10px 선 → 5px 공백 → 반복
+    /// **Dash pattern:**
+    /// - [5, 3]: 5px line → 3px gap → repeat
+    /// - [10, 5]: 10px line → 5px gap → repeat
     ///
-    /// **시각적 효과:**
+    /// **Visual effect:**
     /// ```
     /// [5, 3]: ━━━━━   ━━━━━   ━━━━━
     /// ```
@@ -938,20 +938,20 @@ struct EnhancedAccelerationGraphView: View {
 
     // MARK: - Impact Highlights
 
-    /// @brief 충격 이벤트 배경 하이라이트
+    /// @brief Impact event background highlights
     ///
-    /// ## ForEach로 각 충격 이벤트 처리
+    /// ## Process Each Impact Event with ForEach
     /// ```swift
     /// ForEach(impactEvents, id: \.timestamp) { impact in
-    ///     // 충격 위치에 반투명 배경 사각형
+    ///     // Semi-transparent background rectangle at impact position
     /// }
     /// ```
     ///
     /// **id: \.timestamp:**
-    /// - 각 충격을 timestamp로 구분
-    /// - 같은 timestamp는 같은 이벤트
+    /// - Distinguish each impact by timestamp
+    /// - Same timestamp = same event
     ///
-    /// ## Rectangle 배치
+    /// ## Rectangle Placement
     /// ```swift
     /// Rectangle()
     ///     .fill(impactColor(for: impact).opacity(0.2))
@@ -960,16 +960,16 @@ struct EnhancedAccelerationGraphView: View {
     /// ```
     ///
     /// **.fill(color.opacity(0.2)):**
-    /// - 충격 강도에 따른 색상
-    /// - 20% 불투명도 (배경 역할)
+    /// - Color based on impact severity
+    /// - 20% opacity (serves as background)
     ///
     /// **.frame(width: 20):**
-    /// - 20px 너비의 수직 띠
-    /// - 충격 지점 강조
+    /// - 20px wide vertical band
+    /// - Emphasizes impact point
     ///
     /// **.position(x:y:):**
-    /// - x: 충격 시간의 X 좌표
-    /// - y: 그래프 중앙 (height / 2)
+    /// - x: X coordinate of impact time
+    /// - y: Graph center (height / 2)
     private func impactHighlights(in geometry: GeometryProxy) -> some View {
         ForEach(impactEvents, id: \.timestamp) { impact in
             let startTime = currentTime - timeWindow
@@ -983,32 +983,32 @@ struct EnhancedAccelerationGraphView: View {
         }
     }
 
-    /// @brief 충격 이벤트 마커 (점선)
+    /// @brief Impact event markers (dashed lines)
     ///
-    /// ## ForEach로 각 충격 이벤트 처리
+    /// ## Process Each Impact Event with ForEach
     /// ```swift
     /// ForEach(impactEvents, id: \.timestamp) { impact in
-    ///     // 충격 위치에 점선 수직선
+    ///     // Dashed vertical line at impact position
     /// }
     /// ```
     ///
-    /// ## Path로 수직선 그리기
+    /// ## Draw Vertical Line with Path
     /// ```swift
     /// Path { path in
-    ///     path.move(to: CGPoint(x: x, y: 0))  // 위
-    ///     path.addLine(to: CGPoint(x: x, y: geometry.size.height))  // 아래
+    ///     path.move(to: CGPoint(x: x, y: 0))  // Top
+    ///     path.addLine(to: CGPoint(x: x, y: geometry.size.height))  // Bottom
     /// }
     /// .stroke(impactColor(for: impact), style: StrokeStyle(lineWidth: 2, dash: [3, 2]))
     /// ```
     ///
     /// **StrokeStyle(dash: [3, 2]):**
-    /// - 3px 선 → 2px 공백 → 반복
-    /// - 짧은 점선 (충격 지점 강조)
+    /// - 3px line → 2px gap → repeat
+    /// - Short dashes (emphasize impact point)
     ///
     /// **impactColor(for:):**
-    /// - .severe: 빨간색
-    /// - .high: 주황색
-    /// - .moderate: 노란색
+    /// - .severe: Red
+    /// - .high: Orange
+    /// - .moderate: Yellow
     private func impactMarkers(in geometry: GeometryProxy) -> some View {
         ForEach(impactEvents, id: \.timestamp) { impact in
             let startTime = currentTime - timeWindow
@@ -1023,24 +1023,24 @@ struct EnhancedAccelerationGraphView: View {
         }
     }
 
-    /// @brief 충격 강도에 따른 색상
+    /// @brief Color based on impact severity
     ///
-    /// ## ImpactSeverity별 색상
+    /// ## Colors by ImpactSeverity
     /// ```
-    /// .severe   → 빨간색 (10G 이상)
-    /// .high     → 주황색 (8~10G)
-    /// .moderate → 노란색 (6~8G)
-    /// .low      → 청록색 (4~6G)
-    /// .none     → 흰색 (4G 미만)
+    /// .severe   → Red (10G+)
+    /// .high     → Orange (8~10G)
+    /// .moderate → Yellow (6~8G)
+    /// .low      → Cyan (4~6G)
+    /// .none     → White (<4G)
     /// ```
     ///
-    /// **사용 위치:**
-    /// - 충격 배경 하이라이트
-    /// - 충격 마커 점선
+    /// **Where it's used:**
+    /// - Impact background highlight
+    /// - Impact marker dashed lines
     ///
-    /// **일관성:**
-    /// - 충격 강도별 색상은 전체 앱에서 동일
-    /// - MetadataOverlayView, GraphOverlayView 모두 같은 체계
+    /// **Consistency:**
+    /// - Impact severity colors are the same throughout the app
+    /// - Same scheme in both MetadataOverlayView and GraphOverlayView
     private func impactColor(for impact: AccelerationData) -> Color {
         switch impact.impactSeverity {
         case .severe:
@@ -1058,43 +1058,43 @@ struct EnhancedAccelerationGraphView: View {
 
     // MARK: - Position Calculations
 
-    /// @brief X 좌표 계산 (시간 → 픽셀)
+    /// @brief Calculate X coordinate (time → pixels)
     ///
-    /// ## 변환 공식
+    /// ## Transformation Formula
     /// ```swift
     /// let relativeTime = time - startTime
     /// let ratio = relativeTime / timeWindow
     /// return CGFloat(ratio) * geometry.size.width
     /// ```
     ///
-    /// **단계별 계산:**
-    /// 1. **상대 시간 계산**: time - startTime
-    ///    - 윈도우 시작점 기준 상대 위치
-    /// 2. **비율 계산**: relativeTime / timeWindow
-    ///    - 0.0 ~ 1.0 범위로 정규화
-    /// 3. **픽셀 변환**: ratio * width
-    ///    - 0 ~ width 범위의 픽셀 좌표
+    /// **Step-by-step calculation:**
+    /// 1. **Calculate relative time**: time - startTime
+    ///    - Relative position based on window start
+    /// 2. **Calculate ratio**: relativeTime / timeWindow
+    ///    - Normalize to 0.0 ~ 1.0 range
+    /// 3. **Convert to pixels**: ratio * width
+    ///    - Pixel coordinates in 0 ~ width range
     ///
-    /// **계산 예시:**
+    /// **Calculation examples:**
     /// ```
-    /// timeWindow = 10초
+    /// timeWindow = 10s
     /// geometry.size.width = 400px
-    /// startTime = 20초
+    /// startTime = 20s
     ///
-    /// time = 25초
-    /// relativeTime = 25 - 20 = 5초
-    /// ratio = 5 / 10 = 0.5 (50% 위치)
-    /// x = 0.5 * 400 = 200px (중앙)
+    /// time = 25s
+    /// relativeTime = 25 - 20 = 5s
+    /// ratio = 5 / 10 = 0.5 (50% position)
+    /// x = 0.5 * 400 = 200px (center)
     ///
-    /// time = 20초 (시작)
-    /// relativeTime = 20 - 20 = 0초
+    /// time = 20s (start)
+    /// relativeTime = 20 - 20 = 0s
     /// ratio = 0 / 10 = 0.0
-    /// x = 0.0 * 400 = 0px (왼쪽 끝)
+    /// x = 0.0 * 400 = 0px (left edge)
     ///
-    /// time = 30초 (끝)
-    /// relativeTime = 30 - 20 = 10초
+    /// time = 30s (end)
+    /// relativeTime = 30 - 20 = 10s
     /// ratio = 10 / 10 = 1.0
-    /// x = 1.0 * 400 = 400px (오른쪽 끝)
+    /// x = 1.0 * 400 = 400px (right edge)
     /// ```
     private func xPosition(for time: TimeInterval, startTime: TimeInterval, in geometry: GeometryProxy) -> CGFloat {
         let relativeTime = time - startTime
@@ -1102,57 +1102,57 @@ struct EnhancedAccelerationGraphView: View {
         return CGFloat(ratio) * geometry.size.width
     }
 
-    /// @brief Y 좌표 계산 (값 → 픽셀)
+    /// @brief Calculate Y coordinate (value → pixels)
     ///
-    /// ## 변환 공식
+    /// ## Transformation Formula
     /// ```swift
     /// let maxValue: Double = 3.0
     /// let ratio = (value + maxValue) / (maxValue * 2)
     /// return geometry.size.height * (1.0 - CGFloat(ratio))
     /// ```
     ///
-    /// **단계별 계산:**
-    /// 1. **범위 이동**: value + maxValue
-    ///    - -3 ~ 3 → 0 ~ 6으로 이동
-    /// 2. **비율 계산**: (value + maxValue) / (maxValue * 2)
-    ///    - 0 ~ 6 → 0.0 ~ 1.0으로 정규화
-    /// 3. **픽셀 변환**: height * (1 - ratio)
-    ///    - Y축은 위가 0, 아래가 height
-    ///    - 1 - ratio로 반전 (값이 클수록 위쪽)
+    /// **Step-by-step calculation:**
+    /// 1. **Range shift**: value + maxValue
+    ///    - Shift -3 ~ 3 → 0 ~ 6
+    /// 2. **Calculate ratio**: (value + maxValue) / (maxValue * 2)
+    ///    - Normalize 0 ~ 6 → 0.0 ~ 1.0
+    /// 3. **Convert to pixels**: height * (1 - ratio)
+    ///    - Y-axis: top is 0, bottom is height
+    ///    - Invert with 1 - ratio (larger values toward top)
     ///
-    /// **계산 예시:**
+    /// **Calculation examples:**
     /// ```
     /// maxValue = 3.0
     /// geometry.size.height = 120px
     ///
-    /// value = 3G (최대)
+    /// value = 3G (maximum)
     /// ratio = (3 + 3) / 6 = 1.0
-    /// y = 120 * (1 - 1.0) = 0px (맨 위)
+    /// y = 120 * (1 - 1.0) = 0px (very top)
     ///
-    /// value = 0G (중앙)
+    /// value = 0G (center)
     /// ratio = (0 + 3) / 6 = 0.5
-    /// y = 120 * (1 - 0.5) = 60px (중앙)
+    /// y = 120 * (1 - 0.5) = 60px (center)
     ///
-    /// value = -3G (최소)
+    /// value = -3G (minimum)
     /// ratio = (-3 + 3) / 6 = 0.0
-    /// y = 120 * (1 - 0.0) = 120px (맨 아래)
+    /// y = 120 * (1 - 0.0) = 120px (very bottom)
     /// ```
     ///
-    /// **왜 1 - ratio를 사용하나?**
-    /// - SwiftUI의 Y축: 위쪽이 0, 아래쪽이 양수
-    /// - 가속도 값: 위쪽이 양수, 아래쪽이 음수
-    /// - 1 - ratio로 반전하여 직관적으로 표시
+    /// **Why use 1 - ratio?**
+    /// - SwiftUI Y-axis: top is 0, bottom is positive
+    /// - Acceleration values: top is positive, bottom is negative
+    /// - Invert with 1 - ratio for intuitive display
     ///
-    /// ## ±3G 범위
+    /// ## ±3G Range
     /// ```
     /// maxValue = 3.0
     /// ```
     ///
-    /// **왜 3G인가?**
-    /// - 일반 주행: ±1G 이내
-    /// - 급가속/급제동: ±2G
-    /// - 사고: ±3G 이상
-    /// - ±3G 범위면 대부분 상황 커버
+    /// **Why 3G?**
+    /// - Normal driving: within ±1G
+    /// - Hard acceleration/braking: ±2G
+    /// - Accidents: ±3G or more
+    /// - ±3G range covers most situations
     private func yPosition(for value: Double, in geometry: GeometryProxy) -> CGFloat {
         // Map value range [-3, 3] to geometry height
         let maxValue: Double = 3.0
@@ -1165,7 +1165,7 @@ struct EnhancedAccelerationGraphView: View {
 
 /// @brief Preview Provider
 ///
-/// ## Mock 데이터 설정
+/// ## Mock Data Setup
 /// ```swift
 /// let gsensorService = GSensorService()
 /// let videoFile = VideoFile.allSamples.first!
@@ -1173,12 +1173,12 @@ struct EnhancedAccelerationGraphView: View {
 /// gsensorService.loadAccelerationData(from: videoFile.metadata, startTime: videoFile.timestamp)
 /// ```
 ///
-/// **loadAccelerationData란?**
-/// - VideoMetadata에서 가속도 데이터를 추출
-/// - GSensorService에 로드하여 그래프 데이터 준비
-/// - startTime: 비디오 시작 시간 (타임스탬프 계산용)
+/// **What is loadAccelerationData?**
+/// - Extracts acceleration data from VideoMetadata
+/// - Loads into GSensorService to prepare graph data
+/// - startTime: Video start time (for timestamp calculations)
 ///
-/// ## ZStack으로 검은 배경
+/// ## Black Background with ZStack
 /// ```swift
 /// ZStack {
 ///     Color.black
@@ -1186,15 +1186,15 @@ struct EnhancedAccelerationGraphView: View {
 /// }
 /// ```
 ///
-/// **왜 검은 배경을 사용하나?**
-/// - 실제 비디오 화면을 시뮬레이션
-/// - 그래프가 오버레이로 표시되는 효과 확인
-/// - 그래프 선 색상 대비 테스트
+/// **Why use black background?**
+/// - Simulates actual video screen
+/// - Verifies overlay display effect of graph
+/// - Tests graph line color contrast
 ///
 /// ## currentTime: 10.0
-/// - 비디오 시작 후 10초 지점
-/// - 0~10초 범위의 그래프 표시
-/// - 다양한 시간대 테스트하려면 값 변경
+/// - 10 seconds after video start
+/// - Displays graph in 0~10 second range
+/// - Change value to test different time periods
 struct GraphOverlayView_Previews: PreviewProvider {
     static var previews: some View {
         let gsensorService = GSensorService()

@@ -1,116 +1,116 @@
 /// @file VideoPlayerView.swift
-/// @brief 메인 비디오 플레이어 View
+/// @brief Main video player View
 /// @author BlackboxPlayer Development Team
-/// @details 블랙박스 비디오를 재생하는 메인 플레이어 View를 구현합니다.
-///          키보드 단축키, 전체화면 모드, 자동 컨트롤 숨김 기능을 제공합니다.
+/// @details Implements the main player View for playing blackbox videos.
+///          Provides keyboard shortcuts, fullscreen mode, and auto-hide controls functionality.
 
 /*
- 【VideoPlayerView 개요】
+ 【VideoPlayerView Overview】
 
- 이 파일은 블랙박스 비디오를 재생하는 메인 플레이어 View를 구현합니다.
+ This file implements the main player View for playing blackbox videos.
 
 
  ┌──────────────────────────────────────────────────────┐
  │                                                      │
  │                                                      │
- │              📹 Video Display Area                   │ ← 비디오 프레임 표시
+ │              📹 Video Display Area                   │ ← Video frame display
  │           (VideoFrameView)                           │
  │                                                      │
  │                                                      │
  ├──────────────────────────────────────────────────────┤
- │ ⏯️  ⏮️ ⏭️  [━━━━━━━━━━━━━━●─────]  2:34 / 5:00  🔊 │ ← 재생 컨트롤
+ │ ⏯️  ⏮️ ⏭️  [━━━━━━━━━━━━━━●─────]  2:34 / 5:00  🔊 │ ← Playback controls
  └──────────────────────────────────────────────────────┘
- (마우스 호버 시 표시, 3초 후 자동 숨김)
+ (Shown on mouse hover, auto-hide after 3 seconds)
 
 
- 【주요 기능】
+ 【Key Features】
 
- 1. 비디오 재생
- - AVFoundation 기반 비디오 디코딩
- - 프레임별 렌더링
- - 다양한 코덱 지원
+ 1. Video Playback
+ - AVFoundation-based video decoding
+ - Frame-by-frame rendering
+ - Support for various codecs
 
- 2. 사용자 인터페이스
- - 마우스 호버 시 컨트롤 표시
- - 3초 후 자동 숨김 (재생 중일 때만)
- - 전체화면 모드
+ 2. User Interface
+ - Show controls on mouse hover
+ - Auto-hide after 3 seconds (when playing only)
+ - Fullscreen mode
 
- 3. 키보드 단축키
- - Space: 재생/일시정지
- - ←/→: 5초 앞뒤 이동
- - ↑/↓: 볼륨 조절
- - F: 전체화면 토글
- - ESC: 전체화면 종료
+ 3. Keyboard Shortcuts
+ - Space: Play/Pause
+ - ←/→: Seek backward/forward 5 seconds
+ - ↑/↓: Volume adjustment
+ - F: Toggle fullscreen
+ - ESC: Exit fullscreen
 
- 4. 상태별 UI
- - 로딩 중: 스피너 표시
- - 에러 발생: 에러 메시지
- - 플레이스홀더: 비디오 없음
-
-
- 【SwiftUI + AppKit 통합】
-
- 이 파일은 SwiftUI와 macOS AppKit을 함께 사용합니다:
-
- **SwiftUI 사용:**
- - View 레이아웃과 렌더링
- - 상태 관리 (@State, @StateObject)
- - 애니메이션과 트랜지션
-
- **AppKit 사용:**
- - 키보드 이벤트 모니터링 (NSEvent)
- - 전체화면 윈도우 제어 (NSWindow)
- - 네이티브 macOS 기능 접근
-
- 통합의 장점:
- ✓ SwiftUI의 선언적 UI
- ✓ AppKit의 강력한 시스템 접근
- ✓ 최고의 사용자 경험
+ 4. State-based UI
+ - Loading: Show spinner
+ - Error: Display error message
+ - Placeholder: No video loaded
 
 
- 【MVVM 패턴】
+ 【SwiftUI + AppKit Integration】
 
- 이 파일은 MVVM (Model-View-ViewModel) 패턴을 따릅니다:
+ This file uses both SwiftUI and macOS AppKit:
+
+ **SwiftUI Usage:**
+ - View layout and rendering
+ - State management (@State, @StateObject)
+ - Animations and transitions
+
+ **AppKit Usage:**
+ - Keyboard event monitoring (NSEvent)
+ - Fullscreen window control (NSWindow)
+ - Native macOS feature access
+
+ Integration benefits:
+ ✓ SwiftUI's declarative UI
+ ✓ AppKit's powerful system access
+ ✓ Best user experience
+
+
+ 【MVVM Pattern】
+
+ This file follows the MVVM (Model-View-ViewModel) pattern:
 
  ```
  Model (VideoFile)
- ↓ 데이터
+ ↓ Data
  ViewModel (VideoPlayerViewModel)
- ↓ 상태 & 비즈니스 로직
+ ↓ State & Business Logic
  View (VideoPlayerView)
- ↓ UI 렌더링
+ ↓ UI Rendering
  ```
 
- 역할 분담:
- - Model: 비디오 파일 데이터
- - ViewModel: 재생 로직, 상태 관리
- - View: UI 표시, 사용자 입력 전달
+ Responsibility distribution:
+ - Model: Video file data
+ - ViewModel: Playback logic, state management
+ - View: UI display, user input forwarding
 
 
- 【사용 예시】
+ 【Usage Examples】
 
  ```swift
- // 1. 단독으로 사용
+ // 1. Standalone usage
  VideoPlayerView(videoFile: someVideoFile)
 
- // 2. Sheet로 표시
+ // 2. Display as Sheet
  .sheet(isPresented: $showPlayer) {
  VideoPlayerView(videoFile: selectedFile)
  }
 
- // 3. NavigationLink로 전환
+ // 3. Transition with NavigationLink
  NavigationLink(destination: VideoPlayerView(videoFile: file)) {
  Text("Play Video")
  }
  ```
 
 
- 【관련 파일】
+ 【Related Files】
 
- - VideoPlayerViewModel.swift: 재생 로직과 상태 관리
- - PlayerControlsView.swift: 재생 컨트롤 UI
- - VideoFrame.swift: 비디오 프레임 데이터 구조
- - VideoFile.swift: 비디오 파일 메타데이터
+ - VideoPlayerViewModel.swift: Playback logic and state management
+ - PlayerControlsView.swift: Playback controls UI
+ - VideoFrame.swift: Video frame data structure
+ - VideoFile.swift: Video file metadata
 
  */
 
@@ -118,225 +118,225 @@ import SwiftUI
 import AppKit
 
 /// @struct VideoPlayerView
-/// @brief 메인 비디오 플레이어 View
-/// @details 비디오 재생 기능을 제공하는 메인 플레이어입니다.
-///          키보드 단축키, 전체화면 모드, 자동 컨트롤 숨김을 지원합니다.
+/// @brief Main video player View
+/// @details Main player providing video playback functionality.
+///          Supports keyboard shortcuts, fullscreen mode, and auto-hide controls.
 ///
-/// **주요 기능:**
-/// - 비디오 프레임 렌더링
-/// - 재생 컨트롤 (자동 숨김)
-/// - 키보드 단축키
-/// - 전체화면 모드
+/// **Key Features:**
+/// - Video frame rendering
+/// - Playback controls (auto-hide)
+/// - Keyboard shortcuts
+/// - Fullscreen mode
 ///
-/// **사용 예시:**
+/// **Usage Example:**
 /// ```swift
 /// VideoPlayerView(videoFile: selectedVideoFile)
 /// ```
 ///
-/// **연관 타입:**
-/// - `VideoFile`: 재생할 비디오 파일
-/// - `VideoPlayerViewModel`: 재생 로직 ViewModel
+/// **Associated Types:**
+/// - `VideoFile`: Video file to play
+/// - `VideoPlayerViewModel`: Playback logic ViewModel
 ///
 struct VideoPlayerView: View {
     // MARK: - Properties
 
     /// @var videoFile
-    /// @brief 재생할 비디오 파일
-    /// @details VideoFile 객체로 비디오 정보를 포함합니다.
+    /// @brief Video file to play
+    /// @details VideoFile object containing video information.
     ///
-    /// **let을 사용하는 이유:**
+    /// **Why use let:**
     ///
-    /// 비디오 파일은 플레이어 생성 시 한 번 설정되고 변경되지 않습니다:
-    ///   - 불변성 보장
-    ///   - 의도 명확화
-    ///   - 다른 비디오를 재생하려면 새 플레이어 생성
+    /// Video file is set once when player is created and never changes:
+    ///   - Guarantees immutability
+    ///   - Clarifies intent
+    ///   - To play a different video, create a new player
     ///
     let videoFile: VideoFile
 
     /// @var viewModel
-    /// @brief 비디오 플레이어 ViewModel
-    /// @details 비디오 재생 로직을 담당하는 ViewModel입니다.
+    /// @brief Video player ViewModel
+    /// @details ViewModel responsible for video playback logic.
     ///
-    /// **@StateObject란?**
+    /// **What is @StateObject?**
     ///
-    /// @StateObject는 ObservableObject를 생성하고 소유하는 프로퍼티 래퍼입니다.
+    /// @StateObject is a property wrapper that creates and owns an ObservableObject.
     ///
     /// **@StateObject vs @ObservedObject:**
     ///
     /// ```
     /// @StateObject:
-    ///   - View가 객체를 생성하고 소유
-    ///   - View가 재생성되어도 객체 유지
-    ///   - 객체의 생명주기를 관리
+    ///   - View creates and owns the object
+    ///   - Object persists even when View is recreated
+    ///   - Manages object lifecycle
     ///
     /// @ObservedObject:
-    ///   - 외부에서 생성된 객체 관찰
-    ///   - View가 재생성되면 객체도 재생성될 수 있음
-    ///   - 생명주기를 관리하지 않음
+    ///   - Observes externally created object
+    ///   - Object may be recreated when View is recreated
+    ///   - Does not manage lifecycle
     /// ```
     ///
-    /// **왜 @StateObject를 사용하는가?**
+    /// **Why use @StateObject?**
     ///
-    /// VideoPlayerViewModel은 이 View가 직접 생성하고 관리해야 합니다:
-    ///   - 비디오 재생 상태는 View의 생명주기와 일치
-    ///   - View가 사라지면 재생도 중지되어야 함
-    ///   - View가 재렌더링되어도 재생 상태 유지
+    /// VideoPlayerViewModel must be created and managed by this View:
+    ///   - Video playback state matches View lifecycle
+    ///   - Playback should stop when View disappears
+    ///   - Playback state persists when View re-renders
     ///
-    /// **MVVM 패턴:**
+    /// **MVVM Pattern:**
     ///
     /// ```
     /// VideoPlayerView (View)
-    ///       ↓ 사용자 입력 전달
+    ///       ↓ Forward user input
     /// VideoPlayerViewModel (ViewModel)
-    ///       ↓ 비즈니스 로직 실행
-    ///       ↓ @Published 상태 변경
+    ///       ↓ Execute business logic
+    ///       ↓ Change @Published state
     ///       ↓
-    /// VideoPlayerView 자동 재렌더링
+    /// VideoPlayerView auto re-renders
     /// ```
     ///
     @StateObject private var viewModel = VideoPlayerViewModel()
 
     /// Controls visibility state
     ///
-    /// 재생 컨트롤의 표시 여부를 저장합니다.
+    /// Stores whether playback controls are shown.
     ///
-    /// **@State란?**
+    /// **What is @State?**
     ///
-    /// @State는 View 내부 상태를 저장하는 프로퍼티 래퍼입니다.
+    /// @State is a property wrapper that stores View internal state.
     ///
-    /// **작동 원리:**
+    /// **How it works:**
     /// ```
-    /// 마우스 호버
+    /// Mouse hover
     ///     ↓
     /// showControls = true
     ///     ↓
-    /// SwiftUI가 변경 감지
+    /// SwiftUI detects change
     ///     ↓
-    /// View 재렌더링
+    /// View re-renders
     ///     ↓
-    /// PlayerControlsView 표시
+    /// PlayerControlsView shown
     /// ```
     ///
-    /// **기본값이 true인 이유:**
+    /// **Why default is true:**
     ///
-    /// 플레이어가 처음 열리면:
-    ///   - 사용자가 컨트롤을 봐야 함
-    ///   - 재생 버튼을 찾을 수 있어야 함
-    ///   - 3초 후 자동으로 숨겨짐
+    /// When player first opens:
+    ///   - User needs to see controls
+    ///   - Must be able to find play button
+    ///   - Auto-hides after 3 seconds
     ///
     @State private var showControls = true
 
     /// Timer for auto-hiding controls
     ///
-    /// 컨트롤을 자동으로 숨기기 위한 타이머입니다.
+    /// Timer for automatically hiding controls.
     ///
-    /// **Timer?란?**
+    /// **What is Timer?**
     ///
-    /// Optional<Timer> 타입입니다:
-    ///   - nil: 타이머가 없음 (일시정지 상태 등)
-    ///   - Timer: 활성 타이머
+    /// Optional<Timer> type:
+    ///   - nil: No timer (e.g., paused state)
+    ///   - Timer: Active timer
     ///
-    /// **타이머 작동 원리:**
+    /// **Timer operation flow:**
     ///
     /// ```
-    /// 1. 마우스 호버 또는 컨트롤 사용
+    /// 1. Mouse hover or control usage
     ///    ↓
-    /// 2. resetControlsTimer() 호출
+    /// 2. Call resetControlsTimer()
     ///    ↓
-    /// 3. 기존 타이머 취소 (있다면)
+    /// 3. Cancel existing timer (if any)
     ///    ↓
-    /// 4. 새 타이머 생성 (3초 후 실행)
+    /// 4. Create new timer (execute after 3 seconds)
     ///    ↓
-    /// 5. 3초 경과
+    /// 5. 3 seconds elapsed
     ///    ↓
-    /// 6. showControls = false (컨트롤 숨김)
+    /// 6. showControls = false (hide controls)
     /// ```
     ///
-    /// **왜 Optional인가?**
+    /// **Why Optional?**
     ///
-    /// 모든 상황에서 타이머가 필요한 것은 아닙니다:
-    ///   - 일시정지 중: 타이머 불필요 (컨트롤 계속 표시)
-    ///   - 재생 중: 타이머 필요 (3초 후 숨김)
+    /// Timer is not needed in all situations:
+    ///   - When paused: Timer unnecessary (keep controls visible)
+    ///   - When playing: Timer needed (hide after 3 seconds)
     ///
     @State private var controlsTimer: Timer?
 
     /// Fullscreen state
     ///
-    /// 전체화면 모드 여부를 저장합니다.
+    /// Stores whether fullscreen mode is enabled.
     ///
-    /// **전체화면 모드:**
+    /// **Fullscreen mode:**
     ///
-    /// false (일반 모드):
-    ///   - 윈도우 타이틀 바 있음
-    ///   - 메뉴 바 표시
-    ///   - 크기 조절 가능
+    /// false (normal mode):
+    ///   - Window title bar present
+    ///   - Menu bar displayed
+    ///   - Resizable
     ///
-    /// true (전체화면 모드):
-    ///   - 전체 화면 차지
-    ///   - 타이틀 바/메뉴 바 숨김
-    ///   - 몰입 경험
+    /// true (fullscreen mode):
+    ///   - Occupies entire screen
+    ///   - Title bar/menu bar hidden
+    ///   - Immersive experience
     ///
     @State private var isFullscreen = false
 
     /// Keyboard event monitor
     ///
-    /// 키보드 이벤트를 감지하는 모니터입니다.
+    /// Monitor for detecting keyboard events.
     ///
-    /// **Any? 타입이란?**
+    /// **What is Any? type?**
     ///
-    /// NSEvent.addLocalMonitorForEvents는 Any? 타입을 반환합니다:
-    ///   - 실제로는 특별한 모니터 객체
-    ///   - removeMonitor()로 제거할 때 필요
-    ///   - 타입이 불분명하므로 Any로 저장
+    /// NSEvent.addLocalMonitorForEvents returns Any? type:
+    ///   - Actually a special monitor object
+    ///   - Needed when removing with removeMonitor()
+    ///   - Type is unclear, so stored as Any
     ///
-    /// **키보드 모니터링:**
+    /// **Keyboard monitoring:**
     ///
     /// ```
-    /// 1. setupKeyboardMonitor() 호출
+    /// 1. Call setupKeyboardMonitor()
     ///    ↓
-    /// 2. NSEvent.addLocalMonitorForEvents 등록
+    /// 2. Register NSEvent.addLocalMonitorForEvents
     ///    ↓
-    /// 3. 사용자가 키 입력
+    /// 3. User inputs key
     ///    ↓
-    /// 4. handleKeyEvent() 자동 호출
+    /// 4. handleKeyEvent() auto-called
     ///    ↓
-    /// 5. 키 코드에 따라 동작 실행
+    /// 5. Execute action based on key code
     /// ```
     ///
-    /// **생명주기 관리:**
+    /// **Lifecycle management:**
     ///
     /// ```
     /// onAppear:
-    ///   → setupKeyboardMonitor() (모니터 등록)
+    ///   → setupKeyboardMonitor() (register monitor)
     ///
     /// onDisappear:
-    ///   → removeKeyboardMonitor() (모니터 제거)
+    ///   → removeKeyboardMonitor() (remove monitor)
     /// ```
     ///
-    /// 모니터를 제거하지 않으면:
-    ///   - 메모리 누수 발생
-    ///   - 플레이어가 닫혀도 키 입력 계속 감지
-    ///   - 앱 성능 저하
+    /// If monitor is not removed:
+    ///   - Memory leak occurs
+    ///   - Continues detecting key input even after player is closed
+    ///   - App performance degradation
     ///
     @State private var keyMonitor: Any?
 
     // MARK: - Body
 
     var body: some View {
-        // **VStack으로 비디오와 컨트롤 배치:**
+        // **Layout video and controls with VStack:**
         //
         // VStack(spacing: 0):
-        //   - 비디오 영역과 컨트롤 영역을 세로로 배치
-        //   - spacing: 0 → 간격 없이 딱 붙임
+        //   - Arrange video area and controls area vertically
+        //   - spacing: 0 → No gap, flush
         //
-        // 레이아웃:
+        // Layout:
         // ```
         // ┌─────────────────────┐
         // │                     │
-        // │   Video Display     │ ← 가변 크기 (maxHeight: .infinity)
+        // │   Video Display     │ ← Variable size (maxHeight: .infinity)
         // │                     │
-        // ├─────────────────────┤ ← 간격 0
-        // │ [Player Controls]   │ ← 고정 높이
+        // ├─────────────────────┤ ← Gap 0
+        // │ [Player Controls]   │ ← Fixed height
         // └─────────────────────┘
         // ```
         //
@@ -345,31 +345,31 @@ struct VideoPlayerView: View {
 
             // Video display area
             //
-            // 비디오 프레임을 표시하는 영역입니다.
+            // Area displaying video frames.
             //
-            // videoDisplay는 아래에 정의된 computed property입니다.
+            // videoDisplay is a computed property defined below.
             //
             videoDisplay
                 // **.frame(maxWidth: .infinity, maxHeight: .infinity):**
                 //
-                // 가능한 모든 공간을 차지하도록 설정합니다.
+                // Set to occupy all available space.
                 //
                 // maxWidth: .infinity
-                //   - 부모의 가로 폭 전체 사용
-                //   - 윈도우 크기에 따라 자동 조정
+                //   - Use entire parent width
+                //   - Auto-adjust based on window size
                 //
                 // maxHeight: .infinity
-                //   - 부모의 세로 높이 전체 사용
-                //   - 컨트롤을 제외한 나머지 공간 모두 차지
+                //   - Use entire parent height
+                //   - Occupy all remaining space except controls
                 //
-                // 결과:
+                // Result:
                 // ```
-                // 작은 윈도우:
+                // Small window:
                 // ┌────────┐
                 // │ Video  │
                 // └────────┘
                 //
-                // 큰 윈도우:
+                // Large window:
                 // ┌────────────────────┐
                 // │                    │
                 // │       Video        │
@@ -381,22 +381,22 @@ struct VideoPlayerView: View {
 
                 // **.background(Color.black):**
                 //
-                // 배경을 검은색으로 설정합니다.
+                // Set background to black.
                 //
-                // 검은 배경을 사용하는 이유:
-                //   ✓ 비디오 플레이어의 표준 (YouTube, Netflix 등)
-                //   ✓ 비디오가 화면보다 작을 때 주변이 어두움
-                //   ✓ 몰입감 향상
-                //   ✓ 레터박스(letterbox) 효과
+                // Why use black background:
+                //   ✓ Standard for video players (YouTube, Netflix, etc.)
+                //   ✓ Surroundings are dark when video is smaller than screen
+                //   ✓ Enhanced immersion
+                //   ✓ Letterbox effect
                 //
-                // 레터박스 예시:
+                // Letterbox example:
                 // ```
                 // ┌─────────────────────┐
-                // │■■■■■■■■■■■■■■■■■■■■■│ ← 검은색 여백
+                // │■■■■■■■■■■■■■■■■■■■■■│ ← Black margin
                 // │┌───────────────────┐│
                 // ││   16:9 Video      ││
                 // │└───────────────────┘│
-                // │■■■■■■■■■■■■■■■■■■■■■│ ← 검은색 여백
+                // │■■■■■■■■■■■■■■■■■■■■■│ ← Black margin
                 // └─────────────────────┘
                 // ```
                 //
@@ -404,42 +404,42 @@ struct VideoPlayerView: View {
 
                 // **.onHover { isHovering in ... }:**
                 //
-                // 마우스 호버 상태를 감지하는 모디파이어입니다.
+                // Modifier that detects mouse hover state.
                 //
-                // **작동 원리:**
-                //
-                // ```
-                // 마우스가 비디오 영역으로 들어옴
-                //     ↓
-                // onHover 클로저 호출 (isHovering = true)
-                //     ↓
-                // showControls = true (컨트롤 표시)
-                //     ↓
-                // resetControlsTimer() (3초 타이머 시작)
-                // ```
+                // **How it works:**
                 //
                 // ```
-                // 마우스가 비디오 영역을 벗어남
+                // Mouse enters video area
                 //     ↓
-                // onHover 클로저 호출 (isHovering = false)
+                // Call onHover closure (isHovering = true)
                 //     ↓
-                // 타이머가 계속 실행 중...
+                // showControls = true (show controls)
                 //     ↓
-                // 3초 후 showControls = false (컨트롤 숨김)
+                // resetControlsTimer() (start 3-second timer)
                 // ```
                 //
-                // **왜 isHovering이 false일 때 컨트롤을 즉시 숨기지 않는가?**
+                // ```
+                // Mouse leaves video area
+                //     ↓
+                // Call onHover closure (isHovering = false)
+                //     ↓
+                // Timer continues running...
+                //     ↓
+                // After 3 seconds showControls = false (hide controls)
+                // ```
                 //
-                // 사용자가 마우스를 약간 움직여도:
-                //   - 컨트롤이 깜빡거리지 않음
-                //   - 부드러운 사용자 경험
-                //   - 타이머를 통한 지연 숨김
+                // **Why not hide controls immediately when isHovering is false?**
+                //
+                // Even if user moves mouse slightly:
+                //   - Controls don't flicker
+                //   - Smooth user experience
+                //   - Delayed hiding via timer
                 //
                 .onHover { isHovering in
                     if isHovering {
-                        // 마우스가 들어오면 컨트롤 표시
+                        // Show controls when mouse enters
                         showControls = true
-                        // 타이머 재설정 (3초 카운트다운 다시 시작)
+                        // Reset timer (restart 3-second countdown)
                         resetControlsTimer()
                     }
                 }
@@ -448,149 +448,149 @@ struct VideoPlayerView: View {
 
             // Controls (shown at bottom)
             //
-            // 재생 컨트롤을 조건부로 표시합니다.
+            // Conditionally display playback controls.
             //
-            // **조건부 렌더링:**
+            // **Conditional rendering:**
             //
             // if showControls:
-            //   - showControls가 true일 때만 PlayerControlsView 렌더링
-            //   - false이면 이 블록 전체가 렌더링 안 됨
+            //   - Render PlayerControlsView only when showControls is true
+            //   - If false, entire block is not rendered
             //
             // **PlayerControlsView:**
             //
-            // 재생, 일시정지, 탐색, 볼륨 등의 컨트롤을 제공하는 별도의 View입니다.
+            // Separate View providing controls for play, pause, seek, volume, etc.
             //
-            // viewModel 전달:
-            //   - PlayerControlsView가 viewModel의 메서드를 호출
-            //   - 예: viewModel.play(), viewModel.pause() 등
+            // Passing viewModel:
+            //   - PlayerControlsView calls viewModel methods
+            //   - e.g., viewModel.play(), viewModel.pause(), etc.
             //
             if showControls {
                 PlayerControlsView(viewModel: viewModel)
                     // **.transition(.move(edge: .bottom)):**
                     //
-                    // 컨트롤이 나타나고 사라질 때의 애니메이션을 정의합니다.
+                    // Define animation when controls appear and disappear.
                     //
                     // **.move(edge: .bottom):**
-                    //   - 아래쪽에서 위로 슬라이드 인
-                    //   - 위에서 아래로 슬라이드 아웃
+                    //   - Slide in from bottom to top
+                    //   - Slide out from top to bottom
                     //
-                    // 애니메이션 효과:
+                    // Animation effect:
                     // ```
-                    // 컨트롤 표시 (showControls = true):
+                    // Show controls (showControls = true):
                     // ┌─────────────────┐
                     // │     Video       │
                     // ├─────────────────┤
-                    // │ [Controls] ↑    │ ← 아래에서 위로 슬라이드
+                    // │ [Controls] ↑    │ ← Slide up from bottom
                     // └─────────────────┘
                     //
-                    // 컨트롤 숨김 (showControls = false):
+                    // Hide controls (showControls = false):
                     // ┌─────────────────┐
                     // │     Video       │
                     // └─────────────────┘
-                    //   [Controls] ↓      ← 아래로 슬라이드 아웃
+                    //   [Controls] ↓      ← Slide down out
                     // ```
                     //
-                    // **왜 애니메이션을 사용하는가?**
+                    // **Why use animation?**
                     //
-                    // ✓ 부드러운 전환
-                    //   → 갑자기 나타나거나 사라지지 않음
+                    // ✓ Smooth transition
+                    //   → Doesn't appear or disappear abruptly
                     //
-                    // ✓ 시각적 피드백
-                    //   → 사용자가 상태 변화를 인식
+                    // ✓ Visual feedback
+                    //   → User perceives state change
                     //
-                    // ✓ 전문적인 느낌
-                    //   → 완성도 높은 앱 경험
+                    // ✓ Professional feel
+                    //   → Polished app experience
                     //
                     .transition(.move(edge: .bottom))
             }
         }
         // **.onAppear { ... }:**
         //
-        // View가 화면에 나타날 때 실행되는 클로저입니다.
+        // Closure executed when View appears on screen.
         //
-        // **View 생명주기:**
+        // **View lifecycle:**
         //
         // ```
-        // 1. View 생성
+        // 1. View creation
         //    ↓
-        // 2. body 렌더링
+        // 2. body rendering
         //    ↓
-        // 3. onAppear 실행 ← 여기
+        // 3. onAppear execution ← Here
         //    ↓
-        // 4. View 표시 중...
+        // 4. View being displayed...
         //    ↓
-        // 5. onDisappear 실행
+        // 5. onDisappear execution
         //    ↓
-        // 6. View 제거
+        // 6. View removal
         // ```
         //
-        // **이 코드의 onAppear에서 하는 일:**
+        // **What this onAppear does:**
         //
         .onAppear {
-            // 1. 비디오 로드
+            // 1. Load video
             //
             // viewModel.loadVideo(videoFile):
-            //   - VideoFile 데이터를 ViewModel에 전달
-            //   - 비디오 디코더 초기화
-            //   - 첫 프레임 로드
+            //   - Pass VideoFile data to ViewModel
+            //   - Initialize video decoder
+            //   - Load first frame
             //
             viewModel.loadVideo(videoFile)
 
-            // 2. 컨트롤 타이머 시작
+            // 2. Start controls timer
             //
             // resetControlsTimer():
-            //   - 3초 후 컨트롤 자동 숨김 타이머 시작
-            //   - 사용자가 컨트롤을 볼 시간 제공
+            //   - Start auto-hide controls timer after 3 seconds
+            //   - Give user time to see controls
             //
             resetControlsTimer()
 
-            // 3. 키보드 모니터 설정
+            // 3. Setup keyboard monitor
             //
             // setupKeyboardMonitor():
-            //   - NSEvent 모니터 등록
-            //   - 키보드 단축키 활성화
-            //   - Space, 화살표, F, ESC 등 감지
+            //   - Register NSEvent monitor
+            //   - Enable keyboard shortcuts
+            //   - Detect Space, arrows, F, ESC, etc.
             //
             setupKeyboardMonitor()
         }
 
         // **.onDisappear { ... }:**
         //
-        // View가 화면에서 사라질 때 실행되는 클로저입니다.
+        // Closure executed when View disappears from screen.
         //
-        // **정리 작업 (Cleanup):**
+        // **Cleanup:**
         //
-        // onDisappear는 리소스 정리를 위해 매우 중요합니다.
-        // 정리하지 않으면:
-        //   - 메모리 누수
-        //   - 백그라운드에서 계속 실행
-        //   - 앱 성능 저하
+        // onDisappear is critical for resource cleanup.
+        // Without cleanup:
+        //   - Memory leaks
+        //   - Continues running in background
+        //   - App performance degradation
         //
         .onDisappear {
-            // 1. 비디오 재생 중지
+            // 1. Stop video playback
             //
             // viewModel.stop():
-            //   - 비디오 디코더 정지
-            //   - 리소스 해제
-            //   - 오디오 출력 중지
+            //   - Stop video decoder
+            //   - Release resources
+            //   - Stop audio output
             //
             viewModel.stop()
 
-            // 2. 타이머 무효화
+            // 2. Invalidate timer
             //
             // controlsTimer?.invalidate():
-            //   - 타이머 취소
-            //   - 메모리 해제
-            //   - ?.는 Optional chaining (nil이면 무시)
+            //   - Cancel timer
+            //   - Release memory
+            //   - ?. is Optional chaining (ignore if nil)
             //
             controlsTimer?.invalidate()
 
-            // 3. 키보드 모니터 제거
+            // 3. Remove keyboard monitor
             //
             // removeKeyboardMonitor():
-            //   - NSEvent 모니터 등록 해제
-            //   - 메모리 누수 방지
-            //   - 다른 View의 키보드 입력 방해 안 함
+            //   - Deregister NSEvent monitor
+            //   - Prevent memory leak
+            //   - Don't interfere with other View's keyboard input
             //
             removeKeyboardMonitor()
         }
@@ -600,166 +600,166 @@ struct VideoPlayerView: View {
 
     /// Video display area
     ///
-    /// 비디오 프레임과 상태를 표시하는 영역입니다.
+    /// Area displaying video frames and state.
     ///
-    /// **Computed Property란?**
+    /// **What is Computed Property?**
     ///
     /// ```swift
     /// private var videoDisplay: some View {
-    ///     // View를 반환
+    ///     // Return View
     /// }
     /// ```
     ///
-    /// 저장하지 않고 매번 계산하여 반환합니다.
+    /// Calculated and returned each time, not stored.
     ///
-    /// **왜 Computed Property를 사용하는가?**
+    /// **Why use Computed Property?**
     ///
-    /// ✓ body를 간결하게 유지
-    ///   → body가 너무 길어지지 않음
+    /// ✓ Keep body concise
+    ///   → body doesn't become too long
     ///
-    /// ✓ 재사용 가능
-    ///   → 여러 곳에서 호출 가능 (현재는 한 곳)
+    /// ✓ Reusable
+    ///   → Can be called from multiple places (currently one)
     ///
-    /// ✓ 가독성 향상
-    ///   → videoDisplay라는 의미 있는 이름
+    /// ✓ Improved readability
+    ///   → Meaningful name: videoDisplay
     ///
     private var videoDisplay: some View {
-        // **ZStack - 레이어 쌓기:**
+        // **ZStack - Layer stacking:**
         //
-        // ZStack은 자식 View들을 Z축(깊이)으로 쌓습니다.
+        // ZStack stacks child Views along Z-axis (depth).
         //
-        // Z축 순서 (뒤 → 앞):
+        // Z-axis order (back → front):
         // ```
-        // 1. 검은 배경 (기본)
+        // 1. Black background (default)
         //    ↓
-        // 2. VideoFrameView (프레임이 있으면)
-        //    또는 ProgressView (버퍼링 중)
-        //    또는 Error View (에러 발생)
-        //    또는 Placeholder (비디오 없음)
+        // 2. VideoFrameView (if frame exists)
+        //    or ProgressView (if buffering)
+        //    or Error View (if error occurred)
+        //    or Placeholder (no video)
         // ```
         //
-        // **왜 ZStack을 사용하는가?**
+        // **Why use ZStack?**
         //
-        // 여러 상태에 따라 다른 View를 같은 위치에 표시하기 위해:
-        //   - 프레임 표시
-        //   - 로딩 스피너
-        //   - 에러 메시지
-        //   - 플레이스홀더
+        // To display different Views at the same position based on state:
+        //   - Frame display
+        //   - Loading spinner
+        //   - Error message
+        //   - Placeholder
         //
-        // 모두 중앙에 표시되어야 하므로 ZStack이 적합합니다.
+        // All should be centered, so ZStack is appropriate.
         //
         ZStack {
-            // **상태에 따른 조건부 렌더링:**
+            // **Conditional rendering based on state:**
             //
-            // if-else if-else 체인으로 우선순위에 따라 하나만 표시합니다.
+            // Display only one based on priority using if-else if-else chain.
 
             // Case 1: Video frame available
             //
-            // 비디오 프레임이 있으면 표시합니다.
+            // Display video frame if available.
             //
             // **Optional Binding:**
             //
             // if let frame = viewModel.currentFrame:
-            //   - viewModel.currentFrame은 Optional<VideoFrame>
-            //   - nil이 아니면 frame 변수에 언래핑된 값 저장
-            //   - 블록 내에서 frame 사용 가능
+            //   - viewModel.currentFrame is Optional<VideoFrame>
+            //   - If not nil, store unwrapped value in frame variable
+            //   - frame can be used within block
             //
             if let frame = viewModel.currentFrame {
                 // **VideoFrameView:**
                 //
-                // VideoFrame을 CGImage로 변환하여 화면에 표시하는 서브 View입니다.
+                // Sub-View that converts VideoFrame to CGImage and displays on screen.
                 //
-                // 작동 과정:
+                // Operation process:
                 // ```
-                // VideoFrame (픽셀 데이터)
+                // VideoFrame (pixel data)
                 //     ↓
-                // frame.toCGImage() (CGImage 변환)
+                // frame.toCGImage() (CGImage conversion)
                 //     ↓
                 // Image(cgImage) (SwiftUI Image)
                 //     ↓
-                // 화면에 렌더링
+                // Render on screen
                 // ```
                 //
                 VideoFrameView(frame: frame)
 
                 // Case 2: Buffering
                 //
-                // 버퍼링 중이면 로딩 스피너를 표시합니다.
+                // Display loading spinner if buffering.
                 //
                 // viewModel.isBuffering:
-                //   - 비디오 데이터를 읽는 중
-                //   - 네트워크 또는 디스크에서 로딩 중
-                //   - 디코딩 준비 중
+                //   - Reading video data
+                //   - Loading from network or disk
+                //   - Preparing for decoding
                 //
             } else if viewModel.isBuffering {
                 // **ProgressView:**
                 //
-                // macOS/iOS의 표준 로딩 인디케이터입니다.
+                // Standard loading indicator for macOS/iOS.
                 //
                 // ProgressView("Loading..."):
-                //   - 회전하는 스피너 + 텍스트
-                //   - 시스템 기본 스타일
+                //   - Spinning spinner + text
+                //   - System default style
                 //
-                // macOS에서의 모양:
+                // Appearance on macOS:
                 // ```
                 //     ⟳
                 //  Loading...
                 // ```
                 //
                 ProgressView("Loading...")
-                    // 흰색 텍스트 (검은 배경에서 보이도록)
+                    // White text (to be visible on black background)
                     .foregroundColor(.white)
 
                 // Case 3: Error
                 //
-                // 에러가 발생하면 에러 메시지를 표시합니다.
+                // Display error message if error occurred.
                 //
                 // **Optional Binding:**
                 //
                 // if let errorMessage = viewModel.errorMessage:
-                //   - errorMessage가 nil이 아니면 (에러 있음)
-                //   - 언래핑된 문자열을 errorMessage에 저장
-                //   - 에러 UI 표시
+                //   - If errorMessage is not nil (error exists)
+                //   - Store unwrapped string in errorMessage
+                //   - Display error UI
                 //
             } else if let errorMessage = viewModel.errorMessage {
-                // **에러 UI:**
+                // **Error UI:**
                 //
-                // 사용자 친화적인 에러 표시:
-                //   - 아이콘 (경고 삼각형)
-                //   - 제목 ("Error")
-                //   - 상세 메시지 (errorMessage)
+                // User-friendly error display:
+                //   - Icon (warning triangle)
+                //   - Title ("Error")
+                //   - Detailed message (errorMessage)
                 //
                 VStack(spacing: 16) {
-                    // **경고 아이콘:**
+                    // **Warning icon:**
                     //
                     // exclamationmark.triangle.fill:
-                    //   - 채워진 경고 삼각형
-                    //   - 보편적인 경고/오류 심볼
+                    //   - Filled warning triangle
+                    //   - Universal warning/error symbol
                     //
                     Image(systemName: "exclamationmark.triangle.fill")
-                        .font(.system(size: 48))  // 큰 크기로 강조
-                        .foregroundColor(.yellow)  // 노란색 경고
+                        .font(.system(size: 48))  // Large size for emphasis
+                        .foregroundColor(.yellow)  // Yellow warning
 
-                    // **에러 제목:**
+                    // **Error title:**
                     Text("Error")
                         .font(.title2)
                         .fontWeight(.bold)
 
-                    // **에러 상세 메시지:**
+                    // **Error detail message:**
                     //
-                    // errorMessage 예시:
+                    // errorMessage examples:
                     //   - "Failed to load video file"
                     //   - "Unsupported codec"
                     //   - "File not found"
                     //
                     Text(errorMessage)
                         .font(.body)
-                        .foregroundColor(.secondary)  // 부차적 색상
+                        .foregroundColor(.secondary)  // Secondary color
                         // **.multilineTextAlignment(.center):**
                         //
-                        // 여러 줄 텍스트를 중앙 정렬합니다.
+                        // Center-align multi-line text.
                         //
-                        // 예시:
+                        // Example:
                         // ```
                         // Failed to decode video.
                         //    Codec not supported.
@@ -767,35 +767,35 @@ struct VideoPlayerView: View {
                         //
                         .multilineTextAlignment(.center)
                 }
-                .foregroundColor(.white)  // 전체 텍스트 흰색
-                .padding()  // 여백 추가
+                .foregroundColor(.white)  // All text white
+                .padding()  // Add padding
 
                 // Case 4: Placeholder
                 //
-                // 그 외의 경우 (비디오 없음) 플레이스홀더를 표시합니다.
+                // Otherwise (no video) display placeholder.
                 //
-                // 이 경우는 언제 발생하는가?
-                //   - 비디오가 아직 로드되지 않음
-                //   - 로드 완료되었지만 프레임이 없음
-                //   - 초기 상태
+                // When does this case occur?
+                //   - Video not yet loaded
+                //   - Load completed but no frame
+                //   - Initial state
                 //
             } else {
-                // **플레이스홀더 UI:**
+                // **Placeholder UI:**
                 //
-                // 비디오가 없음을 나타내는 기본 UI:
-                //   - 비디오 아이콘
-                //   - "No video loaded" 메시지
+                // Default UI indicating no video:
+                //   - Video icon
+                //   - "No video loaded" message
                 //
                 VStack(spacing: 16) {
-                    // **비디오 아이콘:**
+                    // **Video icon:**
                     //
                     // video.fill:
-                    //   - 채워진 비디오 카메라 아이콘
-                    //   - "비디오"를 상징하는 일반적인 심볼
+                    //   - Filled video camera icon
+                    //   - Common symbol representing "video"
                     //
                     Image(systemName: "video.fill")
-                        .font(.system(size: 64))  // 매우 큰 크기
-                        .foregroundColor(.secondary)  // 연한 회색
+                        .font(.system(size: 64))  // Very large size
+                        .foregroundColor(.secondary)  // Light gray
 
                     Text("No video loaded")
                         .font(.title2)
@@ -809,74 +809,74 @@ struct VideoPlayerView: View {
 
     /// Reset controls auto-hide timer
     ///
-    /// 컨트롤 자동 숨김 타이머를 재설정합니다.
+    /// Reset the controls auto-hide timer.
     ///
-    /// **작동 원리:**
+    /// **How it works:**
     ///
-    /// 1. 기존 타이머 취소 (있다면)
-    /// 2. 재생 중이면 새 타이머 생성
-    /// 3. 3초 후 컨트롤 숨김
+    /// 1. Cancel existing timer (if any)
+    /// 2. Create new timer if playing
+    /// 3. Hide controls after 3 seconds
     ///
-    /// **언제 호출되는가?**
+    /// **When is it called?**
     ///
-    /// - 마우스 호버 시
-    /// - 컨트롤 사용 시 (재생 버튼 클릭 등)
-    /// - View가 나타날 때
+    /// - On mouse hover
+    /// - When using controls (clicking play button, etc.)
+    /// - When View appears
     ///
     private func resetControlsTimer() {
-        // **기존 타이머 무효화:**
+        // **Invalidate existing timer:**
         //
         // controlsTimer?.invalidate():
-        //   - ?.는 Optional chaining
-        //   - nil이 아니면 invalidate() 호출
-        //   - 타이머 취소 및 메모리 해제
+        //   - ?. is Optional chaining
+        //   - Call invalidate() if not nil
+        //   - Cancel timer and release memory
         //
-        // 왜 기존 타이머를 취소하는가?
-        //   - 사용자가 마우스를 계속 움직이면
-        //   - 3초 카운트다운을 계속 재설정
-        //   - 타이머가 여러 개 생기는 것을 방지
+        // Why cancel existing timer?
+        //   - If user keeps moving mouse
+        //   - Continuously reset 3-second countdown
+        //   - Prevent multiple timers from being created
         //
         controlsTimer?.invalidate()
 
         // Auto-hide controls after 3 seconds of inactivity (only when playing)
         //
-        // 재생 중일 때만 자동 숨김 타이머를 시작합니다.
+        // Start auto-hide timer only when playing.
         //
-        // **왜 재생 중일 때만 숨기는가?**
+        // **Why hide only when playing?**
         //
-        // 일시정지 중:
-        //   - 사용자가 컨트롤을 봐야 함
-        //   - 다음 액션을 선택 중
-        //   - 컨트롤을 계속 표시
+        // When paused:
+        //   - User needs to see controls
+        //   - Selecting next action
+        //   - Keep controls visible
         //
-        // 재생 중:
-        //   - 비디오 시청에 집중
-        //   - 컨트롤이 방해됨
-        //   - 3초 후 자동 숨김
+        // When playing:
+        //   - Focus on watching video
+        //   - Controls are distracting
+        //   - Auto-hide after 3 seconds
         //
         if viewModel.playbackState == .playing {
             // **Timer.scheduledTimer:**
             //
-            // 일정 시간 후 실행되는 타이머를 생성합니다.
+            // Create a timer that executes after a certain time.
             //
-            // 파라미터:
-            //   - withTimeInterval: 3.0 (3초)
-            //   - repeats: false (한 번만 실행)
-            //   - 클로저: { _ in ... } (실행할 코드)
+            // Parameters:
+            //   - withTimeInterval: 3.0 (3 seconds)
+            //   - repeats: false (execute once only)
+            //   - closure: { _ in ... } (code to execute)
             //
             controlsTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: false) { _ in
                 // **withAnimation:**
                 //
-                // 상태 변경을 애니메이션과 함께 수행합니다.
+                // Perform state change with animation.
                 //
-                // withAnimation 없이:
-                //   → showControls = false → 컨트롤이 즉시 사라짐
+                // Without withAnimation:
+                //   → showControls = false → Controls disappear immediately
                 //
-                // withAnimation 있으면:
-                //   → showControls = false → 컨트롤이 부드럽게 슬라이드 아웃
+                // With withAnimation:
+                //   → showControls = false → Controls slide out smoothly
                 //
-                // .transition(.move(edge: .bottom))과 함께 작동:
-                //   → 아래로 슬라이드하며 사라짐
+                // Works with .transition(.move(edge: .bottom)):
+                //   → Slides down while disappearing
                 //
                 withAnimation {
                     showControls = false
@@ -889,78 +889,78 @@ struct VideoPlayerView: View {
 
     /// Setup keyboard event monitor
     ///
-    /// 키보드 이벤트 모니터를 설정합니다.
+    /// Set up keyboard event monitor.
     ///
-    /// **NSEvent란?**
+    /// **What is NSEvent?**
     ///
-    /// NSEvent는 macOS AppKit의 이벤트 시스템입니다.
-    ///   - 키보드 입력
-    ///   - 마우스 클릭
-    ///   - 스크롤 등
+    /// NSEvent is the event system of macOS AppKit.
+    ///   - Keyboard input
+    ///   - Mouse clicks
+    ///   - Scrolling, etc.
     ///
     /// **Event Monitor:**
     ///
-    /// 이벤트 모니터는 특정 이벤트를 "감청"합니다:
-    ///   - 앱 전체의 이벤트 캐치
-    ///   - 특정 이벤트만 필터링
-    ///   - 이벤트 처리 후 전달 또는 차단
+    /// Event monitor "listens" for specific events:
+    ///   - Catch events across entire app
+    ///   - Filter specific events only
+    ///   - Forward or block events after processing
     ///
     private func setupKeyboardMonitor() {
         // **NSEvent.addLocalMonitorForEvents:**
         //
-        // 로컬 이벤트 모니터를 등록합니다.
+        // Register local event monitor.
         //
-        // **로컬 vs 글로벌 모니터:**
+        // **Local vs Global monitor:**
         //
-        // 로컬 (Local):
-        //   - 현재 앱 내의 이벤트만 감지
-        //   - 다른 앱의 키 입력은 무시
-        //   - 권한 필요 없음
+        // Local:
+        //   - Detect events within current app only
+        //   - Ignore key inputs from other apps
+        //   - No permission required
         //
-        // 글로벌 (Global):
-        //   - 시스템 전체의 이벤트 감지
-        //   - 다른 앱의 키 입력도 감지
-        //   - Accessibility 권한 필요
+        // Global:
+        //   - Detect events system-wide
+        //   - Detect key inputs from other apps too
+        //   - Accessibility permission required
         //
-        // 파라미터:
-        //   - matching: .keyDown (키를 눌렀을 때)
-        //   - handler: 이벤트 처리 클로저
+        // Parameters:
+        //   - matching: .keyDown (when key is pressed)
+        //   - handler: Event processing closure
         //
-        // 반환값:
-        //   - Any? 타입의 모니터 객체
-        //   - 나중에 removeMonitor()로 제거할 때 사용
+        // Return value:
+        //   - Monitor object of Any? type
+        //   - Used later to remove with removeMonitor()
         //
         keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [self] event in
-            // **[self] 캡처 리스트:**
+            // **[self] capture list:**
             //
-            // 클로저가 self를 캡처합니다.
+            // Closure captures self.
             //
-            // 일반적으로 [weak self]를 사용하지만:
-            //   - 여기서는 [self]를 사용 (strong reference)
-            //   - View가 살아있는 동안 모니터도 유지
-            //   - onDisappear에서 명시적으로 제거
+            // Normally we use [weak self], but:
+            //   - Here we use [self] (strong reference)
+            //   - Monitor persists while View is alive
+            //   - Explicitly removed in onDisappear
             //
-            // 메모리 관리:
+            // Memory management:
             // ```
-            // View 생성
+            // View creation
             //   ↓
-            // setupKeyboardMonitor() (모니터 등록)
+            // setupKeyboardMonitor() (register monitor)
             //   ↓
-            // View 살아있음 (모니터 활성)
+            // View alive (monitor active)
             //   ↓
-            // View 사라짐 (onDisappear)
+            // View disappears (onDisappear)
             //   ↓
-            // removeKeyboardMonitor() (모니터 제거)
+            // removeKeyboardMonitor() (remove monitor)
             // ```
             //
             // **handleKeyEvent(event):**
             //
-            // 실제 키 처리 로직은 별도 메서드로 분리되어 있습니다.
+            // Actual key handling logic is separated into another method.
             //
-            // 반환값:
-            //   - NSEvent?: 처리된 이벤트 또는 nil
-            //   - nil 반환 시 이벤트 소비 (다른 곳으로 전달 안 됨)
-            //   - event 반환 시 이벤트 계속 전달
+            // Return value:
+            //   - NSEvent?: Processed event or nil
+            //   - If nil returned, consume event (not forwarded elsewhere)
+            //   - If event returned, continue forwarding event
             //
             handleKeyEvent(event)
         }
@@ -968,52 +968,52 @@ struct VideoPlayerView: View {
 
     /// Remove keyboard event monitor
     ///
-    /// 키보드 이벤트 모니터를 제거합니다.
+    /// Remove keyboard event monitor.
     ///
-    /// **왜 모니터를 제거해야 하는가?**
+    /// **Why must monitor be removed?**
     ///
-    /// 제거하지 않으면:
-    ///   - 메모리 누수 발생
-    ///   - 플레이어가 닫혀도 키 입력 계속 감지
-    ///   - 다른 View의 키보드 동작 방해
-    ///   - 앱 성능 저하
+    /// If not removed:
+    ///   - Memory leak occurs
+    ///   - Continues detecting key input even after player closes
+    ///   - Interferes with other View's keyboard actions
+    ///   - App performance degradation
     ///
-    /// **생명주기:**
+    /// **Lifecycle:**
     ///
     /// ```
     /// onAppear:
-    ///   → setupKeyboardMonitor() 호출
+    ///   → Call setupKeyboardMonitor()
     ///
     /// onDisappear:
-    ///   → removeKeyboardMonitor() 호출 ← 여기
+    ///   → Call removeKeyboardMonitor() ← Here
     /// ```
     ///
     private func removeKeyboardMonitor() {
         // **Optional Binding:**
         //
         // if let monitor = keyMonitor:
-        //   - keyMonitor가 nil이 아니면
-        //   - monitor 변수에 언래핑된 값 저장
-        //   - 블록 실행
+        //   - If keyMonitor is not nil
+        //   - Store unwrapped value in monitor variable
+        //   - Execute block
         //
         if let monitor = keyMonitor {
             // **NSEvent.removeMonitor:**
             //
-            // 등록된 이벤트 모니터를 제거합니다.
+            // Remove registered event monitor.
             //
-            // 파라미터:
-            //   - monitor: setupKeyboardMonitor()에서 반환받은 객체
+            // Parameter:
+            //   - monitor: Object returned from setupKeyboardMonitor()
             //
             NSEvent.removeMonitor(monitor)
 
-            // **keyMonitor를 nil로 설정:**
+            // **Set keyMonitor to nil:**
             //
-            // 모니터를 제거한 후 nil로 설정합니다.
+            // Set to nil after removing monitor.
             //
-            // 이유:
-            //   - 이미 제거된 모니터를 다시 제거하지 않도록
-            //   - Optional 상태를 정확히 반영
-            //   - 메모리 해제 확인
+            // Reasons:
+            //   - Prevent removing already-removed monitor again
+            //   - Accurately reflect Optional state
+            //   - Confirm memory release
             //
             keyMonitor = nil
         }
@@ -1021,60 +1021,60 @@ struct VideoPlayerView: View {
 
     /// Handle keyboard event
     ///
-    /// 키보드 이벤트를 처리하고 적절한 동작을 실행합니다.
+    /// Process keyboard event and execute appropriate action.
     ///
-    /// **파라미터:**
-    /// - event: NSEvent 객체 (키 정보 포함)
+    /// **Parameters:**
+    /// - event: NSEvent object (containing key info)
     ///
-    /// **반환값:**
-    /// - NSEvent?: 이벤트를 계속 전달할지 결정
-    ///   - nil: 이벤트 소비 (더 이상 전달 안 됨)
-    ///   - event: 이벤트 계속 전달
+    /// **Return value:**
+    /// - NSEvent?: Determine whether to continue forwarding event
+    ///   - nil: Consume event (no longer forwarded)
+    ///   - event: Continue forwarding event
     ///
-    /// **지원하는 단축키:**
+    /// **Supported shortcuts:**
     ///
-    /// | 키         | 기능            | 동작                |
-    /// |-----------|----------------|---------------------|
-    /// | Space     | 재생/일시정지   | togglePlayPause()   |
-    /// | ←         | 5초 뒤로        | seekBySeconds(-5.0) |
-    /// | →         | 5초 앞으로      | seekBySeconds(5.0)  |
-    /// | ↑         | 볼륨 up         | adjustVolume(+0.1)  |
-    /// | ↓         | 볼륨 down       | adjustVolume(-0.1)  |
-    /// | F         | 전체화면 토글   | toggleFullscreen()  |
-    /// | ESC       | 전체화면 종료   | toggleFullscreen()  |
+    /// | Key       | Function        | Action              |
+    /// |-----------|-----------------|---------------------|
+    /// | Space     | Play/Pause      | togglePlayPause()   |
+    /// | ←         | 5 sec backward  | seekBySeconds(-5.0) |
+    /// | →         | 5 sec forward   | seekBySeconds(5.0)  |
+    /// | ↑         | Volume up       | adjustVolume(+0.1)  |
+    /// | ↓         | Volume down     | adjustVolume(-0.1)  |
+    /// | F         | Toggle fullscr. | toggleFullscreen()  |
+    /// | ESC       | Exit fullscreen | toggleFullscreen()  |
     ///
     private func handleKeyEvent(_ event: NSEvent) -> NSEvent? {
         // Get the key code
         //
-        // **키 코드(Key Code)란?**
+        // **What is Key Code?**
         //
-        // macOS는 각 키에 고유한 숫자를 할당합니다:
+        // macOS assigns a unique number to each key:
         //   - 49: Space
         //   - 123: Left arrow (←)
         //   - 124: Right arrow (→)
         //   - 126: Up arrow (↑)
         //   - 125: Down arrow (↓)
-        //   - 3: F 키
+        //   - 3: F key
         //   - 53: ESC
         //
-        // **왜 문자가 아닌 숫자를 사용하는가?**
+        // **Why use numbers instead of characters?**
         //
-        // 키 코드는 물리적 키 위치를 나타냅니다:
-        //   - 키보드 레이아웃에 독립적
-        //   - 영어, 한글 등 입력 소스와 무관
-        //   - 화살표, Space 등 특수 키도 처리 가능
+        // Key code represents physical key position:
+        //   - Independent of keyboard layout
+        //   - Unrelated to input source like English, Korean, etc.
+        //   - Can handle special keys like arrows, Space, etc.
         //
         let keyCode = event.keyCode
 
-        // **switch문으로 키별 처리:**
+        // **Handle each key with switch:**
         //
-        // 각 키 코드에 대해 다른 동작을 실행합니다.
+        // Execute different action for each key code.
         //
         switch keyCode {
         case 49: // Space
-            // **재생/일시정지 토글:**
+            // **Toggle play/pause:**
             //
-            // Space는 대부분의 비디오 플레이어에서 재생/일시정지를 담당합니다:
+            // Space handles play/pause in most video players:
             //   - YouTube
             //   - VLC
             //   - QuickTime
@@ -1083,110 +1083,110 @@ struct VideoPlayerView: View {
             viewModel.togglePlayPause()
             // **return nil:**
             //
-            // 이벤트를 소비합니다.
+            // Consume the event.
             //
-            // nil을 반환하면:
-            //   - Space 키가 다른 곳으로 전달되지 않음
-            //   - 예: 텍스트 필드에 공백 입력 방지
+            // If nil is returned:
+            //   - Space key is not forwarded elsewhere
+            //   - e.g., Prevent space input in text field
             //
             return nil
 
         case 123: // Left arrow
-            // **5초 뒤로 이동:**
+            // **Seek backward 5 seconds:**
             //
             // seekBySeconds(-5.0):
-            //   - 현재 재생 위치에서 5초 뒤로
-            //   - 음수 값 = 역방향
+            //   - 5 seconds backward from current playback position
+            //   - Negative value = backward
             //
-            // 5초를 선택한 이유:
-            //   - 너무 짧지 않음 (의미 있는 탐색)
-            //   - 너무 길지 않음 (정밀한 탐색 가능)
-            //   - 업계 표준 (YouTube 등)
+            // Why 5 seconds:
+            //   - Not too short (meaningful seek)
+            //   - Not too long (precise seeking possible)
+            //   - Industry standard (YouTube, etc.)
             //
             viewModel.seekBySeconds(-5.0)
             return nil
 
         case 124: // Right arrow
-            // **5초 앞으로 이동:**
+            // **Seek forward 5 seconds:**
             //
             // seekBySeconds(5.0):
-            //   - 현재 재생 위치에서 5초 앞으로
-            //   - 양수 값 = 정방향
+            //   - 5 seconds forward from current playback position
+            //   - Positive value = forward
             //
             viewModel.seekBySeconds(5.0)
             return nil
 
         case 126: // Up arrow
-            // **볼륨 증가:**
+            // **Increase volume:**
             //
             // adjustVolume(by: 0.1):
-            //   - 볼륨을 0.1 (10%) 증가
-            //   - 0.0 (무음) ~ 1.0 (최대)
+            //   - Increase volume by 0.1 (10%)
+            //   - 0.0 (mute) ~ 1.0 (max)
             //
-            // 10%씩 조절하는 이유:
-            //   - 세밀한 조절 가능
-            //   - 10번 누르면 최대/최소
-            //   - 사용자 친화적
+            // Why adjust by 10%:
+            //   - Fine control possible
+            //   - 10 presses to reach max/min
+            //   - User-friendly
             //
             viewModel.adjustVolume(by: 0.1)
             return nil
 
         case 125: // Down arrow
-            // **볼륨 감소:**
+            // **Decrease volume:**
             //
             // adjustVolume(by: -0.1):
-            //   - 볼륨을 0.1 (10%) 감소
-            //   - 음수 값 = 감소
+            //   - Decrease volume by 0.1 (10%)
+            //   - Negative value = decrease
             //
             viewModel.adjustVolume(by: -0.1)
             return nil
 
         case 3: // F key
-            // **전체화면 토글:**
+            // **Toggle fullscreen:**
             //
-            // F 키는 많은 비디오 플레이어에서 전체화면 단축키로 사용됩니다:
+            // F key is used as fullscreen shortcut in many video players:
             //   - YouTube: F
             //   - VLC: F
-            //   - QuickTime: Cmd+Ctrl+F (하지만 F도 지원)
+            //   - QuickTime: Cmd+Ctrl+F (but F is also supported)
             //
             toggleFullscreen()
             return nil
 
         case 53: // ESC
-            // **전체화면 종료:**
+            // **Exit fullscreen:**
             //
-            // ESC는 일반적으로 "종료" 또는 "취소"를 의미합니다.
+            // ESC generally means "exit" or "cancel".
             //
-            // 조건부 처리:
-            //   - 전체화면 모드일 때만 처리
-            //   - 일반 모드에서는 이벤트 전달 (다른 용도로 사용 가능)
+            // Conditional handling:
+            //   - Handle only when in fullscreen mode
+            //   - Forward event in normal mode (can be used for other purposes)
             //
             if isFullscreen {
                 toggleFullscreen()
-                return nil  // 이벤트 소비
+                return nil  // Consume event
             }
-        // **ESC를 전체화면 종료 외에 다른 용도로 사용할 수 있도록:**
+        // **Allow ESC to be used for other purposes besides exiting fullscreen:**
         //
-        // 전체화면이 아니면 이벤트를 계속 전달합니다.
-        // 예: Sheet나 Alert를 닫는 데 사용
+        // If not fullscreen, continue forwarding event.
+        // e.g., Used to close Sheet or Alert
 
         default:
-            // **처리하지 않는 키:**
+            // **Unhandled keys:**
             //
-            // 위의 case에 해당하지 않는 모든 키는 여기로 옵니다.
+            // All keys not matching above cases come here.
             //
             // break:
-            //   - 아무것도 하지 않음
-            //   - 다음 코드로 진행 (return event)
+            //   - Do nothing
+            //   - Proceed to next code (return event)
             //
             break
         }
 
-        // **이벤트 계속 전달:**
+        // **Continue forwarding event:**
         //
         // return event:
-        //   - 처리하지 않은 이벤트를 다음 핸들러로 전달
-        //   - 예: 텍스트 입력, 다른 단축키 등
+        //   - Forward unhandled event to next handler
+        //   - e.g., Text input, other shortcuts, etc.
         //
         return event
     }
@@ -1195,88 +1195,88 @@ struct VideoPlayerView: View {
 
     /// Toggle fullscreen mode
     ///
-    /// 전체화면 모드를 토글합니다.
+    /// Toggle fullscreen mode.
     ///
-    /// **전체화면 모드란?**
+    /// **What is fullscreen mode?**
     ///
-    /// 일반 모드:
-    ///   - 윈도우 타이틀 바 있음
-    ///   - 메뉴 바 표시
-    ///   - Dock 표시
-    ///   - 크기 조절 가능
+    /// Normal mode:
+    ///   - Window title bar present
+    ///   - Menu bar displayed
+    ///   - Dock displayed
+    ///   - Resizable
     ///
-    /// 전체화면 모드:
-    ///   - 전체 화면 차지
-    ///   - 타이틀 바/메뉴 바 숨김
-    ///   - Dock 자동 숨김
-    ///   - 몰입 경험
+    /// Fullscreen mode:
+    ///   - Occupies entire screen
+    ///   - Title bar/menu bar hidden
+    ///   - Dock auto-hidden
+    ///   - Immersive experience
     ///
     private func toggleFullscreen() {
         // **NSApplication.shared.keyWindow:**
         //
-        // 현재 활성화된 윈도우를 가져옵니다.
+        // Get currently active window.
         //
         // NSApplication.shared:
-        //   - 앱의 싱글톤 인스턴스
-        //   - 앱 전체 상태 관리
+        //   - App's singleton instance
+        //   - Manages entire app state
         //
         // keyWindow:
-        //   - 현재 키보드 입력을 받는 윈도우
-        //   - 일반적으로 사용자가 보고 있는 윈도우
+        //   - Window currently receiving keyboard input
+        //   - Typically the window user is viewing
         //
         // **guard let ... else { return }:**
         //
-        // Optional Binding으로 안전하게 언래핑:
-        //   - window가 nil이면 (윈도우 없음) return
-        //   - nil이 아니면 계속 진행
+        // Safely unwrap with Optional Binding:
+        //   - If window is nil (no window), return
+        //   - If not nil, continue
         //
         guard let window = NSApplication.shared.keyWindow else { return }
 
-        // **상태 토글:**
+        // **Toggle state:**
         //
         // isFullscreen.toggle():
         //   - true → false
         //   - false → true
         //
-        // 상태를 먼저 토글하는 이유:
-        //   - 다음 토글 호출 시 올바른 동작
-        //   - UI 상태 동기화
+        // Why toggle state first:
+        //   - Correct behavior on next toggle call
+        //   - UI state synchronization
         //
         isFullscreen.toggle()
 
-        // **전체화면 전환:**
+        // **Fullscreen transition:**
         //
         if isFullscreen {
-            // **전체화면 모드로 전환:**
+            // **Enter fullscreen mode:**
             //
             // window.toggleFullScreen(nil):
-            //   - nil: sender 파라미터 (사용 안 함)
-            //   - 윈도우를 전체화면으로 전환
-            //   - 애니메이션과 함께 부드럽게 전환
+            //   - nil: sender parameter (not used)
+            //   - Transition window to fullscreen
+            //   - Smooth transition with animation
             //
-            // 효과:
+            // Effect:
             // ```
-            // 일반 윈도우
+            // Normal window
             //     ↓
-            // 화면 전체로 확대
+            // Expand to full screen
             //     ↓
-            // 타이틀 바/메뉴 바 숨김
+            // Hide title bar/menu bar
             //     ↓
-            // 전체화면 모드
+            // Fullscreen mode
             // ```
             //
             window.toggleFullScreen(nil)
         } else {
-            // **일반 모드로 복귀:**
+            // **Return to normal mode:**
             //
-            // 이미 전체화면인지 확인:
+            // Check if already fullscreen:
             //   - window.styleMask.contains(.fullScreen)
-            //   - .fullScreen 플래그 체크
+            //   - Check .fullScreen flag
             //
-            // 왜 확인하는가?
-            //   - toggleFullScreen()을 중복 호출 방지
-            //   - 애니메이션 충돌 방지
-            //   - 안전한 상태 관리
+            // Why check?
+            //   - Prevent duplicate toggleFullScreen() call
+            //   - Prevent animation conflicts
+            //   - Safe state management
             //
             if window.styleMask.contains(.fullScreen) {
                 window.toggleFullScreen(nil)
@@ -1288,15 +1288,15 @@ struct VideoPlayerView: View {
 // MARK: - Video Frame View
 
 /// @struct VideoFrameView
-/// @brief 개별 비디오 프레임 표시 View
-/// @details VideoFrame을 CGImage로 변환하여 화면에 표시합니다.
+/// @brief Individual video frame display View
+/// @details Converts VideoFrame to CGImage and displays on screen.
 ///
-/// **역할:**
-/// - VideoFrame (픽셀 데이터) → CGImage 변환
-/// - CGImage → SwiftUI Image 표시
-/// - 화면 크기에 맞게 조정
+/// **Responsibilities:**
+/// - VideoFrame (pixel data) → CGImage conversion
+/// - CGImage → SwiftUI Image display
+/// - Adjust to screen size
 ///
-/// **사용 예시:**
+/// **Usage example:**
 /// ```swift
 /// if let frame = viewModel.currentFrame {
 ///     VideoFrameView(frame: frame)
@@ -1307,21 +1307,21 @@ struct VideoFrameView: View {
     // MARK: - Properties
 
     /// @var frame
-    /// @brief 비디오 프레임 데이터
-    /// @details 표시할 VideoFrame 객체입니다.
+    /// @brief Video frame data
+    /// @details VideoFrame object to display.
     ///
-    /// **VideoFrame이란?**
+    /// **What is VideoFrame?**
     ///
-    /// VideoFrame은 비디오의 한 프레임을 나타냅니다:
+    /// VideoFrame represents one frame of video:
     /// ```swift
     /// struct VideoFrame {
-    ///     let pixelBuffer: CVPixelBuffer  // 픽셀 데이터
-    ///     let timestamp: CMTime           // 시간 정보
-    ///     let width: Int                  // 가로 크기
-    ///     let height: Int                 // 세로 크기
+    ///     let pixelBuffer: CVPixelBuffer  // Pixel data
+    ///     let timestamp: CMTime           // Time information
+    ///     let width: Int                  // Width
+    ///     let height: Int                 // Height
     ///
     ///     func toCGImage() -> CGImage? {
-    ///         // CVPixelBuffer → CGImage 변환
+    ///         // CVPixelBuffer → CGImage conversion
     ///     }
     /// }
     /// ```
@@ -1333,116 +1333,116 @@ struct VideoFrameView: View {
     var body: some View {
         // **GeometryReader:**
         //
-        // GeometryReader는 부모로부터 할당받은 공간의 크기를 측정합니다.
+        // GeometryReader measures the size of space allocated from parent.
         //
-        // **왜 필요한가?**
+        // **Why is it needed?**
         //
-        // 비디오 프레임을 화면에 맞게 표시하려면:
-        //   - 현재 화면(부모 View)의 크기를 알아야 함
-        //   - 프레임의 가로세로 비율 유지
-        //   - 화면 크기에 따라 조정
+        // To display video frame fitted to screen:
+        //   - Need to know current screen (parent View) size
+        //   - Maintain frame's aspect ratio
+        //   - Adjust according to screen size
         //
-        // **작동 원리:**
+        // **How it works:**
         //
         // ```
         // GeometryReader { geometry in
         //     // geometry.size.width
         //     // geometry.size.height
-        //     // 부모로부터 할당받은 공간
+        //     // Space allocated from parent
         // }
         // ```
         //
-        // **클로저 파라미터:**
+        // **Closure parameter:**
         //
         // geometry: GeometryProxy
-        //   - .size: 부모가 제공한 크기 (CGSize)
-        //   - .frame(in:): 좌표계 내 위치
-        //   - .safeAreaInsets: 안전 영역 정보
+        //   - .size: Size provided by parent (CGSize)
+        //   - .frame(in:): Position within coordinate system
+        //   - .safeAreaInsets: Safe area information
         //
         GeometryReader { geometry in
             // **Optional Binding:**
             //
             // if let cgImage = frame.toCGImage():
-            //   - VideoFrame을 CGImage로 변환 시도
-            //   - 성공하면 cgImage에 저장
-            //   - 실패하면 (nil) else 블록 실행
+            //   - Attempt to convert VideoFrame to CGImage
+            //   - If successful, store in cgImage
+            //   - If failed (nil), execute else block
             //
-            // **변환 실패 사유:**
-            //   - 픽셀 버퍼 형식 불일치
-            //   - 메모리 부족
-            //   - 손상된 프레임 데이터
+            // **Conversion failure reasons:**
+            //   - Pixel buffer format mismatch
+            //   - Out of memory
+            //   - Corrupted frame data
             //
             if let cgImage = frame.toCGImage() {
                 // **Image(decorative:scale:):**
                 //
-                // CGImage를 SwiftUI Image로 변환합니다.
+                // Convert CGImage to SwiftUI Image.
                 //
-                // **decorative란?**
+                // **What is decorative?**
                 //
                 // Image(decorative: cgImage, scale: 1.0):
-                //   - decorative: 접근성 레이블 없음
-                //   - VoiceOver가 "이미지"라고 읽지 않음
-                //   - 장식용 이미지로 간주
+                //   - decorative: No accessibility label
+                //   - VoiceOver doesn't read it as "image"
+                //   - Considered decorative image
                 //
-                // 왜 decorative를 사용하는가?
-                //   - 비디오 프레임은 연속적으로 빠르게 변경됨
-                //   - 각 프레임을 읽으면 VoiceOver가 혼란스러움
-                //   - 접근성 측면에서 불필요한 정보
+                // Why use decorative?
+                //   - Video frames change rapidly and continuously
+                //   - VoiceOver reading each frame would be confusing
+                //   - Unnecessary information from accessibility perspective
                 //
                 // scale: 1.0:
-                //   - 이미지 스케일 (Retina 디스플레이 등)
-                //   - 1.0 = 1:1 픽셀 매핑
+                //   - Image scale (Retina display, etc.)
+                //   - 1.0 = 1:1 pixel mapping
                 //   - 2.0 = @2x (Retina)
                 //
                 Image(decorative: cgImage, scale: 1.0)
                     // **.resizable():**
                     //
-                    // 이미지를 리사이즈 가능하게 만듭니다.
+                    // Make image resizable.
                     //
-                    // resizable() 없이:
-                    //   - 이미지가 원본 크기로 표시됨
-                    //   - 화면보다 크거나 작을 수 있음
-                    //   - 크기 조절 불가
+                    // Without resizable():
+                    //   - Image displayed at original size
+                    //   - May be larger or smaller than screen
+                    //   - Size cannot be adjusted
                     //
-                    // resizable() 있으면:
-                    //   - .frame() 모디파이어로 크기 조절 가능
-                    //   - aspectRatio()로 비율 유지 가능
-                    //   - 화면에 맞게 조정 가능
+                    // With resizable():
+                    //   - Size adjustable with .frame() modifier
+                    //   - Ratio maintainable with aspectRatio()
+                    //   - Can be fitted to screen
                     //
                     .resizable()
 
                     // **.aspectRatio(contentMode:):**
                     //
-                    // 이미지의 가로세로 비율을 유지하며 크기를 조절합니다.
+                    // Adjust size while maintaining image aspect ratio.
                     //
                     // **contentMode: .fit:**
                     //
                     // .fit:
-                    //   - 이미지 전체가 보이도록 조정
-                    //   - 한쪽에 여백 생길 수 있음 (레터박스)
-                    //   - 이미지 잘림 없음
+                    //   - Adjust to show entire image
+                    //   - May have margins on one side (letterbox)
+                    //   - No image cropping
                     //
                     // .fill:
-                    //   - 공간을 전부 채움
-                    //   - 이미지가 잘릴 수 있음
-                    //   - 여백 없음
+                    //   - Fill entire space
+                    //   - Image may be cropped
+                    //   - No margins
                     //
-                    // 예시:
+                    // Example:
                     // ```
-                    // 16:9 비디오를 4:3 화면에 표시
+                    // Display 16:9 video on 4:3 screen
                     //
                     // .fit:
                     // ┌─────────────────┐
-                    // │■■■■■■■■■■■■■■■■■│ ← 검은 여백
+                    // │■■■■■■■■■■■■■■■■■│ ← Black margin
                     // │┌───────────────┐│
                     // ││   16:9 Video  ││
                     // │└───────────────┘│
-                    // │■■■■■■■■■■■■■■■■■│ ← 검은 여백
+                    // │■■■■■■■■■■■■■■■■■│ ← Black margin
                     // └─────────────────┘
                     //
                     // .fill:
                     // ┌─────────────────┐
-                    // ││   16:9 Video  ││ ← 좌우가 잘림
+                    // ││   16:9 Video  ││ ← Left/right cropped
                     // └─────────────────┘
                     // ```
                     //
@@ -1450,36 +1450,36 @@ struct VideoFrameView: View {
 
                     // **.frame(width:height:):**
                     //
-                    // 이미지를 특정 크기로 설정합니다.
+                    // Set image to specific size.
                     //
                     // geometry.size.width:
-                    //   - 부모(GeometryReader)가 제공한 가로 크기
-                    //   - 화면 또는 윈도우 크기에 따라 변함
+                    //   - Width provided by parent (GeometryReader)
+                    //   - Changes according to screen or window size
                     //
                     // geometry.size.height:
-                    //   - 부모가 제공한 세로 크기
+                    //   - Height provided by parent
                     //
-                    // 이 조합의 효과:
+                    // Effect of this combination:
                     // ```
                     // resizable() + aspectRatio(.fit) + frame(geometry.size)
                     //     ↓
-                    // 비디오가 화면 크기에 맞게 조정되되
+                    // Video adjusted to screen size
                     //     ↓
-                    // 가로세로 비율은 유지
+                    // while maintaining aspect ratio
                     // ```
                     //
                     .frame(width: geometry.size.width, height: geometry.size.height)
 
             } else {
-                // **CGImage 변환 실패 시:**
+                // **If CGImage conversion fails:**
                 //
-                // 검은 화면을 표시합니다.
+                // Display black screen.
                 //
-                // 검은 화면을 보여주는 이유:
-                //   - 에러를 명시적으로 표시하지 않음 (프레임 단위 실패는 흔함)
-                //   - 플레이어가 다음 프레임을 시도
-                //   - 일시적인 문제일 수 있음
-                //   - 사용자 경험 방해 최소화
+                // Why show black screen:
+                //   - Don't explicitly display error (frame-level failures are common)
+                //   - Player attempts next frame
+                //   - May be temporary issue
+                //   - Minimize user experience disruption
                 //
                 Color.black
             }
@@ -1491,25 +1491,25 @@ struct VideoFrameView: View {
 
 // Preview temporarily disabled - requires sample data
 //
-// **프리뷰가 비활성화된 이유:**
+// **Why preview is disabled:**
 //
-// VideoPlayerView는 실제 VideoFile 데이터가 필요합니다:
-//   - 비디오 디코더 초기화
-//   - AVFoundation 리소스
-//   - 실제 비디오 파일 경로
+// VideoPlayerView requires actual VideoFile data:
+//   - Video decoder initialization
+//   - AVFoundation resources
+//   - Actual video file path
 //
-// Xcode 프리뷰에서는:
-//   - 샘플 데이터 준비가 복잡
-//   - 리소스 접근 제한
-//   - 퍼포먼스 문제
+// In Xcode preview:
+//   - Sample data preparation is complex
+//   - Resource access limitations
+//   - Performance issues
 //
-// **프리뷰를 활성화하려면:**
+// **To enable preview:**
 //
-// 1. 샘플 VideoFile 준비
-// 2. 간단한 테스트 비디오 파일 포함
-// 3. Mock VideoPlayerViewModel 사용
+// 1. Prepare sample VideoFile
+// 2. Include simple test video file
+// 3. Use Mock VideoPlayerViewModel
 //
-// 예시:
+// Example:
 // ```swift
 // struct VideoPlayerView_Previews: PreviewProvider {
 //     static var previews: some View {

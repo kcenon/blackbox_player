@@ -1,21 +1,21 @@
 /// @file GPSInfoHUD.swift
-/// @brief GPS 정보를 상단 바에 표시하는 HUD 컴포넌트
+/// @brief HUD component displaying GPS information in the top bar
 /// @author BlackboxPlayer Development Team
 /// @details
-/// 속도, 좌표, 고도, 위성 개수 등 GPS 정보를 컴팩트하게 표시합니다.
+/// Displays GPS information such as speed, coordinates, altitude, and satellite count in a compact format.
 
 import SwiftUI
 
-/// GPS 정보 HUD (Heads-Up Display)
+/// GPS Information HUD (Heads-Up Display)
 ///
-/// ## 표시 정보
-/// - 속도 (km/h)
-/// - GPS 좌표 (위도, 경도)
-/// - 고도 (m)
-/// - 위성 개수
-/// - 방향 (°)
+/// ## Display Information
+/// - Speed (km/h)
+/// - GPS Coordinates (latitude, longitude)
+/// - Altitude (m)
+/// - Satellite Count
+/// - Heading (°)
 ///
-/// ## 사용 예
+/// ## Usage Example
 /// ```swift
 /// GPSInfoHUD(
 ///     gpsService: gpsService,
@@ -25,18 +25,18 @@ import SwiftUI
 struct GPSInfoHUD: View {
     // MARK: - Properties
 
-    /// GPS 서비스
+    /// GPS Service
     @ObservedObject var gpsService: GPSService
 
-    /// 현재 재생 시간
+    /// Current playback time
     let currentTime: TimeInterval
 
-    /// 디버그 모드 (상세 정보 표시)
+    /// Debug mode (show detailed information)
     @State private var showDebugInfo = false
 
     // MARK: - Computed Properties
 
-    /// 현재 GPS 포인트
+    /// Current GPS point
     private var currentGPSPoint: GPSPoint? {
         return gpsService.getCurrentLocation(at: currentTime)
     }
@@ -45,7 +45,7 @@ struct GPSInfoHUD: View {
 
     var body: some View {
         HStack(spacing: 16) {
-            /// GPS 데이터 상태 인디케이터
+            /// GPS data status indicator
             HStack(spacing: 6) {
                 Image(systemName: gpsService.hasData ? "location.fill" : "location.slash.fill")
                     .font(.system(size: 14))
@@ -61,7 +61,7 @@ struct GPSInfoHUD: View {
                     .frame(height: 20)
                     .background(Color.white.opacity(0.3))
 
-                /// 속도 표시
+                /// Speed display
                 if let speed = gpsPoint.speed {
                     HStack(spacing: 4) {
                         Image(systemName: "speedometer")
@@ -74,7 +74,7 @@ struct GPSInfoHUD: View {
                     }
                 }
 
-                /// GPS 좌표
+                /// GPS coordinates
                 HStack(spacing: 4) {
                     Image(systemName: "globe.asia.australia.fill")
                         .font(.system(size: 14))
@@ -85,7 +85,7 @@ struct GPSInfoHUD: View {
                         .foregroundColor(.white.opacity(0.9))
                 }
 
-                /// 고도 (있을 경우)
+                /// Altitude (if available)
                 if let altitude = gpsPoint.altitude {
                     HStack(spacing: 4) {
                         Image(systemName: "arrow.up.arrow.down")
@@ -98,7 +98,7 @@ struct GPSInfoHUD: View {
                     }
                 }
 
-                /// 위성 개수 (있을 경우)
+                /// Satellite count (if available)
                 if let satelliteCount = gpsPoint.satelliteCount {
                     HStack(spacing: 4) {
                         Image(systemName: "antenna.radiowaves.left.and.right")
@@ -111,13 +111,13 @@ struct GPSInfoHUD: View {
                     }
                 }
             } else if gpsService.hasData {
-                /// GPS 데이터는 있지만 현재 시간에 데이터 없음
+                /// GPS data exists but no data at current time
                 Text("Searching...")
                     .font(.system(size: 12))
                     .foregroundColor(.white.opacity(0.6))
             }
 
-            /// 디버그 정보 토글 버튼
+            /// Debug info toggle button
             if gpsService.hasData {
                 Button(action: { showDebugInfo.toggle() }) {
                     Image(systemName: showDebugInfo ? "info.circle.fill" : "info.circle")
@@ -132,7 +132,7 @@ struct GPSInfoHUD: View {
         .padding(.vertical, 6)
         .background(Color.black.opacity(0.6))
         .cornerRadius(8)
-        /// 디버그 정보 팝오버
+        /// Debug info popover
         .popover(isPresented: $showDebugInfo, arrowEdge: .bottom) {
             debugInfoView
                 .padding()
@@ -142,7 +142,7 @@ struct GPSInfoHUD: View {
 
     // MARK: - Helper Views
 
-    /// 디버그 정보 뷰
+    /// Debug info view
     private var debugInfoView: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("GPS Debug Info")
@@ -150,7 +150,7 @@ struct GPSInfoHUD: View {
 
             Divider()
 
-            /// 전체 데이터 통계
+            /// Overall data statistics
             debugRow(label: "Total Points", value: "\(gpsService.pointCount)")
             debugRow(label: "Has Data", value: gpsService.hasData ? "Yes" : "No")
 
@@ -166,7 +166,7 @@ struct GPSInfoHUD: View {
 
             Divider()
 
-            /// 현재 시간 데이터
+            /// Current time data
             debugRow(label: "Current Time", value: String(format: "%.2f s", currentTime))
 
             if let gpsPoint = currentGPSPoint {
@@ -188,7 +188,7 @@ struct GPSInfoHUD: View {
 
             Divider()
 
-            /// 거리 및 속도 정보
+            /// Distance and speed information
             debugRow(label: "Distance", value: String(format: "%.2f km", gpsService.distanceTraveled(at: currentTime) / 1000))
 
             if let avgSpeed = gpsService.averageSpeed(at: currentTime) {
@@ -197,7 +197,7 @@ struct GPSInfoHUD: View {
         }
     }
 
-    /// 디버그 정보 행
+    /// Debug info row
     private func debugRow(label: String, value: String) -> some View {
         HStack {
             Text(label)
@@ -213,7 +213,7 @@ struct GPSInfoHUD: View {
 
     // MARK: - Helper Methods
 
-    /// 좌표 문자열 생성
+    /// Generate coordinate string
     private func coordinateString(_ point: GPSPoint) -> String {
         let lat = point.latitude
         let lon = point.longitude
@@ -224,7 +224,7 @@ struct GPSInfoHUD: View {
         return String(format: "%.4f°%@ %.4f°%@", abs(lat), latDir, abs(lon), lonDir)
     }
 
-    /// 위성 개수에 따른 색상
+    /// Color based on satellite count
     private func satelliteColor(count: Int) -> Color {
         switch count {
         case 0...3:
@@ -247,7 +247,7 @@ struct GPSInfoHUD_Previews: PreviewProvider {
             Color.black
 
             VStack(spacing: 20) {
-                /// GPS 데이터 있는 경우
+                /// With GPS data
                 GPSInfoHUD(
                     gpsService: {
                         let service = GPSService()
@@ -257,7 +257,7 @@ struct GPSInfoHUD_Previews: PreviewProvider {
                     currentTime: 10.0
                 )
 
-                /// GPS 데이터 없는 경우
+                /// Without GPS data
                 GPSInfoHUD(
                     gpsService: GPSService(),
                     currentTime: 0.0

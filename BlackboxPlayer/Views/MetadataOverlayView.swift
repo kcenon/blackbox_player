@@ -1,19 +1,19 @@
 /// @file MetadataOverlayView.swift
-/// @brief 비디오 위에 실시간 메타데이터를 오버레이로 표시하는 View
+/// @brief View that displays real-time metadata overlay on video
 /// @author BlackboxPlayer Development Team
 /// @details
-/// 비디오 위에 실시간 메타데이터(GPS, 속도, G-force)를 오버레이로 표시하는 View입니다.
-/// 왼쪽 패널에 속도 게이지와 GPS 좌표, 오른쪽 패널에 타임스탬프와 G-Force 정보를 표시합니다.
+/// View that displays real-time metadata (GPS, speed, G-force) as an overlay on video.
+/// Left panel shows speed gauge and GPS coordinates, right panel shows timestamp and G-Force information.
 
 import SwiftUI
 
 /// @struct MetadataOverlayView
-/// @brief 비디오 위에 실시간 메타데이터를 오버레이로 표시하는 View
+/// @brief View that displays real-time metadata overlay on video
 ///
 /// @details
-/// 비디오 위에 실시간 메타데이터를 오버레이로 표시하는 View입니다.
+/// View that displays real-time metadata overlay on video.
 ///
-/// ## 화면 구조
+/// ## Screen Structure
 /// ```
 /// ┌─────────────────────────────────────────────────┐
 /// │  ┌─────────┐                    ┌─────────────┐ │
@@ -28,152 +28,152 @@ import SwiftUI
 /// │  │ Heading │                    │             │ │
 /// │  └─────────┘                    └─────────────┘ │
 /// │                                                  │
-/// │  [비디오 화면]                                   │
+/// │  [Video Screen]                                  │
 /// │                                                  │
 /// └─────────────────────────────────────────────────┘
 /// ```
 ///
-/// ## 주요 기능
-/// - **왼쪽 패널**: 속도 게이지, GPS 좌표, 고도, 방향
-/// - **오른쪽 패널**: 타임스탬프, G-Force, 이벤트 타입 배지
-/// - **반투명 배경**: `.opacity(0.6)`로 비디오가 비침
-/// - **실시간 업데이트**: currentTime에 따라 메타데이터 자동 업데이트
+/// ## Key Features
+/// - **Left Panel**: Speed gauge, GPS coordinates, altitude, heading
+/// - **Right Panel**: Timestamp, G-Force, event type badge
+/// - **Semi-transparent Background**: Video shows through with `.opacity(0.6)`
+/// - **Real-time Updates**: Metadata automatically updates based on currentTime
 ///
-/// ## SwiftUI 핵심 개념
+/// ## Core SwiftUI Concepts
 ///
-/// ### 1. Optional Binding으로 조건부 렌더링
+/// ### 1. Conditional Rendering with Optional Binding
 /// ```swift
 /// if let gpsPoint = currentGPSPoint, let speed = gpsPoint.speed {
 ///     speedGauge(speed: speed)
 /// }
 /// ```
 ///
-/// **Optional Binding이란?**
-/// - Optional 값을 안전하게 unwrap하는 패턴
-/// - 값이 있으면 (non-nil) 코드 블록 실행
-/// - 값이 없으면 (nil) 코드 블록 건너뜀
+/// **What is Optional Binding?**
+/// - Pattern for safely unwrapping Optional values
+/// - If value exists (non-nil), execute code block
+/// - If value is nil, skip code block
 ///
-/// **왜 필요한가?**
-/// - GPS 데이터가 없을 수 있음 (터널, 실내 등)
-/// - 속도 정보가 없을 수 있음 (정지 중, GPS 불량)
-/// - nil 체크 없이 사용하면 크래시 발생
+/// **Why is it needed?**
+/// - GPS data may not be available (tunnels, indoors, etc.)
+/// - Speed information may be missing (stopped, poor GPS signal)
+/// - Using without nil check causes crashes
 ///
-/// **다중 Optional Binding:**
+/// **Multiple Optional Binding:**
 /// ```swift
-/// // 두 조건 모두 만족해야 실행
-/// if let gpsPoint = currentGPSPoint,  // 1. GPS 데이터 있음
-///    let speed = gpsPoint.speed {     // 2. 속도 데이터 있음
+/// // Executes only when both conditions are satisfied
+/// if let gpsPoint = currentGPSPoint,  // 1. GPS data exists
+///    let speed = gpsPoint.speed {     // 2. Speed data exists
 ///     speedGauge(speed: speed)
 /// }
 /// ```
 ///
-/// ### 2. 반투명 오버레이 배경
+/// ### 2. Semi-transparent Overlay Background
 /// ```swift
 /// .background(Color.black.opacity(0.6))
 /// ```
 ///
-/// **opacity(0.6)의 효과:**
-/// - 0.0: 완전 투명 (보이지 않음)
-/// - 0.6: 60% 불투명 (비디오가 40% 비침)
-/// - 1.0: 완전 불투명 (비디오 완전히 가림)
+/// **Effect of opacity(0.6):**
+/// - 0.0: Fully transparent (invisible)
+/// - 0.6: 60% opaque (video shows through at 40%)
+/// - 1.0: Fully opaque (completely covers video)
 ///
-/// **왜 반투명 배경을 사용하나?**
-/// - 텍스트 가독성 확보 (흰 텍스트가 잘 보임)
-/// - 비디오 내용도 희미하게 볼 수 있음
-/// - 게임 HUD, 자막 등에서 많이 사용하는 패턴
+/// **Why use semi-transparent background?**
+/// - Ensures text readability (white text is clearly visible)
+/// - Video content remains faintly visible
+/// - Common pattern used in game HUDs, subtitles, etc.
 ///
 /// ### 3. String Formatting
 /// ```swift
 /// String(format: "%.0f", speed)    // 85
 /// String(format: "%.2f", value)    // 2.35
-/// String(format: "%+.2f", value)   // +2.35 또는 -2.35
+/// String(format: "%+.2f", value)   // +2.35 or -2.35
 /// ```
 ///
-/// **포맷 지정자:**
-/// - `%`: 포맷 시작
-/// - `.0f`: 소수점 이하 0자리 (정수로 표시)
-/// - `.2f`: 소수점 이하 2자리
-/// - `+`: 부호 항상 표시 (+/-)
-/// - `f`: float/double 타입
+/// **Format Specifiers:**
+/// - `%`: Format start
+/// - `.0f`: 0 decimal places (display as integer)
+/// - `.2f`: 2 decimal places
+/// - `+`: Always show sign (+/-)
+/// - `f`: float/double type
 ///
-/// **실제 예시:**
+/// **Real Examples:**
 /// ```
 /// speed = 85.7
-/// String(format: "%.0f", speed) → "85" (반올림)
+/// String(format: "%.0f", speed) → "85" (rounded)
 ///
 /// value = 2.3456
-/// String(format: "%.2f", value) → "2.35" (반올림)
+/// String(format: "%.2f", value) → "2.35" (rounded)
 ///
 /// value = 1.5
-/// String(format: "%+.2f", value) → "+1.50" (부호 포함)
+/// String(format: "%+.2f", value) → "+1.50" (with sign)
 ///
 /// value = -0.8
-/// String(format: "%+.2f", value) → "-0.80" (음수 부호)
+/// String(format: "%+.2f", value) → "-0.80" (negative sign)
 /// ```
 ///
-/// ### 4. Text Style로 날짜/시간 포맷팅
+/// ### 4. Date/Time Formatting with Text Style
 /// ```swift
 /// Text(date, style: .time)  // 14:23:45
 /// Text(date, style: .date)  // 2024-01-15
 /// ```
 ///
-/// **Text(date, style:)의 장점:**
-/// - 자동으로 현재 로케일에 맞게 포맷팅
-/// - DateFormatter 없이 간단하게 사용
-/// - 시스템 설정(12/24시간)에 자동 대응
+/// **Advantages of Text(date, style:):**
+/// - Automatically formats according to current locale
+/// - Simple usage without DateFormatter
+/// - Automatically adapts to system settings (12/24 hour)
 ///
-/// **사용 가능한 스타일:**
+/// **Available Styles:**
 /// ```swift
-/// .time     → 14:23:45 (시간만)
-/// .date     → 2024-01-15 (날짜만)
-/// .timer    → 00:05:23 (타이머 형식)
-/// .relative → 3 minutes ago (상대 시간)
+/// .time     → 14:23:45 (time only)
+/// .date     → 2024-01-15 (date only)
+/// .timer    → 00:05:23 (timer format)
+/// .relative → 3 minutes ago (relative time)
 /// ```
 ///
-/// ### 5. Computed Properties로 현재 메타데이터 가져오기
+/// ### 5. Getting Current Metadata with Computed Properties
 /// ```swift
 /// private var currentGPSPoint: GPSPoint? {
 ///     return videoFile.metadata.gpsPoint(at: currentTime)
 /// }
 /// ```
 ///
-/// **Computed Property란?**
-/// - 저장하지 않고 계산해서 반환하는 속성
-/// - currentTime이 변경되면 자동으로 재계산됨
-/// - View가 다시 그려질 때마다 호출됨
+/// **What is a Computed Property?**
+/// - Property that calculates and returns a value without storing it
+/// - Automatically recalculated when currentTime changes
+/// - Called every time the View is redrawn
 ///
-/// **왜 사용하나?**
-/// - 중복 코드 제거 (여러 곳에서 같은 계산 반복 방지)
-/// - 가독성 향상 (의미 있는 이름으로 추상화)
-/// - 자동 업데이트 (currentTime 변경 시 자동 반영)
+/// **Why use it?**
+/// - Eliminates duplicate code (prevents repeating same calculation)
+/// - Improves readability (abstraction with meaningful names)
+/// - Automatic updates (automatically reflects currentTime changes)
 ///
 /// ### 6. VStack alignment
 /// ```swift
-/// VStack(alignment: .leading, spacing: 12) { ... }  // 왼쪽 정렬
-/// VStack(alignment: .trailing, spacing: 12) { ... } // 오른쪽 정렬
+/// VStack(alignment: .leading, spacing: 12) { ... }  // Left-aligned
+/// VStack(alignment: .trailing, spacing: 12) { ... } // Right-aligned
 /// ```
 ///
-/// **alignment 옵션:**
-/// - `.leading`: 왼쪽 정렬 (시작점)
-/// - `.center`: 중앙 정렬 (기본값)
-/// - `.trailing`: 오른쪽 정렬 (끝점)
+/// **alignment Options:**
+/// - `.leading`: Left-aligned (start)
+/// - `.center`: Center-aligned (default)
+/// - `.trailing`: Right-aligned (end)
 ///
-/// **왜 다른 alignment를 사용하나?**
+/// **Why use different alignments?**
 /// ```
-/// 왼쪽 패널 (.leading):
+/// Left Panel (.leading):
 /// 85
 /// km/h
 /// GPS
-/// 37.566°  ← 모두 왼쪽 정렬
+/// 37.566°  ← All left-aligned
 ///
-/// 오른쪽 패널 (.trailing):
+/// Right Panel (.trailing):
 ///      14:23:45
 ///    2024-01-15
 ///       G-Force
-///          2.3G  ← 모두 오른쪽 정렬
+///          2.3G  ← All right-aligned
 /// ```
 ///
-/// ### 7. 동적 색상 로직
+/// ### 7. Dynamic Color Logic
 /// ```swift
 /// private func gforceColor(magnitude: Double) -> Color {
 ///     if magnitude > 4.0 { return .red }
@@ -183,22 +183,22 @@ import SwiftUI
 /// }
 /// ```
 ///
-/// **G-Force 임계값:**
+/// **G-Force Thresholds:**
 /// ```
-/// 0.0 ~ 1.5G  → 녹색 (정상)
-/// 1.5 ~ 2.5G  → 노란색 (경고)
-/// 2.5 ~ 4.0G  → 주황색 (주의)
-/// 4.0G 이상   → 빨간색 (위험)
+/// 0.0 ~ 1.5G  → Green (normal)
+/// 1.5 ~ 2.5G  → Yellow (warning)
+/// 2.5 ~ 4.0G  → Orange (caution)
+/// 4.0G+       → Red (danger)
 /// ```
 ///
-/// **실제 시나리오:**
-/// - 정상 주행: 0.5 ~ 1.0G (녹색)
-/// - 급가속/급제동: 1.5 ~ 2.5G (노란색)
-/// - 사고: 4.0G 이상 (빨간색)
+/// **Real Scenarios:**
+/// - Normal driving: 0.5 ~ 1.0G (green)
+/// - Rapid acceleration/braking: 1.5 ~ 2.5G (yellow)
+/// - Accident: 4.0G+ (red)
 ///
-/// ## 사용 예제
+/// ## Usage Examples
 ///
-/// ### 예제 1: VideoPlayerView에서 사용
+/// ### Example 1: Using in VideoPlayerView
 /// ```swift
 /// struct VideoPlayerView: View {
 ///     let videoFile: VideoFile
@@ -206,10 +206,10 @@ import SwiftUI
 ///
 ///     var body: some View {
 ///         ZStack {
-///             // 비디오 화면
+///             // Video screen
 ///             VideoFrameView(frame: currentFrame)
 ///
-///             // 메타데이터 오버레이
+///             // Metadata overlay
 ///             MetadataOverlayView(
 ///                 videoFile: videoFile,
 ///                 currentTime: currentTime
@@ -219,7 +219,7 @@ import SwiftUI
 /// }
 /// ```
 ///
-/// ### 예제 2: 토글 가능한 오버레이
+/// ### Example 2: Toggleable Overlay
 /// ```swift
 /// struct VideoPlayerView: View {
 ///     @State private var showMetadata = true
@@ -228,7 +228,7 @@ import SwiftUI
 ///         ZStack {
 ///             VideoFrameView(frame: currentFrame)
 ///
-///             // 메타데이터 표시 토글
+///             // Toggle metadata display
 ///             if showMetadata {
 ///                 MetadataOverlayView(
 ///                     videoFile: videoFile,
@@ -248,15 +248,15 @@ import SwiftUI
 /// }
 /// ```
 ///
-/// ## 실무 응용
+/// ## Practical Applications
 ///
-/// ### 커스터마이징 옵션 추가
+/// ### Adding Customization Options
 /// ```swift
 /// struct MetadataOverlayView: View {
 ///     let videoFile: VideoFile
 ///     let currentTime: TimeInterval
 ///
-///     // 커스터마이징 옵션
+///     // Customization options
 ///     var showSpeed: Bool = true
 ///     var showGPS: Bool = true
 ///     var showGForce: Bool = true
@@ -281,7 +281,7 @@ import SwiftUI
 /// }
 /// ```
 ///
-/// ### 키보드 단축키로 표시/숨김
+/// ### Show/Hide with Keyboard Shortcut
 /// ```swift
 /// .onKeyPress(.m) {
 ///     showMetadata.toggle()
@@ -289,7 +289,7 @@ import SwiftUI
 /// }
 /// ```
 ///
-/// ### 마우스 호버 시만 표시
+/// ### Show Only on Mouse Hover
 /// ```swift
 /// @State private var isHovering = false
 ///
@@ -310,16 +310,16 @@ import SwiftUI
 /// }
 /// ```
 ///
-/// ## 성능 최적화
+/// ## Performance Optimization
 ///
-/// ### 1. Computed Properties 대신 캐싱
+/// ### 1. Caching Instead of Computed Properties
 /// ```swift
-/// // 현재: 매번 계산 (비효율적)
+/// // Current: Calculate every time (inefficient)
 /// private var currentGPSPoint: GPSPoint? {
 ///     return videoFile.metadata.gpsPoint(at: currentTime)
 /// }
 ///
-/// // 개선: onChange로 캐싱
+/// // Improved: Cache with onChange
 /// @State private var cachedGPSPoint: GPSPoint?
 ///
 /// .onChange(of: currentTime) { newTime in
@@ -327,14 +327,14 @@ import SwiftUI
 /// }
 /// ```
 ///
-/// ### 2. Monospaced 폰트로 레이아웃 안정화
+/// ### 2. Stabilize Layout with Monospaced Font
 /// ```swift
 /// Text(value)
 ///     .font(.system(.caption, design: .monospaced))
-///     // ✅ 숫자가 바뀌어도 너비 일정 → UI 안정적
+///     // ✅ Width remains constant even when numbers change → Stable UI
 /// ```
 ///
-/// ## 테스트 데이터
+/// ## Test Data
 ///
 /// ### Mock GPS Point
 /// ```swift
@@ -375,7 +375,7 @@ import SwiftUI
 /// struct MetadataOverlayView_Previews: PreviewProvider {
 ///     static var previews: some View {
 ///         VStack(spacing: 20) {
-///             // 정상 상태
+///             // Normal state
 ///             ZStack {
 ///                 Color.black
 ///                 MetadataOverlayView(
@@ -385,7 +385,7 @@ import SwiftUI
 ///             }
 ///             .previewDisplayName("Normal")
 ///
-///             // 경고 상태
+///             // Warning state
 ///             ZStack {
 ///                 Color.black
 ///                 MetadataOverlayView(
@@ -395,7 +395,7 @@ import SwiftUI
 ///             }
 ///             .previewDisplayName("Warning")
 ///
-///             // 위험 상태
+///             // Danger state
 ///             ZStack {
 ///                 Color.black
 ///                 MetadataOverlayView(
@@ -414,32 +414,32 @@ struct MetadataOverlayView: View {
     // MARK: - Properties
 
     /// @var videoFile
-    /// @brief 비디오 파일
+    /// @brief Video file
     ///
-    /// **포함된 정보:**
-    /// - metadata: GPS, 가속도 센서 등의 메타데이터
-    /// - timestamp: 비디오 녹화 시작 시간
-    /// - eventType: 이벤트 타입 (일반, 주차, 이벤트)
+    /// **Included Information:**
+    /// - metadata: Metadata such as GPS, acceleration sensor
+    /// - timestamp: Video recording start time
+    /// - eventType: Event type (normal, parking, event)
     let videoFile: VideoFile
 
     /// @var currentTime
-    /// @brief 현재 재생 시간
+    /// @brief Current playback time
     ///
-    /// **TimeInterval이란?**
-    /// - Double의 typealias (실제로는 Double 타입)
-    /// - 초 단위로 시간을 표현 (예: 10.5초, 125.3초)
+    /// **What is TimeInterval?**
+    /// - Typealias for Double (actually Double type)
+    /// - Represents time in seconds (e.g., 10.5 seconds, 125.3 seconds)
     ///
-    /// **사용 방식:**
+    /// **Usage:**
     /// ```
-    /// currentTime = 0.0    → 비디오 시작
-    /// currentTime = 10.5   → 10.5초 지점
-    /// currentTime = 125.3  → 2분 5.3초 지점
+    /// currentTime = 0.0    → Video start
+    /// currentTime = 10.5   → 10.5 second mark
+    /// currentTime = 125.3  → 2 minutes 5.3 seconds mark
     /// ```
     ///
-    /// **왜 필요한가?**
-    /// - 현재 시간에 해당하는 GPS 데이터 가져오기
-    /// - 현재 시간에 해당하는 가속도 데이터 가져오기
-    /// - 타임스탬프 계산 (녹화 시작 시간 + currentTime)
+    /// **Why is it needed?**
+    /// - Retrieve GPS data corresponding to current time
+    /// - Retrieve acceleration data corresponding to current time
+    /// - Calculate timestamp (recording start time + currentTime)
     let currentTime: TimeInterval
 
     // MARK: - Body
@@ -447,24 +447,24 @@ struct MetadataOverlayView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .top) {
-                // 왼쪽 패널: 속도와 GPS
+                // Left panel: Speed and GPS
                 //
-                // **표시 내용:**
-                // - 속도 게이지 (큰 숫자)
-                // - GPS 좌표
-                // - 고도
-                // - 방향 (heading)
+                // **Display content:**
+                // - Speed gauge (large number)
+                // - GPS coordinates
+                // - Altitude
+                // - Heading
                 leftPanel
 
                 Spacer()
 
-                // 오른쪽 패널: G-Force와 타임스탬프
+                // Right panel: G-Force and timestamp
                 //
-                // **표시 내용:**
-                // - 타임스탬프 (시간 + 날짜)
-                // - G-Force 크기
-                // - X, Y, Z 축 값
-                // - 이벤트 타입 배지
+                // **Display content:**
+                // - Timestamp (time + date)
+                // - G-Force magnitude
+                // - X, Y, Z axis values
+                // - Event type badge
                 rightPanel
             }
             .padding()
@@ -475,64 +475,64 @@ struct MetadataOverlayView: View {
 
     // MARK: - Left Panel
 
-    /// @brief 왼쪽 패널
+    /// @brief Left panel
     ///
-    /// ## 구조
+    /// ## Structure
     /// ```
     /// ┌─────────┐
-    /// │ 85      │  ← 속도 게이지
+    /// │ 85      │  ← Speed gauge
     /// │ km/h    │
     /// │         │
-    /// │ GPS     │  ← GPS 좌표
+    /// │ GPS     │  ← GPS coordinates
     /// │ 37.566° │
     /// │ 126.98° │
     /// │ 12 sats │
     /// │         │
-    /// │ Altitude│  ← 고도
+    /// │ Altitude│  ← Altitude
     /// │ 35 m    │
     /// │         │
-    /// │ Heading │  ← 방향
+    /// │ Heading │  ← Heading
     /// │ 270°    │
     /// └─────────┘
     /// ```
     ///
-    /// ## Optional Binding 패턴
+    /// ## Optional Binding Pattern
     /// ```swift
     /// if let gpsPoint = currentGPSPoint, let speed = gpsPoint.speed {
     ///     speedGauge(speed: speed)
     /// }
     /// ```
     ///
-    /// **왜 이렇게 하나?**
-    /// - GPS 데이터가 없을 수 있음 (currentGPSPoint가 nil)
-    /// - 속도 정보가 없을 수 있음 (gpsPoint.speed가 nil)
-    /// - 두 조건 모두 만족할 때만 speedGauge 표시
+    /// **Why do this?**
+    /// - GPS data may not be available (currentGPSPoint is nil)
+    /// - Speed information may be missing (gpsPoint.speed is nil)
+    /// - Display speedGauge only when both conditions are satisfied
     ///
-    /// **실제 시나리오:**
+    /// **Real Scenarios:**
     /// ```
-    /// 터널 진입: currentGPSPoint = nil → 속도 게이지 숨김
-    /// GPS 수신 중: currentGPSPoint ≠ nil, speed = 85.0 → 속도 게이지 표시
-    /// 정지 상태: speed = 0.0 → "0 km/h" 표시
+    /// Entering tunnel: currentGPSPoint = nil → Hide speed gauge
+    /// Receiving GPS: currentGPSPoint ≠ nil, speed = 85.0 → Show speed gauge
+    /// Stopped: speed = 0.0 → Display "0 km/h"
     /// ```
     private var leftPanel: some View {
         VStack(alignment: .leading, spacing: 12) {
-            // 속도 게이지
+            // Speed gauge
             //
-            // GPS 데이터와 속도 정보가 모두 있을 때만 표시
+            // Display only when both GPS data and speed information are available
             if let gpsPoint = currentGPSPoint, let speed = gpsPoint.speed {
                 speedGauge(speed: speed)
             }
 
-            // GPS 좌표
+            // GPS coordinates
             //
-            // GPS 데이터가 있을 때만 표시
+            // Display only when GPS data is available
             if let gpsPoint = currentGPSPoint {
                 gpsCoordinates(gpsPoint: gpsPoint)
             }
 
-            // 고도
+            // Altitude
             //
-            // GPS 데이터와 고도 정보가 모두 있을 때만 표시
+            // Display only when both GPS data and altitude information are available
             if let gpsPoint = currentGPSPoint, let altitude = gpsPoint.altitude {
                 metadataRow(
                     icon: "arrow.up.arrow.down",
@@ -541,9 +541,9 @@ struct MetadataOverlayView: View {
                 )
             }
 
-            // 방향 (Heading) - 나침반
+            // Heading - Compass
             //
-            // GPS 데이터와 방향 정보가 모두 있을 때만 표시
+            // Display only when both GPS data and heading information are available
             if let gpsPoint = currentGPSPoint, let heading = gpsPoint.heading {
                 VStack(spacing: 8) {
                     HStack(spacing: 4) {
@@ -555,7 +555,7 @@ struct MetadataOverlayView: View {
                     }
                     .foregroundColor(.white.opacity(0.8))
 
-                    // 나침반 뷰
+                    // Compass view
                     CompassView(heading: heading)
                         .frame(width: 70, height: 70)
                 }
@@ -563,29 +563,29 @@ struct MetadataOverlayView: View {
         }
         .padding()
         .background(Color.black.opacity(0.6))
-        // ✅ opacity(0.6): 60% 불투명 → 비디오가 40% 비침
+        // ✅ opacity(0.6): 60% opaque → Video shows through at 40%
         .cornerRadius(8)
     }
 
     // MARK: - Right Panel
 
-    /// @brief 오른쪽 패널
+    /// @brief Right panel
     ///
-    /// ## 구조
+    /// ## Structure
     /// ```
     /// ┌─────────────┐
-    /// │   14:23:45  │  ← 타임스탬프 (시간)
-    /// │ 2024-01-15  │  ← 타임스탬프 (날짜)
+    /// │   14:23:45  │  ← Timestamp (time)
+    /// │ 2024-01-15  │  ← Timestamp (date)
     /// │             │
-    /// │   G-Force   │  ← G-Force 크기
+    /// │   G-Force   │  ← G-Force magnitude
     /// │     2.3G    │
     /// │   X: +1.2   │
     /// │   Y: +0.8   │
     /// │   Z: -0.3   │
     /// │             │
-    /// │ ⚠️ IMPACT   │  ← 충격 경고 (4G 이상일 때)
+    /// │ ⚠️ IMPACT   │  ← Impact warning (when 4G or more)
     /// │             │
-    /// │   EVENT     │  ← 이벤트 타입 배지
+    /// │   EVENT     │  ← Event type badge
     /// └─────────────┘
     /// ```
     ///
@@ -594,27 +594,27 @@ struct MetadataOverlayView: View {
     /// VStack(alignment: .trailing, spacing: 12) { ... }
     /// ```
     ///
-    /// **왜 .trailing을 사용하나?**
-    /// - 오른쪽 정렬로 깔끔하게 정리됨
-    /// - 숫자가 오른쪽으로 정렬되어 읽기 쉬움
-    /// - 왼쪽 패널(.leading)과 대칭을 이룸
+    /// **Why use .trailing?**
+    /// - Cleanly organized with right alignment
+    /// - Numbers aligned to the right for easy reading
+    /// - Symmetrical with left panel (.leading)
     private var rightPanel: some View {
         VStack(alignment: .trailing, spacing: 12) {
-            // 타임스탬프
+            // Timestamp
             //
-            // 비디오 시작 시간 + currentTime
+            // Video start time + currentTime
             timestampDisplay
 
             // G-Force
             //
-            // 가속도 데이터가 있을 때만 표시
+            // Display only when acceleration data is available
             if let accelData = currentAccelerationData {
                 gforceDisplay(accelData: accelData)
             }
 
-            // 이벤트 타입 배지
+            // Event type badge
             //
-            // 일반/주차/이벤트 구분
+            // Distinguish between normal/parking/event
             EventBadge(eventType: videoFile.eventType)
         }
         .padding()
@@ -624,39 +624,39 @@ struct MetadataOverlayView: View {
 
     // MARK: - Speed Gauge
 
-    /// @brief 속도 게이지
+    /// @brief Speed gauge
     ///
-    /// ## 구조
+    /// ## Structure
     /// ```
     /// ┌─────────┐
-    /// │   85    │  ← 큰 숫자 (48pt, bold)
-    /// │  km/h   │  ← 단위 (작은 글씨, 반투명)
+    /// │   85    │  ← Large number (48pt, bold)
+    /// │  km/h   │  ← Unit (small text, semi-transparent)
     /// └─────────┘
     /// ```
     ///
-    /// ## .rounded 디자인
+    /// ## .rounded Design
     /// ```swift
     /// .font(.system(size: 48, weight: .bold, design: .rounded))
     /// ```
     ///
-    /// **design 옵션:**
-    /// - `.default`: 일반 시스템 폰트
-    /// - `.serif`: 세리프 폰트 (장식 있음)
-    /// - `.rounded`: 둥근 폰트 (부드러운 느낌)
-    /// - `.monospaced`: 고정폭 폰트 (숫자 정렬)
+    /// **design Options:**
+    /// - `.default`: Normal system font
+    /// - `.serif`: Serif font (with decorations)
+    /// - `.rounded`: Rounded font (soft feel)
+    /// - `.monospaced`: Fixed-width font (number alignment)
     ///
-    /// **왜 .rounded를 사용하나?**
-    /// - 숫자가 부드럽고 읽기 쉬움
-    /// - 현대적이고 친근한 느낌
-    /// - 대시보드, 게이지에 적합
+    /// **Why use .rounded?**
+    /// - Numbers are soft and easy to read
+    /// - Modern and friendly feel
+    /// - Suitable for dashboards and gauges
     ///
-    /// ## 시각적 게이지 추가
-    /// - SpeedometerGaugeView: 반원형 속도계
-    /// - 속도 범위별 색상 코딩
-    /// - 부드러운 애니메이션
+    /// ## Visual Gauge Addition
+    /// - SpeedometerGaugeView: Semi-circular speedometer
+    /// - Color coding by speed range
+    /// - Smooth animation
     private func speedGauge(speed: Double) -> some View {
         VStack(spacing: 8) {
-            // 시각적 속도계 게이지
+            // Visual speedometer gauge
             SpeedometerGaugeView(speed: speed)
                 .frame(width: 140, height: 90)
 
@@ -667,15 +667,15 @@ struct MetadataOverlayView: View {
 
     // MARK: - GPS Coordinates
 
-    /// @brief GPS 좌표 표시
+    /// @brief GPS coordinates display
     ///
-    /// ## 구조
+    /// ## Structure
     /// ```
     /// ┌─────────────┐
-    /// │ 📍 GPS      │  ← 아이콘 + 라벨
-    /// │ 37.5665°    │  ← 위도
-    /// │ 126.9780°   │  ← 경도
-    /// │ 📡 12 sats  │  ← 위성 개수
+    /// │ 📍 GPS      │  ← Icon + label
+    /// │ 37.5665°    │  ← Latitude
+    /// │ 126.9780°   │  ← Longitude
+    /// │ 📡 12 sats  │  ← Satellite count
     /// └─────────────┘
     /// ```
     ///
@@ -685,16 +685,16 @@ struct MetadataOverlayView: View {
     ///     .font(.system(.caption, design: .monospaced))
     /// ```
     ///
-    /// **decimalString이란?**
-    /// - GPSPoint에서 제공하는 Computed Property
-    /// - 위도/경도를 소수점 형식으로 반환
-    /// - 예: "37.5665°, 126.9780°"
+    /// **What is decimalString?**
+    /// - Computed Property provided by GPSPoint
+    /// - Returns latitude/longitude in decimal format
+    /// - Example: "37.5665°, 126.9780°"
     ///
-    /// **왜 monospaced 폰트를 사용하나?**
-    /// - 숫자의 너비가 일정 → 정렬이 깔끔함
-    /// - 좌표 값이 바뀌어도 레이아웃 안정적
+    /// **Why use monospaced font?**
+    /// - Numbers have consistent width → Clean alignment
+    /// - Layout remains stable even when coordinate values change
     ///
-    /// ## 위성 개수 표시
+    /// ## Satellite Count Display
     /// ```swift
     /// if let satelliteCount = gpsPoint.satelliteCount {
     ///     HStack(spacing: 4) {
@@ -705,11 +705,11 @@ struct MetadataOverlayView: View {
     /// }
     /// ```
     ///
-    /// **위성 개수의 의미:**
-    /// - 3개 이하: GPS 불량 (정확도 낮음)
-    /// - 4~8개: 보통 (일반 주행 가능)
-    /// - 9개 이상: 양호 (높은 정확도)
-    /// - 12개 이상: 매우 양호 (최고 정확도)
+    /// **Meaning of Satellite Count:**
+    /// - 3 or less: Poor GPS (low accuracy)
+    /// - 4~8: Fair (normal driving possible)
+    /// - 9+: Good (high accuracy)
+    /// - 12+: Excellent (highest accuracy)
     private func gpsCoordinates(gpsPoint: GPSPoint) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 4) {
@@ -725,9 +725,9 @@ struct MetadataOverlayView: View {
                 .font(.system(.caption, design: .monospaced))
                 .foregroundColor(.white)
 
-            // 위성 개수
+            // Satellite count
             //
-            // 위성 개수가 있을 때만 표시
+            // Display only when satellite count is available
             if let satelliteCount = gpsPoint.satelliteCount {
                 HStack(spacing: 4) {
                     Image(systemName: "antenna.radiowaves.left.and.right")
@@ -742,60 +742,60 @@ struct MetadataOverlayView: View {
 
     // MARK: - G-Force Display
 
-    /// @brief G-Force 표시
+    /// @brief G-Force display
     ///
-    /// ## 구조
+    /// ## Structure
     /// ```
     /// ┌─────────────┐
-    /// │  G-Force 📈 │  ← 라벨 + 아이콘
-    /// │    2.3G     │  ← 크기 (동적 색상)
-    /// │   X: +1.2   │  ← X축 값
-    /// │   Y: +0.8   │  ← Y축 값
-    /// │   Z: -0.3   │  ← Z축 값
+    /// │  G-Force 📈 │  ← Label + icon
+    /// │    2.3G     │  ← Magnitude (dynamic color)
+    /// │   X: +1.2   │  ← X-axis value
+    /// │   Y: +0.8   │  ← Y-axis value
+    /// │   Z: -0.3   │  ← Z-axis value
     /// │             │
-    /// │ ⚠️ IMPACT   │  ← 충격 경고 (4G 이상)
+    /// │ ⚠️ IMPACT   │  ← Impact warning (4G or more)
     /// └─────────────┘
     /// ```
     ///
-    /// ## 동적 색상
+    /// ## Dynamic Color
     /// ```swift
     /// .foregroundColor(gforceColor(magnitude: accelData.magnitude))
     /// ```
     ///
-    /// **색상 임계값:**
+    /// **Color Thresholds:**
     /// ```
-    /// 0.0 ~ 1.5G  → 녹색 (정상)
-    /// 1.5 ~ 2.5G  → 노란색 (경고)
-    /// 2.5 ~ 4.0G  → 주황색 (주의)
-    /// 4.0G 이상   → 빨간색 (위험)
+    /// 0.0 ~ 1.5G  → Green (normal)
+    /// 1.5 ~ 2.5G  → Yellow (warning)
+    /// 2.5 ~ 4.0G  → Orange (caution)
+    /// 4.0G+       → Red (danger)
     /// ```
     ///
-    /// ## X, Y, Z 축 값
+    /// ## X, Y, Z Axis Values
     /// ```swift
     /// axisValue(label: "X", value: accelData.x)
     /// axisValue(label: "Y", value: accelData.y)
     /// axisValue(label: "Z", value: accelData.z)
     /// ```
     ///
-    /// **각 축의 의미:**
-    /// - **X축**: 좌우 방향 (차선 변경, 커브)
-    /// - **Y축**: 앞뒤 방향 (가속, 제동)
-    /// - **Z축**: 상하 방향 (과속방지턱, 점프)
+    /// **Meaning of Each Axis:**
+    /// - **X-axis**: Left-right direction (lane change, curves)
+    /// - **Y-axis**: Front-back direction (acceleration, braking)
+    /// - **Z-axis**: Up-down direction (speed bumps, jumps)
     ///
-    /// **실제 예시:**
+    /// **Real Examples:**
     /// ```
-    /// 급제동:
-    /// X: +0.3 (약간 흔들림)
-    /// Y: -3.2 (뒤로 강하게 밀림)
-    /// Z: +0.5 (약간 들림)
+    /// Hard braking:
+    /// X: +0.3 (slight shake)
+    /// Y: -3.2 (strongly pushed backward)
+    /// Z: +0.5 (slightly lifted)
     ///
-    /// 좌회전:
-    /// X: +2.1 (오른쪽으로 밀림)
-    /// Y: +0.8 (속도 감소)
-    /// Z: -0.2 (약간 기울어짐)
+    /// Left turn:
+    /// X: +2.1 (pushed to the right)
+    /// Y: +0.8 (speed decrease)
+    /// Z: -0.2 (slightly tilted)
     /// ```
     ///
-    /// ## 충격 경고
+    /// ## Impact Warning
     /// ```swift
     /// if accelData.isImpact {
     ///     HStack {
@@ -807,15 +807,15 @@ struct MetadataOverlayView: View {
     /// }
     /// ```
     ///
-    /// **isImpact란?**
-    /// - AccelerationData의 Computed Property
-    /// - magnitude가 임계값(4.0G) 이상이면 true
-    /// - 사고 순간을 자동으로 감지
+    /// **What is isImpact?**
+    /// - Computed Property of AccelerationData
+    /// - Returns true if magnitude exceeds threshold (4.0G)
+    /// - Automatically detects accident moment
     ///
     /// **impactSeverity:**
-    /// - `.minor`: 경미한 충격 (4~6G)
-    /// - `.moderate`: 중간 충격 (6~8G)
-    /// - `.severe`: 심각한 충격 (8G 이상)
+    /// - `.minor`: Minor impact (4~6G)
+    /// - `.moderate`: Moderate impact (6~8G)
+    /// - `.severe`: Severe impact (8G or more)
     private func gforceDisplay(accelData: AccelerationData) -> some View {
         VStack(alignment: .trailing, spacing: 4) {
             HStack(spacing: 4) {
@@ -827,15 +827,15 @@ struct MetadataOverlayView: View {
             }
             .foregroundColor(.white.opacity(0.8))
 
-            // 크기 (Magnitude)
+            // Magnitude
             //
-            // accelData.magnitudeString: "2.3G" 형식
-            // 색상은 크기에 따라 동적으로 변경
+            // accelData.magnitudeString: "2.3G" format
+            // Color changes dynamically based on magnitude
             Text(accelData.magnitudeString)
                 .font(.system(size: 24, weight: .bold, design: .rounded))
                 .foregroundColor(gforceColor(magnitude: accelData.magnitude))
 
-            // X, Y, Z 값
+            // X, Y, Z values
             VStack(alignment: .trailing, spacing: 2) {
                 axisValue(label: "X", value: accelData.x)
                 axisValue(label: "Y", value: accelData.y)
@@ -844,9 +844,9 @@ struct MetadataOverlayView: View {
             .font(.system(.caption2, design: .monospaced))
             .foregroundColor(.white.opacity(0.8))
 
-            // 충격 경고
+            // Impact warning
             //
-            // isImpact = true일 때만 표시 (4G 이상)
+            // Display only when isImpact = true (4G or more)
             if accelData.isImpact {
                 HStack(spacing: 4) {
                     Image(systemName: "exclamationmark.triangle.fill")
@@ -864,14 +864,14 @@ struct MetadataOverlayView: View {
         }
     }
 
-    /// @brief 축 값 표시
+    /// @brief Axis value display
     ///
-    /// ## 구조
+    /// ## Structure
     /// ```
     /// X: +1.23
     /// ^  ^
-    /// │  └─ 값 (부호 포함, 소수점 2자리)
-    /// └──── 라벨
+    /// │  └─ Value (with sign, 2 decimal places)
+    /// └──── Label
     /// ```
     ///
     /// ## String(format: "%+.2f", value)
@@ -879,23 +879,23 @@ struct MetadataOverlayView: View {
     /// Text(String(format: "%+.2f", value))
     /// ```
     ///
-    /// **%+.2f의 의미:**
-    /// - `%`: 포맷 시작
-    /// - `+`: 부호 항상 표시 (+/-)
-    /// - `.2`: 소수점 이하 2자리
-    /// - `f`: float/double 타입
+    /// **Meaning of %+.2f:**
+    /// - `%`: Format start
+    /// - `+`: Always show sign (+/-)
+    /// - `.2`: 2 decimal places
+    /// - `f`: float/double type
     ///
-    /// **실제 예시:**
+    /// **Real Examples:**
     /// ```
     /// value = 1.234   → "+1.23"
     /// value = -0.567  → "-0.57"
     /// value = 0.0     → "+0.00"
     /// ```
     ///
-    /// **왜 부호를 항상 표시하나?**
-    /// - 방향을 명확하게 알 수 있음
-    /// - +: 양의 방향 (오른쪽, 앞, 위)
-    /// - -: 음의 방향 (왼쪽, 뒤, 아래)
+    /// **Why always show sign?**
+    /// - Direction is clearly indicated
+    /// - +: Positive direction (right, forward, up)
+    /// - -: Negative direction (left, backward, down)
     private func axisValue(label: String, value: Double) -> some View {
         HStack(spacing: 4) {
             Text(label + ":")
@@ -905,47 +905,47 @@ struct MetadataOverlayView: View {
         }
     }
 
-    /// @brief G-Force 크기에 따른 색상
+    /// @brief Color based on G-Force magnitude
     ///
-    /// ## 색상 임계값
+    /// ## Color Thresholds
     /// ```
-    /// 0.0 ~ 1.5G  → 녹색 (정상)
-    /// 1.5 ~ 2.5G  → 노란색 (경고)
-    /// 2.5 ~ 4.0G  → 주황색 (주의)
-    /// 4.0G 이상   → 빨간색 (위험)
-    /// ```
-    ///
-    /// ## 실제 시나리오
-    ///
-    /// ### 정상 주행 (0.5 ~ 1.0G) - 녹색
-    /// ```
-    /// - 직선 도로 정속 주행
-    /// - 완만한 커브
-    /// - 부드러운 가속/감속
+    /// 0.0 ~ 1.5G  → Green (normal)
+    /// 1.5 ~ 2.5G  → Yellow (warning)
+    /// 2.5 ~ 4.0G  → Orange (caution)
+    /// 4.0G+       → Red (danger)
     /// ```
     ///
-    /// ### 경고 (1.5 ~ 2.5G) - 노란색
+    /// ## Real Scenarios
+    ///
+    /// ### Normal Driving (0.5 ~ 1.0G) - Green
     /// ```
-    /// - 급가속 (신호 출발)
-    /// - 급제동 (갑작스런 정지)
-    /// - 급격한 차선 변경
+    /// - Constant speed on straight road
+    /// - Gentle curves
+    /// - Smooth acceleration/deceleration
     /// ```
     ///
-    /// ### 주의 (2.5 ~ 4.0G) - 주황색
+    /// ### Warning (1.5 ~ 2.5G) - Yellow
     /// ```
-    /// - 매우 급격한 제동 (돌발 상황)
-    /// - 고속 회전
-    /// - 과속방지턱 고속 통과
-    /// ```
-    ///
-    /// ### 위험 (4.0G 이상) - 빨간색
-    /// ```
-    /// - 충돌 사고
-    /// - 급격한 전복
-    /// - 심각한 충격
+    /// - Rapid acceleration (starting from signal)
+    /// - Hard braking (sudden stop)
+    /// - Sharp lane change
     /// ```
     ///
-    /// ## if-else 연쇄
+    /// ### Caution (2.5 ~ 4.0G) - Orange
+    /// ```
+    /// - Very hard braking (emergency situation)
+    /// - High-speed turn
+    /// - Speed bump at high speed
+    /// ```
+    ///
+    /// ### Danger (4.0G+) - Red
+    /// ```
+    /// - Collision accident
+    /// - Sharp rollover
+    /// - Severe impact
+    /// ```
+    ///
+    /// ## if-else Chain
     /// ```swift
     /// if magnitude > 4.0 { return .red }
     /// else if magnitude > 2.5 { return .orange }
@@ -953,12 +953,12 @@ struct MetadataOverlayView: View {
     /// else { return .green }
     /// ```
     ///
-    /// **왜 4.0부터 확인하나?**
-    /// - 큰 값부터 확인해야 정확함
-    /// - 역순으로 하면 잘못된 결과:
+    /// **Why check from 4.0 first?**
+    /// - Must check from largest value for accuracy
+    /// - Reverse order gives wrong result:
     ///   ```
     ///   magnitude = 5.0
-    ///   if magnitude > 1.5 { return .yellow }  // ❌ 노란색 반환 (잘못됨)
+    ///   if magnitude > 1.5 { return .yellow }  // ❌ Returns yellow (wrong)
     ///   ```
     private func gforceColor(magnitude: Double) -> Color {
         if magnitude > 4.0 {
@@ -974,55 +974,55 @@ struct MetadataOverlayView: View {
 
     // MARK: - Timestamp Display
 
-    /// @brief 타임스탬프 표시
+    /// @brief Timestamp display
     ///
-    /// ## 구조
+    /// ## Structure
     /// ```
     /// ┌─────────────┐
-    /// │  14:23:45   │  ← 시간 (큰 글씨)
-    /// │ 2024-01-15  │  ← 날짜 (작은 글씨)
+    /// │  14:23:45   │  ← Time (large text)
+    /// │ 2024-01-15  │  ← Date (small text)
     /// └─────────────┘
     /// ```
     ///
-    /// ## 시간 계산
+    /// ## Time Calculation
     /// ```swift
     /// videoFile.timestamp.addingTimeInterval(currentTime)
     /// ```
     ///
-    /// **계산 과정:**
+    /// **Calculation Process:**
     /// ```
-    /// videoFile.timestamp: 2024-01-15 14:23:00 (녹화 시작 시간)
-    /// currentTime: 45.0 (45초)
-    /// → 결과: 2024-01-15 14:23:45
+    /// videoFile.timestamp: 2024-01-15 14:23:00 (recording start time)
+    /// currentTime: 45.0 (45 seconds)
+    /// → Result: 2024-01-15 14:23:45
     /// ```
     ///
-    /// **addingTimeInterval이란?**
-    /// - Date 타입의 메서드
-    /// - 현재 날짜/시간에 초 단위로 시간을 더함
-    /// - TimeInterval은 Double의 typealias
+    /// **What is addingTimeInterval?**
+    /// - Method of Date type
+    /// - Adds time in seconds to current date/time
+    /// - TimeInterval is a typealias for Double
     ///
-    /// ## Text(date, style:) 사용법
+    /// ## Text(date, style:) Usage
     /// ```swift
     /// Text(date, style: .time)  // 14:23:45
     /// Text(date, style: .date)  // 2024-01-15
     /// ```
     ///
-    /// **장점:**
-    /// - DateFormatter 없이 간단하게 사용
-    /// - 자동으로 로케일에 맞게 포맷팅
-    /// - 시스템 설정(12/24시간)에 자동 대응
+    /// **Advantages:**
+    /// - Simple usage without DateFormatter
+    /// - Automatically formats according to locale
+    /// - Automatically adapts to system settings (12/24 hour)
     ///
-    /// **다른 스타일:**
+    /// **Other Styles:**
     /// ```swift
     /// .time       → 14:23:45
     /// .date       → 2024-01-15
-    /// .timer      → 00:45:23 (타이머 형식)
+    /// .timer      → 00:45:23 (timer format)
     /// .relative   → 45 seconds ago
     /// ```
     ///
-    /// ## .rounded 디자인
-    /// - 시간 표시에 부드러운 느낌
-    /// - 숫자가 읽기 쉬움
+    /// ## .rounded Design
+    /// - Soft feel for time display
+    /// - Numbers are easy to read
     private var timestampDisplay: some View {
         VStack(alignment: .trailing, spacing: 4) {
             Text(videoFile.timestamp.addingTimeInterval(currentTime), style: .time)
@@ -1038,34 +1038,34 @@ struct MetadataOverlayView: View {
 
     // MARK: - Metadata Row
 
-    /// @brief 메타데이터 행
+    /// @brief Metadata row
     ///
-    /// ## 구조
+    /// ## Structure
     /// ```
     /// ┌──────────────────┐
     /// │ 🧭 Heading   270° │
     /// │ ^  ^         ^    │
-    /// │ │  │         └─ 값
-    /// │ │  └─────────── 라벨
-    /// │ └──────────────── 아이콘
+    /// │ │  │         └─ Value
+    /// │ │  └─────────── Label
+    /// │ └──────────────── Icon
     /// └──────────────────┘
     /// ```
     ///
-    /// ## 사용 예제
+    /// ## Usage Examples
     /// ```swift
     /// metadataRow(
     ///     icon: "arrow.up.arrow.down",
     ///     label: "Altitude",
     ///     value: String(format: "%.0f m", 35.0)
     /// )
-    /// // 결과: "🔼 Altitude    35 m"
+    /// // Result: "🔼 Altitude    35 m"
     ///
     /// metadataRow(
     ///     icon: "location.north.fill",
     ///     label: "Heading",
     ///     value: String(format: "%.0f°", 270.0)
     /// )
-    /// // 결과: "🧭 Heading    270°"
+    /// // Result: "🧭 Heading    270°"
     /// ```
     ///
     /// ## .frame(width: 16)
@@ -1074,36 +1074,36 @@ struct MetadataOverlayView: View {
     ///     .frame(width: 16)
     /// ```
     ///
-    /// **왜 아이콘 너비를 고정하나?**
-    /// - 아이콘마다 너비가 다름
-    /// - 고정하지 않으면 텍스트 위치가 들쭉날쭉
-    /// - 16px로 고정하면 정렬이 깔끔함
+    /// **Why fix icon width?**
+    /// - Each icon has different width
+    /// - Without fixing, text positions are inconsistent
+    /// - Fixing to 16px ensures clean alignment
     ///
-    /// **예시:**
+    /// **Example:**
     /// ```
-    /// 너비 고정 안 함:
+    /// Width not fixed:
     /// 🔼 Altitude    35 m
-    /// 🧭 Heading   270°  ← 텍스트 위치 불일치 ❌
+    /// 🧭 Heading   270°  ← Text position inconsistent ❌
     ///
-    /// 너비 고정:
+    /// Width fixed:
     /// 🔼 Altitude    35 m
-    /// 🧭 Heading    270°  ← 텍스트 위치 일치 ✅
+    /// 🧭 Heading    270°  ← Text position aligned ✅
     /// ```
     ///
-    /// ## Spacer()의 역할
+    /// ## Role of Spacer()
     /// ```swift
     /// HStack {
     ///     Image(...)
     ///     Text(label)
-    ///     Spacer()  // 여기서 공간 확장
+    ///     Spacer()  // Expands space here
     ///     Text(value)
     /// }
     /// ```
     ///
-    /// **Spacer()가 하는 일:**
-    /// - 남은 공간을 모두 차지함
-    /// - 값(value)을 오른쪽 끝으로 밀어냄
-    /// - 라벨과 값 사이에 적절한 간격 형성
+    /// **What Spacer() does:**
+    /// - Takes up all remaining space
+    /// - Pushes value to the right edge
+    /// - Creates proper spacing between label and value
     private func metadataRow(icon: String, label: String, value: String) -> some View {
         HStack(spacing: 8) {
             Image(systemName: icon)
@@ -1125,29 +1125,29 @@ struct MetadataOverlayView: View {
 
     // MARK: - Helper Methods
 
-    /// @brief 현재 시간의 GPS 포인트
+    /// @brief GPS point at current time
     ///
-    /// ## Computed Property란?
+    /// ## What is a Computed Property?
     /// ```swift
     /// private var currentGPSPoint: GPSPoint? {
     ///     return videoFile.metadata.gpsPoint(at: currentTime)
     /// }
     /// ```
     ///
-    /// **특징:**
-    /// - 값을 저장하지 않고 계산해서 반환
-    /// - currentTime이 변경되면 자동으로 재계산됨
-    /// - View가 다시 그려질 때마다 호출됨
+    /// **Characteristics:**
+    /// - Calculates and returns value without storing it
+    /// - Automatically recalculated when currentTime changes
+    /// - Called every time the View is redrawn
     ///
-    /// **왜 함수 대신 Computed Property를 사용하나?**
+    /// **Why use Computed Property instead of function?**
     /// ```swift
-    /// // 함수 방식
+    /// // Function approach
     /// func currentGPSPoint() -> GPSPoint? { ... }
-    /// if let gpsPoint = currentGPSPoint() { ... }  // 괄호 필요
+    /// if let gpsPoint = currentGPSPoint() { ... }  // Parentheses required
     ///
-    /// // Computed Property 방식
+    /// // Computed Property approach
     /// var currentGPSPoint: GPSPoint? { ... }
-    /// if let gpsPoint = currentGPSPoint { ... }  // 괄호 불필요 (더 자연스러움)
+    /// if let gpsPoint = currentGPSPoint { ... }  // No parentheses (more natural)
     /// ```
     ///
     /// ## videoFile.metadata.gpsPoint(at:)
@@ -1155,35 +1155,35 @@ struct MetadataOverlayView: View {
     /// videoFile.metadata.gpsPoint(at: currentTime)
     /// ```
     ///
-    /// **gpsPoint(at:) 메서드:**
-    /// - VideoMetadata의 메서드
-    /// - 주어진 시간(TimeInterval)에 해당하는 GPS 데이터 반환
-    /// - 보간(interpolation)으로 정확한 위치 계산
+    /// **gpsPoint(at:) method:**
+    /// - Method of VideoMetadata
+    /// - Returns GPS data corresponding to given time (TimeInterval)
+    /// - Calculates accurate position using interpolation
     ///
-    /// **작동 방식:**
+    /// **How it works:**
     /// ```
-    /// GPS 데이터:
-    /// [0.0초: (37.5665, 126.9780)]
-    /// [5.0초: (37.5670, 126.9785)]
+    /// GPS data:
+    /// [0.0s: (37.5665, 126.9780)]
+    /// [5.0s: (37.5670, 126.9785)]
     ///
-    /// currentTime = 2.5초 (중간)
-    /// → 보간 계산: (37.5667, 126.9782)
+    /// currentTime = 2.5s (middle)
+    /// → Interpolation: (37.5667, 126.9782)
     /// ```
     ///
-    /// ## Optional 반환 타입
+    /// ## Optional Return Type
     /// ```swift
-    /// var currentGPSPoint: GPSPoint?  // nil일 수 있음
+    /// var currentGPSPoint: GPSPoint?  // Can be nil
     /// ```
     ///
-    /// **nil이 되는 경우:**
-    /// - GPS 데이터가 전혀 없음
-    /// - 해당 시간에 GPS 수신 안 됨 (터널, 실내)
-    /// - 메타데이터 파싱 실패
+    /// **When it becomes nil:**
+    /// - No GPS data at all
+    /// - GPS not received at that time (tunnel, indoors)
+    /// - Metadata parsing failed
     private var currentGPSPoint: GPSPoint? {
         return videoFile.metadata.gpsPoint(at: currentTime)
     }
 
-    /// @brief 현재 시간의 가속도 데이터
+    /// @brief Acceleration data at current time
     ///
     /// ## Computed Property
     /// ```swift
@@ -1192,44 +1192,44 @@ struct MetadataOverlayView: View {
     /// }
     /// ```
     ///
-    /// **특징:**
-    /// - currentTime이 변경되면 자동으로 재계산됨
-    /// - View 업데이트 시마다 호출됨
-    /// - 중복 코드 제거 (여러 곳에서 사용)
+    /// **Characteristics:**
+    /// - Automatically recalculated when currentTime changes
+    /// - Called every time View updates
+    /// - Eliminates duplicate code (used in multiple places)
     ///
     /// ## videoFile.metadata.accelerationData(at:)
     /// ```swift
     /// videoFile.metadata.accelerationData(at: currentTime)
     /// ```
     ///
-    /// **accelerationData(at:) 메서드:**
-    /// - VideoMetadata의 메서드
-    /// - 주어진 시간에 해당하는 가속도 데이터 반환
-    /// - 보간(interpolation)으로 정확한 값 계산
+    /// **accelerationData(at:) method:**
+    /// - Method of VideoMetadata
+    /// - Returns acceleration data corresponding to given time
+    /// - Calculates accurate value using interpolation
     ///
-    /// **작동 방식:**
+    /// **How it works:**
     /// ```
-    /// 가속도 데이터:
-    /// [0.0초: (x:0.5, y:0.8, z:-0.1)]
-    /// [1.0초: (x:1.5, y:1.8, z:0.1)]
+    /// Acceleration data:
+    /// [0.0s: (x:0.5, y:0.8, z:-0.1)]
+    /// [1.0s: (x:1.5, y:1.8, z:0.1)]
     ///
-    /// currentTime = 0.5초 (중간)
-    /// → 보간 계산:
+    /// currentTime = 0.5s (middle)
+    /// → Interpolation:
     ///   x = 0.5 + (1.5-0.5)*0.5 = 1.0
     ///   y = 0.8 + (1.8-0.8)*0.5 = 1.3
     ///   z = -0.1 + (0.1-(-0.1))*0.5 = 0.0
     ///   → (x:1.0, y:1.3, z:0.0)
     /// ```
     ///
-    /// ## Optional 반환 타입
+    /// ## Optional Return Type
     /// ```swift
-    /// var currentAccelerationData: AccelerationData?  // nil일 수 있음
+    /// var currentAccelerationData: AccelerationData?  // Can be nil
     /// ```
     ///
-    /// **nil이 되는 경우:**
-    /// - 가속도 센서 데이터가 없음
-    /// - 해당 시간에 센서 오류
-    /// - 메타데이터 파싱 실패
+    /// **When it becomes nil:**
+    /// - No acceleration sensor data
+    /// - Sensor error at that time
+    /// - Metadata parsing failed
     private var currentAccelerationData: AccelerationData? {
         return videoFile.metadata.accelerationData(at: currentTime)
     }
@@ -1239,38 +1239,38 @@ struct MetadataOverlayView: View {
 
 /// @brief Preview Provider
 ///
-/// ## ZStack으로 검은 배경 추가
+/// ## Adding Black Background with ZStack
 /// ```swift
 /// ZStack {
-///     Color.black          // 배경 (비디오 대신)
-///     MetadataOverlayView  // 오버레이
+///     Color.black          // Background (instead of video)
+///     MetadataOverlayView  // Overlay
 /// }
 /// ```
 ///
-/// **왜 ZStack을 사용하나?**
-/// - 실제 비디오 화면에 오버레이되는 것을 시뮬레이션
-/// - 검은 배경으로 텍스트 가독성 확인
-/// - 반투명 배경(.opacity(0.6))의 효과 확인
+/// **Why use ZStack?**
+/// - Simulates overlay on actual video screen
+/// - Check text readability with black background
+/// - Verify effect of semi-transparent background (.opacity(0.6))
 ///
 /// ## VideoFile.allSamples.first!
 /// ```swift
 /// videoFile: VideoFile.allSamples.first!
 /// ```
 ///
-/// **allSamples란?**
-/// - VideoFile에서 제공하는 static 샘플 데이터
-/// - 테스트/Preview용 Mock 데이터
-/// - GPS, 가속도 센서 데이터 포함
+/// **What is allSamples?**
+/// - Static sample data provided by VideoFile
+/// - Mock data for testing/Preview
+/// - Includes GPS and acceleration sensor data
 ///
-/// **!를 사용하는 이유:**
-/// - Preview는 개발 환경에서만 실행됨
-/// - 샘플 데이터는 항상 존재함이 보장됨
-/// - 프로덕션 코드가 아니므로 강제 unwrap 허용
+/// **Why use !:**
+/// - Preview only runs in development environment
+/// - Sample data is guaranteed to exist
+/// - Force unwrap allowed as this is not production code
 ///
 /// ## currentTime: 10.0
-/// - 비디오 시작 후 10초 지점
-/// - 해당 시간의 GPS, 가속도 데이터 표시
-/// - 다양한 시간대를 테스트하려면 값 변경
+/// - 10 seconds after video start
+/// - Display GPS and acceleration data at that time
+/// - Change value to test different time points
 struct MetadataOverlayView_Previews: PreviewProvider {
     static var previews: some View {
         ZStack {

@@ -1,113 +1,113 @@
 /// @file PlayerControlsView.swift
-/// @brief 비디오 플레이어의 재생 컨트롤 UI
+/// @brief Video player playback control UI
 /// @author BlackboxPlayer Development Team
 /// @details
-/// 비디오 플레이어의 재생 컨트롤을 제공하는 View입니다. 타임라인 슬라이더, 재생/일시정지,
-/// 프레임 단위 이동, 시간 표시, 속도 조절, 볼륨 조절 기능을 포함합니다.
+/// View providing video player playback controls. Includes timeline slider, play/pause,
+/// frame-by-frame navigation, time display, speed control, and volume control features.
 
 import SwiftUI
 import AppKit
 import UniformTypeIdentifiers
 
 /// @struct PlayerControlsView
-/// @brief 비디오 플레이어의 재생 컨트롤을 제공하는 View
+/// @brief View providing video player playback controls
 ///
 /// @details
-/// 비디오 플레이어의 재생 컨트롤을 제공하는 View입니다.
+/// View providing video player playback controls.
 ///
-/// ## 기능 개요
+/// ## Feature Overview
 /// ```
 /// ┌──────────────────────────────────────────────────────┐
-/// │  [========●================]  (타임라인 슬라이더)      │
+/// │  [========●================]  (Timeline Slider)       │
 /// │                                                       │
 /// │  ▶  ⏮  ⏭     00:05 / 01:30    🏎 1.0x   🔊 ━━━━━    │
-/// │  재생  프레임     시간 표시      속도     볼륨        │
+/// │  Play Frame    Time Display    Speed    Volume       │
 /// └──────────────────────────────────────────────────────┘
 /// ```
 ///
-/// ## 주요 컴포넌트
-/// - **타임라인 슬라이더**: 커스텀 드래그 제스처로 구현된 시간 탐색 바
-/// - **재생 컨트롤**: 재생/일시정지, 프레임 단위 이동 버튼
-/// - **시간 표시**: 현재 시간 / 전체 시간 (monospaced 폰트)
-/// - **속도 조절**: Menu 컴포넌트로 재생 속도 선택 (0.5x ~ 2.0x)
-/// - **볼륨 조절**: Slider 컴포넌트로 음량 조절 (0 ~ 1)
+/// ## Main Components
+/// - **Timeline Slider**: Time navigation bar implemented with custom drag gesture
+/// - **Playback Controls**: Play/pause, frame-by-frame navigation buttons
+/// - **Time Display**: Current time / Total time (monospaced font)
+/// - **Speed Control**: Playback speed selection via Menu component (0.5x ~ 2.0x)
+/// - **Volume Control**: Volume adjustment via Slider component (0 ~ 1)
 ///
-/// ## SwiftUI 핵심 개념
+/// ## SwiftUI Core Concepts
 ///
-/// ### 1. @ObservedObject vs @State 역할 분리
+/// ### 1. @ObservedObject vs @State Role Separation
 /// ```swift
-/// @ObservedObject var viewModel: VideoPlayerViewModel  // 외부 데이터 소스
-/// @State private var isSeeking: Bool = false           // 내부 UI 상태
+/// @ObservedObject var viewModel: VideoPlayerViewModel  // External data source
+/// @State private var isSeeking: Bool = false           // Internal UI state
 /// ```
 ///
-/// **@ObservedObject (외부 상태):**
-/// - ViewModel에서 관리하는 비디오 재생 상태
-/// - 예: playbackState, playbackPosition, volume
-/// - 다른 View와 공유됨
+/// **@ObservedObject (External State):**
+/// - Video playback state managed by ViewModel
+/// - Examples: playbackState, playbackPosition, volume
+/// - Shared with other Views
 ///
-/// **@State (내부 상태):**
-/// - 이 View에서만 사용하는 임시 UI 상태
-/// - 예: isSeeking (드래그 중 여부), seekPosition (드래그 위치)
-/// - 다른 View와 공유되지 않음
+/// **@State (Internal State):**
+/// - Temporary UI state used only in this View
+/// - Examples: isSeeking (whether dragging), seekPosition (drag position)
+/// - Not shared with other Views
 ///
-/// ### 2. GeometryReader로 동적 크기 계산
+/// ### 2. Dynamic Size Calculation with GeometryReader
 /// ```swift
 /// GeometryReader { geometry in
-///     // geometry.size.width를 사용해 슬라이더 크기 계산
+///     // Calculate slider size using geometry.size.width
 ///     let thumbX = geometry.size.width * playbackPosition - 8
 /// }
 /// ```
 ///
-/// **GeometryReader란?**
-/// - 부모 View의 크기와 위치 정보를 제공하는 컨테이너
-/// - 자식 View가 동적으로 크기를 계산할 수 있게 해줌
-/// - 타임라인 슬라이더처럼 화면 크기에 따라 길이가 변하는 UI에 필수
+/// **What is GeometryReader?**
+/// - Container that provides parent View's size and position information
+/// - Enables child Views to calculate size dynamically
+/// - Essential for UI like timeline sliders that change length based on screen size
 ///
-/// ### 3. DragGesture로 커스텀 슬라이더 구현
+/// ### 3. Custom Slider Implementation with DragGesture
 /// ```swift
 /// .gesture(
 ///     DragGesture(minimumDistance: 0)
 ///         .onChanged { value in
-///             // 드래그 중: 임시 위치 업데이트
+///             // During drag: Update temporary position
 ///             isSeeking = true
 ///             seekPosition = value.location.x / geometry.size.width
 ///         }
 ///         .onEnded { _ in
-///             // 드래그 끝: ViewModel에 최종 위치 전달
+///             // End of drag: Pass final position to ViewModel
 ///             viewModel.seek(to: seekPosition)
 ///             isSeeking = false
 ///         }
 /// )
 /// ```
 ///
-/// **DragGesture 작동 원리:**
-/// 1. **onChanged**: 드래그 중 계속 호출됨 (손가락/마우스 이동 시마다)
-/// 2. **onEnded**: 드래그가 끝났을 때 한 번 호출됨 (손가락/마우스 뗐을 때)
-/// 3. **minimumDistance: 0**: 탭도 드래그로 인식 (클릭으로 위치 이동 가능)
+/// **How DragGesture Works:**
+/// 1. **onChanged**: Called continuously during drag (every finger/mouse movement)
+/// 2. **onEnded**: Called once when drag ends (when finger/mouse is released)
+/// 3. **minimumDistance: 0**: Recognizes taps as drags (allows position change via click)
 ///
-/// **왜 isSeeking 상태가 필요한가?**
-/// - 드래그 중에는 seekPosition을 표시
-/// - 드래그 안 할 때는 viewModel.playbackPosition을 표시
-/// - 이렇게 하면 드래그 중에도 부드럽게 UI가 움직임
+/// **Why is isSeeking state necessary?**
+/// - During drag: Display seekPosition
+/// - When not dragging: Display viewModel.playbackPosition
+/// - This ensures smooth UI movement even during dragging
 ///
-/// ### 4. Binding(get:set:) 커스터마이징
+/// ### 4. Binding(get:set:) Customization
 /// ```swift
 /// Slider(value: Binding(
-///     get: { viewModel.volume },           // 값 읽기
-///     set: { viewModel.setVolume($0) }     // 값 쓰기
+///     get: { viewModel.volume },           // Read value
+///     set: { viewModel.setVolume($0) }     // Write value
 /// ), in: 0...1)
 /// ```
 ///
-/// **Binding이란?**
-/// - 양방향 데이터 바인딩을 제공하는 Property Wrapper
-/// - Slider, TextField 등이 값을 읽고 쓸 수 있게 해줌
+/// **What is Binding?**
+/// - Property Wrapper that provides two-way data binding
+/// - Allows Slider, TextField, etc. to read and write values
 ///
-/// **왜 Binding(get:set:)을 사용하나?**
-/// - 단순 @State는 직접 바인딩: `$volume`
-/// - ViewModel의 메서드를 호출하려면: `Binding(get:set:)` 사용
-/// - 이렇게 하면 값 변경 시 추가 로직 실행 가능 (예: 오디오 볼륨 설정)
+/// **Why use Binding(get:set:)?**
+/// - Simple @State: Direct binding with `$volume`
+/// - To call ViewModel methods: Use `Binding(get:set:)`
+/// - This allows executing additional logic on value change (e.g., setting audio volume)
 ///
-/// ### 5. Menu 컴포넌트로 드롭다운 메뉴 구현
+/// ### 5. Dropdown Menu Implementation with Menu Component
 /// ```swift
 /// Menu {
 ///     ForEach([0.5, 0.75, 1.0, 1.25, 1.5, 2.0], id: \.self) { speed in
@@ -123,17 +123,17 @@ import UniformTypeIdentifiers
 /// }
 /// ```
 ///
-/// **Menu 컴포넌트 구조:**
-/// 1. **Menu { ... }**: 메뉴 항목들을 정의
-/// 2. **label: { ... }**: 메뉴를 여는 버튼 UI
-/// 3. **ForEach**: 배열을 순회하며 동적으로 메뉴 항목 생성
+/// **Menu Component Structure:**
+/// 1. **Menu { ... }**: Define menu items
+/// 2. **label: { ... }**: Button UI that opens the menu
+/// 3. **ForEach**: Dynamically generate menu items by iterating through array
 ///
-/// **id: \.self란?**
-/// - ForEach는 각 항목을 구분할 ID가 필요
-/// - `id: \.self`는 값 자체를 ID로 사용 (0.5, 0.75, 1.0 등)
-/// - Double, String 등 Hashable 타입에서 사용 가능
+/// **What is id: \.self?**
+/// - ForEach requires an ID to distinguish each item
+/// - `id: \.self` uses the value itself as ID (0.5, 0.75, 1.0, etc.)
+/// - Can be used with Hashable types like Double, String, etc.
 ///
-/// ### 6. Computed Properties로 동적 아이콘
+/// ### 6. Dynamic Icons with Computed Properties
 /// ```swift
 /// private var playPauseIcon: String {
 ///     switch viewModel.playbackState {
@@ -150,35 +150,35 @@ import UniformTypeIdentifiers
 /// }
 /// ```
 ///
-/// **Computed Properties란?**
-/// - 저장하지 않고 계산해서 반환하는 속성
-/// - 다른 속성(viewModel.playbackState)이 바뀌면 자동으로 재계산됨
-/// - View의 body가 다시 그려질 때마다 호출됨
+/// **What are Computed Properties?**
+/// - Properties that are calculated and returned without storage
+/// - Automatically recalculated when other properties (viewModel.playbackState) change
+/// - Called every time the View's body is redrawn
 ///
-/// **왜 함수 대신 Computed Property를 사용하나?**
-/// - 함수: `playPauseIcon()` - 호출할 때마다 괄호 필요
-/// - Computed Property: `playPauseIcon` - 속성처럼 사용 (더 자연스러움)
+/// **Why use Computed Property instead of function?**
+/// - Function: `playPauseIcon()` - Requires parentheses on each call
+/// - Computed Property: `playPauseIcon` - Used like a property (more natural)
 ///
-/// ## 사용 예제
+/// ## Usage Examples
 ///
-/// ### 예제 1: VideoPlayerView에서 사용
+/// ### Example 1: Usage in VideoPlayerView
 /// ```swift
 /// struct VideoPlayerView: View {
 ///     @StateObject private var viewModel = VideoPlayerViewModel()
 ///
 ///     var body: some View {
 ///         VStack {
-///             // 비디오 화면
+///             // Video display
 ///             VideoFrameView(frame: viewModel.currentFrame)
 ///
-///             // 컨트롤 UI
+///             // Control UI
 ///             PlayerControlsView(viewModel: viewModel)
 ///         }
 ///     }
 /// }
 /// ```
 ///
-/// ### 예제 2: MultiChannelPlayerView에서 여러 플레이어 동시 사용
+/// ### Example 2: Multiple Players in MultiChannelPlayerView
 /// ```swift
 /// struct MultiChannelPlayerView: View {
 ///     @StateObject private var frontViewModel = VideoPlayerViewModel()
@@ -191,30 +191,30 @@ import UniformTypeIdentifiers
 ///                 VideoFrameView(frame: rearViewModel.currentFrame)
 ///             }
 ///
-///             // 전방 카메라 컨트롤
+///             // Front camera controls
 ///             PlayerControlsView(viewModel: frontViewModel)
 ///
-///             // 후방 카메라 컨트롤
+///             // Rear camera controls
 ///             PlayerControlsView(viewModel: rearViewModel)
 ///         }
 ///     }
 /// }
 /// ```
 ///
-/// ## 실무 응용
+/// ## Practical Applications
 ///
-/// ### 타임라인 슬라이더 정밀도 개선
+/// ### Improving Timeline Slider Precision
 /// ```swift
-/// // 현재: 픽셀 단위 이동 (부정확할 수 있음)
+/// // Current: Pixel-based movement (may be imprecise)
 /// let position = value.location.x / geometry.size.width
 ///
-/// // 개선: 프레임 단위로 스냅
+/// // Improved: Snap to frame boundaries
 /// let totalFrames = viewModel.totalFrames
 /// let framePosition = round(position * Double(totalFrames)) / Double(totalFrames)
 /// seekPosition = framePosition
 /// ```
 ///
-/// ### 키보드 단축키 지원
+/// ### Keyboard Shortcut Support
 /// ```swift
 /// .onKeyPress(.space) {
 ///     viewModel.togglePlayPause()
@@ -226,52 +226,52 @@ import UniformTypeIdentifiers
 /// }
 /// ```
 ///
-/// ### 더블 탭으로 빠른 이동 (모바일)
+/// ### Quick Seek with Double Tap (Mobile)
 /// ```swift
 /// .gesture(
 ///     TapGesture(count: 2)
 ///         .onEnded { _ in
-///             viewModel.seekBySeconds(10.0)  // 10초 앞으로
+///             viewModel.seekBySeconds(10.0)  // 10 seconds forward
 ///         }
 /// )
 /// ```
 ///
-/// ## 성능 최적화
+/// ## Performance Optimization
 ///
-/// ### 1. 드래그 중 ViewModel 업데이트 최소화
+/// ### 1. Minimize ViewModel Updates During Drag
 /// ```swift
-/// // 나쁜 예: 드래그 중 계속 ViewModel 업데이트 (성능 저하)
+/// // Bad: Continuously update ViewModel during drag (performance degradation)
 /// .onChanged { value in
-///     viewModel.seek(to: value.location.x / width)  // ❌ 너무 자주 호출
+///     viewModel.seek(to: value.location.x / width)  // ❌ Called too frequently
 /// }
 ///
-/// // 좋은 예: 드래그 중에는 로컬 상태만 업데이트
+/// // Good: Update only local state during drag
 /// .onChanged { value in
 ///     isSeeking = true
-///     seekPosition = value.location.x / width  // ✅ UI만 업데이트
+///     seekPosition = value.location.x / width  // ✅ Update UI only
 /// }
 /// .onEnded { _ in
-///     viewModel.seek(to: seekPosition)  // ✅ 끝날 때만 ViewModel 업데이트
+///     viewModel.seek(to: seekPosition)  // ✅ Update ViewModel only at end
 /// }
 /// ```
 ///
-/// ### 2. Monospaced 폰트로 시간 표시 깜빡임 방지
+/// ### 2. Prevent Time Display Flickering with Monospaced Font
 /// ```swift
 /// Text(viewModel.currentTimeString)
 ///     .font(.system(.body, design: .monospaced))
-///     // ✅ monospaced: 모든 숫자가 같은 너비 → 시간 변해도 레이아웃 안 변함
-///     // ❌ 일반 폰트: "1"과 "0"의 너비가 달라 → 시간 변하면 UI 흔들림
+///     // ✅ monospaced: All digits have same width → Layout unchanged when time changes
+///     // ❌ Regular font: "1" and "0" have different widths → UI shifts when time changes
 /// ```
 ///
-/// ## 테스트 데이터
+/// ## Test Data
 ///
-/// ### Mock VideoPlayerViewModel 생성
+/// ### Create Mock VideoPlayerViewModel
 /// ```swift
 /// extension VideoPlayerViewModel {
 ///     static func mock() -> VideoPlayerViewModel {
 ///         let vm = VideoPlayerViewModel()
 ///         vm.playbackState = .paused
-///         vm.playbackPosition = 0.3  // 30% 재생
+///         vm.playbackPosition = 0.3  // 30% played
 ///         vm.currentTimeString = "00:18"
 ///         vm.durationString = "01:00"
 ///         vm.playbackSpeed = 1.0
@@ -281,12 +281,12 @@ import UniformTypeIdentifiers
 /// }
 /// ```
 ///
-/// ### Preview 활성화
+/// ### Enable Preview
 /// ```swift
 /// struct PlayerControlsView_Previews: PreviewProvider {
 ///     static var previews: some View {
 ///         VStack {
-///             // 재생 중 상태
+///             // Playing state
 ///             PlayerControlsView(viewModel: {
 ///                 let vm = VideoPlayerViewModel.mock()
 ///                 vm.playbackState = .playing
@@ -294,7 +294,7 @@ import UniformTypeIdentifiers
 ///             }())
 ///             .previewDisplayName("Playing")
 ///
-///             // 일시정지 상태
+///             // Paused state
 ///             PlayerControlsView(viewModel: {
 ///                 let vm = VideoPlayerViewModel.mock()
 ///                 vm.playbackState = .paused
@@ -302,7 +302,7 @@ import UniformTypeIdentifiers
 ///             }())
 ///             .previewDisplayName("Paused")
 ///
-///             // 음소거 상태
+///             // Muted state
 ///             PlayerControlsView(viewModel: {
 ///                 let vm = VideoPlayerViewModel.mock()
 ///                 vm.volume = 0
@@ -320,98 +320,98 @@ struct PlayerControlsView: View {
     // MARK: - Properties
 
     /// @var viewModel
-    /// @brief ViewModel 참조 (@ObservedObject)
+    /// @brief ViewModel reference (@ObservedObject)
     ///
-    /// **@ObservedObject란?**
-    /// - 외부에서 전달받은 ObservableObject를 관찰하는 Property Wrapper
-    /// - ViewModel의 @Published 속성이 변경되면 자동으로 View 업데이트
-    /// - 부모 View가 ViewModel의 생명주기를 관리함
+    /// **What is @ObservedObject?**
+    /// - Property Wrapper that observes ObservableObject received from outside
+    /// - Automatically updates View when ViewModel's @Published properties change
+    /// - Parent View manages ViewModel's lifecycle
     ///
-    /// **@StateObject와의 차이:**
+    /// **Difference from @StateObject:**
     /// ```
-    /// @StateObject  → 이 View에서 ViewModel 생성 및 소유
-    /// @ObservedObject → 부모 View에서 전달받은 ViewModel 사용
+    /// @StateObject  → This View creates and owns ViewModel
+    /// @ObservedObject → Uses ViewModel received from parent View
     /// ```
     ///
-    /// **예제:**
+    /// **Example:**
     /// ```swift
-    /// // 부모 View
+    /// // Parent View
     /// struct VideoPlayerView: View {
-    ///     @StateObject private var viewModel = VideoPlayerViewModel()  // 생성
+    ///     @StateObject private var viewModel = VideoPlayerViewModel()  // Create
     ///
     ///     var body: some View {
-    ///         PlayerControlsView(viewModel: viewModel)  // 전달
+    ///         PlayerControlsView(viewModel: viewModel)  // Pass
     ///     }
     /// }
     ///
-    /// // 자식 View
+    /// // Child View
     /// struct PlayerControlsView: View {
-    ///     @ObservedObject var viewModel: VideoPlayerViewModel  // 수신
+    ///     @ObservedObject var viewModel: VideoPlayerViewModel  // Receive
     /// }
     /// ```
     @ObservedObject var viewModel: VideoPlayerViewModel
 
     /// @var eventMarkers
-    /// @brief 이벤트 마커 배열
+    /// @brief Event marker array
     ///
     /// @details
-    /// 타임라인에 표시될 이벤트 마커들입니다.
-    /// GPS 데이터 분석으로 감지된 급가속, 급감속, 급회전 등의 이벤트를 표시합니다.
+    /// Event markers to be displayed on the timeline.
+    /// Shows events such as rapid acceleration, hard braking, sharp turns detected from GPS data analysis.
     var eventMarkers: [EventMarker] = []
 
     /// @var isSeeking
-    /// @brief 시킹 중 여부 (@State)
+    /// @brief Whether seeking is in progress (@State)
     ///
-    /// **언제 true가 되나?**
-    /// - 사용자가 타임라인 슬라이더를 드래그하는 동안
+    /// **When does it become true?**
+    /// - While user is dragging the timeline slider
     ///
-    /// **언제 false가 되나?**
-    /// - 드래그를 끝냈을 때 (onEnded)
+    /// **When does it become false?**
+    /// - When drag ends (onEnded)
     ///
-    /// **왜 필요한가?**
-    /// - 드래그 중에는 seekPosition 값을 표시
-    /// - 드래그 안 할 때는 viewModel.playbackPosition 값을 표시
-    /// - 이렇게 분리해야 드래그 중에도 UI가 부드럽게 움직임
+    /// **Why is it necessary?**
+    /// - During drag: Display seekPosition value
+    /// - When not dragging: Display viewModel.playbackPosition value
+    /// - This separation ensures smooth UI movement even during dragging
     ///
-    /// **예제 시나리오:**
+    /// **Example Scenario:**
     /// ```
-    /// 1. 재생 중 (isSeeking = false)
-    ///    → 슬라이더 위치 = viewModel.playbackPosition (자동 증가)
+    /// 1. During playback (isSeeking = false)
+    ///    → Slider position = viewModel.playbackPosition (auto-incrementing)
     ///
-    /// 2. 사용자가 드래그 시작 (isSeeking = true)
-    ///    → 슬라이더 위치 = seekPosition (드래그 위치)
-    ///    → viewModel.playbackPosition은 무시됨
+    /// 2. User starts dragging (isSeeking = true)
+    ///    → Slider position = seekPosition (drag position)
+    ///    → viewModel.playbackPosition is ignored
     ///
-    /// 3. 드래그 끝 (isSeeking = false)
-    ///    → viewModel.seek(to: seekPosition) 호출
-    ///    → 다시 viewModel.playbackPosition 값 표시
+    /// 3. Drag ends (isSeeking = false)
+    ///    → viewModel.seek(to: seekPosition) called
+    ///    → Display viewModel.playbackPosition value again
     /// ```
     @State private var isSeeking: Bool = false
 
     /// @var seekPosition
-    /// @brief 시킹 위치 (0.0 ~ 1.0) (@State)
+    /// @brief Seeking position (0.0 ~ 1.0) (@State)
     ///
-    /// **값의 범위:**
-    /// - 0.0: 비디오 시작 (0%)
-    /// - 0.5: 비디오 중간 (50%)
-    /// - 1.0: 비디오 끝 (100%)
+    /// **Value Range:**
+    /// - 0.0: Video start (0%)
+    /// - 0.5: Video middle (50%)
+    /// - 1.0: Video end (100%)
     ///
-    /// **언제 업데이트되나?**
-    /// - DragGesture의 onChanged에서 드래그 위치에 따라 계산됨
-    /// - 공식: `seekPosition = dragX / sliderWidth`
+    /// **When is it updated?**
+    /// - Calculated in DragGesture's onChanged based on drag position
+    /// - Formula: `seekPosition = dragX / sliderWidth`
     ///
-    /// **왜 Double 타입인가?**
-    /// - CGFloat보다 Double이 더 정밀함 (비디오 시간 계산에 유리)
-    /// - ViewModel의 seek(to:) 메서드도 Double을 받음
+    /// **Why Double type?**
+    /// - Double is more precise than CGFloat (better for video time calculations)
+    /// - ViewModel's seek(to:) method also accepts Double
     ///
-    /// **계산 예제:**
+    /// **Calculation Example:**
     /// ```swift
-    /// // 슬라이더 너비: 400px
-    /// // 드래그 위치: 120px
-    /// seekPosition = 120.0 / 400.0 = 0.3  // 30% 위치
+    /// // Slider width: 400px
+    /// // Drag position: 120px
+    /// seekPosition = 120.0 / 400.0 = 0.3  // 30% position
     ///
-    /// // 비디오 길이: 60초
-    /// seekTime = 0.3 * 60 = 18초
+    /// // Video duration: 60 seconds
+    /// seekTime = 0.3 * 60 = 18 seconds
     /// ```
     @State private var seekPosition: Double = 0.0
 
@@ -419,179 +419,179 @@ struct PlayerControlsView: View {
 
     var body: some View {
         VStack(spacing: 12) {
-            // 타임라인 슬라이더
+            // Timeline slider
             //
-            // 커스텀 드래그 제스처로 구현된 시간 탐색 바입니다.
-            // GeometryReader를 사용해 슬라이더 너비를 동적으로 계산합니다.
+            // Time navigation bar implemented with custom drag gesture.
+            // Uses GeometryReader to calculate slider width dynamically.
             timelineSlider
 
             HStack(spacing: 20) {
-                // 재생/일시정지 버튼
+                // Play/pause button
                 //
-                // togglePlayPause() 호출
-                // 아이콘은 playbackState에 따라 변경됨
+                // Calls togglePlayPause()
+                // Icon changes based on playbackState
                 playPauseButton
 
-                // 프레임 단위 이동 버튼
+                // Frame step buttons
                 //
-                // stepBackward(), stepForward() 호출
-                // 정밀한 프레임 분석에 유용
+                // Calls stepBackward(), stepForward()
+                // Useful for precise frame analysis
                 frameStepButtons
 
-                // 이벤트 네비게이션 버튼
+                // Event navigation buttons
                 //
-                // 이전/다음 이벤트로 이동
-                // 급가속, 급감속, 급회전 등의 이벤트 위치로 즉시 이동
+                // Navigate to previous/next event
+                // Immediately jump to events like rapid acceleration, hard braking, sharp turns
                 if !eventMarkers.isEmpty {
                     eventNavigationButtons
                 }
 
-                // 구간 선택 버튼
+                // Segment selection buttons
                 //
-                // In/Out Point 설정 및 추출
+                // Set In/Out Point and extract
                 segmentSelectionButtons
 
-                // 스냅샷 버튼
+                // Snapshot button
                 //
-                // 현재 프레임을 이미지로 저장
+                // Save current frame as image
                 snapshotButton
 
-                // 공유 버튼
+                // Share button
                 //
-                // 비디오 파일, 스냅샷, 구간 공유
+                // Share video file, snapshot, segment
                 shareButton
 
                 Spacer()
 
-                // 시간 표시
+                // Time display
                 //
-                // "00:18 / 01:00" 형식
-                // monospaced 폰트로 깜빡임 방지
+                // Format: "00:18 / 01:00"
+                // Monospaced font prevents flickering
                 timeDisplay
 
                 Spacer()
 
-                // 재생 속도 조절
+                // Playback speed control
                 //
-                // Menu 컴포넌트로 0.5x ~ 2.0x 선택
-                // 현재 속도에 체크마크 표시
+                // Select 0.5x ~ 2.0x via Menu component
+                // Checkmark shows current speed
                 speedControl
 
-                // 볼륨 조절
+                // Volume control
                 //
-                // Slider 컴포넌트로 0 ~ 1 범위
-                // Binding(get:set:)으로 커스터마이징
+                // 0 ~ 1 range via Slider component
+                // Customized with Binding(get:set:)
                 volumeControl
             }
             .padding(.horizontal)
         }
         .padding()
         .background(Color(nsColor: .controlBackgroundColor).opacity(0.95))
-        // ✅ opacity(0.95): 약간 투명하게 → 비디오가 살짝 비침 (macOS 스타일)
+        // ✅ opacity(0.95): Slightly transparent → Video shows through slightly (macOS style)
     }
 
     // MARK: - Timeline Slider
 
-    /// @brief 타임라인 슬라이더
+    /// @brief Timeline slider
     ///
-    /// ## 구조
+    /// ## Structure
     /// ```
     /// ┌──────────────────────────────────────┐
     /// │  [==========●==================]     │
-    /// │   ^재생된 부분  ^Thumb  ^전체 트랙   │
+    /// │   ^Played     ^Thumb   ^Total track  │
     /// └──────────────────────────────────────┘
     /// ```
     ///
-    /// ## 레이어 구조 (아래부터 위로)
-    /// 1. **Track Background**: 회색 바탕 (전체 길이)
-    /// 2. **Played Portion**: 파란색 바 (재생된 부분)
-    /// 3. **Thumb**: 흰색 원 (현재 위치 표시)
+    /// ## Layer Structure (bottom to top)
+    /// 1. **Track Background**: Gray background (total length)
+    /// 2. **Played Portion**: Blue bar (played portion)
+    /// 3. **Thumb**: White circle (current position indicator)
     ///
-    /// ## DragGesture 작동 방식
+    /// ## DragGesture Operation
     ///
-    /// ### 1. onChanged (드래그 중)
+    /// ### 1. onChanged (during drag)
     /// ```swift
     /// .onChanged { value in
     ///     isSeeking = true
-    ///     let x = value.location.x              // 드래그 X 좌표
-    ///     let width = geometry.size.width       // 슬라이더 너비
-    ///     seekPosition = max(0, min(1, x / width))  // 0~1 범위로 제한
+    ///     let x = value.location.x              // Drag X coordinate
+    ///     let width = geometry.size.width       // Slider width
+    ///     seekPosition = max(0, min(1, x / width))  // Constrain to 0~1 range
     /// }
     /// ```
     ///
-    /// **계산 과정:**
+    /// **Calculation Process:**
     /// ```
-    /// 슬라이더 너비: 400px
-    /// 드래그 X: 120px
+    /// Slider width: 400px
+    /// Drag X: 120px
     /// → seekPosition = 120 / 400 = 0.3 (30%)
     ///
-    /// 드래그 X: -50px (슬라이더 왼쪽 밖)
+    /// Drag X: -50px (outside left of slider)
     /// → seekPosition = max(0, -50 / 400) = 0.0 (0%)
     ///
-    /// 드래그 X: 500px (슬라이더 오른쪽 밖)
+    /// Drag X: 500px (outside right of slider)
     /// → seekPosition = min(1, 500 / 400) = 1.0 (100%)
     /// ```
     ///
-    /// ### 2. onEnded (드래그 끝)
+    /// ### 2. onEnded (end of drag)
     /// ```swift
     /// .onEnded { _ in
-    ///     viewModel.seek(to: seekPosition)  // ViewModel에 최종 위치 전달
+    ///     viewModel.seek(to: seekPosition)  // Pass final position to ViewModel
     ///     isSeeking = false
     /// }
     /// ```
     ///
-    /// ## minimumDistance: 0의 의미
+    /// ## Meaning of minimumDistance: 0
     /// ```swift
     /// DragGesture(minimumDistance: 0)
     /// ```
     ///
-    /// - **0**: 탭도 드래그로 인식 (클릭으로 즉시 이동 가능)
-    /// - **기본값 (10)**: 10px 이상 드래그해야 인식
+    /// - **0**: Recognizes taps as drags (immediate movement with click)
+    /// - **Default (10)**: Must drag at least 10px to recognize
     ///
-    /// **사용자 경험:**
+    /// **User Experience:**
     /// ```
-    /// minimumDistance: 0  → 클릭만 해도 해당 위치로 이동 (YouTube 스타일)
-    /// minimumDistance: 10 → 드래그해야만 이동 (실수 방지)
+    /// minimumDistance: 0  → Move to position with just a click (YouTube style)
+    /// minimumDistance: 10 → Must drag to move (prevents accidental moves)
     /// ```
     ///
-    /// ## Thumb 위치 계산
+    /// ## Thumb Position Calculation
     /// ```swift
     /// .offset(x: geometry.size.width * (isSeeking ? seekPosition : viewModel.playbackPosition) - 8)
     /// ```
     ///
-    /// **왜 -8을 빼나?**
-    /// - Thumb의 너비가 16px
-    /// - 중앙 정렬하려면 반(8px)만큼 왼쪽으로 이동
+    /// **Why subtract 8?**
+    /// - Thumb width is 16px
+    /// - Subtract half (8px) to center align
     ///
-    /// **계산 예제:**
+    /// **Calculation Example:**
     /// ```
-    /// 슬라이더 너비: 400px
+    /// Slider width: 400px
     /// playbackPosition: 0.3 (30%)
-    /// Thumb 중심 X = 400 * 0.3 = 120px
-    /// Thumb 왼쪽 X = 120 - 8 = 112px (중앙 정렬됨)
+    /// Thumb center X = 400 * 0.3 = 120px
+    /// Thumb left X = 120 - 8 = 112px (center aligned)
     /// ```
     private var timelineSlider: some View {
         VStack(spacing: 4) {
-            /// 커스텀 슬라이더 with 프레임 마커
+            /// Custom slider with frame markers
             ///
-            /// GeometryReader를 사용해 부모 View의 너비를 얻습니다.
+            /// Uses GeometryReader to get parent View's width.
             GeometryReader { geometry in
                 ZStack(alignment: .leading) {
-                    // 트랙 배경 (회색 바탕)
+                    // Track background (gray background)
                     //
-                    // 전체 비디오 길이를 나타내는 회색 바입니다.
+                    // Gray bar representing total video length.
                     Rectangle()
                         .fill(Color.gray.opacity(0.3))
                         .frame(height: 4)
                         .cornerRadius(2)
 
-                    // 재생된 부분 (파란색 바)
+                    // Played portion (blue bar)
                     //
-                    // 현재까지 재생된 부분을 파란색으로 표시합니다.
+                    // Displays played portion in blue.
                     //
-                    // **너비 계산:**
-                    // - 드래그 중: geometry.size.width * seekPosition
-                    // - 일반 재생: geometry.size.width * viewModel.playbackPosition
+                    // **Width calculation:**
+                    // - During drag: geometry.size.width * seekPosition
+                    // - Normal playback: geometry.size.width * viewModel.playbackPosition
                     Rectangle()
                         .fill(Color.accentColor)
                         .frame(
@@ -600,40 +600,40 @@ struct PlayerControlsView: View {
                         )
                         .cornerRadius(2)
 
-                    // 선택된 구간 하이라이트 (반투명 녹색 바)
+                    // Selected segment highlight (semi-transparent green bar)
                     //
-                    // In Point ~ Out Point 사이의 구간을 시각적으로 표시합니다.
+                    // Visually displays segment between In Point ~ Out Point.
                     if let inTime = viewModel.inPoint, let outTime = viewModel.outPoint, viewModel.duration > 0 {
                         segmentHighlightView(inTime: inTime, outTime: outTime, width: geometry.size.width)
                     }
 
-                    // 이벤트 마커들 (색상 코딩된 원)
+                    // Event markers (color-coded circles)
                     //
-                    // 급가속, 급감속, 급회전 등의 이벤트를 타임라인에 표시합니다.
-                    // duration이 0보다 클 때만 표시 (비디오 로드됨)
+                    // Display events like rapid acceleration, hard braking, sharp turns on timeline.
+                    // Only displayed when duration > 0 (video loaded)
                     if viewModel.duration > 0 {
                         ForEach(eventMarkers) { marker in
                             eventMarkerView(marker: marker, width: geometry.size.width)
                         }
                     }
 
-                    // In Point 마커 (녹색 삼각형)
+                    // In Point marker (green triangle)
                     if let inTime = viewModel.inPoint, viewModel.duration > 0 {
                         inPointMarkerView(inTime: inTime, width: geometry.size.width)
                     }
 
-                    // Out Point 마커 (녹색 삼각형)
+                    // Out Point marker (green triangle)
                     if let outTime = viewModel.outPoint, viewModel.duration > 0 {
                         outPointMarkerView(outTime: outTime, width: geometry.size.width)
                     }
 
-                    // Thumb (흰색 원)
+                    // Thumb (white circle)
                     //
-                    // 현재 재생 위치를 나타내는 원형 인디케이터입니다.
+                    // Circular indicator showing current playback position.
                     //
-                    // **위치 계산:**
-                    // 1. 기본 X = width * position
-                    // 2. 중앙 정렬 = X - (thumbWidth / 2) = X - 8
+                    // **Position calculation:**
+                    // 1. Base X = width * position
+                    // 2. Center align = X - (thumbWidth / 2) = X - 8
                     Circle()
                         .fill(Color.white)
                         .frame(width: 16, height: 16)
@@ -643,28 +643,28 @@ struct PlayerControlsView: View {
                         )
                 }
                 .gesture(
-                    /// DragGesture로 슬라이더 드래그 구현
+                    /// Implement slider drag with DragGesture
                     ///
-                    /// **minimumDistance: 0의 효과:**
-                    /// - 탭만 해도 해당 위치로 즉시 이동
-                    /// - 드래그 없이 클릭만으로 시간 탐색 가능
+                    /// **Effect of minimumDistance: 0:**
+                    /// - Immediate movement with just a tap
+                    /// - Time seeking possible with click alone, no drag needed
                     DragGesture(minimumDistance: 0)
                         .onChanged { value in
-                            /// 드래그 중 호출됨 (손가락/마우스 이동 시마다)
+                            /// Called during drag (every finger/mouse movement)
                             ///
-                            /// **동작:**
-                            /// 1. isSeeking = true (드래그 모드 활성화)
-                            /// 2. seekPosition 계산 (0~1 범위로 제한)
+                            /// **Operation:**
+                            /// 1. isSeeking = true (activate drag mode)
+                            /// 2. Calculate seekPosition (constrain to 0~1 range)
                             isSeeking = true
                             let position = max(0, min(1, value.location.x / geometry.size.width))
                             seekPosition = position
                         }
                         .onEnded { _ in
-                            /// 드래그 끝났을 때 호출됨 (손가락/마우스 뗐을 때)
+                            /// Called when drag ends (when finger/mouse is released)
                             ///
-                            /// **동작:**
-                            /// 1. ViewModel에 최종 위치 전달
-                            /// 2. isSeeking = false (일반 모드로 복귀)
+                            /// **Operation:**
+                            /// 1. Pass final position to ViewModel
+                            /// 2. isSeeking = false (return to normal mode)
                             viewModel.seek(to: seekPosition)
                             isSeeking = false
                         }
@@ -677,35 +677,35 @@ struct PlayerControlsView: View {
 
     // MARK: - Play/Pause Button
 
-    /// @brief 재생/일시정지 버튼
+    /// @brief Play/pause button
     ///
-    /// ## 동작
-    /// - 클릭 시: `viewModel.togglePlayPause()` 호출
-    /// - 아이콘: `playPauseIcon` computed property에서 결정
+    /// ## Operation
+    /// - On click: Calls `viewModel.togglePlayPause()`
+    /// - Icon: Determined by `playPauseIcon` computed property
     ///
-    /// ## 상태별 아이콘
+    /// ## Icons by State
     /// ```
-    /// .stopped, .paused → "play.fill"  (▶ 재생 아이콘)
-    /// .playing         → "pause.fill" (❚❚ 일시정지 아이콘)
+    /// .stopped, .paused → "play.fill"  (▶ play icon)
+    /// .playing         → "pause.fill" (❚❚ pause icon)
     /// ```
     ///
-    /// ## .buttonStyle(.plain)의 효과
+    /// ## Effect of .buttonStyle(.plain)
     /// ```swift
-    /// // 기본 버튼 스타일
-    /// Button { } → 파란색 배경, 흰색 텍스트
+    /// // Default button style
+    /// Button { } → Blue background, white text
     ///
-    /// // .plain 스타일
-    /// Button { }.buttonStyle(.plain) → 배경 없음, 아이콘만 표시
+    /// // .plain style
+    /// Button { }.buttonStyle(.plain) → No background, icon only
     /// ```
     ///
     /// ## .help() modifier
     /// ```swift
-    /// .help("Pause")  // 마우스 오버 시 툴팁 표시
+    /// .help("Pause")  // Display tooltip on mouse hover
     /// ```
     ///
-    /// **macOS 전용:**
-    /// - macOS에서만 작동 (iOS에서는 무시됨)
-    /// - 접근성(Accessibility)에도 도움이 됨
+    /// **macOS only:**
+    /// - Works only on macOS (ignored on iOS)
+    /// - Also helps with Accessibility
     private var playPauseButton: some View {
         Button(action: {
             viewModel.togglePlayPause()
@@ -718,28 +718,28 @@ struct PlayerControlsView: View {
         .help(viewModel.playbackState == .playing ? "Pause" : "Play")
     }
 
-    /// @brief 재생/일시정지 아이콘 (Computed Property)
+    /// @brief Play/pause icon (Computed Property)
     ///
-    /// ## Computed Property란?
-    /// - 저장하지 않고 계산해서 반환하는 속성
-    /// - `viewModel.playbackState`가 변경되면 자동으로 재계산됨
-    /// - View의 body가 다시 그려질 때마다 호출됨
+    /// ## What is Computed Property?
+    /// - Property that calculates and returns without storage
+    /// - Automatically recalculated when `viewModel.playbackState` changes
+    /// - Called every time the View's body is redrawn
     ///
-    /// ## 왜 함수 대신 Computed Property를 사용하나?
+    /// ## Why use Computed Property instead of function?
     /// ```swift
-    /// // 함수 방식
+    /// // Function approach
     /// func playPauseIcon() -> String { ... }
-    /// Image(systemName: playPauseIcon())  // 괄호 필요
+    /// Image(systemName: playPauseIcon())  // Requires parentheses
     ///
-    /// // Computed Property 방식
+    /// // Computed Property approach
     /// var playPauseIcon: String { ... }
-    /// Image(systemName: playPauseIcon)  // 괄호 불필요 (더 자연스러움)
+    /// Image(systemName: playPauseIcon)  // No parentheses needed (more natural)
     /// ```
     ///
-    /// ## SF Symbols 아이콘
-    /// - **play.fill**: 채워진 재생 아이콘 (▶)
-    /// - **pause.fill**: 채워진 일시정지 아이콘 (❚❚)
-    /// - macOS/iOS에 기본 내장 (30,000개 이상)
+    /// ## SF Symbols Icons
+    /// - **play.fill**: Filled play icon (▶)
+    /// - **pause.fill**: Filled pause icon (❚❚)
+    /// - Built into macOS/iOS (30,000+ icons)
     private var playPauseIcon: String {
         switch viewModel.playbackState {
         case .stopped, .paused:
@@ -751,31 +751,31 @@ struct PlayerControlsView: View {
 
     // MARK: - Frame Step Buttons
 
-    /// @brief 프레임 단위 이동 버튼
+    /// @brief Frame-by-frame navigation buttons
     ///
-    /// ## 기능
-    /// - **이전 프레임**: `viewModel.stepBackward()` 호출
-    /// - **다음 프레임**: `viewModel.stepForward()` 호출
+    /// ## Functions
+    /// - **Previous Frame**: Calls `viewModel.stepBackward()`
+    /// - **Next Frame**: Calls `viewModel.stepForward()`
     ///
-    /// ## 사용 시나리오
+    /// ## Usage Scenarios
     /// ```
-    /// 1. 사고 순간 정밀 분석
-    ///    → 프레임 단위로 넘기며 정확한 시점 파악
+    /// 1. Precise accident moment analysis
+    ///    → Identify exact moment by advancing frame by frame
     ///
-    /// 2. 번호판 확인
-    ///    → 정지된 상태에서 한 프레임씩 넘기며 선명한 순간 찾기
+    /// 2. License plate verification
+    ///    → Find clearest moment by advancing one frame at a time while paused
     ///
-    /// 3. 이벤트 시작점 찾기
-    ///    → 충격 센서가 작동한 정확한 프레임 찾기
+    /// 3. Find event starting point
+    ///    → Find exact frame when impact sensor triggered
     /// ```
     ///
-    /// ## SF Symbols 아이콘
-    /// - **backward.frame.fill**: 이전 프레임 (⏮)
-    /// - **forward.frame.fill**: 다음 프레임 (⏭)
+    /// ## SF Symbols Icons
+    /// - **backward.frame.fill**: Previous frame (⏮)
+    /// - **forward.frame.fill**: Next frame (⏭)
     ///
     /// ## HStack spacing: 8
-    /// - 두 버튼 사이 간격 8px
-    /// - 너무 붙어있지 않고 적당히 떨어짐
+    /// - 8px gap between two buttons
+    /// - Not too close, appropriately separated
     private var frameStepButtons: some View {
         HStack(spacing: 8) {
             Button(action: {
@@ -800,34 +800,34 @@ struct PlayerControlsView: View {
 
     // MARK: - Event Navigation Buttons
 
-    /// @brief 이벤트 네비게이션 버튼
+    /// @brief Event navigation buttons
     ///
-    /// ## 기능
-    /// - **이전 이벤트**: 현재 시간 이전의 가장 가까운 이벤트로 이동
-    /// - **다음 이벤트**: 현재 시간 이후의 가장 가까운 이벤트로 이동
+    /// ## Functions
+    /// - **Previous Event**: Navigate to nearest event before current time
+    /// - **Next Event**: Navigate to nearest event after current time
     ///
-    /// ## 사용 시나리오
+    /// ## Usage Scenarios
     /// ```
-    /// 1. 급감속 이벤트 순회
-    ///    → 다음 이벤트 버튼으로 모든 급감속 구간 확인
+    /// 1. Cycle through hard braking events
+    ///    → Check all hard braking sections with next event button
     ///
-    /// 2. 사고 후 분석
-    ///    → 사고 전후의 이벤트들을 빠르게 확인
+    /// 2. Post-accident analysis
+    ///    → Quickly review events before and after accident
     ///
-    /// 3. 이벤트 비교
-    ///    → 여러 이벤트를 연속으로 확인하며 패턴 분석
+    /// 3. Event comparison
+    ///    → Analyze patterns by reviewing multiple events consecutively
     /// ```
     ///
-    /// ## SF Symbols 아이콘
-    /// - **chevron.backward.circle.fill**: 이전 이벤트
-    /// - **chevron.forward.circle.fill**: 다음 이벤트
+    /// ## SF Symbols Icons
+    /// - **chevron.backward.circle.fill**: Previous event
+    /// - **chevron.forward.circle.fill**: Next event
     ///
-    /// ## 색상
-    /// - 주황색 배경: 이벤트 마커와 같은 계열
-    /// - 흰색 아이콘: 명확한 대비
+    /// ## Colors
+    /// - Orange background: Same family as event markers
+    /// - White icon: Clear contrast
     private var eventNavigationButtons: some View {
         HStack(spacing: 8) {
-            // 이전 이벤트
+            // Previous event
             Button(action: {
                 seekToPreviousEvent()
             }) {
@@ -839,7 +839,7 @@ struct PlayerControlsView: View {
             .help("Previous event")
             .disabled(getPreviousEvent() == nil)
 
-            // 다음 이벤트
+            // Next event
             Button(action: {
                 seekToNextEvent()
             }) {
@@ -855,28 +855,28 @@ struct PlayerControlsView: View {
 
     // MARK: - Event Marker View
 
-    /// @brief 이벤트 마커 뷰
-    /// @param marker 이벤트 마커 데이터
-    /// @param width 타임라인 전체 너비
-    /// @return 마커 뷰
+    /// @brief Event marker view
+    /// @param marker Event marker data
+    /// @param width Total timeline width
+    /// @return Marker view
     ///
     /// @details
-    /// 타임라인에 표시되는 개별 이벤트 마커입니다.
+    /// Individual event marker displayed on timeline.
     ///
-    /// ## 색상 코딩
-    /// - 급감속 (hardBraking): 빨간색
-    /// - 급가속 (rapidAcceleration): 주황색
-    /// - 급회전 (sharpTurn): 노란색
+    /// ## Color Coding
+    /// - Hard braking (hardBraking): Red
+    /// - Rapid acceleration (rapidAcceleration): Orange
+    /// - Sharp turn (sharpTurn): Yellow
     ///
-    /// ## 크기
-    /// - 직경: 10px
-    /// - 강도(magnitude)에 따라 불투명도 조절
+    /// ## Size
+    /// - Diameter: 10px
+    /// - Opacity adjusted according to magnitude
     private func eventMarkerView(marker: EventMarker, width: CGFloat) -> some View {
-        // 마커 위치 계산
+        // Calculate marker position
         let position = marker.timestamp / viewModel.duration
-        let xOffset = width * position - 5  // 중앙 정렬 (-5 = 직경/2)
+        let xOffset = width * position - 5  // Center align (-5 = diameter/2)
 
-        // 이벤트 타입에 따른 색상
+        // Color based on event type
         let markerColor: Color = {
             switch marker.type {
             case .hardBraking:
@@ -891,10 +891,10 @@ struct PlayerControlsView: View {
         return Circle()
             .fill(markerColor)
             .frame(width: 10, height: 10)
-            .opacity(0.5 + marker.magnitude * 0.5)  // 강도에 따라 불투명도 조절
+            .opacity(0.5 + marker.magnitude * 0.5)  // Adjust opacity based on magnitude
             .offset(x: xOffset, y: 0)
             .onTapGesture {
-                // 마커 클릭 시 해당 시간으로 이동
+                // Navigate to corresponding time on marker click
                 seekToEvent(marker)
             }
             .help("\(marker.displayName) - \(marker.timeString)")
@@ -902,54 +902,54 @@ struct PlayerControlsView: View {
 
     // MARK: - Event Navigation Methods
 
-    /// @brief 이전 이벤트 가져오기
-    /// @return 이전 이벤트 마커 (없으면 nil)
+    /// @brief Get previous event
+    /// @return Previous event marker (nil if none)
     private func getPreviousEvent() -> EventMarker? {
         let currentTime = viewModel.currentTime
-        // 현재 시간 이전의 이벤트들 중 가장 가까운 것
+        // Nearest event before current time
         return eventMarkers
             .filter { $0.timestamp < currentTime }
             .max(by: { $0.timestamp < $1.timestamp })
     }
 
-    /// @brief 다음 이벤트 가져오기
-    /// @return 다음 이벤트 마커 (없으면 nil)
+    /// @brief Get next event
+    /// @return Next event marker (nil if none)
     private func getNextEvent() -> EventMarker? {
         let currentTime = viewModel.currentTime
-        // 현재 시간 이후의 이벤트들 중 가장 가까운 것
+        // Nearest event after current time
         return eventMarkers
             .filter { $0.timestamp > currentTime }
             .min(by: { $0.timestamp < $1.timestamp })
     }
 
-    /// @brief 이전 이벤트로 이동
+    /// @brief Navigate to previous event
     private func seekToPreviousEvent() {
         guard let event = getPreviousEvent() else { return }
         seekToEvent(event)
     }
 
-    /// @brief 다음 이벤트로 이동
+    /// @brief Navigate to next event
     private func seekToNextEvent() {
         guard let event = getNextEvent() else { return }
         seekToEvent(event)
     }
 
-    /// @brief 특정 이벤트로 이동
-    /// @param event 이동할 이벤트 마커
+    /// @brief Navigate to specific event
+    /// @param event Event marker to navigate to
     private func seekToEvent(_ event: EventMarker) {
         viewModel.seek(to: event.timestamp / viewModel.duration)
     }
 
     // MARK: - Segment Selection Views
 
-    /// @brief 선택된 구간 하이라이트 뷰
-    /// @param inTime 시작 시간 (초)
-    /// @param outTime 끝 시간 (초)
-    /// @param width 타임라인 전체 너비
-    /// @return 구간 하이라이트 뷰
+    /// @brief Selected segment highlight view
+    /// @param inTime Start time (seconds)
+    /// @param outTime End time (seconds)
+    /// @param width Total timeline width
+    /// @return Segment highlight view
     ///
     /// @details
-    /// In Point ~ Out Point 사이를 반투명 녹색 바로 표시합니다.
+    /// Displays In Point ~ Out Point range as semi-transparent green bar.
     private func segmentHighlightView(inTime: TimeInterval, outTime: TimeInterval, width: CGFloat) -> some View {
         let startPosition = inTime / viewModel.duration
         let endPosition = outTime / viewModel.duration
@@ -963,13 +963,13 @@ struct PlayerControlsView: View {
             .offset(x: xOffset, y: 0)
     }
 
-    /// @brief In Point 마커 뷰
-    /// @param inTime 시작 시간 (초)
-    /// @param width 타임라인 전체 너비
-    /// @return In Point 마커 뷰
+    /// @brief In Point marker view
+    /// @param inTime Start time (seconds)
+    /// @param width Total timeline width
+    /// @return In Point marker view
     ///
     /// @details
-    /// 녹색 삼각형으로 구간 시작점을 표시합니다.
+    /// Displays segment start point as green triangle.
     private func inPointMarkerView(inTime: TimeInterval, width: CGFloat) -> some View {
         let position = inTime / viewModel.duration
         let xOffset = width * position - 6
@@ -981,13 +981,13 @@ struct PlayerControlsView: View {
             .help("In Point: \(formatTime(inTime))")
     }
 
-    /// @brief Out Point 마커 뷰
-    /// @param outTime 끝 시간 (초)
-    /// @param width 타임라인 전체 너비
-    /// @return Out Point 마커 뷰
+    /// @brief Out Point marker view
+    /// @param outTime End time (seconds)
+    /// @param width Total timeline width
+    /// @return Out Point marker view
     ///
     /// @details
-    /// 녹색 역삼각형으로 구간 끝점을 표시합니다.
+    /// Displays segment end point as green inverted triangle.
     private func outPointMarkerView(outTime: TimeInterval, width: CGFloat) -> some View {
         let position = outTime / viewModel.duration
         let xOffset = width * position - 6
@@ -995,18 +995,18 @@ struct PlayerControlsView: View {
         return Triangle()
             .fill(Color.green)
             .frame(width: 12, height: 12)
-            .rotationEffect(.degrees(180))  // 아래쪽을 가리키도록 회전
+            .rotationEffect(.degrees(180))  // Rotate to point downward
             .offset(x: xOffset, y: 8)
             .help("Out Point: \(formatTime(outTime))")
     }
 
-    /// @brief 구간 선택 버튼들
+    /// @brief Segment selection buttons
     ///
     /// @details
-    /// In Point, Out Point 설정, 초기화, 추출 버튼을 제공합니다.
+    /// Provides buttons for setting In Point, Out Point, reset, and export.
     private var segmentSelectionButtons: some View {
         HStack(spacing: 8) {
-            // In Point 설정 버튼
+            // In Point set button
             Button(action: {
                 viewModel.setInPoint()
             }) {
@@ -1024,7 +1024,7 @@ struct PlayerControlsView: View {
             .buttonStyle(.plain)
             .help("Set In Point (start of segment)")
 
-            // Out Point 설정 버튼
+            // Out Point set button
             Button(action: {
                 viewModel.setOutPoint()
             }) {
@@ -1043,7 +1043,7 @@ struct PlayerControlsView: View {
             .help("Set Out Point (end of segment)")
             .disabled(viewModel.inPoint == nil)
 
-            // 구간 초기화 버튼
+            // Segment clear button
             if viewModel.inPoint != nil || viewModel.outPoint != nil {
                 Button(action: {
                     viewModel.clearSegment()
@@ -1056,7 +1056,7 @@ struct PlayerControlsView: View {
                 .help("Clear segment selection")
             }
 
-            // 구간 추출 버튼
+            // Segment export button
             if viewModel.hasValidSegment {
                 Button(action: {
                     exportSegment()
@@ -1081,18 +1081,18 @@ struct PlayerControlsView: View {
 
     // MARK: - Snapshot Button
 
-    /// @brief 스냅샷 버튼
+    /// @brief Snapshot button
     ///
     /// @details
-    /// 현재 비디오 프레임을 이미지 파일로 저장합니다.
+    /// Saves current video frame as image file.
     ///
-    /// ## 기능
-    /// - 현재 표시 중인 프레임 캡처
-    /// - PNG, JPEG, TIFF 포맷 지원
-    /// - 파일 저장 다이얼로그 표시
+    /// ## Functions
+    /// - Capture currently displayed frame
+    /// - Support PNG, JPEG, TIFF formats
+    /// - Display file save dialog
     ///
-    /// ## SF Symbols 아이콘
-    /// - **camera.fill**: 카메라 아이콘 (스냅샷 의미)
+    /// ## SF Symbols Icon
+    /// - **camera.fill**: Camera icon (snapshot meaning)
     private var snapshotButton: some View {
         Button(action: {
             saveSnapshot()
@@ -1113,21 +1113,21 @@ struct PlayerControlsView: View {
 
     // MARK: - Share Button
 
-    /// @brief 공유 버튼
+    /// @brief Share button
     ///
     /// @details
-    /// macOS 네이티브 공유 메뉴를 표시합니다.
+    /// Displays macOS native share menu.
     ///
-    /// ## 공유 옵션
-    /// - 현재 비디오 파일
-    /// - 현재 프레임 스냅샷
-    /// - (향후) 추출된 구간
+    /// ## Share Options
+    /// - Current video file
+    /// - Current frame snapshot
+    /// - (Future) Extracted segment
     ///
-    /// ## SF Symbols 아이콘
-    /// - **square.and.arrow.up**: 공유 아이콘 (macOS/iOS 표준)
+    /// ## SF Symbols Icon
+    /// - **square.and.arrow.up**: Share icon (macOS/iOS standard)
     private var shareButton: some View {
         Menu {
-            // 비디오 파일 공유
+            // Share video file
             Button(action: {
                 shareVideoFile()
             }) {
@@ -1135,7 +1135,7 @@ struct PlayerControlsView: View {
             }
             .disabled(viewModel.videoFile == nil)
 
-            // 현재 프레임 스냅샷 공유
+            // Share current frame snapshot
             Button(action: {
                 shareCurrentFrame()
             }) {
@@ -1145,7 +1145,7 @@ struct PlayerControlsView: View {
 
             Divider()
 
-            // 구간 공유 (유효한 구간이 있을 때만)
+            // Share segment (only when valid segment exists)
             if viewModel.hasValidSegment {
                 Button(action: {
                     shareSegment()
@@ -1169,17 +1169,17 @@ struct PlayerControlsView: View {
 
     // MARK: - Share Methods
 
-    /// @brief 비디오 파일 공유
+    /// @brief Share video file
     ///
     /// @details
-    /// 현재 재생 중인 비디오 파일을 macOS 공유 서비스를 통해 공유합니다.
+    /// Shares currently playing video file through macOS sharing service.
     ///
-    /// ## 공유 가능한 서비스
+    /// ## Available Services
     /// - AirDrop
     /// - Messages
     /// - Mail
     /// - Notes
-    /// - 기타 macOS 공유 확장
+    /// - Other macOS share extensions
     private func shareVideoFile() {
         guard let videoFile = viewModel.videoFile,
               let frontChannel = videoFile.channel(for: .front) ?? videoFile.channels.first else {
@@ -1191,23 +1191,23 @@ struct PlayerControlsView: View {
         shareItems([fileURL])
     }
 
-    /// @brief 현재 프레임 스냅샷 공유
+    /// @brief Share current frame snapshot
     ///
     /// @details
-    /// 현재 표시 중인 프레임을 이미지로 캡처하여 공유합니다.
-    /// 임시 파일로 PNG 형식으로 저장한 후 공유합니다.
+    /// Captures currently displayed frame as image and shares it.
+    /// Saves as PNG format to temporary file then shares.
     private func shareCurrentFrame() {
         guard let snapshot = viewModel.captureCurrentFrame() else {
             print("Failed to capture current frame")
             return
         }
 
-        // 임시 디렉토리에 PNG 파일 생성
+        // Create PNG file in temporary directory
         let tempDir = FileManager.default.temporaryDirectory
         let fileName = "snapshot_\(formatTime(viewModel.currentTime)).png"
         let tempURL = tempDir.appendingPathComponent(fileName)
 
-        // PNG 데이터 생성 및 저장
+        // Generate and save PNG data
         guard let tiffData = snapshot.tiffRepresentation,
               let bitmapImage = NSBitmapImageRep(data: tiffData),
               let pngData = bitmapImage.representation(using: .png, properties: [:]) else {
@@ -1223,11 +1223,11 @@ struct PlayerControlsView: View {
         }
     }
 
-    /// @brief 선택된 구간 공유
+    /// @brief Share selected segment
     ///
     /// @details
-    /// 선택된 구간을 임시 파일로 추출한 후 공유합니다.
-    /// 추출이 완료되면 자동으로 공유 메뉴가 표시됩니다.
+    /// Extracts selected segment to temporary file then shares it.
+    /// Share menu is automatically displayed when extraction completes.
     private func shareSegment() {
         guard let inTime = viewModel.inPoint,
               let outTime = viewModel.outPoint,
@@ -1235,12 +1235,12 @@ struct PlayerControlsView: View {
             return
         }
 
-        // 임시 디렉토리에 파일 생성
+        // Create file in temporary directory
         let tempDir = FileManager.default.temporaryDirectory
         let fileName = "segment_\(formatTime(inTime))_to_\(formatTime(outTime)).mp4"
         let tempURL = tempDir.appendingPathComponent(fileName)
 
-        // 추출 실행
+        // Execute export
         let exporter = SegmentExporter()
         let duration = outTime - inTime
 
@@ -1255,7 +1255,7 @@ struct PlayerControlsView: View {
             startTime: inTime,
             duration: duration
         ) { progress in
-            // 진행률 로그
+            // Progress log
             DispatchQueue.main.async {
                 print("Export progress: \(Int(progress * 100))%")
             }
@@ -1272,32 +1272,32 @@ struct PlayerControlsView: View {
         }
     }
 
-    /// @brief 아이템 공유 (macOS 공유 서비스 사용)
+    /// @brief Share items (using macOS sharing service)
     ///
-    /// @param items 공유할 아이템 배열 (URL, NSImage 등)
+    /// @param items Array of items to share (URL, NSImage, etc.)
     ///
     /// @details
-    /// macOS의 NSSharingService를 사용하여 공유 메뉴를 표시합니다.
+    /// Displays share menu using macOS's NSSharingService.
     ///
-    /// ## 공유 가능한 타입
-    /// - URL: 파일 경로
-    /// - NSImage: 이미지
-    /// - String: 텍스트
+    /// ## Shareable Types
+    /// - URL: File path
+    /// - NSImage: Image
+    /// - String: Text
     ///
-    /// ## 공유 서비스 예시
-    /// - AirDrop: 근처 기기로 전송
-    /// - Messages: 메시지로 공유
-    /// - Mail: 이메일 첨부
-    /// - Notes: 노트에 추가
+    /// ## Share Service Examples
+    /// - AirDrop: Transfer to nearby device
+    /// - Messages: Share via messages
+    /// - Mail: Email attachment
+    /// - Notes: Add to notes
     private func shareItems(_ items: [Any]) {
-        // NSSharingServicePicker를 사용하여 공유 메뉴 표시
+        // Display share menu using NSSharingServicePicker
         let picker = NSSharingServicePicker(items: items)
 
-        // 현재 윈도우의 contentView에서 공유 메뉴 표시
+        // Display share menu from current window's contentView
         if let window = NSApplication.shared.keyWindow,
            let contentView = window.contentView {
-            // 공유 버튼의 프레임을 가져와서 그 위치에 메뉴 표시
-            // (여기서는 윈도우 중앙에 표시)
+            // Get share button's frame and display menu at that position
+            // (Here displayed at window center)
             let rect = NSRect(x: contentView.bounds.midX, y: contentView.bounds.midY, width: 1, height: 1)
             picker.show(relativeTo: rect, of: contentView, preferredEdge: .minY)
         }
@@ -1305,35 +1305,35 @@ struct PlayerControlsView: View {
 
     // MARK: - Snapshot Save
 
-    /// @brief 스냅샷 저장 실행
+    /// @brief Execute snapshot save
     ///
     /// @details
-    /// 현재 프레임을 이미지 파일로 저장합니다.
-    /// 사용자가 포맷(PNG, JPEG, TIFF)과 저장 위치를 선택할 수 있습니다.
+    /// Saves current frame as image file.
+    /// User can select format (PNG, JPEG, TIFF) and save location.
     ///
-    /// ## 저장 프로세스
+    /// ## Save Process
     /// ```
-    /// 1. currentFrame 캡처 (VideoPlayerViewModel.captureCurrentFrame)
+    /// 1. Capture currentFrame (VideoPlayerViewModel.captureCurrentFrame)
     ///      ↓
-    /// 2. NSSavePanel 표시 (포맷 선택, 저장 위치 선택)
+    /// 2. Display NSSavePanel (select format, select save location)
     ///      ↓
-    /// 3. 선택된 포맷으로 이미지 변환 (NSBitmapImageRep)
+    /// 3. Convert image to selected format (NSBitmapImageRep)
     ///      ↓
-    /// 4. 파일 저장
+    /// 4. Save file
     /// ```
     ///
-    /// ## 지원 포맷
-    /// - **PNG**: 무손실 압축, 투명도 지원, 파일 크기 중간
-    /// - **JPEG**: 손실 압축, 투명도 미지원, 파일 크기 작음
-    /// - **TIFF**: 무손실, 고품질, 파일 크기 큼
+    /// ## Supported Formats
+    /// - **PNG**: Lossless compression, transparency support, medium file size
+    /// - **JPEG**: Lossy compression, no transparency, small file size
+    /// - **TIFF**: Lossless, high quality, large file size
     private func saveSnapshot() {
-        // 현재 프레임 캡처
+        // Capture current frame
         guard let snapshot = viewModel.captureCurrentFrame() else {
             print("Failed to capture current frame")
             return
         }
 
-        // 파일 저장 다이얼로그 표시
+        // Display file save dialog
         let savePanel = NSSavePanel()
         savePanel.allowedContentTypes = [.png, .jpeg, .tiff]
         savePanel.nameFieldStringValue = "snapshot_\(formatTime(viewModel.currentTime)).png"
@@ -1345,7 +1345,7 @@ struct PlayerControlsView: View {
                 return
             }
 
-            // 선택된 파일 확장자로 포맷 결정
+            // Determine format from selected file extension
             let fileExtension = outputURL.pathExtension.lowercased()
             let imageType: NSBitmapImageRep.FileType
 
@@ -1358,17 +1358,17 @@ struct PlayerControlsView: View {
                 imageType = .png
             }
 
-            // 이미지 데이터 생성
+            // Generate image data
             guard let tiffData = snapshot.tiffRepresentation,
                   let bitmapImage = NSBitmapImageRep(data: tiffData) else {
                 print("Failed to create bitmap representation")
                 return
             }
 
-            // 포맷에 맞게 이미지 데이터 변환
+            // Convert image data to match format
             let imageProperties: [NSBitmapImageRep.PropertyKey: Any]
             if imageType == .jpeg {
-                // JPEG: 품질 0.9 (0.0 = 최저 품질, 1.0 = 최고 품질)
+                // JPEG: Quality 0.9 (0.0 = lowest quality, 1.0 = highest quality)
                 imageProperties = [.compressionFactor: 0.9]
             } else {
                 imageProperties = [:]
@@ -1379,25 +1379,25 @@ struct PlayerControlsView: View {
                 return
             }
 
-            // 파일 저장
+            // Save file
             do {
                 try imageData.write(to: outputURL)
                 print("Snapshot saved: \(outputURL.path)")
-                // TODO: 성공 알림 표시
+                // TODO: Display success notification
             } catch {
                 print("Failed to save snapshot: \(error.localizedDescription)")
-                // TODO: 에러 알림 표시
+                // TODO: Display error notification
             }
         }
     }
 
     // MARK: - Segment Export
 
-    /// @brief 구간 추출 실행
+    /// @brief Execute segment export
     ///
     /// @details
-    /// 선택된 구간을 별도 파일로 추출합니다.
-    /// 파일 저장 다이얼로그를 표시하고 SegmentExporter를 사용하여 추출합니다.
+    /// Extracts selected segment to separate file.
+    /// Displays file save dialog and uses SegmentExporter for extraction.
     private func exportSegment() {
         guard let inTime = viewModel.inPoint,
               let outTime = viewModel.outPoint,
@@ -1405,7 +1405,7 @@ struct PlayerControlsView: View {
             return
         }
 
-        // 파일 저장 다이얼로그 표시
+        // Display file save dialog
         let savePanel = NSSavePanel()
         savePanel.allowedContentTypes = [.mpeg4Movie]
         savePanel.nameFieldStringValue = "segment_\(formatTime(inTime))_to_\(formatTime(outTime)).mp4"
@@ -1417,11 +1417,11 @@ struct PlayerControlsView: View {
                 return
             }
 
-            // 추출 실행
+            // Execute export
             let exporter = SegmentExporter()
             let duration = outTime - inTime
 
-            // 전면 카메라 채널 선택
+            // Select front camera channel
             guard let frontChannel = videoFile.channel(for: .front) ?? videoFile.channels.first else {
                 print("No video channel available")
                 return
@@ -1433,30 +1433,30 @@ struct PlayerControlsView: View {
                 startTime: inTime,
                 duration: duration
             ) { progress in
-                // 진행률 업데이트 (메인 스레드)
+                // Update progress (main thread)
                 DispatchQueue.main.async {
-                    // TODO: 진행률 UI 업데이트
+                    // TODO: Update progress UI
                     print("Export progress: \(Int(progress * 100))%")
                 }
             } completion: { result in
-                // 완료 처리 (메인 스레드)
+                // Handle completion (main thread)
                 DispatchQueue.main.async {
                     switch result {
                     case .success(let url):
                         print("Export completed: \(url)")
-                    // TODO: 성공 알림 표시
+                    // TODO: Display success notification
                     case .failure(let error):
                         print("Export failed: \(error.localizedDescription)")
-                    // TODO: 에러 알림 표시
+                    // TODO: Display error notification
                     }
                 }
             }
         }
     }
 
-    /// @brief 시간을 MM:SS 형식으로 포맷
-    /// @param time 시간 (초)
-    /// @return 포맷된 시간 문자열
+    /// @brief Format time as MM:SS
+    /// @param time Time (seconds)
+    /// @return Formatted time string
     private func formatTime(_ time: TimeInterval) -> String {
         let totalSeconds = Int(time)
         let minutes = totalSeconds / 60
@@ -1466,46 +1466,46 @@ struct PlayerControlsView: View {
 
     // MARK: - Time Display
 
-    /// @brief 시간 표시
+    /// @brief Time display
     ///
-    /// ## 표시 형식
+    /// ## Display Format
     /// ```
     /// 00:18 / 01:00
-    /// ^현재  ^전체
+    /// ^Current  ^Total
     /// ```
     ///
-    /// ## Monospaced 폰트의 중요성
+    /// ## Importance of Monospaced Font
     /// ```swift
     /// .font(.system(.body, design: .monospaced))
     /// ```
     ///
-    /// **일반 폰트 (Proportional):**
+    /// **Regular Font (Proportional):**
     /// ```
-    /// "1"의 너비: 좁음
-    /// "0"의 너비: 넓음
-    /// → 시간이 바뀔 때마다 너비 변함 → UI 흔들림 ❌
-    /// ```
-    ///
-    /// **Monospaced 폰트:**
-    /// ```
-    /// 모든 숫자의 너비: 동일
-    /// → 시간이 바뀌어도 너비 일정 → UI 안정적 ✅
+    /// "1" width: Narrow
+    /// "0" width: Wide
+    /// → Width changes when time changes → UI shifts ❌
     /// ```
     ///
-    /// **실제 예시:**
+    /// **Monospaced Font:**
     /// ```
-    /// 일반 폰트:
-    /// 00:01 (좁음)
-    /// 11:11 (넓음) → 너비 변화로 주변 UI 밀림
+    /// All digit widths: Same
+    /// → Width constant even when time changes → Stable UI ✅
+    /// ```
+    ///
+    /// **Actual Example:**
+    /// ```
+    /// Regular font:
+    /// 00:01 (narrow)
+    /// 11:11 (wide) → Width change pushes surrounding UI
     ///
     /// Monospaced:
-    /// 00:01 (고정)
-    /// 11:11 (고정) → 너비 일정, UI 안정
+    /// 00:01 (fixed)
+    /// 11:11 (fixed) → Constant width, stable UI
     /// ```
     ///
     /// ## .foregroundColor(.secondary)
-    /// - 전체 시간을 약간 어둡게 표시
-    /// - 현재 시간(primary)보다 덜 중요함을 시각적으로 표현
+    /// - Display total time slightly darker
+    /// - Visually express less importance than current time (primary)
     private var timeDisplay: some View {
         HStack(spacing: 4) {
             Text(viewModel.currentTimeString)
@@ -1522,21 +1522,21 @@ struct PlayerControlsView: View {
 
     // MARK: - Speed Control
 
-    /// @brief 재생 속도 조절
+    /// @brief Playback speed control
     ///
-    /// ## Menu 컴포넌트 구조
+    /// ## Menu Component Structure
     /// ```swift
     /// Menu {
-    ///     // 메뉴 항목들 (클릭 시 나타남)
+    ///     // Menu items (appear on click)
     ///     Button("0.5x") { ... }
     ///     Button("0.75x") { ... }
     /// } label: {
-    ///     // 메뉴를 여는 버튼 (항상 보임)
+    ///     // Button that opens menu (always visible)
     ///     Text("1.0x")
     /// }
     /// ```
     ///
-    /// ## ForEach로 동적 메뉴 생성
+    /// ## Dynamic Menu Generation with ForEach
     /// ```swift
     /// ForEach([0.5, 0.75, 1.0, 1.25, 1.5, 2.0], id: \.self) { speed in
     ///     Button(action: { viewModel.setPlaybackSpeed(speed) }) {
@@ -1550,39 +1550,39 @@ struct PlayerControlsView: View {
     /// }
     /// ```
     ///
-    /// **id: \.self의 의미:**
-    /// - ForEach는 각 항목을 구분할 ID가 필요
-    /// - `\.self`는 값 자체를 ID로 사용 (0.5, 0.75, 1.0 등)
-    /// - Double은 Hashable이므로 ID로 사용 가능
+    /// **Meaning of id: \.self:**
+    /// - ForEach needs an ID to distinguish each item
+    /// - `\.self` uses the value itself as ID (0.5, 0.75, 1.0, etc.)
+    /// - Double is Hashable so can be used as ID
     ///
-    /// ## 체크마크 표시 로직
+    /// ## Checkmark Display Logic
     /// ```swift
     /// if abs(viewModel.playbackSpeed - speed) < 0.01 {
     ///     Image(systemName: "checkmark")
     /// }
     /// ```
     ///
-    /// **왜 abs()를 사용하나?**
-    /// - Double 비교는 부동소수점 오차 때문에 ==를 쓰면 안 됨
-    /// - 예: `1.0 == 1.0000000001` → false (오차)
-    /// - 해결: `abs(1.0 - 1.0000000001) < 0.01` → true (충분히 가까움)
+    /// **Why use abs()?**
+    /// - Double comparison shouldn't use == due to floating point error
+    /// - Example: `1.0 == 1.0000000001` → false (error)
+    /// - Solution: `abs(1.0 - 1.0000000001) < 0.01` → true (close enough)
     ///
-    /// ## String.format() 사용법
+    /// ## String.format() Usage
     /// ```swift
     /// String(format: "%.2fx", 0.5)   → "0.50x"
     /// String(format: "%.2fx", 1.0)   → "1.00x"
     /// String(format: "%.2fx", 1.25)  → "1.25x"
     ///
-    /// // %.2f의 의미
-    /// %     → 포맷 지정자 시작
-    /// .2    → 소수점 이하 2자리
-    /// f     → float/double 타입
-    /// x     → 일반 텍스트 (속도 단위)
+    /// // Meaning of %.2f
+    /// %     → Format specifier start
+    /// .2    → 2 decimal places
+    /// f     → float/double type
+    /// x     → Regular text (speed unit)
     /// ```
     ///
     /// ## .menuStyle(.borderlessButton)
-    /// - macOS 전용 스타일
-    /// - 버튼 테두리 없이 깔끔하게 표시
+    /// - macOS-specific style
+    /// - Display cleanly without button border
     private var speedControl: some View {
         Menu {
             ForEach([0.5, 0.75, 1.0, 1.25, 1.5, 2.0], id: \.self) { speed in
@@ -1614,54 +1614,54 @@ struct PlayerControlsView: View {
 
     // MARK: - Volume Control
 
-    /// @brief 볼륨 조절
+    /// @brief Volume control
     ///
-    /// ## Binding(get:set:) 패턴
+    /// ## Binding(get:set:) Pattern
     /// ```swift
     /// Slider(value: Binding(
-    ///     get: { viewModel.volume },           // 값 읽기
-    ///     set: { viewModel.setVolume($0) }     // 값 쓰기
+    ///     get: { viewModel.volume },           // Read value
+    ///     set: { viewModel.setVolume($0) }     // Write value
     /// ), in: 0...1)
     /// ```
     ///
-    /// ## Binding이란?
-    /// - 양방향 데이터 바인딩을 제공하는 Property Wrapper
-    /// - Slider, TextField 등이 값을 읽고 쓸 수 있게 해줌
+    /// ## What is Binding?
+    /// - Property Wrapper that provides two-way data binding
+    /// - Allows Slider, TextField, etc. to read and write values
     ///
-    /// ## 왜 Binding(get:set:)을 사용하나?
+    /// ## Why use Binding(get:set:)?
     ///
-    /// ### 방법 1: @State 직접 바인딩 (간단한 경우)
+    /// ### Method 1: Direct @State Binding (Simple Case)
     /// ```swift
     /// @State private var volume: Double = 0.5
     /// Slider(value: $volume, in: 0...1)
-    /// // ✅ 간단하지만, 값 변경 시 추가 로직 실행 불가
+    /// // ✅ Simple, but cannot execute additional logic on value change
     /// ```
     ///
-    /// ### 방법 2: Binding(get:set:) (추가 로직 필요한 경우)
+    /// ### Method 2: Binding(get:set:) (When Additional Logic Needed)
     /// ```swift
     /// Slider(value: Binding(
     ///     get: { viewModel.volume },
-    ///     set: { viewModel.setVolume($0) }  // 오디오 볼륨도 함께 설정
+    ///     set: { viewModel.setVolume($0) }  // Also set audio volume
     /// ), in: 0...1)
-    /// // ✅ 값 변경 시 setVolume() 메서드 호출 → 오디오 출력 조절
+    /// // ✅ Calls setVolume() method on value change → Controls audio output
     /// ```
     ///
-    /// ## setVolume(_:)에서 하는 일
+    /// ## What setVolume(_:) Does
     /// ```swift
     /// func setVolume(_ newVolume: Double) {
-    ///     volume = newVolume                // 1. 프로퍼티 업데이트
-    ///     audioPlayer.setVolume(newVolume)  // 2. 오디오 출력 조절
-    ///     UserDefaults.save(volume: newVolume)  // 3. 설정 저장 (선택적)
+    ///     volume = newVolume                // 1. Update property
+    ///     audioPlayer.setVolume(newVolume)  // 2. Control audio output
+    ///     UserDefaults.save(volume: newVolume)  // 3. Save settings (optional)
     /// }
     /// ```
     ///
     /// ## HStack spacing: 8
-    /// - 아이콘과 슬라이더 사이 간격 8px
-    /// - 시각적으로 연결되어 보이면서도 붙지 않음
+    /// - 8px gap between icon and slider
+    /// - Visually connected but not touching
     ///
     /// ## .frame(width: 80)
-    /// - 슬라이더 너비 고정
-    /// - 볼륨 아이콘이 변해도 레이아웃 유지
+    /// - Fixed slider width
+    /// - Maintain layout even when volume icon changes
     private var volumeControl: some View {
         HStack(spacing: 8) {
             Image(systemName: volumeIcon)
@@ -1677,47 +1677,47 @@ struct PlayerControlsView: View {
         }
     }
 
-    /// @brief 볼륨 아이콘 (Computed Property)
+    /// @brief Volume icon (Computed Property)
     ///
-    /// ## 볼륨 레벨별 아이콘
+    /// ## Icons by Volume Level
     /// ```
-    /// 볼륨 = 0.00       → "speaker.slash.fill"   (🔇 음소거)
-    /// 볼륨 = 0.01~0.32  → "speaker.wave.1.fill"  (🔈 작음)
-    /// 볼륨 = 0.33~0.66  → "speaker.wave.2.fill"  (🔉 중간)
-    /// 볼륨 = 0.67~1.00  → "speaker.wave.3.fill"  (🔊 큼)
+    /// Volume = 0.00       → "speaker.slash.fill"   (🔇 muted)
+    /// Volume = 0.01~0.32  → "speaker.wave.1.fill"  (🔈 low)
+    /// Volume = 0.33~0.66  → "speaker.wave.2.fill"  (🔉 medium)
+    /// Volume = 0.67~1.00  → "speaker.wave.3.fill"  (🔊 high)
     /// ```
     ///
-    /// ## 범위 분할 로직
+    /// ## Range Division Logic
     /// ```swift
-    /// if volume == 0 { ... }         // 정확히 0
+    /// if volume == 0 { ... }         // Exactly 0
     /// else if volume < 0.33 { ... }  // 0.01 ~ 0.32
     /// else if volume < 0.67 { ... }  // 0.33 ~ 0.66
     /// else { ... }                   // 0.67 ~ 1.00
     /// ```
     ///
-    /// **왜 1/3씩 나누나?**
-    /// - 4단계로 나누면 사용자가 직관적으로 이해
-    /// - 3개의 파동 아이콘 (1파, 2파, 3파)에 대응
+    /// **Why divide into thirds?**
+    /// - 4 levels allow user intuitive understanding
+    /// - Corresponds to 3 wave icons (1 wave, 2 waves, 3 waves)
     ///
-    /// ## SF Symbols 스피커 아이콘
-    /// - **speaker.slash.fill**: 빗금 그어진 스피커 (음소거)
-    /// - **speaker.wave.1.fill**: 1개 파동 (작은 소리)
-    /// - **speaker.wave.2.fill**: 2개 파동 (중간 소리)
-    /// - **speaker.wave.3.fill**: 3개 파동 (큰 소리)
+    /// ## SF Symbols Speaker Icons
+    /// - **speaker.slash.fill**: Speaker with slash (muted)
+    /// - **speaker.wave.1.fill**: 1 wave (low volume)
+    /// - **speaker.wave.2.fill**: 2 waves (medium volume)
+    /// - **speaker.wave.3.fill**: 3 waves (high volume)
     ///
-    /// ## .frame(width: 20)의 효과
-    /// - 아이콘 너비를 20px로 고정
-    /// - 아이콘이 바뀌어도 레이아웃이 흔들리지 않음
+    /// ## Effect of .frame(width: 20)
+    /// - Fix icon width to 20px
+    /// - Layout not affected when icon changes
     ///
-    /// **예시:**
+    /// **Example:**
     /// ```
-    /// 아이콘 너비 고정 없이:
-    /// 🔇 (좁음)
-    /// 🔊 (넓음) → 아이콘 바뀔 때마다 슬라이더 위치 변함 ❌
+    /// Without fixed icon width:
+    /// 🔇 (narrow)
+    /// 🔊 (wide) → Slider position changes when icon changes ❌
     ///
-    /// .frame(width: 20) 적용:
+    /// With .frame(width: 20):
     /// 🔇 (20px)
-    /// 🔊 (20px) → 항상 같은 너비, 슬라이더 위치 고정 ✅
+    /// 🔊 (20px) → Always same width, slider position fixed ✅
     /// ```
     private var volumeIcon: String {
         if viewModel.volume == 0 {
@@ -1736,14 +1736,14 @@ struct PlayerControlsView: View {
 
 /// @brief Preview (temporarily disabled - requires sample data)
 //
-// Preview를 활성화하려면 다음과 같이 Mock ViewModel을 생성하세요:
+// To enable Preview, create a Mock ViewModel as follows:
 //
 // ```swift
 // extension VideoPlayerViewModel {
 //     static func mock() -> VideoPlayerViewModel {
 //         let vm = VideoPlayerViewModel()
 //         vm.playbackState = .paused
-//         vm.playbackPosition = 0.3  // 30% 재생
+//         vm.playbackPosition = 0.3  // 30% played
 //         vm.currentTimeString = "00:18"
 //         vm.durationString = "01:00"
 //         vm.playbackSpeed = 1.0
@@ -1755,7 +1755,7 @@ struct PlayerControlsView: View {
 // struct PlayerControlsView_Previews: PreviewProvider {
 //     static var previews: some View {
 //         VStack(spacing: 20) {
-//             // 재생 중 상태
+//             // Playing state
 //             PlayerControlsView(viewModel: {
 //                 let vm = VideoPlayerViewModel.mock()
 //                 vm.playbackState = .playing
@@ -1763,7 +1763,7 @@ struct PlayerControlsView: View {
 //             }())
 //             .previewDisplayName("Playing")
 //
-//             // 일시정지 상태
+//             // Paused state
 //             PlayerControlsView(viewModel: {
 //                 let vm = VideoPlayerViewModel.mock()
 //                 vm.playbackState = .paused
@@ -1771,7 +1771,7 @@ struct PlayerControlsView: View {
 //             }())
 //             .previewDisplayName("Paused")
 //
-//             // 음소거 상태
+//             // Muted state
 //             PlayerControlsView(viewModel: {
 //                 let vm = VideoPlayerViewModel.mock()
 //                 vm.volume = 0
@@ -1795,24 +1795,24 @@ struct PlayerControlsView: View {
 // MARK: - Triangle Shape
 
 /// @struct Triangle
-/// @brief 삼각형 Shape
+/// @brief Triangle Shape
 ///
 /// @details
-/// In/Out Point 마커용 삼각형 경로입니다.
+/// Triangle path for In/Out Point markers.
 private struct Triangle: Shape {
     func path(in rect: CGRect) -> Path {
         var path = Path()
 
-        // 삼각형 꼭지점 (위쪽 중앙)
+        // Triangle vertex (top center)
         path.move(to: CGPoint(x: rect.midX, y: rect.minY))
 
-        // 왼쪽 아래
+        // Bottom left
         path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
 
-        // 오른쪽 아래
+        // Bottom right
         path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
 
-        // 닫기 (다시 꼭지점으로)
+        // Close (back to vertex)
         path.closeSubpath()
 
         return path

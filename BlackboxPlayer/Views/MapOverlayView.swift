@@ -1,18 +1,18 @@
 /// @file MapOverlayView.swift
-/// @brief GPS 경로를 미니맵 오버레이로 표시하는 View
+/// @brief View for displaying GPS routes as minimap overlay
 /// @author BlackboxPlayer Development Team
 /// @details
-/// GPS 경로를 미니맵 오버레이로 표시하는 View입니다. NSViewRepresentable로 MapKit의
-/// MKMapView를 SwiftUI에 통합하여 과거/미래 경로 분할, 실시간 위치 추적, 충격 이벤트 마커 기능을 제공합니다.
+/// A View that displays GPS routes as a minimap overlay. Integrates MapKit's MKMapView into SwiftUI
+/// using NSViewRepresentable, providing past/future route segmentation, real-time location tracking, and impact event marker features.
 
 import SwiftUI
 import MapKit
 
 /// # MapOverlayView
 ///
-/// GPS 경로를 미니맵 오버레이로 표시하는 View입니다.
+/// A View that displays GPS routes as a minimap overlay.
 ///
-/// ## 화면 구조
+/// ## Screen Layout
 /// ```
 /// ┌─────────────────────────────────────────────────┐
 /// │                                                  │
@@ -24,19 +24,19 @@ import MapKit
 /// │                                     │ /       │ │
 /// │                                     │/        │ │
 /// │                                     └─────────┘ │
-/// │                                     ^^미니맵^^  │
+/// │                                     ^^minimap^^  │
 /// └─────────────────────────────────────────────────┘
 /// ```
 ///
-/// ## 주요 기능
-/// - **경로 표시**: 과거 경로(파란색 실선) + 미래 경로(회색 점선)
-/// - **현재 위치**: 위치 마커와 속도 표시
-/// - **충격 이벤트**: 사고 지점에 경고 마커
-/// - **컨트롤 버튼**: 위치 중앙 정렬, 경로 전체 보기
+/// ## Key Features
+/// - **Route Display**: Past route (blue solid line) + Future route (gray dashed line)
+/// - **Current Location**: Location marker and speed display
+/// - **Impact Events**: Warning markers at incident points
+/// - **Control Buttons**: Center on location, fit entire route to view
 ///
-/// ## SwiftUI 핵심 개념
+/// ## SwiftUI Core Concepts
 ///
-/// ### 1. NSViewRepresentable로 AppKit 통합
+/// ### 1. AppKit Integration via NSViewRepresentable
 /// ```swift
 /// struct EnhancedMapView: NSViewRepresentable {
 ///     func makeNSView(context: Context) -> MKMapView { ... }
@@ -45,22 +45,22 @@ import MapKit
 /// }
 /// ```
 ///
-/// **NSViewRepresentable이란?**
-/// - AppKit(macOS)의 NSView를 SwiftUI에서 사용할 수 있게 해주는 프로토콜
-/// - iOS에서는 UIViewRepresentable 사용 (동일한 패턴)
-/// - MapKit의 MKMapView는 SwiftUI 네이티브가 아니므로 래핑 필요
+/// **What is NSViewRepresentable?**
+/// - A protocol that enables AppKit (macOS) NSViews to be used in SwiftUI
+/// - iOS uses UIViewRepresentable (same pattern)
+/// - MapKit's MKMapView is not SwiftUI native, so wrapping is required
 ///
-/// **3가지 필수 메서드:**
-/// 1. **makeNSView**: NSView 생성 및 초기 설정 (한 번만 호출)
-/// 2. **updateNSView**: SwiftUI 상태 변경 시 NSView 업데이트 (여러 번 호출)
-/// 3. **makeCoordinator**: Delegate 처리를 위한 Coordinator 생성 (선택적)
+/// **3 Required Methods:**
+/// 1. **makeNSView**: Create NSView and initial setup (called once)
+/// 2. **updateNSView**: Update NSView when SwiftUI state changes (called multiple times)
+/// 3. **makeCoordinator**: Create Coordinator for Delegate handling (optional)
 ///
-/// **왜 필요한가?**
-/// - MKMapView는 AppKit 컴포넌트 (SwiftUI가 아님)
-/// - SwiftUI에서 직접 사용 불가
-/// - NSViewRepresentable로 래핑하면 SwiftUI처럼 사용 가능
+/// **Why is it needed?**
+/// - MKMapView is an AppKit component (not SwiftUI)
+/// - Cannot be used directly in SwiftUI
+/// - Wrapping with NSViewRepresentable allows SwiftUI-like usage
 ///
-/// ### 2. Coordinator 패턴으로 Delegate 처리
+/// ### 2. Delegate Handling via Coordinator Pattern
 /// ```swift
 /// class Coordinator: NSObject, MKMapViewDelegate {
 ///     func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer { ... }
@@ -68,66 +68,66 @@ import MapKit
 /// }
 /// ```
 ///
-/// **Coordinator란?**
-/// - NSViewRepresentable과 Delegate 메서드를 연결하는 중개자
-/// - MKMapViewDelegate를 채택하여 맵 이벤트 처리
-/// - SwiftUI와 AppKit 간 통신 다리 역할
+/// **What is a Coordinator?**
+/// - An intermediary that connects NSViewRepresentable with Delegate methods
+/// - Adopts MKMapViewDelegate to handle map events
+/// - Acts as a communication bridge between SwiftUI and AppKit
 ///
-/// **왜 필요한가?**
-/// - MKMapView는 Delegate 패턴 사용 (SwiftUI는 사용 안 함)
-/// - Delegate 메서드를 처리할 객체 필요
-/// - Coordinator가 이 역할을 담당
+/// **Why is it needed?**
+/// - MKMapView uses the Delegate pattern (SwiftUI does not)
+/// - An object is needed to handle Delegate methods
+/// - Coordinator fulfills this role
 ///
-/// ### 3. @Binding으로 양방향 바인딩
+/// ### 3. Two-way Binding via @Binding
 /// ```swift
 /// struct EnhancedMapView: NSViewRepresentable {
 ///     @Binding var region: MKCoordinateRegion
 /// }
 /// ```
 ///
-/// **@Binding이란?**
-/// - 부모 View의 @State를 참조하여 양방향 바인딩
-/// - 값을 읽고 쓸 수 있음
-/// - 부모와 자식이 같은 값을 공유
+/// **What is @Binding?**
+/// - Two-way binding by referencing parent View's @State
+/// - Can read and write values
+/// - Parent and child share the same value
 ///
-/// **사용 방식:**
+/// **Usage Pattern:**
 /// ```swift
-/// // 부모 View
+/// // Parent View
 /// @State private var region = MKCoordinateRegion(...)
-/// EnhancedMapView(region: $region)  // $ 사용
+/// EnhancedMapView(region: $region)  // Use $
 ///
-/// // 자식 View (EnhancedMapView)
-/// @Binding var region: MKCoordinateRegion  // $ 없이 선언
+/// // Child View (EnhancedMapView)
+/// @Binding var region: MKCoordinateRegion  // Declare without $
 /// ```
 ///
-/// ### 4. Route Segmentation (경로 분할)
+/// ### 4. Route Segmentation
 /// ```swift
 /// let segments = gpsService.getRouteSegments(at: currentTime)
 /// EnhancedMapView(
-///     pastRoute: segments.past,      // 지나온 경로 (파란색)
-///     futureRoute: segments.future   // 앞으로 갈 경로 (회색)
+///     pastRoute: segments.past,      // Traveled route (blue)
+///     futureRoute: segments.future   // Future route (gray)
 /// )
 /// ```
 ///
-/// **경로 분할이란?**
-/// - 전체 GPS 경로를 currentTime 기준으로 2개로 분할
-/// - 과거 경로: 0초 ~ currentTime (이미 이동한 경로)
-/// - 미래 경로: currentTime ~ 끝 (아직 이동 안 한 경로)
+/// **What is Route Segmentation?**
+/// - Split the entire GPS route into 2 parts based on currentTime
+/// - Past route: 0s ~ currentTime (already traveled)
+/// - Future route: currentTime ~ end (not yet traveled)
 ///
-/// **시각적 표현:**
+/// **Visual Representation:**
 /// ```
-/// currentTime = 30초
+/// currentTime = 30s
 ///
-/// 전체 경로: [0초] ─────── [30초] ─────── [60초]
-///                  ^과거^      ^미래^
+/// Full route: [0s] ─────── [30s] ─────── [60s]
+///                  ^past^      ^future^
 ///
-/// 지도 표시:
+/// Map display:
 /// ════════════●━━━━━━━━━━━
-/// ^파란색 실선^ ^회색 점선^
-///            ^현재 위치
+/// ^blue solid^ ^gray dashed^
+///            ^current position
 /// ```
 ///
-/// ### 5. Polyline 렌더링
+/// ### 5. Polyline Rendering
 /// ```swift
 /// func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
 ///     if let polyline = overlay as? MKPolyline {
@@ -139,17 +139,17 @@ import MapKit
 /// }
 /// ```
 ///
-/// **Polyline이란?**
-/// - 여러 좌표를 연결한 선
-/// - GPS 경로를 지도에 그릴 때 사용
-/// - MKPolyline(coordinates:count:)로 생성
+/// **What is a Polyline?**
+/// - A line connecting multiple coordinates
+/// - Used to draw GPS routes on the map
+/// - Created with MKPolyline(coordinates:count:)
 ///
-/// **Renderer란?**
-/// - Overlay를 화면에 그리는 역할
-/// - 색상, 두께, 점선 패턴 등 스타일 지정
-/// - MKPolylineRenderer(polyline:)로 생성
+/// **What is a Renderer?**
+/// - Responsible for drawing Overlays on screen
+/// - Specifies style such as color, width, dash pattern
+/// - Created with MKPolylineRenderer(polyline:)
 ///
-/// ### 6. Bounding Box 계산
+/// ### 6. Bounding Box Calculation
 /// ```swift
 /// let minLat = coordinates.map { $0.latitude }.min() ?? 0
 /// let maxLat = coordinates.map { $0.latitude }.max() ?? 0
@@ -162,13 +162,13 @@ import MapKit
 /// )
 /// ```
 ///
-/// **Bounding Box란?**
-/// - 모든 GPS 좌표를 포함하는 최소 사각형
-/// - 경로 전체를 화면에 맞추기 위해 사용
+/// **What is a Bounding Box?**
+/// - The minimum rectangle containing all GPS coordinates
+/// - Used to fit the entire route on screen
 ///
-/// **계산 과정:**
+/// **Calculation Process:**
 /// ```
-/// GPS 좌표들:
+/// GPS Coordinates:
 /// (37.5665, 126.9780)
 /// (37.5670, 126.9785)
 /// (37.5660, 126.9775)
@@ -183,9 +183,9 @@ import MapKit
 ///        = (37.5665, 126.9780)
 /// ```
 ///
-/// ## 사용 예제
+/// ## Usage Examples
 ///
-/// ### 예제 1: VideoPlayerView에서 사용
+/// ### Example 1: Using in VideoPlayerView
 /// ```swift
 /// struct VideoPlayerView: View {
 ///     @StateObject private var gpsService = GPSService()
@@ -194,10 +194,10 @@ import MapKit
 ///
 ///     var body: some View {
 ///         ZStack {
-///             // 비디오 화면
+///             // Video screen
 ///             VideoFrameView(frame: currentFrame)
 ///
-///             // 미니맵 오버레이
+///             // Minimap overlay
 ///             MapOverlayView(
 ///                 gpsService: gpsService,
 ///                 gsensorService: gsensorService,
@@ -208,7 +208,7 @@ import MapKit
 /// }
 /// ```
 ///
-/// ### 예제 2: 토글 가능한 미니맵
+/// ### Example 2: Toggleable Minimap
 /// ```swift
 /// @State private var showMiniMap = true
 ///
@@ -233,9 +233,9 @@ import MapKit
 /// }
 /// ```
 ///
-/// ## 실무 응용
+/// ## Practical Applications
 ///
-/// ### 크기 조절 가능한 미니맵
+/// ### Resizable Minimap
 /// ```swift
 /// @State private var mapSize: CGSize = CGSize(width: 250, height: 200)
 ///
@@ -250,7 +250,7 @@ import MapKit
 ///     )
 /// ```
 ///
-/// ### 맵 타입 변경 (일반/위성/하이브리드)
+/// ### Map Type Switching (Standard/Satellite/Hybrid)
 /// ```swift
 /// @State private var mapType: MKMapType = .standard
 ///
@@ -261,7 +261,7 @@ import MapKit
 /// }
 /// ```
 ///
-/// ### 속도 표시 애니메이션
+/// ### Speed Display Animation
 /// ```swift
 /// Text(String(format: "%.0f km/h", currentSpeed))
 ///     .font(.system(size: 14, weight: .bold, design: .rounded))
@@ -269,32 +269,32 @@ import MapKit
 ///     .animation(.easeInOut(duration: 0.3), value: currentSpeed)
 /// ```
 ///
-/// ## 성능 최적화
+/// ## Performance Optimization
 ///
-/// ### 1. Polyline 업데이트 최소화
+/// ### 1. Minimize Polyline Updates
 /// ```swift
-/// // 현재: 매번 전체 경로 재생성 (비효율적)
+/// // Current: Regenerate entire route every time (inefficient)
 /// mapView.removeOverlays(mapView.overlays)
 /// mapView.addOverlay(polyline)
 ///
-/// // 개선: 변경된 부분만 업데이트
+/// // Improved: Update only changed portions
 /// if lastUpdateTime != currentTime {
 ///     updatePolyline(from: lastUpdateTime, to: currentTime)
 ///     lastUpdateTime = currentTime
 /// }
 /// ```
 ///
-/// ### 2. Annotation 재사용
+/// ### 2. Reuse Annotations
 /// ```swift
 /// var annotationView = mapView.dequeueReusableAnnotationView(withIdentifier: identifier)
-/// // ✅ 재사용: 메모리 효율적
+/// // ✅ Reuse: Memory efficient
 /// ```
 ///
-/// ### 3. Region 변경 애니메이션 제한
+/// ### 3. Limit Region Change Animations
 /// ```swift
-/// // onChange에서 너무 자주 호출 방지
+/// // Prevent too frequent calls in onChange
 /// .onChange(of: currentTime) { newTime in
-///     // 1초마다만 업데이트
+///     // Update only once per second
 ///     if Int(newTime) != Int(oldTime) {
 ///         centerOnCurrentLocation()
 ///     }
@@ -302,67 +302,67 @@ import MapKit
 /// ```
 ///
 /// @struct MapOverlayView
-/// @brief GPS 경로를 미니맵 오버레이로 표시하는 View
+/// @brief View for displaying GPS routes as minimap overlay
 struct MapOverlayView: View {
     // MARK: - Properties
 
     /// @var gpsService
-    /// @brief GPS 서비스 (@ObservedObject)
+    /// @brief GPS service (@ObservedObject)
     ///
-    /// **GPSService란?**
-    /// - GPS 데이터를 관리하는 서비스 클래스
-    /// - 경로 포인트, 현재 위치, 경로 분할 기능 제공
-    /// - @Published 속성 변경 시 View 자동 업데이트
+    /// **What is GPSService?**
+    /// - Service class that manages GPS data
+    /// - Provides route points, current location, and route segmentation
+    /// - View automatically updates when @Published properties change
     ///
-    /// **주요 기능:**
-    /// - `routePoints`: 전체 GPS 경로 포인트 배열
-    /// - `currentLocation`: 현재 시간의 GPS 포인트
-    /// - `getRouteSegments(at:)`: 경로를 과거/미래로 분할
-    /// - `hasData`: GPS 데이터 존재 여부
+    /// **Key Features:**
+    /// - `routePoints`: Array of all GPS route points
+    /// - `currentLocation`: GPS point at current time
+    /// - `getRouteSegments(at:)`: Split route into past/future
+    /// - `hasData`: Whether GPS data exists
     @ObservedObject var gpsService: GPSService
 
     /// @var gsensorService
-    /// @brief G-Sensor 서비스 (@ObservedObject)
+    /// @brief G-Sensor service (@ObservedObject)
     ///
-    /// **GSensorService란?**
-    /// - 가속도 센서 데이터를 관리하는 서비스 클래스
-    /// - 충격 이벤트 감지 및 관리
-    /// - @Published 속성 변경 시 View 자동 업데이트
+    /// **What is GSensorService?**
+    /// - Service class that manages acceleration sensor data
+    /// - Detects and manages impact events
+    /// - View automatically updates when @Published properties change
     ///
-    /// **주요 기능:**
-    /// - `impactEvents`: 충격 이벤트 배열 (4G 이상)
-    /// - `accelerationData`: 전체 가속도 데이터
+    /// **Key Features:**
+    /// - `impactEvents`: Array of impact events (4G or more)
+    /// - `accelerationData`: All acceleration data
     @ObservedObject var gsensorService: GSensorService
 
     /// @var currentTime
-    /// @brief 현재 재생 시간
+    /// @brief Current playback time
     ///
-    /// **용도:**
-    /// - GPS 경로를 과거/미래로 분할하는 기준점
-    /// - 현재 위치 계산에 사용
-    /// - onChange로 변경 감지하여 맵 업데이트
+    /// **Purpose:**
+    /// - Reference point for splitting GPS route into past/future
+    /// - Used to calculate current position
+    /// - Map updates detected via onChange
     let currentTime: TimeInterval
 
     /// @var region
-    /// @brief 맵 영역 (@State)
+    /// @brief Map region (@State)
     ///
-    /// **MKCoordinateRegion이란?**
-    /// - 지도에 표시할 영역을 정의
-    /// - center: 중심 좌표 (위도, 경도)
-    /// - span: 보이는 범위 (latitudeDelta, longitudeDelta)
+    /// **What is MKCoordinateRegion?**
+    /// - Defines the region to display on the map
+    /// - center: Center coordinate (latitude, longitude)
+    /// - span: Visible range (latitudeDelta, longitudeDelta)
     ///
-    /// **span 값의 의미:**
+    /// **Span values meaning:**
     /// ```
-    /// latitudeDelta: 0.01  → 약 1.1km 높이
-    /// longitudeDelta: 0.01 → 약 1.1km 너비 (위도에 따라 다름)
+    /// latitudeDelta: 0.01  → approx 1.1km height
+    /// longitudeDelta: 0.01 → approx 1.1km width (varies by latitude)
     ///
-    /// latitudeDelta: 0.1   → 약 11km 높이
-    /// latitudeDelta: 1.0   → 약 111km 높이
+    /// latitudeDelta: 0.1   → approx 11km height
+    /// latitudeDelta: 1.0   → approx 111km height
     /// ```
     ///
-    /// **초기값 (서울시청):**
+    /// **Initial value (Seoul City Hall):**
     /// - center: (37.5665, 126.9780)
-    /// - span: (0.01, 0.01) → 약 1.1km × 1.1km 영역
+    /// - span: (0.01, 0.01) → approx 1.1km × 1.1km area
     @State private var region = MKCoordinateRegion(
         center: CLLocationCoordinate2D(latitude: 37.5665, longitude: 126.9780),
         span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
@@ -377,9 +377,9 @@ struct MapOverlayView: View {
             HStack {
                 Spacer()
 
-                // GPS 데이터가 있을 때만 미니맵 표시
+                // Show minimap only when GPS data is available
                 //
-                // gpsService.hasData: GPS 포인트가 1개 이상 있는지 확인
+                // gpsService.hasData: Check if there is at least one GPS point
                 if gpsService.hasData {
                     miniMap
                         .frame(width: 250, height: 200)
@@ -393,40 +393,40 @@ struct MapOverlayView: View {
 
     // MARK: - Mini Map
 
-    /// @brief 미니맵
+    /// @brief Minimap
     ///
-    /// ## 구조
+    /// ## Structure
     /// ```
     /// ┌──────────────┐
-    /// │  📍  🔍      │  ← 컨트롤 버튼 (topTrailing)
+    /// │  📍  🔍      │  ← Control buttons (topTrailing)
     /// │              │
-    /// │  ═══●━━━━━  │  ← 경로 (파란색 실선 + 회색 점선)
+    /// │  ═══●━━━━━  │  ← Route (blue solid + gray dashed)
     /// │ /            │
     /// │/             │
     /// └──────────────┘
     /// ```
     ///
-    /// ## 레이어 구조 (ZStack)
-    /// 1. **EnhancedMapView**: MKMapView 래핑 (지도, 경로, 마커)
-    /// 2. **컨트롤 버튼**: 위치 중앙, 경로 전체 보기 (topTrailing)
+    /// ## Layer Structure (ZStack)
+    /// 1. **EnhancedMapView**: MKMapView wrapper (map, route, markers)
+    /// 2. **Control buttons**: Center on location, fit route to view (topTrailing)
     ///
     /// ## Route Segments
     /// ```swift
     /// let segments = gpsService.getRouteSegments(at: currentTime)
     /// ```
     ///
-    /// **getRouteSegments란?**
-    /// - currentTime 기준으로 경로를 2개로 분할
-    /// - segments.past: 0초 ~ currentTime (이동한 경로)
-    /// - segments.future: currentTime ~ 끝 (아직 이동 안 한 경로)
+    /// **What is getRouteSegments?**
+    /// - Split route into 2 parts based on currentTime
+    /// - segments.past: 0s ~ currentTime (traveled route)
+    /// - segments.future: currentTime ~ end (not yet traveled)
     ///
-    /// **예시:**
+    /// **Example:**
     /// ```
-    /// currentTime = 30초
-    /// 전체 경로: 60초 분량
+    /// currentTime = 30s
+    /// Total route: 60s duration
     ///
-    /// segments.past = [0초 ~ 30초 GPS 포인트들]
-    /// segments.future = [30초 ~ 60초 GPS 포인트들]
+    /// segments.past = [GPS points from 0s ~ 30s]
+    /// segments.future = [GPS points from 30s ~ 60s]
     /// ```
     ///
     /// ## onChange(of: currentTime)
@@ -438,22 +438,22 @@ struct MapOverlayView: View {
     /// }
     /// ```
     ///
-    /// **onChange란?**
-    /// - 특정 값이 변경될 때마다 클로저 실행
-    /// - currentTime이 바뀔 때마다 맵 중심 이동
-    /// - 실시간으로 현재 위치 추적
+    /// **What is onChange?**
+    /// - Execute closure whenever a specific value changes
+    /// - Move map center whenever currentTime changes
+    /// - Track current location in real-time
     ///
-    /// **작동 방식:**
+    /// **How it works:**
     /// ```
     /// currentTime: 0 → 5 → 10 → 15 → ...
     ///                  ↓   ↓    ↓
-    ///              centerOnCoordinate 호출
+    ///              centerOnCoordinate called
     /// ```
     private var miniMap: some View {
         ZStack(alignment: .topTrailing) {
             // Enhanced map view with route segmentation
             //
-            // 경로를 과거/미래로 분할하여 표시
+            // Display route split into past/future
             let segments = gpsService.getRouteSegments(at: currentTime)
             EnhancedMapView(
                 region: $region,
@@ -463,15 +463,15 @@ struct MapOverlayView: View {
                 impactEvents: gsensorService.impactEvents
             )
 
-            // 맵 컨트롤 버튼
+            // Map control buttons
             //
-            // topTrailing 정렬: 오른쪽 위에 배치
+            // topTrailing alignment: Positioned at top right
             VStack(spacing: 8) {
-                /// @brief 현재 위치 중앙 정렬 버튼
+                /// @brief Center on current location button
                 ///
-                /// **동작:**
-                /// - 현재 위치를 맵 중앙으로 이동
-                /// - withAnimation으로 부드럽게 애니메이션
+                /// **Action:**
+                /// - Move current location to map center
+                /// - Smooth animation via withAnimation
                 Button(action: centerOnCurrentLocation) {
                     Image(systemName: "location.fill")
                         .font(.caption)
@@ -481,11 +481,11 @@ struct MapOverlayView: View {
                         .cornerRadius(6)
                 }
 
-                /// @brief 경로 전체 보기 버튼
+                /// @brief Fit entire route to view button
                 ///
-                /// **동작:**
-                /// - 모든 경로가 보이도록 맵 영역 조정
-                /// - Bounding Box 계산하여 최적 영역 설정
+                /// **Action:**
+                /// - Adjust map region so all routes are visible
+                /// - Calculate bounding box to set optimal region
                 Button(action: fitRouteToView) {
                     Image(systemName: "arrow.up.left.and.arrow.down.right")
                         .font(.caption)
@@ -498,19 +498,19 @@ struct MapOverlayView: View {
             .padding(8)
         }
         .onAppear {
-            /// @brief View가 나타날 때 맵 영역 초기화
+            /// @brief Initialize map region when View appears
             ///
-            /// **동작:**
-            /// - 현재 위치 또는 첫 GPS 포인트로 맵 중심 설정
-            /// - 최초 1회만 호출됨
+            /// **Action:**
+            /// - Set map center to current location or first GPS point
+            /// - Called only once initially
             updateMapRegion()
         }
         .onChange(of: currentTime) { _ in
-            /// @brief currentTime 변경 시 맵 중심 이동
+            /// @brief Move map center when currentTime changes
             ///
-            /// **동작:**
-            /// - 현재 위치로 맵 중심 이동
-            /// - 실시간으로 위치 추적
+            /// **Action:**
+            /// - Move map center to current location
+            /// - Track location in real-time
             if let point = gpsService.currentLocation {
                 centerOnCoordinate(point.coordinate)
             }
@@ -519,25 +519,25 @@ struct MapOverlayView: View {
 
     // MARK: - Helper Methods
 
-    /// @brief 맵 영역 초기화
+    /// @brief Initialize map region
     ///
-    /// ## 동작 순서
-    /// 1. 현재 위치가 있으면 → 현재 위치 중심으로 설정
-    /// 2. 현재 위치 없으면 → 첫 GPS 포인트 중심으로 설정
-    /// 3. GPS 데이터 없으면 → 기본값 유지 (서울시청)
+    /// ## Action Sequence
+    /// 1. If current location exists → Set center to current location
+    /// 2. If no current location → Set center to first GPS point
+    /// 3. If no GPS data → Keep default value (Seoul City Hall)
     ///
-    /// ## 사용 시점
-    /// - onAppear: View가 처음 나타날 때
-    /// - 맵 초기화 시
+    /// ## When to Use
+    /// - onAppear: When View first appears
+    /// - Map initialization
     ///
-    /// ## 코드 흐름
+    /// ## Code Flow
     /// ```swift
     /// if let point = gpsService.currentLocation {
-    ///     // 현재 위치로 설정
+    ///     // Set to current location
     /// } else if let firstPoint = gpsService.routePoints.first {
-    ///     // 첫 포인트로 설정
+    ///     // Set to first point
     /// }
-    /// // 둘 다 없으면 기본값 유지
+    /// // Keep default if both are unavailable
     /// ```
     private func updateMapRegion() {
         if let point = gpsService.currentLocation {
@@ -553,7 +553,7 @@ struct MapOverlayView: View {
         }
     }
 
-    /// @brief 현재 위치를 맵 중앙으로 이동
+    /// @brief Move current location to map center
     ///
     /// ## withAnimation
     /// ```swift
@@ -562,18 +562,18 @@ struct MapOverlayView: View {
     /// }
     /// ```
     ///
-    /// **withAnimation이란?**
-    /// - 블록 내부의 상태 변경을 애니메이션으로 표현
-    /// - region 변경이 부드럽게 애니메이션됨
-    /// - 기본 duration: 0.35초
+    /// **What is withAnimation?**
+    /// - Animates state changes within the block
+    /// - Region changes are smoothly animated
+    /// - Default duration: 0.35 seconds
     ///
-    /// **애니메이션 효과:**
-    /// - 맵이 부드럽게 이동 (갑자기 점프하지 않음)
-    /// - 사용자 경험 향상
+    /// **Animation Effect:**
+    /// - Map moves smoothly (doesn't jump abruptly)
+    /// - Improves user experience
     ///
-    /// ## 사용 시점
-    /// - 사용자가 📍 버튼 클릭 시
-    /// - 현재 위치로 빠르게 이동하고 싶을 때
+    /// ## When to Use
+    /// - When user clicks 📍 button
+    /// - When wanting to quickly move to current location
     private func centerOnCurrentLocation() {
         if let point = gpsService.currentLocation {
             withAnimation {
@@ -582,29 +582,29 @@ struct MapOverlayView: View {
         }
     }
 
-    /// @brief 특정 좌표를 맵 중앙으로 이동
+    /// @brief Move specific coordinate to map center
     ///
-    /// ## 동작
+    /// ## Action
     /// ```swift
     /// region = MKCoordinateRegion(
-    ///     center: coordinate,  // 새 중심 좌표
-    ///     span: region.span    // 기존 확대 레벨 유지
+    ///     center: coordinate,  // New center coordinate
+    ///     span: region.span    // Keep existing zoom level
     /// )
     /// ```
     ///
-    /// **span을 유지하는 이유:**
-    /// - 확대 레벨을 그대로 유지
-    /// - 중심만 이동, 줌 레벨은 변경 안 함
+    /// **Why preserve span?**
+    /// - Keep zoom level as is
+    /// - Only move center, don't change zoom level
     ///
-    /// **예시:**
+    /// **Example:**
     /// ```
-    /// 현재 region:
+    /// Current region:
     ///   center: (37.5665, 126.9780)
     ///   span: (0.01, 0.01)
     ///
-    /// centerOnCoordinate((37.5670, 126.9785)) 호출 후:
-    ///   center: (37.5670, 126.9785)  ← 변경됨
-    ///   span: (0.01, 0.01)           ← 유지됨
+    /// After centerOnCoordinate((37.5670, 126.9785)):
+    ///   center: (37.5670, 126.9785)  ← Changed
+    ///   span: (0.01, 0.01)           ← Preserved
     /// ```
     private func centerOnCoordinate(_ coordinate: CLLocationCoordinate2D) {
         region = MKCoordinateRegion(
@@ -613,32 +613,32 @@ struct MapOverlayView: View {
         )
     }
 
-    /// @brief 전체 경로를 맵에 맞춤
+    /// @brief Fit entire route to map
     ///
-    /// ## Bounding Box 계산
+    /// ## Bounding Box Calculation
     /// ```swift
     /// let minLat = coordinates.map { $0.latitude }.min() ?? 0
     /// let maxLat = coordinates.map { $0.latitude }.max() ?? 0
     /// ```
     ///
-    /// **Bounding Box란?**
-    /// - 모든 GPS 좌표를 포함하는 최소 사각형
-    /// - min/max 위도/경도로 정의됨
+    /// **What is a Bounding Box?**
+    /// - The minimum rectangle containing all GPS coordinates
+    /// - Defined by min/max latitude/longitude
     ///
-    /// **계산 예시:**
+    /// **Calculation Example:**
     /// ```
-    /// GPS 좌표들:
+    /// GPS Coordinates:
     /// (37.5665, 126.9780)
     /// (37.5670, 126.9785)
     /// (37.5660, 126.9775)
     ///
-    /// minLat = 37.5660  (가장 남쪽)
-    /// maxLat = 37.5670  (가장 북쪽)
-    /// minLon = 126.9775 (가장 서쪽)
-    /// maxLon = 126.9785 (가장 동쪽)
+    /// minLat = 37.5660  (southernmost)
+    /// maxLat = 37.5670  (northernmost)
+    /// minLon = 126.9775 (westernmost)
+    /// maxLon = 126.9785 (easternmost)
     /// ```
     ///
-    /// ## 중심 좌표 계산
+    /// ## Center Coordinate Calculation
     /// ```swift
     /// let center = CLLocationCoordinate2D(
     ///     latitude: (minLat + maxLat) / 2,
@@ -646,17 +646,17 @@ struct MapOverlayView: View {
     /// )
     /// ```
     ///
-    /// **왜 평균을 사용하나?**
-    /// - Bounding Box의 정확한 중심
-    /// - 경로가 고르게 보임
+    /// **Why use average?**
+    /// - Exact center of the bounding box
+    /// - Route appears evenly distributed
     ///
-    /// **계산:**
+    /// **Calculation:**
     /// ```
     /// center.latitude = (37.5660 + 37.5670) / 2 = 37.5665
     /// center.longitude = (126.9775 + 126.9785) / 2 = 126.9780
     /// ```
     ///
-    /// ## Span 계산
+    /// ## Span Calculation
     /// ```swift
     /// let span = MKCoordinateSpan(
     ///     latitudeDelta: (maxLat - minLat) * 1.2,
@@ -664,25 +664,25 @@ struct MapOverlayView: View {
     /// )
     /// ```
     ///
-    /// **왜 1.2를 곱하나?**
-    /// - 20% 여유 공간 추가
-    /// - 경로가 화면 끝에 딱 붙지 않음
-    /// - 시각적으로 더 편안함
+    /// **Why multiply by 1.2?**
+    /// - Add 20% padding
+    /// - Route doesn't stick to screen edges
+    /// - More visually comfortable
     ///
-    /// **예시:**
+    /// **Example:**
     /// ```
     /// latitudeDelta = (37.5670 - 37.5660) * 1.2 = 0.001 * 1.2 = 0.0012
     /// longitudeDelta = (126.9785 - 126.9775) * 1.2 = 0.001 * 1.2 = 0.0012
     /// ```
     ///
-    /// ## 사용 시점
-    /// - 사용자가 🔍 버튼 클릭 시
-    /// - 전체 경로를 한눈에 보고 싶을 때
+    /// ## When to Use
+    /// - When user clicks 🔍 button
+    /// - When wanting to see entire route at once
     private func fitRouteToView() {
         let coordinates = gpsService.routePoints.map { $0.coordinate }
         guard !coordinates.isEmpty else { return }
 
-        // Bounding Box 계산
+        // Calculate bounding box
         let minLat = coordinates.map { $0.latitude }.min() ?? 0
         let maxLat = coordinates.map { $0.latitude }.max() ?? 0
         let minLon = coordinates.map { $0.longitude }.min() ?? 0
@@ -708,20 +708,20 @@ struct MapOverlayView: View {
 
 /// # EnhancedMapView
 ///
-/// NSViewRepresentable로 MKMapView를 SwiftUI에 통합한 래퍼입니다.
+/// A wrapper that integrates MKMapView into SwiftUI via NSViewRepresentable.
 ///
-/// ## NSViewRepresentable이란?
+/// ## What is NSViewRepresentable?
 ///
-/// **정의:**
-/// - AppKit(macOS)의 NSView를 SwiftUI에서 사용할 수 있게 해주는 프로토콜
-/// - iOS에서는 UIViewRepresentable 사용 (동일한 패턴)
+/// **Definition:**
+/// - A protocol that enables AppKit (macOS) NSViews to be used in SwiftUI
+/// - iOS uses UIViewRepresentable (same pattern)
 ///
-/// **왜 필요한가?**
-/// - MKMapView는 AppKit 컴포넌트 (SwiftUI 네이티브가 아님)
-/// - SwiftUI에서 직접 사용 불가
-/// - NSViewRepresentable로 래핑하면 SwiftUI처럼 사용 가능
+/// **Why is it needed?**
+/// - MKMapView is an AppKit component (not SwiftUI native)
+/// - Cannot be used directly in SwiftUI
+/// - Wrapping with NSViewRepresentable allows SwiftUI-like usage
 ///
-/// ## 3가지 필수 메서드
+/// ## 3 Required Methods
 ///
 /// ### 1. makeNSView(context:)
 /// ```swift
@@ -732,31 +732,31 @@ struct MapOverlayView: View {
 /// }
 /// ```
 ///
-/// **언제 호출되나?**
-/// - View가 처음 생성될 때 한 번만 호출됨
-/// - NSView 인스턴스를 만들고 초기 설정
+/// **When is it called?**
+/// - Called once when View is first created
+/// - Creates NSView instance and performs initial setup
 ///
-/// **주요 작업:**
-/// - NSView 생성
-/// - Delegate 설정
-/// - 초기 스타일 적용
+/// **Main Tasks:**
+/// - Create NSView
+/// - Set delegate
+/// - Apply initial styling
 ///
 /// ### 2. updateNSView(_:context:)
 /// ```swift
 /// func updateNSView(_ mapView: MKMapView, context: Context) {
 ///     mapView.setRegion(region, animated: true)
-///     // Overlay, Annotation 업데이트
+///     // Update Overlays, Annotations
 /// }
 /// ```
 ///
-/// **언제 호출되나?**
-/// - @Binding, @State 등이 변경될 때마다 호출됨
-/// - currentTime, region 등이 바뀔 때마다 실행
+/// **When is it called?**
+/// - Called whenever @Binding, @State, etc. change
+/// - Runs whenever currentTime, region, etc. change
 ///
-/// **주요 작업:**
-/// - NSView 상태 업데이트
-/// - Overlay 재설정
-/// - Annotation 재설정
+/// **Main Tasks:**
+/// - Update NSView state
+/// - Reset Overlays
+/// - Reset Annotations
 ///
 /// ### 3. makeCoordinator()
 /// ```swift
@@ -765,102 +765,102 @@ struct MapOverlayView: View {
 /// }
 /// ```
 ///
-/// **언제 호출되나?**
-/// - makeNSView 전에 한 번만 호출됨
-/// - Coordinator 인스턴스 생성
+/// **When is it called?**
+/// - Called once before makeNSView
+/// - Creates Coordinator instance
 ///
-/// **주요 작업:**
-/// - Delegate 객체 생성
-/// - Parent View 참조 전달
+/// **Main Tasks:**
+/// - Create Delegate object
+/// - Pass parent View reference
 ///
-/// ## Coordinator 패턴
+/// ## Coordinator Pattern
 ///
-/// **Coordinator란?**
-/// - NSViewRepresentable과 Delegate 메서드를 연결하는 중개자
-/// - MKMapViewDelegate를 채택하여 맵 이벤트 처리
-/// - SwiftUI와 AppKit 간 통신 다리 역할
+/// **What is a Coordinator?**
+/// - An intermediary that connects NSViewRepresentable with Delegate methods
+/// - Adopts MKMapViewDelegate to handle map events
+/// - Acts as a communication bridge between SwiftUI and AppKit
 ///
-/// **왜 필요한가?**
-/// - MKMapView는 Delegate 패턴 사용 (SwiftUI는 사용 안 함)
-/// - Delegate 메서드를 처리할 객체 필요
-/// - Coordinator가 이 역할을 담당
+/// **Why is it needed?**
+/// - MKMapView uses the Delegate pattern (SwiftUI does not)
+/// - An object is needed to handle Delegate methods
+/// - Coordinator fulfills this role
 ///
-/// **호출 흐름:**
+/// **Call Flow:**
 /// ```
 /// SwiftUI → NSViewRepresentable → Coordinator → MKMapViewDelegate
 ///                                      ↓
-///                                  mapView 이벤트
+///                                  mapView events
 /// ```
 ///
 /// @struct EnhancedMapView
-/// @brief NSViewRepresentable로 MKMapView를 SwiftUI에 통합한 래퍼
+/// @brief A wrapper that integrates MKMapView into SwiftUI via NSViewRepresentable
 struct EnhancedMapView: NSViewRepresentable {
     // MARK: - Properties
 
     /// @var region
-    /// @brief 맵 영역 (@Binding)
+    /// @brief Map region (@Binding)
     ///
-    /// **@Binding이란?**
-    /// - 부모 View의 @State를 참조하여 양방향 바인딩
-    /// - 값을 읽고 쓸 수 있음
-    /// - 부모와 자식이 같은 값을 공유
+    /// **What is @Binding?**
+    /// - Two-way binding by referencing parent View's @State
+    /// - Can read and write values
+    /// - Parent and child share the same value
     ///
-    /// **사용 방식:**
+    /// **Usage Pattern:**
     /// ```swift
-    /// // 부모 View (MapOverlayView)
+    /// // Parent View (MapOverlayView)
     /// @State private var region = MKCoordinateRegion(...)
-    /// EnhancedMapView(region: $region)  // $ 사용
+    /// EnhancedMapView(region: $region)  // Use $
     ///
-    /// // 자식 View (EnhancedMapView)
-    /// @Binding var region: MKCoordinateRegion  // $ 없이 선언
+    /// // Child View (EnhancedMapView)
+    /// @Binding var region: MKCoordinateRegion  // Declare without $
     /// ```
     @Binding var region: MKCoordinateRegion
 
     /// @var pastRoute
-    /// @brief 과거 경로 (이동한 경로)
+    /// @brief Past route (traveled route)
     ///
-    /// **표시 스타일:**
-    /// - 색상: 파란색 (NSColor.systemBlue)
-    /// - 두께: 4.0
-    /// - 패턴: 실선
+    /// **Display Style:**
+    /// - Color: Blue (NSColor.systemBlue)
+    /// - Width: 4.0
+    /// - Pattern: Solid line
     let pastRoute: [GPSPoint]
 
     /// @var futureRoute
-    /// @brief 미래 경로 (아직 이동 안 한 경로)
+    /// @brief Future route (not yet traveled)
     ///
-    /// **표시 스타일:**
-    /// - 색상: 회색 (NSColor.systemGray)
-    /// - 두께: 3.0
-    /// - 패턴: 점선 [2, 4] (2px 선, 4px 공백)
+    /// **Display Style:**
+    /// - Color: Gray (NSColor.systemGray)
+    /// - Width: 3.0
+    /// - Pattern: Dashed [2, 4] (2px line, 4px gap)
     let futureRoute: [GPSPoint]
 
     /// @var currentPoint
-    /// @brief 현재 위치
+    /// @brief Current location
     ///
-    /// **표시 스타일:**
-    /// - 아이콘: "location.circle.fill" (📍)
-    /// - 크기: 24pt
-    /// - 캘아웃: 속도 정보 표시
+    /// **Display Style:**
+    /// - Icon: "location.circle.fill" (📍)
+    /// - Size: 24pt
+    /// - Callout: Speed information display
     let currentPoint: GPSPoint?
 
     /// @var impactEvents
-    /// @brief 충격 이벤트 (4G 이상)
+    /// @brief Impact events (4G or more)
     ///
-    /// **표시 스타일:**
-    /// - 아이콘: "exclamationmark.triangle.fill" (⚠️)
-    /// - 크기: 18pt
-    /// - 캘아웃: 충격 강도 표시
+    /// **Display Style:**
+    /// - Icon: "exclamationmark.triangle.fill" (⚠️)
+    /// - Size: 18pt
+    /// - Callout: Impact severity display
     let impactEvents: [AccelerationData]
 
     // MARK: - NSViewRepresentable Methods
 
-    /// @brief NSView 생성 및 초기 설정
+    /// @brief Create NSView and perform initial setup
     ///
-    /// ## 호출 시점
-    /// - View가 처음 생성될 때 한 번만 호출됨
-    /// - SwiftUI 생명주기에서 최초 1회 실행
+    /// ## When Called
+    /// - Called once when View is first created
+    /// - Executed once initially in SwiftUI lifecycle
     ///
-    /// ## 초기 설정
+    /// ## Initial Setup
     /// ```swift
     /// mapView.delegate = context.coordinator
     /// mapView.mapType = .standard
@@ -868,23 +868,23 @@ struct EnhancedMapView: NSViewRepresentable {
     /// mapView.showsScale = true
     /// ```
     ///
-    /// **context.coordinator란?**
-    /// - makeCoordinator()에서 생성된 Coordinator 인스턴스
-    /// - MKMapViewDelegate 역할 수행
-    /// - mapView의 이벤트를 처리
+    /// **What is context.coordinator?**
+    /// - Coordinator instance created by makeCoordinator()
+    /// - Performs MKMapViewDelegate role
+    /// - Handles mapView events
     ///
-    /// **mapType 옵션:**
-    /// - `.standard`: 일반 지도 (기본값)
-    /// - `.satellite`: 위성 사진
-    /// - `.hybrid`: 위성 + 도로명
+    /// **mapType options:**
+    /// - `.standard`: Standard map (default)
+    /// - `.satellite`: Satellite imagery
+    /// - `.hybrid`: Satellite + road names
     ///
     /// **showsCompass:**
-    /// - true: 나침반 표시 (오른쪽 위)
-    /// - false: 나침반 숨김
+    /// - true: Show compass (top right)
+    /// - false: Hide compass
     ///
     /// **showsScale:**
-    /// - true: 축척 표시 (왼쪽 위)
-    /// - false: 축척 숨김
+    /// - true: Show scale (top left)
+    /// - false: Hide scale
     func makeNSView(context: Context) -> MKMapView {
         let mapView = MKMapView()
         mapView.delegate = context.coordinator
@@ -895,79 +895,79 @@ struct EnhancedMapView: NSViewRepresentable {
         return mapView
     }
 
-    /// @brief NSView 업데이트
+    /// @brief Update NSView
     ///
-    /// ## 호출 시점
-    /// - @Binding, @State 등이 변경될 때마다 호출됨
-    /// - region, pastRoute, futureRoute 등이 바뀔 때마다 실행
+    /// ## When Called
+    /// - Called whenever @Binding, @State, etc. change
+    /// - Runs whenever region, pastRoute, futureRoute, etc. change
     ///
-    /// ## 업데이트 순서
-    /// 1. region 설정 (맵 영역 이동)
-    /// 2. 기존 Overlay, Annotation 제거
-    /// 3. 새로운 Overlay 추가 (과거/미래 경로)
-    /// 4. 새로운 Annotation 추가 (현재 위치, 충격 이벤트)
+    /// ## Update Sequence
+    /// 1. Set region (move map area)
+    /// 2. Remove existing Overlays, Annotations
+    /// 3. Add new Overlays (past/future routes)
+    /// 4. Add new Annotations (current location, impact events)
     ///
     /// ## Overlay vs Annotation
     ///
-    /// **Overlay (오버레이):**
-    /// - 지도 위에 그려지는 도형 (선, 다각형 등)
-    /// - 예: Polyline (경로), Circle (영역), Polygon (구역)
-    /// - rendererFor overlay: Delegate 메서드로 렌더링
+    /// **Overlay:**
+    /// - Shapes drawn on the map (lines, polygons, etc.)
+    /// - Examples: Polyline (route), Circle (area), Polygon (zone)
+    /// - Rendered via rendererFor overlay Delegate method
     ///
-    /// **Annotation (주석):**
-    /// - 지도 위의 마커/핀
-    /// - 예: 현재 위치, 충격 지점, 관심 장소
-    /// - viewFor annotation: Delegate 메서드로 렌더링
+    /// **Annotation:**
+    /// - Markers/pins on the map
+    /// - Examples: Current location, impact points, points of interest
+    /// - Rendered via viewFor annotation Delegate method
     ///
-    /// ## 왜 매번 제거하고 다시 추가하나?
+    /// ## Why remove and re-add every time?
     /// ```swift
     /// mapView.removeOverlays(mapView.overlays)
     /// mapView.removeAnnotations(mapView.annotations)
     /// ```
     ///
-    /// **이유:**
-    /// - 이전 상태를 완전히 초기화
-    /// - 중복 표시 방지
-    /// - 단순하고 명확한 업데이트
+    /// **Reasons:**
+    /// - Completely reset previous state
+    /// - Prevent duplicate displays
+    /// - Simple and clear updates
     ///
-    /// **단점:**
-    /// - 매번 재생성으로 성능 저하 가능
-    /// - 많은 데이터일 때 최적화 필요
+    /// **Drawbacks:**
+    /// - Possible performance degradation from constant regeneration
+    /// - Optimization needed for large datasets
     func updateNSView(_ mapView: MKMapView, context: Context) {
         // Update region
         //
-        // animated: true로 부드럽게 이동
+        // Smooth movement with animated: true
         mapView.setRegion(region, animated: true)
 
         // Remove existing overlays and annotations
         //
-        // 기존 Overlay, Annotation 모두 제거
+        // Remove all existing Overlays and Annotations
         mapView.removeOverlays(mapView.overlays)
         mapView.removeAnnotations(mapView.annotations)
 
         // Add past route polyline (traveled path - blue)
         //
-        // 과거 경로: 파란색 실선
+        // Past route: Blue solid line
         if !pastRoute.isEmpty {
             let coordinates = pastRoute.map { $0.coordinate }
             let polyline = MKPolyline(coordinates: coordinates, count: coordinates.count)
-            polyline.title = "past"  // Renderer에서 구분하기 위한 식별자
+            polyline.title = "past"  // Identifier for Renderer differentiation
             mapView.addOverlay(polyline)
         }
 
         // Add future route polyline (not yet traveled - gray)
         //
-        // 미래 경로: 회색 점선
+        // Future route: Gray dashed line
         if !futureRoute.isEmpty {
             let coordinates = futureRoute.map { $0.coordinate }
             let polyline = MKPolyline(coordinates: coordinates, count: coordinates.count)
-            polyline.title = "future"  // Renderer에서 구분하기 위한 식별자
+            polyline.title = "future"  // Identifier for Renderer differentiation
             mapView.addOverlay(polyline)
         }
 
         // Add impact event markers
         //
-        // 충격 이벤트: ⚠️ 마커
+        // Impact events: ⚠️ markers
         for impact in impactEvents {
             // Find GPS point closest to impact timestamp
             // For now, we'll use a simple approach - in production, we'd query GPSService
@@ -981,7 +981,7 @@ struct EnhancedMapView: NSViewRepresentable {
 
         // Add current location annotation
         //
-        // 현재 위치: 📍 마커
+        // Current location: 📍 marker
         if let currentPoint = currentPoint {
             let annotation = MKPointAnnotation()
             annotation.coordinate = currentPoint.coordinate
@@ -993,25 +993,25 @@ struct EnhancedMapView: NSViewRepresentable {
         }
     }
 
-    /// @brief Coordinator 생성
+    /// @brief Create Coordinator
     ///
-    /// ## 호출 시점
-    /// - makeNSView 전에 한 번만 호출됨
-    /// - View 생명주기에서 최초 1회 실행
+    /// ## When Called
+    /// - Called once before makeNSView
+    /// - Executed once initially in View lifecycle
     ///
     /// ## Coordinator(self)
     /// ```swift
     /// Coordinator(self)
     /// ```
     ///
-    /// **self란?**
-    /// - EnhancedMapView 인스턴스
-    /// - parent로 저장되어 Coordinator에서 접근 가능
+    /// **What is self?**
+    /// - EnhancedMapView instance
+    /// - Stored as parent and accessible from Coordinator
     ///
-    /// **왜 parent가 필요한가?**
-    /// - Coordinator에서 EnhancedMapView의 속성에 접근
-    /// - 예: parent.pastRoute, parent.futureRoute
-    /// - Delegate 메서드에서 SwiftUI 상태 읽기
+    /// **Why is parent needed?**
+    /// - Access EnhancedMapView properties from Coordinator
+    /// - Example: parent.pastRoute, parent.futureRoute
+    /// - Read SwiftUI state in Delegate methods
     func makeCoordinator() -> Coordinator {
         Coordinator(self)
     }
@@ -1019,35 +1019,35 @@ struct EnhancedMapView: NSViewRepresentable {
     // MARK: - Coordinator
 
     /// @class Coordinator
-    /// @brief Coordinator 클래스
+    /// @brief Coordinator class
     ///
-    /// ## 역할
-    /// - MKMapViewDelegate 구현
-    /// - Overlay 렌더링 (경로 선)
-    /// - Annotation 렌더링 (마커)
-    /// - SwiftUI와 AppKit 간 중개자
+    /// ## Role
+    /// - Implement MKMapViewDelegate
+    /// - Render Overlays (route lines)
+    /// - Render Annotations (markers)
+    /// - Act as intermediary between SwiftUI and AppKit
     ///
-    /// ## 구조
+    /// ## Structure
     /// ```
     /// EnhancedMapView (SwiftUI)
     ///        ↓
-    ///   Coordinator (중개자)
+    ///   Coordinator (intermediary)
     ///        ↓
     /// MKMapViewDelegate (AppKit)
     /// ```
     ///
-    /// ## parent 속성
+    /// ## parent property
     /// ```swift
     /// var parent: EnhancedMapView
     /// ```
     ///
-    /// **용도:**
-    /// - EnhancedMapView의 속성에 접근
-    /// - SwiftUI 상태와 연동
+    /// **Purpose:**
+    /// - Access EnhancedMapView properties
+    /// - Link with SwiftUI state
     ///
-    /// **예시:**
+    /// **Example:**
     /// ```swift
-    /// // Coordinator에서 사용
+    /// // Use in Coordinator
     /// if parent.pastRoute.isEmpty { ... }
     /// ```
     class Coordinator: NSObject, MKMapViewDelegate {
@@ -1057,13 +1057,13 @@ struct EnhancedMapView: NSViewRepresentable {
             self.parent = parent
         }
 
-        /// @brief Overlay 렌더링
+        /// @brief Render Overlay
         ///
-        /// ## 호출 시점
-        /// - mapView.addOverlay()가 호출될 때마다 실행
-        /// - Overlay를 화면에 그릴 Renderer 반환
+        /// ## When Called
+        /// - Executed whenever mapView.addOverlay() is called
+        /// - Returns Renderer to draw Overlay on screen
         ///
-        /// ## Polyline 렌더링
+        /// ## Polyline Rendering
         /// ```swift
         /// if let polyline = overlay as? MKPolyline {
         ///     let renderer = MKPolylineRenderer(polyline: polyline)
@@ -1073,35 +1073,35 @@ struct EnhancedMapView: NSViewRepresentable {
         /// }
         /// ```
         ///
-        /// **MKPolylineRenderer란?**
-        /// - Polyline을 화면에 그리는 객체
-        /// - 색상, 두께, 패턴 등 스타일 지정
+        /// **What is MKPolylineRenderer?**
+        /// - Object that draws Polyline on screen
+        /// - Specifies style such as color, width, pattern
         ///
-        /// ## polyline.title로 구분
+        /// ## Differentiate by polyline.title
         /// ```swift
         /// if polyline.title == "past" {
-        ///     // 과거 경로: 파란색 실선
+        ///     // Past route: Blue solid line
         /// } else if polyline.title == "future" {
-        ///     // 미래 경로: 회색 점선
+        ///     // Future route: Gray dashed line
         /// }
         /// ```
         ///
-        /// **title 속성:**
-        /// - Polyline을 식별하기 위한 문자열
-        /// - updateNSView에서 설정
-        /// - Renderer에서 스타일 분기에 사용
+        /// **title property:**
+        /// - String to identify Polyline
+        /// - Set in updateNSView
+        /// - Used for style branching in Renderer
         ///
         /// ## lineDashPattern
         /// ```swift
         /// renderer.lineDashPattern = [2, 4]
         /// ```
         ///
-        /// **점선 패턴:**
-        /// - [2, 4]: 2px 선 → 4px 공백 → 반복
-        /// - [5, 5]: 5px 선 → 5px 공백 → 반복
-        /// - [10, 5, 2, 5]: 복잡한 패턴 가능
+        /// **Dash pattern:**
+        /// - [2, 4]: 2px line → 4px gap → repeat
+        /// - [5, 5]: 5px line → 5px gap → repeat
+        /// - [10, 5, 2, 5]: Complex patterns possible
         ///
-        /// **시각적 효과:**
+        /// **Visual effect:**
         /// ```
         /// [2, 4]: ══ ══ ══ ══
         /// [5, 5]: ═════ ═════ ═════
@@ -1128,32 +1128,32 @@ struct EnhancedMapView: NSViewRepresentable {
             return MKOverlayRenderer(overlay: overlay)
         }
 
-        /// @brief Annotation 렌더링
+        /// @brief Render Annotation
         ///
-        /// ## 호출 시점
-        /// - mapView.addAnnotation()이 호출될 때마다 실행
-        /// - Annotation을 화면에 그릴 View 반환
+        /// ## When Called
+        /// - Executed whenever mapView.addAnnotation() is called
+        /// - Returns View to draw Annotation on screen
         ///
         /// ## dequeueReusableAnnotationView
         /// ```swift
         /// var annotationView = mapView.dequeueReusableAnnotationView(withIdentifier: identifier)
         /// ```
         ///
-        /// **dequeue란?**
-        /// - 재사용 가능한 AnnotationView를 큐에서 가져옴
-        /// - UITableView의 dequeueReusableCell과 동일한 패턴
-        /// - 메모리 효율적 (매번 새로 생성 안 함)
+        /// **What is dequeue?**
+        /// - Retrieves reusable AnnotationView from queue
+        /// - Same pattern as UITableView's dequeueReusableCell
+        /// - Memory efficient (doesn't create new ones every time)
         ///
-        /// **작동 방식:**
+        /// **How it works:**
         /// ```
-        /// 1. 화면 밖으로 나간 AnnotationView → 큐에 추가
-        /// 2. 새 Annotation 필요 → 큐에서 꺼내서 재사용
-        /// 3. 큐가 비었으면 → 새로 생성
+        /// 1. AnnotationView goes off screen → Added to queue
+        /// 2. New Annotation needed → Retrieved from queue and reused
+        /// 3. Queue is empty → Create new one
         /// ```
         ///
-        /// ## Annotation 타입별 처리
+        /// ## Handle by Annotation Type
         ///
-        /// ### Impact Marker (충격 마커)
+        /// ### Impact Marker
         /// ```swift
         /// if annotation.title == "Impact" {
         ///     let image = NSImage(systemSymbolName: "exclamationmark.triangle.fill", ...)
@@ -1161,12 +1161,12 @@ struct EnhancedMapView: NSViewRepresentable {
         /// }
         /// ```
         ///
-        /// **SF Symbols 설정:**
-        /// - systemSymbolName: SF Symbols 이름
-        /// - NSImage.SymbolConfiguration: 크기, 두께 설정
-        /// - withSymbolConfiguration: 설정 적용
+        /// **SF Symbols Configuration:**
+        /// - systemSymbolName: SF Symbols name
+        /// - NSImage.SymbolConfiguration: Size, weight settings
+        /// - withSymbolConfiguration: Apply configuration
         ///
-        /// ### Current Position (현재 위치)
+        /// ### Current Position
         /// ```swift
         /// else {
         ///     let image = NSImage(systemSymbolName: "location.circle.fill", ...)
@@ -1179,12 +1179,12 @@ struct EnhancedMapView: NSViewRepresentable {
         /// annotationView?.canShowCallout = true
         /// ```
         ///
-        /// **Callout이란?**
-        /// - 마커 클릭 시 나타나는 말풍선
-        /// - title, subtitle 표시
-        /// - 추가 정보 제공
+        /// **What is a Callout?**
+        /// - Popup that appears when marker is clicked
+        /// - Displays title, subtitle
+        /// - Provides additional information
         ///
-        /// **예시:**
+        /// **Example:**
         /// ```
         /// 📍
         /// ┌─────────────────┐
@@ -1196,7 +1196,7 @@ struct EnhancedMapView: NSViewRepresentable {
             if annotation.title == "Impact" {
                 // Impact marker
                 //
-                // 충격 이벤트: ⚠️
+                // Impact event: ⚠️
                 let identifier = "ImpactMarker"
                 var annotationView = mapView.dequeueReusableAnnotationView(withIdentifier: identifier)
 
@@ -1215,7 +1215,7 @@ struct EnhancedMapView: NSViewRepresentable {
             } else {
                 // Current position marker
                 //
-                // 현재 위치: 📍
+                // Current location: 📍
                 let identifier = "CurrentPosition"
                 var annotationView = mapView.dequeueReusableAnnotationView(withIdentifier: identifier)
 
@@ -1240,7 +1240,7 @@ struct EnhancedMapView: NSViewRepresentable {
 
 /// @brief Preview Provider
 ///
-/// ## Mock 데이터 설정
+/// ## Mock Data Setup
 /// ```swift
 /// let gpsService = GPSService()
 /// let gsensorService = GSensorService()
@@ -1250,17 +1250,17 @@ struct EnhancedMapView: NSViewRepresentable {
 /// gsensorService.loadAccelerationData(from: videoFile.metadata, startTime: videoFile.timestamp)
 /// ```
 ///
-/// **loadGPSData란?**
-/// - VideoMetadata에서 GPS 데이터를 추출
-/// - GPSService에 로드하여 경로 생성
-/// - startTime: 비디오 시작 시간 (타임스탬프 계산용)
+/// **What is loadGPSData?**
+/// - Extract GPS data from VideoMetadata
+/// - Load into GPSService to create route
+/// - startTime: Video start time (for timestamp calculation)
 ///
-/// **loadAccelerationData란?**
-/// - VideoMetadata에서 가속도 데이터를 추출
-/// - GSensorService에 로드하여 충격 이벤트 감지
-/// - startTime: 비디오 시작 시간 (타임스탬프 계산용)
+/// **What is loadAccelerationData?**
+/// - Extract acceleration data from VideoMetadata
+/// - Load into GSensorService to detect impact events
+/// - startTime: Video start time (for timestamp calculation)
 ///
-/// ## ZStack으로 검은 배경
+/// ## Black Background via ZStack
 /// ```swift
 /// ZStack {
 ///     Color.black
@@ -1268,10 +1268,10 @@ struct EnhancedMapView: NSViewRepresentable {
 /// }
 /// ```
 ///
-/// **왜 검은 배경을 사용하나?**
-/// - 실제 비디오 화면을 시뮬레이션
-/// - 미니맵이 오버레이로 표시되는 효과 확인
-/// - 그림자 효과 테스트
+/// **Why use black background?**
+/// - Simulate actual video screen
+/// - Verify minimap displayed as overlay effect
+/// - Test shadow effects
 struct MapOverlayView_Previews: PreviewProvider {
     static var previews: some View {
         let gpsService = GPSService()

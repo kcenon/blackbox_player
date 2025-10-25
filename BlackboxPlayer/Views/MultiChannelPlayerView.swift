@@ -1,43 +1,43 @@
 /// @file MultiChannelPlayerView.swift
-/// @brief 다중 채널 동기화 비디오 플레이어 View
+/// @brief Multi-channel synchronized video player View
 /// @author BlackboxPlayer Development Team
-/// @details 4개 카메라(Front, Rear, Left, Right)를 동시에 재생하는 플레이어입니다.
-///          Metal 렌더링, GPS/G-Sensor 오버레이, 전체화면 모드, 스크린샷 캡처 기능을 제공합니다.
+/// @details A player that simultaneously plays 4 cameras (Front, Rear, Left, Right).
+///          Provides Metal rendering, GPS/G-Sensor overlay, fullscreen mode, and screenshot capture features.
 ///
-/// ## 주요 기능
-/// - **다중 채널 동기화 재생**: 4개 카메라(Front, Rear, Left, Right) 동시 재생
-/// - **Metal 렌더링**: MTKView와 MultiChannelRenderer로 고성능 렌더링
-/// - **레이아웃 모드**: Grid (2x2), Focus (1개 크게), Horizontal (가로 나열)
-/// - **비디오 변환**: 밝기, 줌, 가로/세로 플립 실시간 조정
-/// - **GPS/G-Sensor 오버레이**: 지도와 가속도 그래프 실시간 표시
-/// - **전체화면 모드**: 자동 컨트롤 숨김 (3초 후)
-/// - **스크린샷 캡처**: 현재 프레임 PNG 저장
+/// ## Key Features
+/// - **Multi-channel synchronized playback**: Simultaneous playback of 4 cameras (Front, Rear, Left, Right)
+/// - **Metal rendering**: High-performance rendering with MTKView and MultiChannelRenderer
+/// - **Layout modes**: Grid (2x2), Focus (one large), Horizontal (side-by-side)
+/// - **Video transformations**: Real-time adjustment of brightness, zoom, horizontal/vertical flip
+/// - **GPS/G-Sensor overlay**: Real-time display of map and acceleration graph
+/// - **Fullscreen mode**: Auto-hide controls (after 3 seconds)
+/// - **Screenshot capture**: Save current frame as PNG
 ///
-/// ## 레이아웃 구조
+/// ## Layout Structure
 /// ```
 /// ┌────────────────────────────────────────────────┐
-/// │ [Grid][Focus][Horizontal]  [Transform]  [F][R] │ ← 상단 바 (레이아웃 + 채널 선택)
+/// │ [Grid][Focus][Horizontal]  [Transform]  [F][R] │ ← Top bar (layout + channel selection)
 /// ├────────────────────────────────────────────────┤
 /// │                                                │
 /// │   ┌──────────┬──────────┐                     │
-/// │   │  Front   │   Rear   │  (Grid 모드)        │
-/// │   ├──────────┼──────────┤                     │ ← Metal 렌더링 영역
+/// │   │  Front   │   Rear   │  (Grid mode)        │
+/// │   ├──────────┼──────────┤                     │ ← Metal rendering area
 /// │   │  Left    │  Right   │                     │
 /// │   └──────────┴──────────┘                     │
 /// │                                                │
-/// │   GPS 지도 (좌측 하단)  G-Sensor 그래프 (우측) │ ← 오버레이
+/// │   GPS map (bottom left)  G-Sensor graph (right)│ ← Overlays
 /// ├────────────────────────────────────────────────┤
-/// │ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ │ ← 타임라인
+/// │ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ │ ← Timeline
 /// │ 00:30 / 01:30                                  │
-/// │ [▶] [⏪10] [⏩10]  [1.0x]  [📷] [⛶]           │ ← 재생 컨트롤
+/// │ [▶] [⏪10] [⏩10]  [1.0x]  [📷] [⛶]           │ ← Playback controls
 /// └────────────────────────────────────────────────┘
 /// ```
 ///
-/// ## 핵심 개념
-/// ### 1. 다중 채널 동기화 재생
-/// 4개의 독립적인 비디오 파일을 동시에 재생하며, SyncController가 동기화를 담당합니다.
+/// ## Core Concepts
+/// ### 1. Multi-channel Synchronized Playback
+/// Plays 4 independent video files simultaneously, with SyncController handling synchronization.
 ///
-/// **동기화 원리:**
+/// **Synchronization principle:**
 /// ```
 /// SyncController
 ///     ├─ FrontDecoder (decoder1)
@@ -45,136 +45,136 @@
 ///     ├─ LeftDecoder (decoder3)
 ///     └─ RightDecoder (decoder4)
 ///
-/// 재생 시:
-/// 1. SyncController.play() 호출
+/// During playback:
+/// 1. Call SyncController.play()
 ///      ↓
-/// 2. 모든 decoder가 동일한 시간(currentTime)의 프레임 디코딩
+/// 2. All decoders decode frames at the same time (currentTime)
 ///      ↓
 /// 3. getSynchronizedFrames() → [FrontFrame, RearFrame, LeftFrame, RightFrame]
 ///      ↓
-/// 4. MultiChannelRenderer가 4개 프레임을 동시에 렌더링
+/// 4. MultiChannelRenderer renders all 4 frames simultaneously
 ///      ↓
-/// 5. 화면에 4개 영상이 동기화되어 표시
+/// 5. All 4 videos are displayed synchronized on screen
 /// ```
 ///
-/// ### 2. Metal 렌더링
-/// Metal은 Apple의 고성능 그래픽 API로, 다중 비디오를 효율적으로 렌더링합니다.
+/// ### 2. Metal Rendering
+/// Metal is Apple's high-performance graphics API for efficiently rendering multiple videos.
 ///
-/// **렌더링 파이프라인:**
+/// **Rendering pipeline:**
 /// ```
-/// MTKView (60 FPS 렌더링)
+/// MTKView (60 FPS rendering)
 ///     ↓
-/// draw(in view:) 호출 (60Hz)
+/// draw(in view:) called (60Hz)
 ///     ↓
 /// getSynchronizedFrames() → [VideoFrame, VideoFrame, ...]
 ///     ↓
-/// MultiChannelRenderer.render() → Metal Shader 실행
+/// MultiChannelRenderer.render() → Execute Metal Shader
 ///     ↓
-/// GPU가 4개 영상을 텍스처로 렌더링
+/// GPU renders 4 videos as textures
 ///     ↓
-/// 화면에 표시 (vsync 동기화)
+/// Display on screen (vsync synchronized)
 /// ```
 ///
-/// ### 3. 레이아웃 모드
-/// - **Grid (2x2)**: 4개 영상을 2x2 격자로 배치
-/// - **Focus**: 선택한 1개 영상만 크게 표시
-/// - **Horizontal**: 4개 영상을 가로로 나열
+/// ### 3. Layout Modes
+/// - **Grid (2x2)**: Arrange 4 videos in 2x2 grid
+/// - **Focus**: Display only 1 selected video large
+/// - **Horizontal**: Arrange 4 videos horizontally
 ///
-/// **레이아웃 변환:**
+/// **Layout transitions:**
 /// ```swift
-/// layoutMode = .grid        // 2x2 격자
-/// layoutMode = .focus       // 1개 크게
-/// layoutMode = .horizontal  // 가로 나열
+/// layoutMode = .grid        // 2x2 grid
+/// layoutMode = .focus       // One large
+/// layoutMode = .horizontal  // Horizontal arrangement
 /// ```
 ///
-/// ### 4. 자동 숨김 컨트롤 (Auto-hide)
-/// 전체화면 모드에서 마우스 움직임이 없으면 3초 후 컨트롤이 자동으로 사라집니다.
+/// ### 4. Auto-hide Controls
+/// In fullscreen mode, controls automatically disappear after 3 seconds of no mouse movement.
 ///
-/// **동작 흐름:**
+/// **Operation flow:**
 /// ```
-/// 전체화면 진입
+/// Enter fullscreen
 ///      ↓
-/// 마우스 움직임 감지 → resetControlsTimer() 호출
+/// Detect mouse movement → call resetControlsTimer()
 ///      ↓
-/// Timer 시작 (3초)
-///      ↓ 3초 동안 마우스 움직임 없음
-/// showControls = false → 컨트롤 숨김
-///      ↓ 마우스 다시 움직임
-/// showControls = true → 컨트롤 표시
+/// Start timer (3 seconds)
+///      ↓ No mouse movement for 3 seconds
+/// showControls = false → Hide controls
+///      ↓ Mouse moves again
+/// showControls = true → Show controls
 /// ```
 ///
-/// ## 사용 예시
+/// ## Usage Example
 /// ```swift
-/// // 1. VideoFile 전달하여 플레이어 생성
+/// // 1. Create player by passing VideoFile
 /// let videoFile = VideoFile(...)
 /// MultiChannelPlayerView(videoFile: videoFile)
 ///
-/// // 2. 플레이어가 자동으로:
-/// //    - videoFile.channels에서 4개 채널 로드
-/// //    - SyncController로 동기화 재생
-/// //    - Metal로 렌더링
-/// //    - GPS/G-Sensor 오버레이 표시
+/// // 2. Player automatically:
+/// //    - Loads 4 channels from videoFile.channels
+/// //    - Plays synchronized with SyncController
+/// //    - Renders with Metal
+/// //    - Displays GPS/G-Sensor overlay
 ///
-/// // 3. 사용자 인터랙션:
-/// //    - [Grid] 버튼 → 2x2 레이아웃
-/// //    - [F] 버튼 → Front 채널만 크게 표시
-/// //    - [▶] 버튼 → 재생/일시정지
-/// //    - [1.0x] 메뉴 → 재생 속도 조절
-/// //    - [📷] 버튼 → 스크린샷 캡처
-/// //    - [⛶] 버튼 → 전체화면 전환
+/// // 3. User interactions:
+/// //    - [Grid] button → 2x2 layout
+/// //    - [F] button → Show Front channel large
+/// //    - [▶] button → Play/Pause
+/// //    - [1.0x] menu → Adjust playback speed
+/// //    - [📷] button → Capture screenshot
+/// //    - [⛶] button → Toggle fullscreen
 /// ```
 ///
-/// ## 실제 사용 시나리오
-/// **시나리오 1: 블랙박스 영상 재생**
+/// ## Real-world Scenarios
+/// **Scenario 1: Playing blackbox video**
 /// ```
-/// 1. 사용자가 FileListView에서 비디오 파일 선택
+/// 1. User selects video file from FileListView
 ///      ↓
-/// 2. MultiChannelPlayerView(videoFile: file) 생성
+/// 2. MultiChannelPlayerView(videoFile: file) created
 ///      ↓
 /// 3. loadVideoFile() → syncController.loadVideoFile(videoFile)
 ///      ↓
-/// 4. 4개 채널 (Front, Rear, Left, Right) 디코더 초기화
+/// 4. Initialize 4 channel decoders (Front, Rear, Left, Right)
 ///      ↓
-/// 5. MetalVideoView에서 Metal 렌더링 시작
+/// 5. Start Metal rendering in MetalVideoView
 ///      ↓
-/// 6. GPS 지도 + G-Sensor 그래프 오버레이 표시
+/// 6. Display GPS map + G-Sensor graph overlay
 ///      ↓
-/// 7. 사용자가 Play 버튼 클릭 → 4개 영상 동기화 재생
+/// 7. User clicks Play button → Synchronized playback of 4 videos
 /// ```
 ///
-/// **시나리오 2: 레이아웃 변경**
+/// **Scenario 2: Changing layout**
 /// ```
-/// 1. 초기 상태: Grid 모드 (2x2)
+/// 1. Initial state: Grid mode (2x2)
 ///      ┌──────┬──────┐
 ///      │Front │Rear  │
 ///      ├──────┼──────┤
 ///      │Left  │Right │
 ///      └──────┴──────┘
 ///
-/// 2. [F] 버튼 클릭 → Focus 모드로 전환
+/// 2. Click [F] button → Switch to Focus mode
 ///      ┌────────────────┐
 ///      │                │
 ///      │     Front      │
 ///      │                │
 ///      └────────────────┘
 ///
-/// 3. [Horizontal] 버튼 클릭 → 가로 나열
+/// 3. Click [Horizontal] button → Horizontal arrangement
 ///      ┌────┬────┬────┬────┐
 ///      │Fron│Rear│Left│Righ│
 ///      └────┴────┴────┴────┘
 /// ```
 ///
-/// **시나리오 3: 비디오 변환 (밝기 조절)**
+/// **Scenario 3: Video transformation (brightness adjustment)**
 /// ```
-/// 1. [Transform] 버튼 클릭 → 변환 컨트롤 표시
+/// 1. Click [Transform] button → Show transformation controls
 ///      ↓
-/// 2. Brightness 슬라이더를 0.5로 조정
+/// 2. Adjust Brightness slider to 0.5
 ///      ↓
 /// 3. transformationService.setBrightness(0.5)
 ///      ↓
-/// 4. Metal Shader에서 밝기 증가 효과 적용
+/// 4. Apply brightness increase effect in Metal Shader
 ///      ↓
-/// 5. 4개 영상 모두 밝아짐 (실시간)
+/// 5. All 4 videos become brighter (real-time)
 /// ```
 //
 //  MultiChannelPlayerView.swift
@@ -187,42 +187,42 @@ import SwiftUI
 import MetalKit
 
 /// @struct MultiChannelPlayerView
-/// @brief 다중 채널 동기화 비디오 플레이어 메인 View
-/// @details 4개 카메라를 동시 재생하고 Metal로 고성능 렌더링합니다.
+/// @brief Multi-channel synchronized video player main View
+/// @details Plays 4 cameras simultaneously and performs high-performance rendering with Metal.
 struct MultiChannelPlayerView: View {
     // MARK: - Properties
 
     /// @var syncController
-    /// @brief 동기화 컨트롤러
-    /// @details 4개의 VideoDecoder를 관리하여 동기화된 프레임을 제공합니다.
+    /// @brief Synchronization controller
+    /// @details Manages 4 VideoDecoders to provide synchronized frames.
     ///
     /// ## SyncController
-    /// - 다중 채널 동기화 재생을 담당하는 ObservableObject
-    /// - 4개의 VideoDecoder를 관리하여 동기화된 프레임 제공
+    /// - ObservableObject responsible for multi-channel synchronized playback
+    /// - Manages 4 VideoDecoders to provide synchronized frames
     ///
     /// ## @StateObject
-    /// - View의 생명주기 동안 단일 인스턴스 유지
-    /// - View가 재생성되어도 syncController는 유지됨
+    /// - Maintains a single instance throughout the View's lifecycle
+    /// - syncController persists even if View is recreated
     ///
-    /// **동기화 역할:**
+    /// **Synchronization role:**
     /// ```
     /// syncController
-    ///     ├─ play() → 4개 decoder 동시 재생
-    ///     ├─ pause() → 4개 decoder 동시 일시정지
-    ///     ├─ seekToTime() → 4개 decoder 동시 시크
-    ///     └─ getSynchronizedFrames() → [Front, Rear, Left, Right] 프레임 반환
+    ///     ├─ play() → Play all 4 decoders simultaneously
+    ///     ├─ pause() → Pause all 4 decoders simultaneously
+    ///     ├─ seekToTime() → Seek all 4 decoders simultaneously
+    ///     └─ getSynchronizedFrames() → Return [Front, Rear, Left, Right] frames
     /// ```
     @StateObject private var syncController = SyncController()
 
     /// @var videoFile
-    /// @brief 재생할 비디오 파일
-    /// @details 4개 채널 정보를 포함하는 VideoFile 객체입니다.
+    /// @brief Video file to play
+    /// @details VideoFile object containing 4 channel information.
     ///
     /// ## VideoFile
-    /// - 4개 채널 (Front, Rear, Left, Right) 정보 포함
-    /// - channels 배열에서 각 카메라 위치별 filePath 가져옴
+    /// - Contains information for 4 channels (Front, Rear, Left, Right)
+    /// - Retrieves filePath for each camera position from channels array
     ///
-    /// **예시:**
+    /// **Example:**
     /// ```swift
     /// videoFile.channels = [
     ///     ChannelInfo(position: .front, filePath: "/front.mp4"),
@@ -234,103 +234,103 @@ struct MultiChannelPlayerView: View {
     let videoFile: VideoFile
 
     /// @var layoutMode
-    /// @brief 현재 레이아웃 모드
-    /// @details Grid, Focus, Horizontal 중 하나의 레이아웃 모드를 저장합니다.
+    /// @brief Current layout mode
+    /// @details Stores one of the layout modes: Grid, Focus, or Horizontal.
     ///
     /// ## LayoutMode
-    /// - .grid: 2x2 격자 레이아웃 (4개 균등 분할)
-    /// - .focus: 선택한 1개 채널만 크게 표시
-    /// - .horizontal: 가로 나열 (1x4)
+    /// - .grid: 2x2 grid layout (4 equal divisions)
+    /// - .focus: Display only 1 selected channel large
+    /// - .horizontal: Horizontal arrangement (1x4)
     ///
-    /// **레이아웃 변환 예시:**
+    /// **Layout transition example:**
     /// ```swift
-    /// layoutMode = .grid  // Grid 버튼 클릭
+    /// layoutMode = .grid  // Grid button clicked
     ///      ↓
-    /// MetalVideoView가 updateNSView 호출받음
+    /// MetalVideoView receives updateNSView call
     ///      ↓
-    /// renderer.setLayoutMode(.grid) → Metal Shader에 전달
+    /// renderer.setLayoutMode(.grid) → Passed to Metal Shader
     ///      ↓
-    /// 2x2 레이아웃으로 렌더링
+    /// Rendered in 2x2 layout
     /// ```
     @State private var layoutMode: LayoutMode = .grid
 
-    /// 포커스 모드에서 선택된 카메라 위치
+    /// Selected camera position in focus mode
     ///
     /// ## CameraPosition
     /// - .front, .rear, .left, .right
-    /// - Focus 모드일 때 어떤 채널을 크게 보여줄지 결정
+    /// - Determines which channel to show large in Focus mode
     ///
-    /// **동작:**
+    /// **Operation:**
     /// ```swift
     /// layoutMode = .focus
-    /// focusedPosition = .front  // Front 카메라만 크게 표시
+    /// focusedPosition = .front  // Show only Front camera large
     /// ```
     @State private var focusedPosition: CameraPosition = .front
 
-    /// 컨트롤 오버레이 표시 여부
+    /// Whether to show control overlay
     ///
-    /// ## 표시 조건
-    /// - true: 컨트롤 표시 (Play/Pause, Timeline, 레이아웃 버튼 등)
-    /// - false: 컨트롤 숨김 (전체화면 모드에서 3초 후)
+    /// ## Display conditions
+    /// - true: Show controls (Play/Pause, Timeline, layout buttons, etc.)
+    /// - false: Hide controls (after 3 seconds in fullscreen mode)
     ///
-    /// **동작:**
+    /// **Operation:**
     /// ```swift
     /// if showControls || isHovering {
-    ///     controlsOverlay  // 컨트롤 표시
+    ///     controlsOverlay  // Show controls
     /// }
     /// ```
     @State private var showControls = true
 
-    /// 마우스 호버 상태
+    /// Mouse hover state
     ///
     /// ## .onHover { hovering in ... }
-    /// - hovering == true: 마우스가 View 위에 있음
-    /// - hovering == false: 마우스가 View 밖으로 나감
+    /// - hovering == true: Mouse is over the View
+    /// - hovering == false: Mouse has left the View
     ///
-    /// **역할:**
-    /// - 마우스가 View 안에 있으면 컨트롤 표시
-    /// - 전체화면 모드에서 컨트롤 자동 숨김 방지
+    /// **Role:**
+    /// - Show controls when mouse is inside View
+    /// - Prevent auto-hide controls in fullscreen mode
     @State private var isHovering = false
 
-    /// Renderer 참조 (스크린샷 캡처용)
+    /// Renderer reference (for screenshot capture)
     ///
     /// ## MultiChannelRenderer
-    /// - Metal 기반 비디오 렌더러
-    /// - captureAndSave() 메서드로 스크린샷 저장
+    /// - Metal-based video renderer
+    /// - Save screenshot with captureAndSave() method
     ///
-    /// **스크린샷 캡처:**
+    /// **Screenshot capture:**
     /// ```swift
     /// renderer?.captureAndSave(format: .png, timestamp: Date(), ...)
     /// ```
     @State private var renderer: MultiChannelRenderer?
 
-    /// 비디오 변환 서비스
+    /// Video transformation service
     ///
     /// ## VideoTransformationService
-    /// - 싱글톤 서비스 (.shared)
-    /// - 밝기, 줌, 플립 등 비디오 변환 파라미터 관리
+    /// - Singleton service (.shared)
+    /// - Manages video transformation parameters like brightness, zoom, flip
     ///
     /// ## @ObservedObject
-    /// - transformationService의 변경사항 관찰
-    /// - transformations 값이 변경되면 View 자동 재렌더링
+    /// - Observes changes to transformationService
+    /// - View automatically re-renders when transformations value changes
     ///
-    /// **변환 적용:**
+    /// **Applying transformation:**
     /// ```swift
-    /// transformationService.setBrightness(0.5)  // 밝기 증가
+    /// transformationService.setBrightness(0.5)  // Increase brightness
     ///      ↓
-    /// Metal Shader가 transformations.brightness 읽음
+    /// Metal Shader reads transformations.brightness
     ///      ↓
-    /// 비디오에 밝기 효과 적용
+    /// Apply brightness effect to video
     /// ```
     @ObservedObject private var transformationService = VideoTransformationService.shared
 
-    /// 변환 컨트롤 표시 여부
+    /// Whether to show transformation controls
     ///
     /// ## showTransformControls
-    /// - true: Brightness, Zoom, Flip 슬라이더 표시
-    /// - false: 슬라이더 숨김 (기본값)
+    /// - true: Show Brightness, Zoom, Flip sliders
+    /// - false: Hide sliders (default)
     ///
-    /// **토글:**
+    /// **Toggle:**
     /// ```swift
     /// Button(action: { showTransformControls.toggle() }) {
     ///     Image(systemName: "slider.horizontal.3")
@@ -338,13 +338,13 @@ struct MultiChannelPlayerView: View {
     /// ```
     @State private var showTransformControls = false
 
-    /// 전체화면 모드 상태
+    /// Fullscreen mode state
     ///
     /// ## isFullscreen
-    /// - true: 전체화면 모드 (컨트롤 자동 숨김 활성화)
-    /// - false: 일반 모드 (컨트롤 항상 표시)
+    /// - true: Fullscreen mode (enable auto-hide controls)
+    /// - false: Normal mode (always show controls)
     ///
-    /// **전체화면 진입/종료:**
+    /// **Entering/exiting fullscreen:**
     /// ```swift
     /// toggleFullscreen()
     ///      ↓
@@ -354,29 +354,29 @@ struct MultiChannelPlayerView: View {
     /// ```
     @State private var isFullscreen = false
 
-    /// 컨트롤 자동 숨김 타이머
+    /// Auto-hide controls timer
     ///
     /// ## Timer
-    /// - 전체화면 모드에서 3초 후 컨트롤 자동 숨김
-    /// - 마우스 움직임 감지 시 타이머 리셋
+    /// - Auto-hide controls after 3 seconds in fullscreen mode
+    /// - Reset timer when mouse movement is detected
     ///
-    /// **동작:**
+    /// **Operation:**
     /// ```swift
     /// resetControlsTimer()
     ///      ↓
     /// Timer.scheduledTimer(withTimeInterval: 3.0) {
-    ///     showControls = false  // 3초 후 숨김
+    ///     showControls = false  // Hide after 3 seconds
     /// }
     /// ```
     @State private var controlsTimer: Timer?
 
-    /// 사용 가능한 디스플레이 목록
+    /// List of available displays
     ///
     /// ## NSScreen.screens
-    /// - macOS의 모든 연결된 디스플레이 배열
-    /// - 멀티 모니터 환경에서 전체화면 대상 선택
+    /// - Array of all connected displays in macOS
+    /// - Select fullscreen target in multi-monitor environment
     ///
-    /// **예시:**
+    /// **Example:**
     /// ```swift
     /// availableDisplays = [
     ///     NSScreen(main display, 1920x1080),
@@ -385,84 +385,84 @@ struct MultiChannelPlayerView: View {
     /// ```
     @State private var availableDisplays: [NSScreen] = []
 
-    /// 전체화면에 선택된 디스플레이
+    /// Selected display for fullscreen
     ///
     /// ## selectedDisplay
-    /// - 기본값: NSScreen.main (메인 디스플레이)
-    /// - 사용자가 다른 디스플레이 선택 가능
+    /// - Default: NSScreen.main (main display)
+    /// - User can select different display
     @State private var selectedDisplay: NSScreen?
 
-    /// GPS 오버레이 표시 여부
+    /// Whether to show GPS overlay
     ///
     /// ## showGPSOverlay
-    /// - true: GPS HUD와 지도 표시
-    /// - false: GPS 정보 숨김
+    /// - true: Show GPS HUD and map
+    /// - false: Hide GPS information
     @State private var showGPSOverlay = AppSettings.shared.showGPSOverlayByDefault
 
-    /// 메타데이터 오버레이 표시 여부
+    /// Whether to show metadata overlay
     ///
     /// ## showMetadataOverlay
-    /// - true: 속도, 좌표 등 메타데이터 표시
-    /// - false: 메타데이터 숨김
+    /// - true: Show metadata like speed, coordinates
+    /// - false: Hide metadata
     @State private var showMetadataOverlay = AppSettings.shared.showMetadataOverlayByDefault
 
     // MARK: - Body
 
-    /// MultiChannelPlayerView의 메인 레이아웃
+    /// Main layout of MultiChannelPlayerView
     ///
-    /// ## ZStack 구조
-    /// - 여러 View를 겹쳐서 배치 (z-index 순서)
-    /// - 맨 아래: MetalVideoView (비디오 렌더링)
-    /// - 중간: GPS 지도, G-Sensor 그래프 오버레이
-    /// - 맨 위: 컨트롤 UI (재생 버튼, 타임라인 등)
+    /// ## ZStack structure
+    /// - Stack multiple Views on top of each other (z-index order)
+    /// - Bottom: MetalVideoView (video rendering)
+    /// - Middle: GPS map, G-Sensor graph overlay
+    /// - Top: Control UI (play button, timeline, etc.)
     ///
-    /// **레이어 구조:**
+    /// **Layer structure:**
     /// ```
     /// ┌─────────────────────────────┐
-    /// │  controlsOverlay (맨 위)     │ ← 반투명 컨트롤
+    /// │  controlsOverlay (top)      │ ← Semi-transparent controls
     /// ├─────────────────────────────┤
-    /// │  GraphOverlayView (중간2)   │ ← G-Sensor 그래프
+    /// │  GraphOverlayView (middle2) │ ← G-Sensor graph
     /// ├─────────────────────────────┤
-    /// │  MapOverlayView (중간1)     │ ← GPS 지도
+    /// │  MapOverlayView (middle1)   │ ← GPS map
     /// ├─────────────────────────────┤
-    /// │  MetalVideoView (맨 아래)   │ ← 비디오 렌더링
+    /// │  MetalVideoView (bottom)    │ ← Video rendering
     /// └─────────────────────────────┘
     /// ```
     var body: some View {
         ZStack {
-            /// Metal 기반 비디오 렌더링 View
+            /// Metal-based video rendering View
             ///
             /// ## MetalVideoView
-            /// - NSViewRepresentable로 MTKView 래핑
-            /// - Metal GPU를 사용한 고성능 렌더링
-            /// - syncController에서 동기화된 프레임 가져와 표시
+            /// - Wraps MTKView with NSViewRepresentable
+            /// - High-performance rendering using Metal GPU
+            /// - Retrieves and displays synchronized frames from syncController
             ///
-            /// **렌더링 흐름:**
+            /// **Rendering flow:**
             /// ```
-            /// MTKView.draw(in:) 호출 (60 FPS)
+            /// MTKView.draw(in:) called (60 FPS)
             ///      ↓
             /// syncController.getSynchronizedFrames()
             ///      ↓
             /// renderer.render(frames: [...], to: drawable)
             ///      ↓
-            /// Metal Shader 실행 → GPU 렌더링
+            /// Execute Metal Shader → GPU rendering
             ///      ↓
-            /// 화면에 표시
+            /// Display on screen
             /// ```
             MetalVideoView(
                 syncController: syncController,
                 layoutMode: layoutMode,
                 focusedPosition: focusedPosition,
-                onRendererCreated: { renderer = $0 }  // renderer 참조 저장
+                onRendererCreated: { renderer = $0 }  // Store renderer reference
             )
 
-            /// GPS 지도 오버레이 (조건부 렌더링)
+            /// GPS map overlay (conditional rendering)
             ///
             /// ## MapOverlayView
-            /// - 좌측 하단에 미니맵 표시
-            /// - GPS 경로를 실시간으로 그림 (파란색 선)
-            /// - 현재 위치를 표시 (빨간 점)
-            /// - showGPSOverlay == true일 때만 표시
+            /// - Display minimap at bottom left
+            /// - Draw GPS path in real-time (blue line)
+            /// - Show current position (red dot)
+            /// - Only shown when showGPSOverlay == true
             if showGPSOverlay {
                 MapOverlayView(
                     gpsService: syncController.gpsService,
@@ -471,11 +471,11 @@ struct MultiChannelPlayerView: View {
                 )
             }
 
-            /// 메타데이터 오버레이 (조건부 렌더링)
+            /// Metadata overlay (conditional rendering)
             ///
             /// ## MetadataOverlayView
-            /// - 좌측에 속도계, GPS 좌표, 고도 표시
-            /// - showMetadataOverlay == true일 때만 표시
+            /// - Display speedometer, GPS coordinates, altitude on left side
+            /// - Only shown when showMetadataOverlay == true
             if showMetadataOverlay {
                 MetadataOverlayView(
                     videoFile: videoFile,
@@ -483,59 +483,59 @@ struct MultiChannelPlayerView: View {
                 )
             }
 
-            /// G-Sensor 그래프 오버레이
+            /// G-Sensor graph overlay
             ///
             /// ## GraphOverlayView
-            /// - 우측 하단에 가속도 그래프 표시
-            /// - X/Y/Z축 데이터를 실시간 그래프로 표시
-            /// - 충격 이벤트 감지 시 하이라이트
+            /// - Display acceleration graph at bottom right
+            /// - Show X/Y/Z axis data in real-time graph
+            /// - Highlight when impact event detected
             GraphOverlayView(
                 gsensorService: syncController.gsensorService,
                 currentTime: syncController.currentTime
             )
 
-            /// 컨트롤 오버레이 (조건부 렌더링)
+            /// Control overlay (conditional rendering)
             ///
-            /// ## 표시 조건
+            /// ## Display conditions
             /// - showControls == true OR isHovering == true
-            /// - 전체화면 모드: 3초 후 자동 숨김
-            /// - 일반 모드: 항상 표시
+            /// - Fullscreen mode: Auto-hide after 3 seconds
+            /// - Normal mode: Always show
             ///
             /// ## .transition(.opacity)
-            /// - 컨트롤 표시/숨김 시 페이드 인/아웃 애니메이션
+            /// - Fade in/out animation when showing/hiding controls
             if showControls || isHovering {
                 controlsOverlay
                     .transition(.opacity)
             }
         }
         /// ## .onAppear
-        /// - View가 화면에 나타날 때 한 번 호출
-        /// - 비디오 파일 로드 및 디스플레이 감지
+        /// - Called once when View appears on screen
+        /// - Load video file and detect displays
         .onAppear {
-            loadVideoFile()            // 비디오 파일 로드
-            detectAvailableDisplays()  // 연결된 디스플레이 감지
+            loadVideoFile()            // Load video file
+            detectAvailableDisplays()  // Detect connected displays
         }
         /// ## .onDisappear
-        /// - View가 화면에서 사라질 때 호출
-        /// - 리소스 정리 (재생 중지, 타이머 해제)
+        /// - Called when View disappears from screen
+        /// - Clean up resources (stop playback, invalidate timer)
         .onDisappear {
-            syncController.stop()      // 재생 중지
-            controlsTimer?.invalidate()  // 타이머 해제
+            syncController.stop()      // Stop playback
+            controlsTimer?.invalidate()  // Invalidate timer
         }
         /// ## .onHover { hovering in ... }
-        /// - 마우스가 View 위에 있는지 감지
-        /// - hovering == true: 마우스가 View 안에 들어옴
-        /// - hovering == false: 마우스가 View 밖으로 나감
+        /// - Detect if mouse is over the View
+        /// - hovering == true: Mouse entered the View
+        /// - hovering == false: Mouse left the View
         ///
-        /// **동작:**
+        /// **Operation:**
         /// ```
-        /// 마우스가 View 안으로 이동
+        /// Mouse moves into View
         ///      ↓
         /// isHovering = true
         ///      ↓
-        /// showControls = true (컨트롤 표시)
+        /// showControls = true (show controls)
         ///      ↓
-        /// resetControlsTimer() (자동 숨김 타이머 리셋)
+        /// resetControlsTimer() (reset auto-hide timer)
         /// ```
         .onHover { hovering in
             isHovering = hovering
@@ -546,18 +546,18 @@ struct MultiChannelPlayerView: View {
             }
         }
         /// ## .gesture(DragGesture(minimumDistance: 0))
-        /// - minimumDistance: 0 → 클릭만으로도 감지 (드래그 불필요)
-        /// - 마우스 움직임을 감지하여 컨트롤 표시
+        /// - minimumDistance: 0 → Detect even with just click (no drag needed)
+        /// - Detect mouse movement to show controls
         ///
-        /// **동작:**
+        /// **Operation:**
         /// ```
-        /// 마우스 이동 (또는 클릭)
+        /// Mouse moves (or clicks)
         ///      ↓
-        /// .onChanged { _ in ... } 호출
+        /// .onChanged { _ in ... } called
         ///      ↓
         /// showControls = true
         ///      ↓
-        /// resetControlsTimer() (3초 타이머 리셋)
+        /// resetControlsTimer() (reset 3 second timer)
         /// ```
         .gesture(
             // Track mouse movement to show controls
@@ -568,22 +568,22 @@ struct MultiChannelPlayerView: View {
                 }
         )
         /// ## .onReceive(NotificationCenter...)
-        /// - macOS 시스템 이벤트를 구독
-        /// - 전체화면 진입/종료, 디스플레이 변경 감지
+        /// - Subscribe to macOS system events
+        /// - Detect fullscreen enter/exit, display changes
         ///
         /// ### NSWindow.willEnterFullScreenNotification
-        /// - 전체화면 모드 진입 직전 알림
-        /// - isFullscreen = true 설정
-        /// - 컨트롤 자동 숨김 타이머 시작
+        /// - Notification just before entering fullscreen mode
+        /// - Set isFullscreen = true
+        /// - Start auto-hide controls timer
         .onReceive(NotificationCenter.default.publisher(for: NSWindow.willEnterFullScreenNotification)) { _ in
             isFullscreen = true
             infoLog("[MultiChannelPlayerView] Entering fullscreen mode")
             resetControlsTimer()
         }
         /// ### NSWindow.willExitFullScreenNotification
-        /// - 전체화면 모드 종료 직전 알림
-        /// - isFullscreen = false 설정
-        /// - 컨트롤 항상 표시 (자동 숨김 비활성화)
+        /// - Notification just before exiting fullscreen mode
+        /// - Set isFullscreen = false
+        /// - Always show controls (disable auto-hide)
         .onReceive(NotificationCenter.default.publisher(for: NSWindow.willExitFullScreenNotification)) { _ in
             isFullscreen = false
             showControls = true
@@ -591,9 +591,9 @@ struct MultiChannelPlayerView: View {
             infoLog("[MultiChannelPlayerView] Exiting fullscreen mode")
         }
         /// ### NSApplication.didChangeScreenParametersNotification
-        /// - 디스플레이 구성 변경 알림
-        /// - 모니터 연결/해제, 해상도 변경 등
-        /// - availableDisplays 재감지
+        /// - Notification for display configuration change
+        /// - Monitor connect/disconnect, resolution change, etc.
+        /// - Re-detect availableDisplays
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didChangeScreenParametersNotification)) { _ in
             detectAvailableDisplays()
             infoLog("[MultiChannelPlayerView] Screen configuration changed")
@@ -602,45 +602,45 @@ struct MultiChannelPlayerView: View {
 
     // MARK: - Controls Overlay
 
-    /// 컨트롤 오버레이 View
+    /// Control overlay View
     ///
-    /// ## 구조
-    /// - 상단 바: 레이아웃 버튼 + 변환 버튼 + 채널 인디케이터
-    /// - (조건부) 변환 컨트롤: 밝기/줌/플립 슬라이더
-    /// - 하단 바: 타임라인 + 재생 컨트롤
+    /// ## Structure
+    /// - Top bar: Layout buttons + Transform button + Channel indicators
+    /// - (Conditional) Transform controls: Brightness/Zoom/Flip sliders
+    /// - Bottom bar: Timeline + Playback controls
     ///
-    /// **레이아웃:**
+    /// **Layout:**
     /// ```
     /// ┌────────────────────────────────────────────────┐
-    /// │ [Grid][Focus][Horizontal]  [Transform]  [F][R] │ ← 상단 바
-    /// │ [Brightness ━━━━] [Zoom ━━━━] [Flip H] [Reset]│ ← 변환 컨트롤 (showTransformControls)
+    /// │ [Grid][Focus][Horizontal]  [Transform]  [F][R] │ ← Top bar
+    /// │ [Brightness ━━━━] [Zoom ━━━━] [Flip H] [Reset]│ ← Transform controls (showTransformControls)
     /// │                                                │
-    /// │                 (비디오)                       │
+    /// │                 (video)                        │
     /// │                                                │
-    /// │ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ │ ← 타임라인
-    /// │ [▶] [⏪10] [⏩10]  [1.0x]  [📷] [⛶]           │ ← 재생 컨트롤
+    /// │ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ │ ← Timeline
+    /// │ [▶] [⏪10] [⏩10]  [1.0x]  [📷] [⛶]           │ ← Playback controls
     /// └────────────────────────────────────────────────┘
     /// ```
     private var controlsOverlay: some View {
         VStack {
-            /// 상단 바: 레이아웃 및 변환 컨트롤
+            /// Top bar: Layout and transformation controls
             VStack(spacing: 8) {
                 HStack {
-                    /// 레이아웃 버튼 (Grid, Focus, Horizontal)
+                    /// Layout buttons (Grid, Focus, Horizontal)
                     layoutControls
 
                     Spacer()
 
-                    /// 변환 토글 버튼
+                    /// Transform toggle button
                     ///
-                    /// ## 동작
-                    /// - 클릭 시 showTransformControls 토글
-                    /// - true: 변환 슬라이더 표시 (밝기, 줌, 플립)
-                    /// - false: 변환 슬라이더 숨김
+                    /// ## Operation
+                    /// - Toggle showTransformControls on click
+                    /// - true: Show transformation sliders (brightness, zoom, flip)
+                    /// - false: Hide transformation sliders
                     ///
-                    /// **아이콘 색상:**
-                    /// - showTransformControls == true: 흰색 + 파란 배경
-                    /// - showTransformControls == false: 반투명 흰색
+                    /// **Icon colors:**
+                    /// - showTransformControls == true: White + blue background
+                    /// - showTransformControls == false: Semi-transparent white
                     Button(action: { showTransformControls.toggle() }) {
                         Image(systemName: showTransformControls ? "slider.horizontal.3" : "slider.horizontal.3")
                             .font(.system(size: 18))
@@ -655,12 +655,12 @@ struct MultiChannelPlayerView: View {
                     Spacer()
                         .frame(width: 12)
 
-                    /// GPS 오버레이 토글 버튼
+                    /// GPS overlay toggle button
                     ///
-                    /// ## 동작
-                    /// - 클릭 시 showGPSOverlay 토글
-                    /// - true: GPS HUD, 지도 오버레이 표시
-                    /// - false: GPS 정보 숨김
+                    /// ## Operation
+                    /// - Toggle showGPSOverlay on click
+                    /// - true: Show GPS HUD, map overlay
+                    /// - false: Hide GPS information
                     Button(action: { showGPSOverlay.toggle() }) {
                         Image(systemName: showGPSOverlay ? "location.fill" : "location")
                             .font(.system(size: 18))
@@ -672,12 +672,12 @@ struct MultiChannelPlayerView: View {
                     .buttonStyle(.plain)
                     .help("Toggle GPS Overlay")
 
-                    /// 메타데이터 오버레이 토글 버튼
+                    /// Metadata overlay toggle button
                     ///
-                    /// ## 동작
-                    /// - 클릭 시 showMetadataOverlay 토글
-                    /// - true: 속도계, 좌표 등 메타데이터 표시
-                    /// - false: 메타데이터 숨김
+                    /// ## Operation
+                    /// - Toggle showMetadataOverlay on click
+                    /// - true: Show metadata like speedometer, coordinates
+                    /// - false: Hide metadata
                     Button(action: { showMetadataOverlay.toggle() }) {
                         Image(systemName: showMetadataOverlay ? "gauge.with.needle.fill" : "gauge.with.needle")
                             .font(.system(size: 18))
@@ -692,16 +692,16 @@ struct MultiChannelPlayerView: View {
                     Spacer()
                         .frame(width: 12)
 
-                    /// 채널 인디케이터 (F, R, L, R 버튼)
+                    /// Channel indicators (F, R, L, R buttons)
                     channelIndicators
                 }
 
-                /// GPS HUD (조건부 렌더링)
+                /// GPS HUD (conditional rendering)
                 ///
                 /// ## GPSInfoHUD
-                /// - showGPSOverlay == true일 때만 표시
-                /// - 컴팩트한 GPS 정보 표시 (속도, 좌표, 고도, 위성)
-                /// - 디버그 정보 팝오버 포함
+                /// - Only shown when showGPSOverlay == true
+                /// - Display compact GPS information (speed, coordinates, altitude, satellites)
+                /// - Includes debug information popover
                 if showGPSOverlay {
                     GPSInfoHUD(
                         gpsService: syncController.gpsService,
@@ -709,22 +709,22 @@ struct MultiChannelPlayerView: View {
                     )
                 }
 
-                /// 변환 컨트롤 (조건부 렌더링)
+                /// Transform controls (conditional rendering)
                 ///
-                /// ## showTransformControls == true일 때만 표시
-                /// - Brightness 슬라이더 (-1.0 ~ 1.0)
-                /// - Zoom 슬라이더 (1.0x ~ 5.0x)
-                /// - Flip Horizontal/Vertical 버튼
-                /// - Reset 버튼 (모든 변환 초기화)
+                /// ## Only shown when showTransformControls == true
+                /// - Brightness slider (-1.0 ~ 1.0)
+                /// - Zoom slider (1.0x ~ 5.0x)
+                /// - Flip Horizontal/Vertical buttons
+                /// - Reset button (reset all transformations)
                 if showTransformControls {
                     transformationControls
                 }
             }
             .padding()
-            /// ## LinearGradient 배경
-            /// - 상단이 어두운 그라데이션 (반투명)
-            /// - 하단으로 갈수록 투명해짐
-            /// - 비디오 위에 컨트롤이 겹쳐도 가독성 유지
+            /// ## LinearGradient background
+            /// - Dark gradient at top (semi-transparent)
+            /// - Becomes more transparent towards bottom
+            /// - Maintains readability when controls overlap video
             .background(
                 LinearGradient(
                     colors: [Color.black.opacity(0.7), Color.clear],
@@ -735,12 +735,12 @@ struct MultiChannelPlayerView: View {
 
             Spacer()
 
-            /// 하단 바: 타임라인 및 재생 컨트롤
+            /// Bottom bar: Timeline and playback controls
             VStack(spacing: 12) {
-                /// 타임라인 슬라이더
+                /// Timeline slider
                 timelineView
 
-                /// 재생 컨트롤 버튼들
+                /// Playback control buttons
                 HStack(spacing: 20) {
                     playbackControls
                 }
@@ -748,9 +748,9 @@ struct MultiChannelPlayerView: View {
                 .padding(.bottom, 8)
             }
             .padding()
-            /// ## LinearGradient 배경
-            /// - 하단이 어두운 그라데이션 (반투명)
-            /// - 상단으로 갈수록 투명해짐
+            /// ## LinearGradient background
+            /// - Dark gradient at bottom (semi-transparent)
+            /// - Becomes more transparent towards top
             .background(
                 LinearGradient(
                     colors: [Color.clear, Color.black.opacity(0.7)],
@@ -763,31 +763,31 @@ struct MultiChannelPlayerView: View {
 
     // MARK: - Layout Controls
 
-    /// 레이아웃 모드 선택 버튼
+    /// Layout mode selection buttons
     ///
-    /// ## 레이아웃 모드
-    /// - Grid: 2x2 격자 (4개 균등 분할)
-    /// - Focus: 선택한 1개 채널만 크게
-    /// - Horizontal: 가로 나열 (1x4)
+    /// ## Layout modes
+    /// - Grid: 2x2 grid (4 equal divisions)
+    /// - Focus: Only selected channel shown large
+    /// - Horizontal: Horizontal arrangement (1x4)
     ///
-    /// **버튼 동작:**
+    /// **Button operation:**
     /// ```swift
     /// ForEach(LayoutMode.allCases) { mode in
-    ///     Button { layoutMode = mode }  // 모드 변경
+    ///     Button { layoutMode = mode }  // Change mode
     /// }
     /// ```
     ///
-    /// **렌더링 반영:**
+    /// **Rendering reflection:**
     /// ```
-    /// layoutMode 변경
-    ///      ↓ @State → View 재렌더링
-    /// MetalVideoView.updateNSView() 호출
+    /// layoutMode changed
+    ///      ↓ @State → View re-render
+    /// MetalVideoView.updateNSView() called
     ///      ↓
     /// renderer.setLayoutMode(layoutMode)
     ///      ↓
-    /// Metal Shader에서 레이아웃 재계산
+    /// Metal Shader recalculates layout
     ///      ↓
-    /// 화면에 새 레이아웃으로 표시
+    /// Display with new layout on screen
     /// ```
     private var layoutControls: some View {
         HStack(spacing: 12) {
@@ -806,28 +806,28 @@ struct MultiChannelPlayerView: View {
         }
     }
 
-    /// 채널 인디케이터 버튼 (F, R, L, R)
+    /// Channel indicator buttons (F, R, L, R)
     ///
-    /// ## 역할
-    /// - 각 카메라 위치를 버튼으로 표시
-    /// - 클릭 시 해당 채널로 Focus 모드 전환
+    /// ## Role
+    /// - Display each camera position as a button
+    /// - Switch to Focus mode for that channel on click
     ///
-    /// **버튼 생성:**
+    /// **Button generation:**
     /// ```swift
-    /// videoFile.channels.filter(\.isEnabled)  // 활성화된 채널만
+    /// videoFile.channels.filter(\.isEnabled)  // Only enabled channels
     ///      ↓
     /// ForEach { channel in
     ///     Button(action: {
-    ///         focusedPosition = channel.position  // 포커스 설정
-    ///         layoutMode = .focus                 // Focus 모드로 전환
+    ///         focusedPosition = channel.position  // Set focus
+    ///         layoutMode = .focus                 // Switch to Focus mode
     ///     }) { ... }
     /// }
     /// ```
     ///
-    /// **버튼 예시:**
+    /// **Button example:**
     /// ```
     /// [F] [R] [L] [R]  ← Front, Rear, Left, Right
-    ///  ↑ 선택됨 (파란 배경)
+    ///  ↑ Selected (blue background)
     /// ```
     private var channelIndicators: some View {
         HStack(spacing: 8) {
@@ -857,60 +857,60 @@ struct MultiChannelPlayerView: View {
 
     // MARK: - Transformation Controls
 
-    /// 비디오 변환 컨트롤 (Brightness, Zoom, Flip)
+    /// Video transformation controls (Brightness, Zoom, Flip)
     ///
-    /// ## 변환 종류
-    /// - **Brightness**: -1.0 (어둡게) ~ 1.0 (밝게)
-    /// - **Zoom**: 1.0x (원본) ~ 5.0x (5배 확대)
-    /// - **Flip Horizontal**: 좌우 반전
-    /// - **Flip Vertical**: 상하 반전
+    /// ## Transformation types
+    /// - **Brightness**: -1.0 (darker) ~ 1.0 (brighter)
+    /// - **Zoom**: 1.0x (original) ~ 5.0x (5x magnification)
+    /// - **Flip Horizontal**: Left-right flip
+    /// - **Flip Vertical**: Up-down flip
     ///
     /// ## VideoTransformationService
-    /// - 싱글톤 서비스로 변환 파라미터 관리
-    /// - Metal Shader에서 transformations 읽어 실시간 적용
+    /// - Manages transformation parameters as singleton service
+    /// - Real-time application by reading transformations in Metal Shader
     ///
-    /// **변환 적용 흐름:**
+    /// **Transformation application flow:**
     /// ```
-    /// 사용자가 Brightness 슬라이더 조정
+    /// User adjusts Brightness slider
     ///      ↓
     /// transformationService.setBrightness(0.5)
     ///      ↓
     /// transformationService.transformations.brightness = 0.5
-    ///      ↓ @Published → View 재렌더링
-    /// Metal Shader가 transformations.brightness 읽음
+    ///      ↓ @Published → View re-render
+    /// Metal Shader reads transformations.brightness
     ///      ↓
-    /// GPU에서 밝기 효과 적용 (모든 픽셀에 +0.5)
+    /// GPU applies brightness effect (add +0.5 to all pixels)
     ///      ↓
-    /// 화면에 밝아진 영상 표시
+    /// Display brightened video on screen
     /// ```
     private var transformationControls: some View {
         VStack(spacing: 12) {
-            /// 첫 번째 줄: Brightness와 Zoom
+            /// First row: Brightness and Zoom
             HStack(spacing: 20) {
-                /// Brightness 컨트롤
+                /// Brightness control
                 ///
                 /// ## Slider + Binding
-                /// - Binding(get:, set:)으로 양방향 바인딩
-                /// - get: transformationService.transformations.brightness 읽기
-                /// - set: transformationService.setBrightness($0) 호출
+                /// - Two-way binding with Binding(get:, set:)
+                /// - get: Read transformationService.transformations.brightness
+                /// - set: Call transformationService.setBrightness($0)
                 ///
-                /// **동작:**
+                /// **Operation:**
                 /// ```swift
-                /// 슬라이더 드래그
+                /// Drag slider
                 ///      ↓
-                /// set: { transformationService.setBrightness($0) } 호출
+                /// set: { transformationService.setBrightness($0) } called
                 ///      ↓
-                /// transformations.brightness 업데이트
+                /// transformations.brightness updated
                 ///      ↓
-                /// Metal Shader에 즉시 반영
+                /// Immediately reflected in Metal Shader
                 /// ```
                 HStack(spacing: 8) {
-                    /// 어두운 해 아이콘 (최소값 표시)
+                    /// Dark sun icon (minimum value indicator)
                     Image(systemName: "sun.min")
                         .foregroundColor(.white.opacity(0.8))
                         .frame(width: 20)
 
-                    /// Brightness 슬라이더 (-1.0 ~ 1.0)
+                    /// Brightness slider (-1.0 ~ 1.0)
                     Slider(
                         value: Binding(
                             get: { transformationService.transformations.brightness },
@@ -920,45 +920,45 @@ struct MultiChannelPlayerView: View {
                     )
                     .frame(width: 120)
 
-                    /// 밝은 해 아이콘 (최대값 표시)
+                    /// Bright sun icon (maximum value indicator)
                     Image(systemName: "sun.max")
                         .foregroundColor(.white.opacity(0.8))
                         .frame(width: 20)
 
-                    /// 현재 밝기 값 텍스트
+                    /// Current brightness value text
                     ///
                     /// ## String(format: "%.2f", ...)
-                    /// - 소수점 2자리까지 표시
-                    /// - 예: 0.50, -0.75
+                    /// - Display up to 2 decimal places
+                    /// - e.g.: 0.50, -0.75
                     Text(String(format: "%.2f", transformationService.transformations.brightness))
                         .font(.system(size: 12, design: .monospaced))
                         .foregroundColor(.white.opacity(0.8))
                         .frame(width: 40)
                 }
 
-                /// Zoom 컨트롤
+                /// Zoom control
                 ///
-                /// ## Zoom 범위
-                /// - 1.0x: 원본 크기
-                /// - 5.0x: 5배 확대
+                /// ## Zoom range
+                /// - 1.0x: Original size
+                /// - 5.0x: 5x magnification
                 ///
-                /// **확대 원리:**
+                /// **Magnification principle:**
                 /// ```
                 /// zoomLevel = 2.0x
                 ///      ↓
-                /// Metal Shader에서 텍스처 좌표 조정
+                /// Adjust texture coordinates in Metal Shader
                 ///      ↓
-                /// 중심을 기준으로 2배 확대
+                /// Magnify 2x from center
                 ///      ↓
-                /// 화면에 확대된 영상 표시
+                /// Display magnified video on screen
                 /// ```
                 HStack(spacing: 8) {
-                    /// 축소 아이콘 (최소값 표시)
+                    /// Zoom out icon (minimum value indicator)
                     Image(systemName: "minus.magnifyingglass")
                         .foregroundColor(.white.opacity(0.8))
                         .frame(width: 20)
 
-                    /// Zoom 슬라이더 (1.0 ~ 5.0)
+                    /// Zoom slider (1.0 ~ 5.0)
                     Slider(
                         value: Binding(
                             get: { transformationService.transformations.zoomLevel },
@@ -968,16 +968,16 @@ struct MultiChannelPlayerView: View {
                     )
                     .frame(width: 120)
 
-                    /// 확대 아이콘 (최대값 표시)
+                    /// Zoom in icon (maximum value indicator)
                     Image(systemName: "plus.magnifyingglass")
                         .foregroundColor(.white.opacity(0.8))
                         .frame(width: 20)
 
-                    /// 현재 줌 레벨 텍스트
+                    /// Current zoom level text
                     ///
                     /// ## String(format: "%.1fx", ...)
-                    /// - 소수점 1자리 + "x" 접미사
-                    /// - 예: 1.0x, 2.5x
+                    /// - 1 decimal place + "x" suffix
+                    /// - e.g.: 1.0x, 2.5x
                     Text(String(format: "%.1fx", transformationService.transformations.zoomLevel))
                         .font(.system(size: 12, design: .monospaced))
                         .foregroundColor(.white.opacity(0.8))
@@ -985,22 +985,22 @@ struct MultiChannelPlayerView: View {
                 }
             }
 
-            /// 두 번째 줄: Flip 버튼과 Reset
+            /// Second row: Flip buttons and Reset
             HStack(spacing: 12) {
-                /// Flip Horizontal 버튼
+                /// Flip Horizontal button
                 ///
-                /// ## 좌우 반전
-                /// - toggleFlipHorizontal() 호출
-                /// - flipHorizontal == true: 좌우 반전 활성화 (파란 배경)
-                /// - flipHorizontal == false: 반전 비활성화 (회색 배경)
+                /// ## Left-right flip
+                /// - Call toggleFlipHorizontal()
+                /// - flipHorizontal == true: Left-right flip enabled (blue background)
+                /// - flipHorizontal == false: Flip disabled (gray background)
                 ///
-                /// **반전 원리:**
+                /// **Flip principle:**
                 /// ```
                 /// flipHorizontal = true
                 ///      ↓
-                /// Metal Shader에서 텍스처 좌표 반전 (u = 1.0 - u)
+                /// Invert texture coordinates in Metal Shader (u = 1.0 - u)
                 ///      ↓
-                /// 좌우가 뒤바뀐 영상 표시
+                /// Display left-right flipped video
                 /// ```
                 Button(action: { transformationService.toggleFlipHorizontal() }) {
                     HStack(spacing: 4) {
@@ -1021,20 +1021,20 @@ struct MultiChannelPlayerView: View {
                 .buttonStyle(.plain)
                 .help("Flip Horizontal")
 
-                /// Flip Vertical 버튼
+                /// Flip Vertical button
                 ///
-                /// ## 상하 반전
-                /// - toggleFlipVertical() 호출
-                /// - flipVertical == true: 상하 반전 활성화 (파란 배경)
-                /// - flipVertical == false: 반전 비활성화 (회색 배경)
+                /// ## Up-down flip
+                /// - Call toggleFlipVertical()
+                /// - flipVertical == true: Up-down flip enabled (blue background)
+                /// - flipVertical == false: Flip disabled (gray background)
                 ///
-                /// **반전 원리:**
+                /// **Flip principle:**
                 /// ```
                 /// flipVertical = true
                 ///      ↓
-                /// Metal Shader에서 텍스처 좌표 반전 (v = 1.0 - v)
+                /// Invert texture coordinates in Metal Shader (v = 1.0 - v)
                 ///      ↓
-                /// 상하가 뒤바뀐 영상 표시
+                /// Display up-down flipped video
                 /// ```
                 Button(action: { transformationService.toggleFlipVertical() }) {
                     HStack(spacing: 4) {
@@ -1057,10 +1057,10 @@ struct MultiChannelPlayerView: View {
 
                 Spacer()
 
-                /// Reset 버튼
+                /// Reset button
                 ///
-                /// ## 모든 변환 초기화
-                /// - resetTransformations() 호출
+                /// ## Reset all transformations
+                /// - Call resetTransformations()
                 /// - brightness = 0.0
                 /// - zoomLevel = 1.0
                 /// - flipHorizontal = false
@@ -1089,15 +1089,15 @@ struct MultiChannelPlayerView: View {
 
     // MARK: - Timeline
 
-    /// 타임라인 View (재생 진행 바 + 시간 표시)
+    /// Timeline View (playback progress bar + time display)
     ///
-    /// ## 구성 요소
-    /// - Progress bar: 현재 재생 위치 표시 (파란색 바)
-    /// - 시간 레이블: 현재 시간 / 남은 시간
+    /// ## Components
+    /// - Progress bar: Shows current playback position (blue bar)
+    /// - Time labels: Current time / Remaining time
     ///
-    /// **타임라인 동작:**
+    /// **Timeline operation:**
     /// ```
-    /// 사용자가 타임라인 드래그
+    /// User drags timeline
     ///      ↓
     /// DragGesture.onChanged { value in
     ///     position = value.location.x / geometry.size.width
@@ -1105,33 +1105,33 @@ struct MultiChannelPlayerView: View {
     ///     syncController.seekToTime(time)
     /// }
     ///      ↓
-    /// 4개 채널이 동시에 해당 시간으로 시크
+    /// All 4 channels seek to that time simultaneously
     ///      ↓
-    /// 화면에 시크한 위치의 프레임 표시
+    /// Display frame at seeked position on screen
     /// ```
     private var timelineView: some View {
         VStack(spacing: 4) {
-            /// Progress bar (클릭/드래그 가능)
+            /// Progress bar (clickable/draggable)
             GeometryReader { geometry in
                 ZStack(alignment: .leading) {
-                    /// 배경 (회색, 전체 길이)
+                    /// Background (gray, full length)
                     Rectangle()
                         .fill(Color.white.opacity(0.3))
                         .frame(height: 4)
 
-                    /// Progress (파란색, 재생 위치까지)
+                    /// Progress (blue, up to playback position)
                     ///
-                    /// ## width 계산
+                    /// ## width calculation
                     /// ```swift
                     /// width = geometry.size.width * syncController.playbackPosition
                     /// ```
                     ///
-                    /// **예시:**
+                    /// **Example:**
                     /// ```
                     /// geometry.size.width = 800px
                     /// playbackPosition = 0.5 (50%)
                     ///      ↓
-                    /// width = 800 * 0.5 = 400px (절반까지 파란색)
+                    /// width = 800 * 0.5 = 400px (blue up to half)
                     /// ```
                     Rectangle()
                         .fill(Color.accentColor)
@@ -1139,20 +1139,20 @@ struct MultiChannelPlayerView: View {
                 }
                 .cornerRadius(2)
                 /// ## DragGesture(minimumDistance: 0)
-                /// - minimumDistance: 0 → 클릭만으로도 시크 가능 (드래그 불필요)
-                /// - .onChanged: 드래그 중 계속 호출됨
+                /// - minimumDistance: 0 → Can seek with just click (no drag needed)
+                /// - .onChanged: Called continuously during drag
                 ///
-                /// **시크 계산:**
+                /// **Seek calculation:**
                 /// ```swift
-                /// // 사용자가 타임라인의 75% 위치 클릭
+                /// // User clicks at 75% position on timeline
                 /// value.location.x = 600px
                 /// geometry.size.width = 800px
                 ///      ↓
                 /// position = 600 / 800 = 0.75 (75%)
                 ///      ↓
-                /// time = 0.75 * 90 = 67.5초
+                /// time = 0.75 * 90 = 67.5 seconds
                 ///      ↓
-                /// syncController.seekToTime(67.5) → 67.5초로 시크
+                /// syncController.seekToTime(67.5) → Seek to 67.5 seconds
                 /// ```
                 .gesture(
                     DragGesture(minimumDistance: 0)
@@ -1173,16 +1173,16 @@ struct MultiChannelPlayerView: View {
             }
             .frame(height: 4)
 
-            /// 시간 레이블
+            /// Time labels
             HStack {
-                /// 현재 시간 (예: "01:30")
+                /// Current time (e.g.: "01:30")
                 Text(syncController.currentTimeString)
                     .font(.system(size: 12, design: .monospaced))
                     .foregroundColor(.white)
 
                 Spacer()
 
-                /// 남은 시간 (예: "-00:30")
+                /// Remaining time (e.g.: "-00:30")
                 Text(syncController.remainingTimeString)
                     .font(.system(size: 12, design: .monospaced))
                     .foregroundColor(.white.opacity(0.8))
@@ -1192,32 +1192,32 @@ struct MultiChannelPlayerView: View {
 
     // MARK: - Playback Controls
 
-    /// 재생 컨트롤 버튼들
+    /// Playback control buttons
     ///
-    /// ## 버튼 목록
-    /// - Play/Pause: 재생/일시정지 토글
-    /// - Seek backward: 10초 뒤로
-    /// - Seek forward: 10초 앞으로
-    /// - Speed: 재생 속도 메뉴 (0.25x ~ 2.0x)
-    /// - Buffer indicator: 버퍼링 중 표시
-    /// - Channel count: 채널 개수 표시
-    /// - Screenshot: 스크린샷 캡처
-    /// - Fullscreen: 전체화면 토글
+    /// ## Button list
+    /// - Play/Pause: Toggle play/pause
+    /// - Seek backward: 10 seconds backward
+    /// - Seek forward: 10 seconds forward
+    /// - Speed: Playback speed menu (0.25x ~ 2.0x)
+    /// - Buffer indicator: Show when buffering
+    /// - Channel count: Display number of channels
+    /// - Screenshot: Capture screenshot
+    /// - Fullscreen: Toggle fullscreen
     private var playbackControls: some View {
         HStack(spacing: 20) {
-            /// Play/Pause 버튼
+            /// Play/Pause button
             ///
-            /// ## 아이콘 선택
-            /// - .playing: "pause.fill" (일시정지 아이콘)
-            /// - .paused 또는 .stopped: "play.fill" (재생 아이콘)
+            /// ## Icon selection
+            /// - .playing: "pause.fill" (pause icon)
+            /// - .paused or .stopped: "play.fill" (play icon)
             ///
-            /// **동작:**
+            /// **Operation:**
             /// ```
-            /// togglePlayPause() 호출
+            /// Call togglePlayPause()
             ///      ↓
             /// syncController.togglePlayPause()
             ///      ↓
-            /// 4개 decoder 동시 재생/일시정지
+            /// All 4 decoders play/pause simultaneously
             /// ```
             Button(action: { syncController.togglePlayPause() }) {
                 Image(systemName: syncController.playbackState == .playing ? "pause.fill" : "play.fill")
@@ -1228,19 +1228,19 @@ struct MultiChannelPlayerView: View {
             .buttonStyle(.plain)
             .help(syncController.playbackState == .playing ? "Pause" : "Play")
 
-            /// Seek backward 버튼 (10초 뒤로)
+            /// Seek backward button (10 seconds back)
             ///
             /// ## seekBySeconds(-10)
-            /// - 현재 시간에서 10초 빼기
-            /// - 음수 값으로 뒤로 이동
+            /// - Subtract 10 seconds from current time
+            /// - Move backward with negative value
             ///
-            /// **예시:**
+            /// **Example:**
             /// ```
-            /// currentTime = 30초
+            /// currentTime = 30 seconds
             ///      ↓
             /// seekBySeconds(-10)
             ///      ↓
-            /// seekToTime(20초) → 20초로 시크
+            /// seekToTime(20 seconds) → Seek to 20 seconds
             /// ```
             Button(action: { syncController.seekBySeconds(-10) }) {
                 Image(systemName: "gobackward.10")
@@ -1250,19 +1250,19 @@ struct MultiChannelPlayerView: View {
             .buttonStyle(.plain)
             .help("Seek backward 10 seconds")
 
-            /// Seek forward 버튼 (10초 앞으로)
+            /// Seek forward button (10 seconds forward)
             ///
             /// ## seekBySeconds(10)
-            /// - 현재 시간에서 10초 더하기
-            /// - 양수 값으로 앞으로 이동
+            /// - Add 10 seconds to current time
+            /// - Move forward with positive value
             ///
-            /// **예시:**
+            /// **Example:**
             /// ```
-            /// currentTime = 30초
+            /// currentTime = 30 seconds
             ///      ↓
             /// seekBySeconds(10)
             ///      ↓
-            /// seekToTime(40초) → 40초로 시크
+            /// seekToTime(40 seconds) → Seek to 40 seconds
             /// ```
             Button(action: { syncController.seekBySeconds(10) }) {
                 Image(systemName: "goforward.10")
@@ -1274,30 +1274,30 @@ struct MultiChannelPlayerView: View {
 
             Spacer()
 
-            /// 재생 속도 메뉴
+            /// Playback speed menu
             speedControl
 
-            /// 버퍼링 인디케이터
+            /// Buffering indicator
             ///
             /// ## isBuffering
-            /// - true: ProgressView 표시 (로딩 스피너)
-            /// - false: 표시 안 함
+            /// - true: Show ProgressView (loading spinner)
+            /// - false: Don't show
             ///
-            /// **버퍼링 시점:**
-            /// - 시크 중
-            /// - 프레임 디코딩 지연
-            /// - 디스크 I/O 대기
+            /// **Buffering moments:**
+            /// - During seek
+            /// - Frame decoding delay
+            /// - Disk I/O wait
             if syncController.isBuffering {
                 ProgressView()
                     .scaleEffect(0.7)
                     .frame(width: 20, height: 20)
             }
 
-            /// 채널 개수 표시
+            /// Channel count display
             ///
             /// ## channelCount
-            /// - syncController가 관리하는 채널 개수
-            /// - 예: "4 channels"
+            /// - Number of channels managed by syncController
+            /// - e.g.: "4 channels"
             Text("\(syncController.channelCount) channels")
                 .font(.system(size: 12))
                 .foregroundColor(.white.opacity(0.8))
@@ -1305,12 +1305,12 @@ struct MultiChannelPlayerView: View {
             Spacer()
                 .frame(width: 20)
 
-            /// 스크린샷 버튼
+            /// Screenshot button
             ///
             /// ## captureScreenshot()
-            /// - 현재 렌더링 중인 프레임을 PNG로 저장
-            /// - 파일명: Blackbox_YYYYMMdd_HHmmss.png
-            /// - 저장 위치: 사용자 선택 (Save Panel)
+            /// - Save currently rendering frame as PNG
+            /// - Filename: Blackbox_YYYYMMdd_HHmmss.png
+            /// - Save location: User selection (Save Panel)
             Button(action: captureScreenshot) {
                 Image(systemName: "camera")
                     .font(.system(size: 20))
@@ -1319,16 +1319,16 @@ struct MultiChannelPlayerView: View {
             .buttonStyle(.plain)
             .help("Capture Screenshot")
 
-            /// 전체화면 토글 버튼
+            /// Fullscreen toggle button
             ///
             /// ## toggleFullscreen()
-            /// - window.toggleFullScreen(nil) 호출
-            /// - isFullscreen 토글
-            /// - 전체화면 모드에서 컨트롤 자동 숨김 활성화
+            /// - Call window.toggleFullScreen(nil)
+            /// - Toggle isFullscreen
+            /// - Enable auto-hide controls in fullscreen mode
             ///
-            /// **아이콘:**
-            /// - isFullscreen == true: "arrow.down.right.and.arrow.up.left" (축소)
-            /// - isFullscreen == false: "arrow.up.left.and.arrow.down.right" (확대)
+            /// **Icons:**
+            /// - isFullscreen == true: "arrow.down.right.and.arrow.up.left" (shrink)
+            /// - isFullscreen == false: "arrow.up.left.and.arrow.down.right" (expand)
             Button(action: toggleFullscreen) {
                 Image(systemName: isFullscreen ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right")
                     .font(.system(size: 20))
@@ -1341,47 +1341,47 @@ struct MultiChannelPlayerView: View {
 
     // MARK: - Fullscreen
 
-    /// 전체화면 토글 함수
+    /// Fullscreen toggle function
     ///
-    /// ## 동작 과정
+    /// ## Operation process
     /// ```
-    /// 1. NSApplication.shared.keyWindow 가져오기
+    /// 1. Get NSApplication.shared.keyWindow
     ///      ↓
-    /// 2. window.toggleFullScreen(nil) 호출 (macOS API)
+    /// 2. Call window.toggleFullScreen(nil) (macOS API)
     ///      ↓
-    /// 3. isFullscreen 토글 (true ↔ false)
+    /// 3. Toggle isFullscreen (true ↔ false)
     ///      ↓
-    /// 4. 전체화면 모드 진입/종료
+    /// 4. Enter/exit fullscreen mode
     /// ```
     ///
-    /// **전체화면 모드 특징:**
-    /// - 컨트롤 자동 숨김 (3초 후)
-    /// - 마우스 움직임 시 컨트롤 표시
-    /// - Escape 키로 종료 가능
+    /// **Fullscreen mode features:**
+    /// - Auto-hide controls (after 3 seconds)
+    /// - Show controls on mouse movement
+    /// - Can exit with Escape key
     private func toggleFullscreen() {
-        /// 현재 활성화된 윈도우 가져오기
+        /// Get currently active window
         ///
         /// ## NSApplication.shared.keyWindow
-        /// - macOS의 현재 활성 윈도우
-        /// - nil일 경우: 윈도우가 없거나 비활성 상태
+        /// - Current active window in macOS
+        /// - If nil: No window or inactive state
         guard let window = NSApplication.shared.keyWindow else {
             warningLog("[MultiChannelPlayerView] No key window available for fullscreen toggle")
             return
         }
 
-        /// 전체화면 토글
+        /// Toggle fullscreen
         ///
         /// ## window.toggleFullScreen(nil)
-        /// - macOS API로 전체화면 전환
-        /// - nil: sender 파라미터 (보통 nil 전달)
+        /// - Switch to fullscreen with macOS API
+        /// - nil: sender parameter (usually pass nil)
         ///
-        /// **전환 과정:**
+        /// **Transition process:**
         /// ```
-        /// 일반 모드 (800x600 윈도우)
+        /// Normal mode (800x600 window)
         ///      ↓
-        /// toggleFullScreen(nil) 호출
+        /// Call toggleFullScreen(nil)
         ///      ↓
-        /// 전체화면 모드 (1920x1080 화면 전체)
+        /// Fullscreen mode (entire 1920x1080 screen)
         /// ```
         window.toggleFullScreen(nil)
         isFullscreen.toggle()
@@ -1391,57 +1391,57 @@ struct MultiChannelPlayerView: View {
 
     // MARK: - Auto-hide Controls
 
-    /// 컨트롤 자동 숨김 타이머 리셋
+    /// Reset auto-hide controls timer
     ///
-    /// ## 동작 과정
+    /// ## Operation process
     /// ```
-    /// 1. 기존 타이머 무효화 (invalidate)
+    /// 1. Invalidate existing timer
     ///      ↓
-    /// 2. 전체화면 모드가 아니면 종료 (일반 모드는 자동 숨김 안 함)
+    /// 2. Exit if not fullscreen mode (no auto-hide in normal mode)
     ///      ↓
-    /// 3. 3초 타이머 생성
-    ///      ↓ 3초 후 (마우스 움직임 없음)
-    /// 4. showControls = false (컨트롤 숨김)
+    /// 3. Create 3-second timer
+    ///      ↓ After 3 seconds (no mouse movement)
+    /// 4. showControls = false (hide controls)
     /// ```
     ///
-    /// **호출 시점:**
-    /// - 마우스 움직임 감지
-    /// - 마우스 호버 (View 안으로 들어옴)
-    /// - 전체화면 진입
+    /// **Call timing:**
+    /// - Mouse movement detected
+    /// - Mouse hover (entering View)
+    /// - Entering fullscreen
     private func resetControlsTimer() {
-        /// 기존 타이머 무효화
+        /// Invalidate existing timer
         ///
         /// ## controlsTimer?.invalidate()
-        /// - 이전 타이머를 중지하고 해제
-        /// - 타이머가 nil이면 아무 동작 안 함 (?. 연산자)
+        /// - Stop and release previous timer
+        /// - No action if timer is nil (?. operator)
         controlsTimer?.invalidate()
 
-        /// 전체화면 모드가 아니면 자동 숨김 안 함
+        /// Don't auto-hide if not fullscreen mode
         ///
         /// ## guard isFullscreen
-        /// - 일반 모드에서는 컨트롤 항상 표시
-        /// - 전체화면 모드에서만 자동 숨김 활성화
+        /// - Always show controls in normal mode
+        /// - Enable auto-hide only in fullscreen mode
         guard isFullscreen else {
             return
         }
 
-        /// 3초 타이머 생성
+        /// Create 3-second timer
         ///
         /// ## Timer.scheduledTimer(withTimeInterval: 3.0, repeats: false)
-        /// - 3.0초 후 클로저 실행
-        /// - repeats: false → 한 번만 실행 (반복 안 함)
+        /// - Execute closure after 3.0 seconds
+        /// - repeats: false → Execute once (no repeat)
         ///
-        /// **타이머 동작:**
+        /// **Timer operation:**
         /// ```
-        /// resetControlsTimer() 호출
+        /// Call resetControlsTimer()
         ///      ↓
-        /// 3초 대기
-        ///      ↓ 마우스 움직임 없음
-        /// showControls = false (페이드 아웃 애니메이션)
+        /// Wait 3 seconds
+        ///      ↓ No mouse movement
+        /// showControls = false (fade-out animation)
         ///      ↓
-        /// 컨트롤 숨김
-        ///      ↓ 마우스 다시 움직임
-        /// resetControlsTimer() 호출 → 타이머 리셋
+        /// Hide controls
+        ///      ↓ Mouse moves again
+        /// Call resetControlsTimer() → Reset timer
         /// ```
         controlsTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: false) { _ in
             withAnimation(.easeOut(duration: 0.3)) {
@@ -1452,34 +1452,34 @@ struct MultiChannelPlayerView: View {
 
     // MARK: - Screenshot
 
-    /// 스크린샷 캡처 함수
+    /// Screenshot capture function
     ///
-    /// ## 캡처 과정
+    /// ## Capture process
     /// ```
-    /// 1. renderer 존재 확인
+    /// 1. Verify renderer exists
     ///      ↓
-    /// 2. 파일명 생성 (Blackbox_YYYYMMdd_HHmmss)
+    /// 2. Generate filename (Blackbox_YYYYMMdd_HHmmss)
     ///      ↓
-    /// 3. renderer.captureAndSave() 호출
+    /// 3. Call renderer.captureAndSave()
     ///      ↓
-    /// 4. Metal에서 현재 렌더링 프레임을 PNG로 변환
+    /// 4. Convert current rendering frame to PNG in Metal
     ///      ↓
-    /// 5. Save Panel 표시 → 사용자가 저장 위치 선택
+    /// 5. Show Save Panel → User selects save location
     ///      ↓
-    /// 6. PNG 파일 저장
+    /// 6. Save PNG file
     /// ```
     ///
-    /// **캡처 내용:**
-    /// - 현재 렌더링 중인 4개 채널 영상
-    /// - 레이아웃 모드 적용 (Grid/Focus/Horizontal)
-    /// - 비디오 변환 적용 (Brightness/Zoom/Flip)
-    /// - 타임스탬프 오버레이 (선택적)
+    /// **Capture contents:**
+    /// - Currently rendering 4 channel videos
+    /// - Applied layout mode (Grid/Focus/Horizontal)
+    /// - Applied video transformations (Brightness/Zoom/Flip)
+    /// - Timestamp overlay (optional)
     private func captureScreenshot() {
-        /// renderer 존재 확인
+        /// Verify renderer exists
         ///
         /// ## guard let renderer
-        /// - renderer가 nil이면 경고 로그 출력 후 종료
-        /// - Metal 렌더러가 초기화되지 않은 상태
+        /// - Output warning log and exit if renderer is nil
+        /// - Metal renderer not initialized state
         guard let renderer = renderer else {
             warningLog("[MultiChannelPlayerView] Renderer not available for screenshot")
             return
@@ -1487,13 +1487,13 @@ struct MultiChannelPlayerView: View {
 
         infoLog("[MultiChannelPlayerView] Capturing screenshot")
 
-        /// 파일명 생성 (타임스탬프 포함)
+        /// Generate filename (with timestamp)
         ///
         /// ## DateFormatter
-        /// - dateFormat: "yyyyMMdd_HHmmss" (예: 20240115_143015)
-        /// - 현재 시각으로 고유한 파일명 생성
+        /// - dateFormat: "yyyyMMdd_HHmmss" (e.g.: 20240115_143015)
+        /// - Generate unique filename with current time
         ///
-        /// **파일명 예시:**
+        /// **Filename example:**
         /// ```
         /// Date() = 2024-01-15 14:30:15
         ///      ↓
@@ -1501,32 +1501,32 @@ struct MultiChannelPlayerView: View {
         ///      ↓
         /// filename = "Blackbox_20240115_143015"
         ///      ↓
-        /// 저장: Blackbox_20240115_143015.png
+        /// Save: Blackbox_20240115_143015.png
         /// ```
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyyMMdd_HHmmss"
         let dateString = dateFormatter.string(from: Date())
         let filename = "Blackbox_\(dateString)"
 
-        /// 스크린샷 캡처 및 저장
+        /// Capture and save screenshot
         ///
         /// ## renderer.captureAndSave()
-        /// - format: .png (PNG 형식으로 저장)
-        /// - timestamp: Date() (캡처 시각)
-        /// - videoTimestamp: syncController.currentTime (비디오 재생 시간)
-        /// - defaultFilename: filename (기본 파일명)
+        /// - format: .png (save in PNG format)
+        /// - timestamp: Date() (capture time)
+        /// - videoTimestamp: syncController.currentTime (video playback time)
+        /// - defaultFilename: filename (default filename)
         ///
-        /// **캡처 프로세스:**
+        /// **Capture process:**
         /// ```
-        /// Metal에서 현재 drawable 가져오기
+        /// Get current drawable from Metal
         ///      ↓
-        /// drawable.texture를 CGImage로 변환
+        /// Convert drawable.texture to CGImage
         ///      ↓
-        /// CGImage를 PNG 데이터로 인코딩
+        /// Encode CGImage to PNG data
         ///      ↓
-        /// NSSavePanel 표시 (사용자가 저장 위치 선택)
+        /// Show NSSavePanel (user selects save location)
         ///      ↓
-        /// 선택한 경로에 PNG 파일 저장
+        /// Save PNG file to selected path
         /// ```
         renderer.captureAndSave(
             format: .png,
@@ -1536,22 +1536,22 @@ struct MultiChannelPlayerView: View {
         )
     }
 
-    /// 재생 속도 메뉴
+    /// Playback speed menu
     ///
-    /// ## 속도 옵션
+    /// ## Speed options
     /// - 0.25x, 0.5x, 0.75x, 1.0x, 1.25x, 1.5x, 2.0x
     ///
-    /// **속도 변경 동작:**
+    /// **Speed change operation:**
     /// ```
-    /// Menu에서 1.5x 선택
+    /// Select 1.5x from Menu
     ///      ↓
     /// syncController.playbackSpeed = 1.5
     ///      ↓
-    /// 4개 decoder의 Timer 간격 재조정
+    /// Readjust Timer interval for 4 decoders
     ///      ↓
-    /// interval = (1.0 / frameRate) / 1.5 (1.5배 빠르게)
+    /// interval = (1.0 / frameRate) / 1.5 (1.5x faster)
     ///      ↓
-    /// 1.5배속으로 재생
+    /// Play at 1.5x speed
     /// ```
     private var speedControl: some View {
         Menu {
@@ -1559,7 +1559,7 @@ struct MultiChannelPlayerView: View {
                 Button(action: { syncController.playbackSpeed = speed }) {
                     HStack {
                         Text(String(format: "%.2fx", speed))
-                        /// 현재 선택된 속도에 체크마크 표시
+                        /// Show checkmark for currently selected speed
                         if syncController.playbackSpeed == speed {
                             Image(systemName: "checkmark")
                         }
@@ -1580,12 +1580,12 @@ struct MultiChannelPlayerView: View {
 
     // MARK: - Helper Methods
 
-    /// 레이아웃 모드에 맞는 아이콘 이름 반환
+    /// Return icon name for layout mode
     ///
     /// ## SF Symbols
-    /// - .grid: "square.grid.2x2" (2x2 격자)
-    /// - .focus: "rectangle.inset.filled.and.person.filled" (사람 포커스)
-    /// - .horizontal: "rectangle.split.3x1" (가로 분할)
+    /// - .grid: "square.grid.2x2" (2x2 grid)
+    /// - .focus: "rectangle.inset.filled.and.person.filled" (person focus)
+    /// - .horizontal: "rectangle.split.3x1" (horizontal split)
     private func iconName(for mode: LayoutMode) -> String {
         switch mode {
         case .grid:
@@ -1597,27 +1597,27 @@ struct MultiChannelPlayerView: View {
         }
     }
 
-    /// 비디오 파일 로드 함수
+    /// Video file loading function
     ///
-    /// ## 로딩 과정
+    /// ## Loading process
     /// ```
-    /// 1. syncController.loadVideoFile(videoFile) 호출
+    /// 1. Call syncController.loadVideoFile(videoFile)
     ///      ↓
-    /// 2. videoFile.channels에서 4개 채널 가져오기
+    /// 2. Get 4 channels from videoFile.channels
     ///      ↓
-    /// 3. 각 채널마다 VideoDecoder 생성 및 초기화
+    /// 3. Create and initialize VideoDecoder for each channel
     ///      ↓
-    /// 4. GPS/G-Sensor 서비스 초기화
+    /// 4. Initialize GPS/G-Sensor service
     ///      ↓
-    /// 5. 첫 프레임 로드 (모든 채널)
+    /// 5. Load first frame (all channels)
     ///      ↓
-    /// 6. 재생 준비 완료 (playbackState = .paused)
+    /// 6. Ready to play (playbackState = .paused)
     /// ```
     ///
-    /// **에러 처리:**
-    /// - 파일 없음: errorLog 출력
-    /// - 디코더 초기화 실패: errorLog 출력
-    /// - 채널 개수 부족: errorLog 출력
+    /// **Error handling:**
+    /// - File not found: Output errorLog
+    /// - Decoder initialization failed: Output errorLog
+    /// - Insufficient channels: Output errorLog
     private func loadVideoFile() {
         do {
             infoLog("[MultiChannelPlayerView] Loading video file: \(videoFile.baseFilename)")
@@ -1630,17 +1630,17 @@ struct MultiChannelPlayerView: View {
 
     // MARK: - Display Management
 
-    /// 사용 가능한 디스플레이 감지
+    /// Detect available displays
     ///
     /// ## NSScreen.screens
-    /// - macOS의 모든 연결된 디스플레이 배열
-    /// - main, external, airplay 등 모든 디스플레이 포함
+    /// - Array of all connected displays in macOS
+    /// - Includes all displays: main, external, airplay, etc.
     ///
-    /// **디스플레이 정보:**
-    /// - frame: 화면 크기 및 위치 (CGRect)
-    /// - localizedName: 디스플레이 이름 (예: "Built-in Retina Display")
+    /// **Display information:**
+    /// - frame: Screen size and position (CGRect)
+    /// - localizedName: Display name (e.g.: "Built-in Retina Display")
     ///
-    /// **예시:**
+    /// **Example:**
     /// ```
     /// Display 1: Built-in Retina Display, frame: (0.0, 0.0, 2560.0, 1600.0)
     /// Display 2: LG UltraWide, frame: (2560.0, 0.0, 3440.0, 1440.0)
@@ -1652,7 +1652,7 @@ struct MultiChannelPlayerView: View {
         let displayCount = availableDisplays.count
         infoLog("[MultiChannelPlayerView] Detected \(displayCount) display(s)")
 
-        /// 각 디스플레이 정보 로깅
+        /// Log each display information
         for (index, screen) in availableDisplays.enumerated() {
             let frame = screen.frame
             let name = screen.localizedName
@@ -1663,165 +1663,165 @@ struct MultiChannelPlayerView: View {
 
 // MARK: - Metal Video View
 
-/// Metal 기반 비디오 렌더링 View
+/// Metal-based video rendering View
 ///
 /// ## NSViewRepresentable
-/// - AppKit의 NSView (MTKView)를 SwiftUI에 통합
-/// - makeNSView: MTKView 생성 및 초기 설정 (한 번만 호출)
-/// - updateNSView: SwiftUI 상태 변경 시 NSView 업데이트 (여러 번 호출)
-/// - makeCoordinator: Delegate 처리를 위한 Coordinator 생성
+/// - Integrates AppKit's NSView (MTKView) into SwiftUI
+/// - makeNSView: Create and initially configure MTKView (called once)
+/// - updateNSView: Update NSView when SwiftUI state changes (called multiple times)
+/// - makeCoordinator: Create Coordinator for delegate handling
 ///
 /// ## MTKView
-/// - Metal Kit의 View 클래스
-/// - Metal GPU를 사용한 고성능 렌더링
-/// - 60 FPS 렌더링 가능
+/// - View class from Metal Kit
+/// - High-performance rendering using Metal GPU
+/// - Capable of 60 FPS rendering
 ///
-/// **렌더링 파이프라인:**
+/// **Rendering pipeline:**
 /// ```
 /// MTKView
-///     ↓ draw(in:) 호출 (60 FPS)
+///     ↓ draw(in:) called (60 FPS)
 /// Coordinator (MTKViewDelegate)
 ///     ↓
 /// syncController.getSynchronizedFrames()
 ///     ↓ [FrontFrame, RearFrame, LeftFrame, RightFrame]
 /// MultiChannelRenderer.render()
-///     ↓ Metal Shader 실행
-/// GPU 렌더링
+///     ↓ Execute Metal Shader
+/// GPU rendering
 ///     ↓
-/// drawable에 렌더링 결과 저장
+/// Store rendering result in drawable
 ///     ↓
-/// 화면에 표시 (vsync 동기화)
+/// Display on screen (vsync synchronized)
 /// ```
 private struct MetalVideoView: NSViewRepresentable {
     // MARK: - Properties
 
-    /// 동기화 컨트롤러
+    /// Synchronization controller
     ///
     /// ## @ObservedObject
-    /// - syncController의 변경사항 관찰
-    /// - currentTime, playbackState 등 변경 시 View 업데이트
+    /// - Observe changes to syncController
+    /// - Update View when currentTime, playbackState, etc. change
     @ObservedObject var syncController: SyncController
 
-    /// 레이아웃 모드
+    /// Layout mode
     ///
     /// ## LayoutMode
     /// - .grid, .focus, .horizontal
-    /// - updateNSView에서 Coordinator에 전달
+    /// - Passed to Coordinator in updateNSView
     let layoutMode: LayoutMode
 
-    /// 포커스된 카메라 위치
+    /// Focused camera position
     ///
     /// ## CameraPosition
-    /// - Focus 모드일 때 어떤 채널을 크게 보여줄지 결정
+    /// - Determines which channel to show large in Focus mode
     let focusedPosition: CameraPosition
 
-    /// Renderer 생성 콜백
+    /// Renderer creation callback
     ///
     /// ## (MultiChannelRenderer) -> Void
-    /// - Renderer가 생성되면 부모 View에 전달
-    /// - 스크린샷 캡처 시 사용
+    /// - Pass to parent View when Renderer is created
+    /// - Used for screenshot capture
     let onRendererCreated: (MultiChannelRenderer) -> Void
 
     // MARK: - NSViewRepresentable
 
-    /// MTKView 생성 및 초기 설정
+    /// Create and initially configure MTKView
     ///
     /// ## makeNSView
-    /// - View 생명주기 동안 한 번만 호출
-    /// - MTKView 생성 및 Metal 디바이스 설정
+    /// - Called only once during View lifecycle
+    /// - Create MTKView and configure Metal device
     ///
-    /// **MTKView 설정:**
-    /// - device: Metal 디바이스 (GPU)
-    /// - delegate: Coordinator (렌더링 로직)
-    /// - preferredFramesPerSecond: 30 FPS 목표
-    /// - framebufferOnly: true (최적화)
-    /// - clearColor: 검정색 (0, 0, 0, 1)
+    /// **MTKView configuration:**
+    /// - device: Metal device (GPU)
+    /// - delegate: Coordinator (rendering logic)
+    /// - preferredFramesPerSecond: Target 30 FPS
+    /// - framebufferOnly: true (optimization)
+    /// - clearColor: Black (0, 0, 0, 1)
     func makeNSView(context: Context) -> MTKView {
         let mtkView = MTKView()
 
-        /// Metal 디바이스 생성
+        /// Create Metal device
         ///
         /// ## MTLCreateSystemDefaultDevice()
-        /// - 시스템 기본 GPU 디바이스 가져오기
+        /// - Get system default GPU device
         /// - M1/M2 Mac: Apple Silicon GPU
         /// - Intel Mac: AMD/Intel GPU
         mtkView.device = MTLCreateSystemDefaultDevice()
 
-        /// Delegate 설정
+        /// Set delegate
         ///
         /// ## mtkView.delegate = context.coordinator
-        /// - Coordinator가 draw(in:) 메서드 구현
-        /// - MTKView가 렌더링 준비되면 draw(in:) 호출
+        /// - Coordinator implements draw(in:) method
+        /// - MTKView calls draw(in:) when ready to render
         mtkView.delegate = context.coordinator
 
-        /// 렌더링 모드 설정
+        /// Set rendering mode
         ///
         /// ## enableSetNeedsDisplay = false
-        /// - false: 자동 렌더링 모드 (preferredFramesPerSecond에 따라)
-        /// - true: 수동 렌더링 모드 (setNeedsDisplay() 호출 필요)
+        /// - false: Automatic rendering mode (according to preferredFramesPerSecond)
+        /// - true: Manual rendering mode (requires setNeedsDisplay() call)
         mtkView.enableSetNeedsDisplay = false
 
-        /// 일시정지 설정
+        /// Set pause state
         ///
         /// ## isPaused = false
-        /// - false: 렌더링 활성화 (계속 draw 호출)
-        /// - true: 렌더링 일시정지
+        /// - false: Rendering enabled (continue draw calls)
+        /// - true: Rendering paused
         mtkView.isPaused = false
 
-        /// 목표 프레임율 설정
+        /// Set target frame rate
         ///
         /// ## preferredFramesPerSecond = 30
-        /// - 30 FPS로 렌더링 (1초에 30번 draw 호출)
-        /// - 60 FPS도 가능하지만 비디오는 보통 30 FPS
+        /// - Render at 30 FPS (30 draw calls per second)
+        /// - 60 FPS possible but videos are usually 30 FPS
         mtkView.preferredFramesPerSecond = 30  // Set target frame rate
 
-        /// Framebuffer 최적화
+        /// Framebuffer optimization
         ///
         /// ## framebufferOnly = true
-        /// - true: Framebuffer를 화면 표시만 사용 (읽기 안 함)
-        /// - 성능 향상 (GPU 메모리 최적화)
+        /// - true: Use Framebuffer only for screen display (no reading)
+        /// - Performance improvement (GPU memory optimization)
         mtkView.framebufferOnly = true
 
-        /// 배경색 설정
+        /// Set background color
         ///
         /// ## clearColor = MTLClearColor(r: 0, g: 0, b: 0, a: 1)
-        /// - 검정색 배경 (비디오 로드 전 표시)
+        /// - Black background (shown before video loads)
         mtkView.clearColor = MTLClearColor(red: 0, green: 0, blue: 0, alpha: 1)
 
         return mtkView
     }
 
-    /// NSView 업데이트 (SwiftUI 상태 변경 시)
+    /// Update NSView (when SwiftUI state changes)
     ///
     /// ## updateNSView
-    /// - SwiftUI의 @State, @Binding 변경 시 호출
-    /// - layoutMode, focusedPosition 변경 → Coordinator에 전달
+    /// - Called when SwiftUI's @State, @Binding changes
+    /// - layoutMode, focusedPosition changes → Pass to Coordinator
     ///
-    /// **호출 시점:**
+    /// **Call timing:**
     /// ```
-    /// layoutMode = .focus  // @State 변경
+    /// layoutMode = .focus  // @State change
     ///      ↓
-    /// SwiftUI가 updateNSView 호출
+    /// SwiftUI calls updateNSView
     ///      ↓
     /// context.coordinator.layoutMode = .focus
     ///      ↓
-    /// 다음 draw(in:) 호출 시 새로운 레이아웃으로 렌더링
+    /// Render with new layout on next draw(in:) call
     /// ```
     func updateNSView(_ nsView: MTKView, context: Context) {
         context.coordinator.layoutMode = layoutMode
         context.coordinator.focusedPosition = focusedPosition
     }
 
-    /// Coordinator 생성
+    /// Create Coordinator
     ///
     /// ## makeCoordinator
-    /// - MTKViewDelegate를 구현하는 Coordinator 생성
-    /// - View 생명주기 동안 단일 인스턴스 유지
+    /// - Create Coordinator implementing MTKViewDelegate
+    /// - Maintain single instance during View lifecycle
     ///
-    /// **Coordinator 역할:**
-    /// - MTKView의 렌더링 로직 구현 (draw(in:))
-    /// - MultiChannelRenderer 생성 및 관리
-    /// - 동기화된 프레임 가져와 렌더링
+    /// **Coordinator role:**
+    /// - Implement MTKView's rendering logic (draw(in:))
+    /// - Create and manage MultiChannelRenderer
+    /// - Fetch and render synchronized frames
     func makeCoordinator() -> Coordinator {
         Coordinator(
             syncController: syncController,
@@ -1833,36 +1833,36 @@ private struct MetalVideoView: NSViewRepresentable {
 
     // MARK: - Coordinator
 
-    /// MTKViewDelegate를 구현하는 Coordinator 클래스
+    /// Coordinator class implementing MTKViewDelegate
     ///
-    /// ## Coordinator 패턴
-    /// - SwiftUI View와 AppKit Delegate를 연결하는 브릿지
-    /// - NSObject 상속 (Objective-C 호환성)
-    /// - MTKViewDelegate 프로토콜 구현
+    /// ## Coordinator pattern
+    /// - Bridge connecting SwiftUI View and AppKit Delegate
+    /// - Inherits NSObject (Objective-C compatibility)
+    /// - Implements MTKViewDelegate protocol
     ///
-    /// **역할:**
-    /// - draw(in:) 메서드로 렌더링 로직 구현
-    /// - MultiChannelRenderer로 Metal 렌더링 수행
-    /// - SyncController에서 동기화된 프레임 가져오기
+    /// **Role:**
+    /// - Implement rendering logic with draw(in:) method
+    /// - Perform Metal rendering with MultiChannelRenderer
+    /// - Fetch synchronized frames from SyncController
     class Coordinator: NSObject, MTKViewDelegate {
-        /// 동기화 컨트롤러 참조
+        /// Synchronization controller reference
         let syncController: SyncController
 
-        /// 현재 레이아웃 모드
+        /// Current layout mode
         var layoutMode: LayoutMode
 
-        /// 포커스된 카메라 위치
+        /// Focused camera position
         var focusedPosition: CameraPosition
 
-        /// Metal 렌더러
+        /// Metal renderer
         var renderer: MultiChannelRenderer?
 
-        /// Coordinator 초기화
+        /// Initialize Coordinator
         ///
         /// ## init
-        /// - syncController, layoutMode, focusedPosition 저장
-        /// - MultiChannelRenderer 생성
-        /// - onRendererCreated 콜백 호출 (부모 View에 renderer 전달)
+        /// - Store syncController, layoutMode, focusedPosition
+        /// - Create MultiChannelRenderer
+        /// - Call onRendererCreated callback (pass renderer to parent View)
         init(
             syncController: SyncController,
             layoutMode: LayoutMode,
@@ -1874,81 +1874,81 @@ private struct MetalVideoView: NSViewRepresentable {
             self.focusedPosition = focusedPosition
             super.init()
 
-            /// MultiChannelRenderer 생성
+            /// Create MultiChannelRenderer
             ///
             /// ## MultiChannelRenderer()
-            /// - Metal 렌더링 엔진 초기화
-            /// - Shader 로드 및 컴파일
-            /// - 렌더링 파이프라인 구성
+            /// - Initialize Metal rendering engine
+            /// - Load and compile Shader
+            /// - Configure rendering pipeline
             if let renderer = MultiChannelRenderer() {
                 self.renderer = renderer
-                onRendererCreated(renderer)  // 부모 View에 전달
+                onRendererCreated(renderer)  // Pass to parent View
             }
         }
 
-        /// MTKView 크기 변경 시 호출
+        /// Called when MTKView size changes
         ///
         /// ## mtkView(_:drawableSizeWillChange:)
-        /// - 윈도우 리사이즈, 전체화면 전환 시 호출
-        /// - 필요 시 렌더링 리소스 재구성
+        /// - Called on window resize, fullscreen transition
+        /// - Reconfigure rendering resources if needed
         func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {
             debugLog("[MetalVideoView] Drawable size changed to: \(size.width) x \(size.height)")
             // Renderer will automatically adapt to the new drawable size on next render
             // No need to pause or stop playback
         }
 
-        /// 렌더링 함수 (60 FPS 호출)
+        /// Rendering function (called at 60 FPS)
         ///
         /// ## draw(in view:)
-        /// - MTKView가 렌더링 준비되면 자동 호출
-        /// - preferredFramesPerSecond에 따라 호출 빈도 결정 (30 FPS)
+        /// - Automatically called when MTKView is ready to render
+        /// - Call frequency determined by preferredFramesPerSecond (30 FPS)
         ///
-        /// **렌더링 프로세스:**
+        /// **Rendering process:**
         /// ```
-        /// 1. drawable 가져오기 (렌더링 대상)
+        /// 1. Get drawable (rendering target)
         ///      ↓
-        /// 2. renderer 설정 (layoutMode, focusedPosition)
+        /// 2. Configure renderer (layoutMode, focusedPosition)
         ///      ↓
-        /// 3. syncController.getSynchronizedFrames() → 동기화된 프레임 가져오기
+        /// 3. syncController.getSynchronizedFrames() → Get synchronized frames
         ///      ↓
-        /// 4. renderer.render(frames, to: drawable) → Metal 렌더링
+        /// 4. renderer.render(frames, to: drawable) → Metal rendering
         ///      ↓
-        /// 5. drawable.present() → 화면에 표시 (vsync 동기화)
+        /// 5. drawable.present() → Display on screen (vsync synchronized)
         /// ```
         func draw(in view: MTKView) {
-            /// drawable과 renderer 존재 확인
+            /// Verify drawable and renderer exist
             ///
             /// ## guard let drawable, renderer
-            /// - drawable: 렌더링 결과를 저장할 버퍼
-            /// - renderer: Metal 렌더링 엔진
-            /// - 둘 중 하나라도 nil이면 렌더링 스킵
+            /// - drawable: Buffer to store rendering result
+            /// - renderer: Metal rendering engine
+            /// - Skip rendering if either is nil
             guard let drawable = view.currentDrawable,
                   let renderer = renderer else {
                 debugLog("[MetalVideoView] Draw skipped: drawable or renderer is nil")
                 return
             }
 
-            /// Renderer 설정 업데이트
+            /// Update Renderer configuration
             ///
             /// ## setLayoutMode, setFocusedPosition
-            /// - 현재 레이아웃 모드를 renderer에 전달
-            /// - Metal Shader가 이 설정을 읽어 렌더링
+            /// - Pass current layout mode to renderer
+            /// - Metal Shader reads these settings for rendering
             renderer.setLayoutMode(layoutMode)
             renderer.setFocusedPosition(focusedPosition)
 
-            /// 동기화된 프레임 가져오기
+            /// Get synchronized frames
             ///
             /// ## getSynchronizedFrames()
-            /// - 4개 채널의 현재 시간 프레임 반환
+            /// - Return current time frames for 4 channels
             /// - [FrontFrame, RearFrame, LeftFrame, RightFrame]
             let frames = syncController.getSynchronizedFrames()
 
-            /// 프레임 없으면 렌더링 스킵
+            /// Skip rendering if no frames
             ///
             /// ## frames.isEmpty
-            /// - 비디오 로드 전
-            /// - 디코딩 지연
-            /// - EOF 도달
+            /// - Before video loads
+            /// - Decoding delay
+            /// - Reached EOF
             if frames.isEmpty {
                 // No frames available yet, just return (black screen will be shown)
                 return
@@ -1956,24 +1956,24 @@ private struct MetalVideoView: NSViewRepresentable {
 
             debugLog("[MetalVideoView] Rendering \(frames.count) frames at time \(String(format: "%.2f", syncController.currentTime))")
 
-            /// Metal 렌더링 수행
+            /// Perform Metal rendering
             ///
             /// ## renderer.render(frames:to:drawableSize:)
-            /// - frames: 동기화된 프레임 배열
-            /// - drawable: 렌더링 결과 저장 버퍼
-            /// - drawableSize: 렌더링 크기
+            /// - frames: Synchronized frame array
+            /// - drawable: Buffer to store rendering result
+            /// - drawableSize: Rendering size
             ///
-            /// **렌더링 내부:**
+            /// **Rendering internals:**
             /// ```
-            /// 1. 각 프레임을 Metal Texture로 변환
+            /// 1. Convert each frame to Metal Texture
             ///      ↓
-            /// 2. Vertex Shader 실행 (화면 좌표 계산)
+            /// 2. Execute Vertex Shader (calculate screen coordinates)
             ///      ↓
-            /// 3. Fragment Shader 실행 (픽셀 색상 계산)
-            ///      ↓ Brightness, Zoom, Flip 적용
-            /// 4. drawable.texture에 렌더링 결과 저장
+            /// 3. Execute Fragment Shader (calculate pixel colors)
+            ///      ↓ Apply Brightness, Zoom, Flip
+            /// 4. Store rendering result in drawable.texture
             ///      ↓
-            /// 5. drawable.present() → 화면에 표시
+            /// 5. drawable.present() → Display on screen
             /// ```
             renderer.render(
                 frames: frames,

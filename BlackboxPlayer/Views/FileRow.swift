@@ -1,14 +1,14 @@
 /// @file FileRow.swift
-/// @brief 비디오 파일 목록 행 컴포넌트
+/// @brief Video file list row component
 /// @author BlackboxPlayer Development Team
 /// @details
-/// 비디오 파일 목록에서 개별 행을 표시하는 재사용 가능한 UI 컴포넌트입니다.
-/// 이벤트 타입 배지, 파일 정보, 메타데이터, 상태 인디케이터를 표시합니다.
+/// A reusable UI component that displays individual rows in the video file list.
+/// Displays event type badges, file information, metadata, and status indicators.
 
 /*
- 【FileRow 개요】
+ 【FileRow Overview】
 
- 이 파일은 비디오 파일 목록에서 개별 행(Row)을 표시하는 재사용 가능한 UI 컴포넌트를 구현합니다.
+ This file implements a reusable UI component that displays individual rows in the video file list.
 
 
  ┌─────────────────────────────────────────────────────────────────────┐
@@ -16,43 +16,43 @@
  │          2:34 mins  │  1.2 GB  │  2 channels  │  📍  ⚠️  ⭐         │
  └─────────────────────────────────────────────────────────────────────┘
  ~~~~~~~~  ~~~~~~~~~~~~~~~~~~~~~~~~  ~~~~~~~~~~~~~~~~~~~~~~~~  ~~~~~~~
- 이벤트       파일 정보                 메타데이터             재생
- 배지         (이름, 시간)              (시간, 크기, 채널)     버튼
+ Event        File Info                 Metadata               Play
+ Badge        (Name, Time)              (Duration, Size, Ch)   Button
 
 
- 【주요 기능】
+ 【Key Features】
 
- 1. 이벤트 타입 배지
- - NORMAL (녹화)
- - IMPACT (충격)
- - PARKING (주차)
- - MANUAL (수동)
- - EMERGENCY (비상)
+ 1. Event Type Badge
+ - NORMAL (Recording)
+ - IMPACT (Impact)
+ - PARKING (Parking)
+ - MANUAL (Manual)
+ - EMERGENCY (Emergency)
 
- 2. 파일 정보
- - 파일명 (모노스페이스 폰트)
- - 타임스탬프 (날짜 및 시간)
+ 2. File Information
+ - Filename (Monospaced font)
+ - Timestamp (Date and time)
 
- 3. 메타데이터
- - 재생 시간 (Duration)
- - 파일 크기 (File size)
- - 채널 수 (Channel count)
+ 3. Metadata
+ - Duration (Playback time)
+ - File size
+ - Channel count
 
- 4. 상태 인디케이터
- - 📍 GPS: GPS 데이터 포함
- - ⚠️ Impact: 충격 이벤트 포함
- - ⭐ Favorite: 즐겨찾기 표시
- - ❌ Corrupted: 파일 손상
+ 4. Status Indicators
+ - 📍 GPS: Contains GPS data
+ - ⚠️ Impact: Contains impact events
+ - ⭐ Favorite: Marked as favorite
+ - ❌ Corrupted: File corrupted
 
- 5. 선택 상태 표시
- - 선택되지 않음: 투명 배경
- - 선택됨: 강조 색상 배경 + 테두리
+ 5. Selection State Display
+ - Unselected: Transparent background
+ - Selected: Accent color background + border
 
 
- 【사용 예시】
+ 【Usage Examples】
 
  ```swift
- // 1. List에서 사용
+ // 1. Use in List
  List(videoFiles) { file in
  FileRow(videoFile: file, isSelected: selectedFile?.id == file.id)
  .onTapGesture {
@@ -60,94 +60,94 @@
  }
  }
 
- // 2. ForEach에서 사용
+ // 2. Use in ForEach
  ForEach(videoFiles) { file in
  FileRow(videoFile: file, isSelected: false)
  }
 
- // 3. 단독으로 사용
+ // 3. Use standalone
  FileRow(videoFile: .normal5Channel, isSelected: true)
  .padding()
  ```
 
 
- 【SwiftUI 개념】
+ 【SwiftUI Concepts】
 
- 이 파일에서 배울 수 있는 주요 SwiftUI 개념들:
+ Key SwiftUI concepts you can learn from this file:
 
- 1. 재사용 가능한 컴포넌트
- - 여러 곳에서 사용 가능한 독립적인 View
- - 데이터 주입 방식 (let properties)
+ 1. Reusable Component
+ - Independent View usable in multiple places
+ - Data injection approach (let properties)
 
- 2. 조건부 렌더링 (Conditional Rendering)
- - if문으로 특정 조건에서만 View 표시
+ 2. Conditional Rendering
+ - Display Views only under specific conditions using if statements
  - Optional chaining
 
  3. Layout Containers
- - HStack: 좌우 배치
- - VStack: 상하 배치
- - Spacer: 공간 분배
+ - HStack: Horizontal layout
+ - VStack: Vertical layout
+ - Spacer: Space distribution
 
- 4. Label 컴포넌트
- - 아이콘 + 텍스트 조합
- - SF Symbols 통합
+ 4. Label Component
+ - Icon + text combination
+ - SF Symbols integration
 
- 5. Shape와 Modifiers
+ 5. Shapes and Modifiers
  - RoundedRectangle
  - .background(), .overlay()
  - .stroke(), .fill()
 
- 6. 선택 상태 표현
- - 삼항 연산자 (isSelected ? A : B)
- - 동적 스타일링
+ 6. Selection State Expression
+ - Ternary operator (isSelected ? A : B)
+ - Dynamic styling
 
 
- 【디자인 패턴】
+ 【Design Pattern】
 
- **재사용 가능한 컴포넌트 (Reusable Component):**
+ **Reusable Component:**
 
- FileRow는 다음 원칙을 따릅니다:
+ FileRow follows these principles:
 
- ✓ 단일 책임 (Single Responsibility)
- → 비디오 파일 정보를 표시하는 것만 담당
+ ✓ Single Responsibility
+ → Responsible only for displaying video file information
 
- ✓ 독립성 (Independence)
- → 외부 상태에 의존하지 않음
- → 필요한 데이터만 주입받음
+ ✓ Independence
+ → Does not depend on external state
+ → Only receives necessary data via injection
 
- ✓ 구성 (Composition)
- → 작은 서브뷰(EventBadge)로 분리
- → 각 부분을 독립적으로 관리
+ ✓ Composition
+ → Separated into small subviews (EventBadge)
+ → Each part managed independently
 
- ✓ 선언적 (Declarative)
- → "어떻게"가 아닌 "무엇"을 선언
- → SwiftUI가 렌더링 처리
+ ✓ Declarative
+ → Declares "what" rather than "how"
+ → SwiftUI handles rendering
 
 
- 【관련 파일】
+ 【Related Files】
 
- - VideoFile.swift: 비디오 파일 데이터 모델
- - EventType.swift: 이벤트 타입 enum
- - FileListView.swift: FileRow를 사용하는 리스트 뷰
+ - VideoFile.swift: Video file data model
+ - EventType.swift: Event type enum
+ - FileListView.swift: List view that uses FileRow
 
  */
 
 import SwiftUI
 
 /// @struct FileRow
-/// @brief 비디오 파일 목록 행 컴포넌트
+/// @brief Video file list row component
 ///
 /// @details
-/// 비디오 파일 목록에서 개별 행을 표시하는 재사용 가능한 컴포넌트입니다.
+/// A reusable component that displays individual rows in the video file list.
 ///
-/// **주요 기능:**
-/// - 이벤트 타입 배지 (색상 코딩)
-/// - 파일 정보 (이름, 타임스탬프)
-/// - 메타데이터 (시간, 크기, 채널)
-/// - 상태 인디케이터 (GPS, 충격, 즐겨찾기, 손상)
-/// - 선택 상태 표시
+/// **Key Features:**
+/// - Event type badge (color coded)
+/// - File information (name, timestamp)
+/// - Metadata (duration, size, channels)
+/// - Status indicators (GPS, impact, favorite, corrupted)
+/// - Selection state display
 ///
-/// **사용 예시:**
+/// **Usage Example:**
 /// ```swift
 /// List(videoFiles) { file in
 ///     FileRow(videoFile: file, isSelected: selectedFile?.id == file.id)
@@ -157,24 +157,24 @@ import SwiftUI
 /// }
 /// ```
 ///
-/// **연관 타입:**
-/// - `VideoFile`: 비디오 파일 데이터
-/// - `EventType`: 이벤트 타입 enum
+/// **Associated Types:**
+/// - `VideoFile`: Video file data
+/// - `EventType`: Event type enum
 ///
 struct FileRow: View {
     // MARK: - Properties
 
     /// @var videoFile
-    /// @brief 표시할 비디오 파일 데이터
+    /// @brief Video file data to display
     ///
-    /// **let을 사용하는 이유:**
+    /// **Why use let:**
     ///
-    /// FileRow는 데이터를 수정하지 않고 표시만 합니다:
-    ///   - 불변성 보장 (immutability)
-    ///   - 의도 명확화 ("이 데이터는 읽기 전용")
-    ///   - 버그 방지 (실수로 수정 불가)
+    /// FileRow only displays data without modifying it:
+    ///   - Guarantees immutability
+    ///   - Clarifies intent ("This data is read-only")
+    ///   - Prevents bugs (Cannot accidentally modify)
     ///
-    /// **VideoFile의 주요 프로퍼티:**
+    /// **Key VideoFile Properties:**
     /// ```swift
     /// struct VideoFile {
     ///     let baseFilename: String         // "2024_03_15_14_23_45_F.mp4"
@@ -194,92 +194,92 @@ struct FileRow: View {
     let videoFile: VideoFile
 
     /// @var isSelected
-    /// @brief 행 선택 상태 여부
+    /// @brief Whether the row is selected
     ///
-    /// **왜 외부에서 주입받는가?**
+    /// **Why inject from outside?**
     ///
-    /// 선택 상태는 부모 View가 관리합니다:
+    /// Selection state is managed by the parent View:
     ///
     /// ```swift
-    /// // 부모 View
+    /// // Parent View
     /// @State private var selectedFile: VideoFile?
     ///
     /// List(videoFiles) { file in
     ///     FileRow(
     ///         videoFile: file,
-    ///         isSelected: selectedFile?.id == file.id  // 외부에서 결정
+    ///         isSelected: selectedFile?.id == file.id  // Determined externally
     ///     )
     /// }
     /// ```
     ///
-    /// 이 방식의 장점:
-    ///   - 부모가 선택 로직 제어
-    ///   - FileRow는 표시만 담당 (단일 책임)
-    ///   - 다중 선택, 단일 선택 등 다양한 패턴 지원
+    /// Advantages of this approach:
+    ///   - Parent controls selection logic
+    ///   - FileRow only handles display (single responsibility)
+    ///   - Supports various patterns like multi-select, single-select, etc.
     ///
     let isSelected: Bool
 
     // MARK: - Body
 
     var body: some View {
-        // **HStack - 좌우 레이아웃:**
+        // **HStack - Horizontal Layout:**
         //
-        // HStack은 자식 View들을 가로(horizontal) 방향으로 배치합니다.
+        // HStack arranges child Views horizontally.
         //
-        // 이 행의 레이아웃:
+        // Layout of this row:
         // ```
-        // [배지] [파일정보]           [재생버튼]
-        // ~~~~~~ ~~~~~~~~~~~~~~~~~~~ ~~~~~~~~~~
-        // 80pt   가변 크기 (Spacer)   고정 크기
+        // [Badge] [File Info]           [Play Button]
+        // ~~~~~~  ~~~~~~~~~~~~~~~~~~~   ~~~~~~~~~~~~
+        // 80pt    Variable size (Spacer) Fixed size
         // ```
         //
         // **spacing: 12**
-        //   - 각 요소 사이에 12pt 간격
-        //   - 너무 촘촘하지 않고 적당히 분리
+        //   - 12pt spacing between each element
+        //   - Not too tight, adequately separated
         //
         HStack(spacing: 12) {
             // MARK: Event Type Badge
 
             // Event type badge
             //
-            // 이벤트 타입을 색상 배지로 표시합니다.
+            // Displays the event type as a colored badge.
             //
-            // **EventBadge 서브 컴포넌트:**
+            // **EventBadge Subcomponent:**
             //
-            // EventBadge는 이 파일 하단에 정의된 별도의 View입니다:
-            //   - 이벤트 타입을 받아서
-            //   - 색상 배경에 텍스트 표시
-            //   - 재사용 가능
+            // EventBadge is a separate View defined at the bottom of this file:
+            //   - Receives event type
+            //   - Displays text on colored background
+            //   - Reusable
             //
-            // 예시:
+            // Examples:
             // ```
-            // IMPACT: 빨간색 배경에 "IMPACT"
-            // NORMAL: 녹색 배경에 "NORMAL"
+            // IMPACT: "IMPACT" on red background
+            // NORMAL: "NORMAL" on green background
             // ```
             //
             EventBadge(eventType: videoFile.eventType)
                 // **.frame(width: 80):**
                 //
-                // 배지의 너비를 80pt로 고정합니다.
+                // Fixes the badge width at 80pt.
                 //
-                // 고정 너비를 사용하는 이유:
-                //   - 모든 행에서 배지 위치가 일정
-                //   - 세로 정렬이 깔끔하게 맞음
-                //   - 텍스트 길이가 달라도 일관성 유지
+                // Why use fixed width:
+                //   - Badge position consistent across all rows
+                //   - Clean vertical alignment
+                //   - Maintains consistency regardless of text length
                 //
-                // 너비 비교:
+                // Width comparison:
                 // ```
-                // 고정 너비 (80pt):
+                // Fixed width (80pt):
                 // [NORMAL    ] File 1
                 // [IMPACT    ] File 2
                 // [EMERGENCY ] File 3
-                // ~~~~~~~~~~~~ ← 모두 같은 위치에서 시작
+                // ~~~~~~~~~~~~ ← All start at same position
                 //
-                // 가변 너비:
+                // Variable width:
                 // [NORMAL] File 1
                 // [IMPACT] File 2
                 // [EMERGENCY] File 3
-                // ~~~~~~~~~~~ ← 시작 위치가 다름
+                // ~~~~~~~~~~~ ← Different start positions
                 // ```
                 //
                 .frame(width: 80)
@@ -288,98 +288,98 @@ struct FileRow: View {
 
             // File information
             //
-            // 파일의 상세 정보를 표시하는 섹션입니다.
+            // Section that displays detailed file information.
             //
-            // **VStack - 상하 레이아웃:**
+            // **VStack - Vertical Layout:**
             //
-            // VStack은 자식 View들을 세로(vertical) 방향으로 배치합니다.
+            // VStack arranges child Views vertically.
             //
-            // 구조:
+            // Structure:
             // ```
             // ┌─────────────────────────┐
-            // │ 2024_03_15_14_23_45.mp4 │ ← 파일명
+            // │ 2024_03_15_14_23_45.mp4 │ ← Filename
             // ├─────────────────────────┤
-            // │ March 15, 2024 at 2:23  │ ← 타임스탬프
+            // │ March 15, 2024 at 2:23  │ ← Timestamp
             // ├─────────────────────────┤
-            // │ 🕐 2:34 │ 📄 1.2GB │... │ ← 메타데이터
+            // │ 🕐 2:34 │ 📄 1.2GB │... │ ← Metadata
             // └─────────────────────────┘
             // ```
             //
             // **alignment: .leading**
-            //   - 모든 항목을 왼쪽 정렬
-            //   - 텍스트가 자연스럽게 읽힘
+            //   - Left-aligns all items
+            //   - Text reads naturally
             //
             // **spacing: 4**
-            //   - 각 항목 사이 4pt 간격
-            //   - 촘촘하지만 구분 가능
+            //   - 4pt spacing between items
+            //   - Compact but distinguishable
             //
             VStack(alignment: .leading, spacing: 4) {
                 // MARK: Filename
 
                 // Filename
                 //
-                // 파일의 기본 이름을 표시합니다.
+                // Displays the base name of the file.
                 //
                 // videoFile.baseFilename:
-                //   - 예: "2024_03_15_14_23_45_F.mp4"
-                //   - 전체 경로가 아닌 파일명만
+                //   - Example: "2024_03_15_14_23_45_F.mp4"
+                //   - Filename only, not full path
                 //
                 Text(videoFile.baseFilename)
                     // **.font(.system(.body, design: .monospaced)):**
                     //
-                    // 시스템 폰트를 사용하되, 몇 가지 설정을 추가합니다.
+                    // Uses system font with some additional settings.
                     //
                     // **.body:**
-                    //   - 본문 텍스트 크기 (일반적으로 17pt)
-                    //   - 가장 흔히 사용되는 크기
+                    //   - Body text size (typically 17pt)
+                    //   - Most commonly used size
                     //
                     // **design: .monospaced:**
-                    //   - 고정폭 폰트 (Monospaced)
-                    //   - 모든 문자가 같은 너비
-                    //   - 파일명은 종종 코드처럼 보여야 함
+                    //   - Monospaced font (fixed width)
+                    //   - All characters have same width
+                    //   - Filenames should often look code-like
                     //
-                    // **왜 파일명에 Monospaced 폰트를 사용하는가?**
+                    // **Why use Monospaced font for filenames?**
                     //
-                    // 파일명은 특정 형식을 따릅니다:
+                    // Filenames follow a specific format:
                     // ```
                     // YYYY_MM_DD_HH_MM_SS_Position.mp4
                     // 2024_03_15_14_23_45_F.mp4
                     // 2024_03_15_14_23_45_R.mp4
                     // ~~~~ ~~ ~~ ~~ ~~ ~~ ~
-                    // 고정폭 폰트로 정렬이 깔끔하게 맞음
+                    // Fixed-width font ensures clean alignment
                     // ```
                     //
                     .font(.system(.body, design: .monospaced))
 
                     // **.fontWeight(.medium):**
                     //
-                    // 폰트 두께를 medium으로 설정합니다.
+                    // Sets font weight to medium.
                     //
-                    // 두께 옵션:
-                    //   - .ultraLight (가장 얇음)
+                    // Weight options:
+                    //   - .ultraLight (thinnest)
                     //   - .thin
                     //   - .light
-                    //   - .regular (기본)
-                    //   - .medium ← 현재 사용
+                    //   - .regular (default)
+                    //   - .medium ← currently used
                     //   - .semibold
                     //   - .bold
                     //   - .heavy
-                    //   - .black (가장 두꺼움)
+                    //   - .black (thickest)
                     //
-                    // Medium을 사용하는 이유:
-                    //   - Regular보다 약간 강조
-                    //   - Bold만큼 무겁지 않음
-                    //   - 파일명이 primary 정보이므로 적절히 돋보이게
+                    // Why use Medium:
+                    //   - Slightly emphasized over Regular
+                    //   - Not as heavy as Bold
+                    //   - Filename is primary info, so appropriately highlighted
                     //
                     .fontWeight(.medium)
 
                     // **.lineLimit(1):**
                     //
-                    // 텍스트를 최대 1줄로 제한합니다.
+                    // Limits text to maximum 1 line.
                     //
-                    // 긴 파일명 처리:
+                    // Handling long filenames:
                     // ```
-                    // 제한 없이:
+                    // Without limit:
                     // very_very_very_long_filename_that_
                     // wraps_to_multiple_lines.mp4
                     //
@@ -387,10 +387,10 @@ struct FileRow: View {
                     // very_very_very_long_filenam...
                     // ```
                     //
-                    // 1줄로 제한하는 이유:
-                    //   - 리스트의 행 높이를 일정하게 유지
-                    //   - 레이아웃 깨짐 방지
-                    //   - 더 많은 항목을 화면에 표시
+                    // Why limit to 1 line:
+                    //   - Keeps list row height consistent
+                    //   - Prevents layout breaking
+                    //   - Shows more items on screen
                     //
                     .lineLimit(1)
 
@@ -398,71 +398,71 @@ struct FileRow: View {
 
                 // Timestamp
                 //
-                // 파일이 생성된 날짜와 시간을 표시합니다.
+                // Displays the date and time when the file was created.
                 //
                 // videoFile.timestampString:
-                //   - 예: "March 15, 2024 at 2:23 PM"
-                //   - DateFormatter를 통해 포맷팅된 문자열
+                //   - Example: "March 15, 2024 at 2:23 PM"
+                //   - String formatted via DateFormatter
                 //
                 Text(videoFile.timestampString)
                     // **.font(.caption):**
                     //
-                    // Caption은 보조 정보를 위한 작은 텍스트 스타일입니다.
+                    // Caption is a small text style for secondary information.
                     //
-                    // 텍스트 스타일 계층:
+                    // Text style hierarchy:
                     // ```
-                    // .largeTitle  (가장 크고 중요)
+                    // .largeTitle  (largest and most important)
                     // .title
                     // .title2
                     // .title3
                     // .headline
-                    // .body        (일반 텍스트)
+                    // .body        (regular text)
                     // .callout
                     // .subheadline
                     // .footnote
-                    // .caption     (가장 작고 부차적) ← 현재 사용
+                    // .caption     (smallest and most secondary) ← currently used
                     // .caption2
                     // ```
                     //
-                    // Caption을 사용하는 이유:
-                    //   - 타임스탬프는 부차적 정보
-                    //   - 파일명보다 덜 중요
-                    //   - 시각적 계층 구조 표현
+                    // Why use Caption:
+                    //   - Timestamp is secondary information
+                    //   - Less important than filename
+                    //   - Expresses visual hierarchy
                     //
                     .font(.caption)
 
                     // **.foregroundColor(.secondary):**
                     //
-                    // 텍스트 색상을 보조 색상(secondary)으로 설정합니다.
+                    // Sets text color to secondary.
                     //
-                    // **시스템 색상(Semantic Colors):**
+                    // **System Colors (Semantic Colors):**
                     //
-                    // SwiftUI는 의미론적 색상을 제공합니다:
+                    // SwiftUI provides semantic colors:
                     //
                     // .primary:
-                    //   - 주요 텍스트
-                    //   - 라이트 모드: 검은색
-                    //   - 다크 모드: 흰색
+                    //   - Primary text
+                    //   - Light mode: black
+                    //   - Dark mode: white
                     //
-                    // .secondary: ← 현재 사용
-                    //   - 부차적 텍스트
-                    //   - 라이트 모드: 회색
-                    //   - 다크 모드: 밝은 회색
+                    // .secondary: ← currently used
+                    //   - Secondary text
+                    //   - Light mode: gray
+                    //   - Dark mode: light gray
                     //
                     // .tertiary:
-                    //   - 3차 텍스트
-                    //   - 더 연한 회색
+                    //   - Tertiary text
+                    //   - Lighter gray
                     //
-                    // **시스템 색상의 장점:**
+                    // **Advantages of System Colors:**
                     //
-                    // ✓ 자동 다크 모드 지원
-                    //   → 개발자가 따로 처리할 필요 없음
+                    // ✓ Automatic dark mode support
+                    //   → No need for developer to handle separately
                     //
-                    // ✓ 접근성 (Accessibility)
-                    //   → 시스템이 대비(contrast)를 자동 조정
+                    // ✓ Accessibility
+                    //   → System automatically adjusts contrast
                     //
-                    // ✓ 일관성 (Consistency)
-                    //   → macOS 전체 앱에서 동일한 느낌
+                    // ✓ Consistency
+                    //   → Same feel across all macOS apps
                     //
                     .foregroundColor(.secondary)
 
@@ -470,9 +470,9 @@ struct FileRow: View {
 
                 // Metadata info
                 //
-                // 파일의 메타데이터를 아이콘과 함께 표시합니다.
+                // Displays file metadata with icons.
                 //
-                // HStack으로 좌우 배치:
+                // Horizontal layout with HStack:
                 // [🕐 2:34] [📄 1.2GB] [🎥 2 channels] [📍] [⚠️] [⭐]
                 //
                 HStack(spacing: 12) {
@@ -480,44 +480,44 @@ struct FileRow: View {
 
                     // Duration
                     //
-                    // 비디오의 재생 시간을 표시합니다.
+                    // Displays video playback duration.
                     //
-                    // **Label 컴포넌트:**
+                    // **Label Component:**
                     //
-                    // Label은 아이콘과 텍스트를 결합한 SwiftUI 컴포넌트입니다.
+                    // Label is a SwiftUI component that combines icon and text.
                     //
-                    // 기본 구조:
+                    // Basic structure:
                     // ```swift
                     // Label("Text", systemImage: "icon.name")
                     // //    ~~~~~~~  ~~~~~~~~~~~~~~~~~~~~~~~~
-                    // //    텍스트   SF Symbols 아이콘 이름
+                    // //    Text     SF Symbols icon name
                     // ```
                     //
-                    // 렌더링 결과:
+                    // Rendering result:
                     // ```
                     // 🕐 2:34
                     // ~~ ~~~~~
-                    // 아이콘 텍스트
+                    // Icon Text
                     // ```
                     //
-                    // **Label의 장점:**
+                    // **Advantages of Label:**
                     //
-                    // ✓ 자동 정렬
-                    //   → 아이콘과 텍스트가 자동으로 중앙 정렬
+                    // ✓ Automatic alignment
+                    //   → Icon and text automatically center-aligned
                     //
-                    // ✓ 스타일 일관성
-                    //   → 시스템 표준 스타일 적용
+                    // ✓ Style consistency
+                    //   → System standard styles applied
                     //
-                    // ✓ 접근성
-                    //   → VoiceOver가 자동으로 처리
+                    // ✓ Accessibility
+                    //   → VoiceOver handles automatically
                     //
                     // videoFile.durationString:
-                    //   - 예: "2:34" (2분 34초)
-                    //   - 또는 "1:23:45" (1시간 23분 45초)
+                    //   - Example: "2:34" (2 minutes 34 seconds)
+                    //   - Or "1:23:45" (1 hour 23 minutes 45 seconds)
                     //
                     // systemImage: "clock":
-                    //   - SF Symbols의 시계 아이콘
-                    //   - 재생 시간을 직관적으로 표현
+                    //   - Clock icon from SF Symbols
+                    //   - Intuitively represents playback duration
                     //
                     Label(videoFile.durationString, systemImage: "clock")
                         .font(.caption)
@@ -527,16 +527,16 @@ struct FileRow: View {
 
                     // File size
                     //
-                    // 파일의 크기를 표시합니다.
+                    // Displays the file size.
                     //
                     // videoFile.totalFileSizeString:
-                    //   - 예: "1.2 GB", "567 MB"
-                    //   - ByteCountFormatter를 통해 포맷팅
-                    //   - 사람이 읽기 쉬운 형식
+                    //   - Example: "1.2 GB", "567 MB"
+                    //   - Formatted via ByteCountFormatter
+                    //   - Human-readable format
                     //
                     // systemImage: "doc":
-                    //   - 문서/파일 아이콘
-                    //   - 파일 크기를 나타냄
+                    //   - Document/file icon
+                    //   - Represents file size
                     //
                     Label(videoFile.totalFileSizeString, systemImage: "doc")
                         .font(.caption)
@@ -546,23 +546,23 @@ struct FileRow: View {
 
                     // Channel count
                     //
-                    // 비디오 채널(카메라) 수를 표시합니다.
+                    // Displays the number of video channels (cameras).
                     //
                     // "\(videoFile.channelCount) channels":
                     //   - String interpolation (\(...))
-                    //   - 예: "2 channels", "5 channels"
+                    //   - Example: "2 channels", "5 channels"
                     //
-                    // **다중 카메라 시스템:**
+                    // **Multi-camera System:**
                     //
-                    // 블랙박스는 여러 카메라를 동시에 사용합니다:
-                    //   - 1채널: 전방만
-                    //   - 2채널: 전방 + 후방
-                    //   - 4채널: 전방 + 후방 + 좌측 + 우측
-                    //   - 5채널: 4채널 + 실내
+                    // Dashcams use multiple cameras simultaneously:
+                    //   - 1 channel: Front only
+                    //   - 2 channels: Front + Rear
+                    //   - 4 channels: Front + Rear + Left + Right
+                    //   - 5 channels: 4 channels + Interior
                     //
                     // systemImage: "video":
-                    //   - 비디오 카메라 아이콘
-                    //   - 채널/카메라 수를 나타냄
+                    //   - Video camera icon
+                    //   - Represents number of channels/cameras
                     //
                     Label("\(videoFile.channelCount) channels", systemImage: "video")
                         .font(.caption)
@@ -572,154 +572,154 @@ struct FileRow: View {
 
                     // GPS indicator
                     //
-                    // GPS 데이터가 포함된 경우에만 표시합니다.
+                    // Displays only when GPS data is present.
                     //
-                    // **조건부 렌더링 (Conditional Rendering):**
+                    // **Conditional Rendering:**
                     //
-                    // SwiftUI에서 if문을 사용하면 조건에 따라 View를 표시하거나 숨길 수 있습니다.
+                    // In SwiftUI, using if statements allows showing or hiding Views based on conditions.
                     //
                     // ```swift
                     // if condition {
-                    //     SomeView()  // 조건이 true일 때만 렌더링
+                    //     SomeView()  // Only rendered when condition is true
                     // }
                     // ```
                     //
-                    // **작동 원리:**
+                    // **How it works:**
                     //
-                    // videoFile.hasGPSData가 true일 때:
+                    // When videoFile.hasGPSData is true:
                     // ```
                     // 🕐 2:34 │ 📄 1.2GB │ 🎥 2 channels │ 📍
                     // //                                    ~~
-                    // //                                    GPS 아이콘 표시
+                    // //                                    GPS icon shown
                     // ```
                     //
-                    // videoFile.hasGPSData가 false일 때:
+                    // When videoFile.hasGPSData is false:
                     // ```
                     // 🕐 2:34 │ 📄 1.2GB │ 🎥 2 channels
-                    // //                                    GPS 아이콘 없음
+                    // //                                    No GPS icon
                     // ```
                     //
-                    // **왜 조건부로 표시하는가?**
+                    // **Why conditional display?**
                     //
-                    // ✓ 정보의 간결성
-                    //   → GPS 데이터가 없는데 아이콘을 표시하면 혼란
+                    // ✓ Information conciseness
+                    //   → Showing icon without GPS data causes confusion
                     //
-                    // ✓ 시각적 명확성
-                    //   → 아이콘이 있으면 "GPS 있음"을 의미
-                    //   → 아이콘이 없으면 "GPS 없음"을 의미
+                    // ✓ Visual clarity
+                    //   → Icon present means "GPS available"
+                    //   → Icon absent means "No GPS"
                     //
-                    // ✓ 공간 효율
-                    //   → 필요한 아이콘만 표시
+                    // ✓ Space efficiency
+                    //   → Only shows necessary icons
                     //
                     if videoFile.hasGPSData {
                         // **SF Symbols - location.fill:**
                         //
-                        // "location.fill"은 채워진 위치 핀 아이콘입니다.
+                        // "location.fill" is a filled location pin icon.
                         //
-                        // SF Symbols 네이밍 규칙:
-                        //   - 기본 이름: location (윤곽선만)
-                        //   - .fill: location.fill (채워진 형태)
-                        //   - .circle: location.circle (원 안에)
-                        //   - .slash: location.slash (슬래시 추가)
+                        // SF Symbols naming convention:
+                        //   - Base name: location (outline only)
+                        //   - .fill: location.fill (filled form)
+                        //   - .circle: location.circle (inside circle)
+                        //   - .slash: location.slash (with slash)
                         //
-                        // 왜 .fill을 사용하는가?
-                        //   - 더 눈에 잘 띔
-                        //   - 작은 크기(.caption)에서도 명확
-                        //   - "활성" 상태를 나타냄
+                        // Why use .fill?
+                        //   - More noticeable
+                        //   - Clear even at small size (.caption)
+                        //   - Indicates "active" state
                         //
                         Image(systemName: "location.fill")
                             .font(.caption)
-                            // 파란색: GPS/위치를 연상시킴 (구글맵, 애플맵 등)
+                            // Blue: Evokes GPS/location (Google Maps, Apple Maps, etc.)
                             .foregroundColor(.blue)
                     }
 
                     // Impact indicator
                     //
-                    // 충격 이벤트가 포함된 경우에만 표시합니다.
+                    // Displays only when impact events are present.
                     //
                     // videoFile.hasImpactEvents:
-                    //   - VideoMetadata에서 가속도 데이터 분석
-                    //   - 2.5G 이상의 충격이 있으면 true
+                    //   - Analyzes acceleration data from VideoMetadata
+                    //   - True if impact is 2.5G or higher
                     //
                     if videoFile.hasImpactEvents {
                         // **SF Symbols - exclamationmark.triangle.fill:**
                         //
-                        // 경고 삼각형 아이콘입니다.
+                        // Warning triangle icon.
                         //
-                        // 표준 경고 심볼:
-                        //   - 도로 표지판 (⚠️)
-                        //   - 소프트웨어 경고 메시지
-                        //   - 위험 경고
+                        // Standard warning symbol:
+                        //   - Road signs (⚠️)
+                        //   - Software warning messages
+                        //   - Hazard warnings
                         //
-                        // 왜 이 아이콘을 사용하는가?
-                        //   - 보편적으로 인식됨
-                        //   - 주의가 필요함을 직관적으로 전달
-                        //   - 충격/위험을 나타냄
+                        // Why use this icon?
+                        //   - Universally recognized
+                        //   - Intuitively conveys need for caution
+                        //   - Represents impact/danger
                         //
                         Image(systemName: "exclamationmark.triangle.fill")
                             .font(.caption)
-                            // 주황색: 경고/주의를 나타냄 (노란색과 빨간색의 중간)
+                            // Orange: Represents warning/caution (between yellow and red)
                             .foregroundColor(.orange)
                     }
 
                     // Favorite indicator
                     //
-                    // 즐겨찾기로 표시된 경우에만 표시합니다.
+                    // Displays only when marked as favorite.
                     //
                     // videoFile.isFavorite:
-                    //   - 사용자가 수동으로 즐겨찾기 표시
-                    //   - 중요한 영상을 빠르게 찾기 위해
+                    //   - User manually marked as favorite
+                    //   - For quickly finding important videos
                     //
                     if videoFile.isFavorite {
                         // **SF Symbols - star.fill:**
                         //
-                        // 채워진 별 아이콘입니다.
+                        // Filled star icon.
                         //
-                        // 별 아이콘의 보편적 의미:
-                        //   - 즐겨찾기 (Favorites)
-                        //   - 북마크 (Bookmarks)
-                        //   - 중요 항목 (Important)
-                        //   - 평가/등급 (Rating)
+                        // Universal meaning of star icon:
+                        //   - Favorites
+                        //   - Bookmarks
+                        //   - Important items
+                        //   - Rating
                         //
-                        // 대부분의 앱에서 사용:
-                        //   - Safari: 북마크
-                        //   - Mail: VIP 메일
-                        //   - Files: 즐겨찾기 폴더
+                        // Used in most apps:
+                        //   - Safari: Bookmarks
+                        //   - Mail: VIP emails
+                        //   - Files: Favorite folders
                         //
                         Image(systemName: "star.fill")
                             .font(.caption)
-                            // 노란색: 금별/트로피를 연상 (긍정적, 가치 있음)
+                            // Yellow: Evokes gold star/trophy (positive, valuable)
                             .foregroundColor(.yellow)
                     }
 
                     // Corrupted indicator
                     //
-                    // 파일이 손상된 경우에만 표시합니다.
+                    // Displays only when file is corrupted.
                     //
                     // videoFile.isCorrupted:
-                    //   - 파일 읽기 실패
-                    //   - 메타데이터 누락
-                    //   - 비정상적인 파일 구조
+                    //   - File read failure
+                    //   - Missing metadata
+                    //   - Abnormal file structure
                     //
                     if videoFile.isCorrupted {
                         // **SF Symbols - xmark.circle.fill:**
                         //
-                        // 채워진 원 안에 X 표시 아이콘입니다.
+                        // X mark inside filled circle icon.
                         //
-                        // X 마크의 의미:
-                        //   - 오류 (Error)
-                        //   - 실패 (Failure)
-                        //   - 불가능 (Unavailable)
-                        //   - 손상됨 (Corrupted)
+                        // Meaning of X mark:
+                        //   - Error
+                        //   - Failure
+                        //   - Unavailable
+                        //   - Corrupted
                         //
-                        // .circle.fill을 사용하는 이유:
-                        //   - 단순 X보다 눈에 잘 띔
-                        //   - 원형 배경이 아이콘을 강조
-                        //   - "정지" 또는 "금지" 느낌
+                        // Why use .circle.fill:
+                        //   - More noticeable than plain X
+                        //   - Circular background emphasizes icon
+                        //   - "Stop" or "prohibited" feeling
                         //
                         Image(systemName: "xmark.circle.fill")
                             .font(.caption)
-                            // 빨간색: 오류/위험을 나타냄 (보편적 경고 색상)
+                            // Red: Represents error/danger (universal warning color)
                             .foregroundColor(.red)
                     }
                 }
@@ -729,23 +729,23 @@ struct FileRow: View {
 
             // Spacer pushes playback button to the right
             //
-            // Spacer는 가능한 모든 공간을 차지하여 요소들을 양 끝으로 밀어냅니다.
+            // Spacer takes up all available space and pushes elements to the edges.
             //
-            // HStack에서 Spacer의 역할:
+            // Role of Spacer in HStack:
             // ```
-            // [배지] [파일정보] [====== Spacer ======] [재생버튼]
-            // ```
-            //
-            // Spacer 없이:
-            // ```
-            // [배지] [파일정보] [재생버튼]
-            // //                ~~~~~~~~~~ 파일정보 바로 옆에 붙음
+            // [Badge] [File Info] [====== Spacer ======] [Play Button]
             // ```
             //
-            // Spacer 있으면:
+            // Without Spacer:
             // ```
-            // [배지] [파일정보]                      [재생버튼]
-            // //                                      ~~~~~~~~~~ 오른쪽 끝으로
+            // [Badge] [File Info] [Play Button]
+            // //                  ~~~~~~~~~~~~ Sticks right next to file info
+            // ```
+            //
+            // With Spacer:
+            // ```
+            // [Badge] [File Info]                      [Play Button]
+            // //                                        ~~~~~~~~~~~~ Pushed to right edge
             // ```
             //
             Spacer()
@@ -754,30 +754,30 @@ struct FileRow: View {
 
             // Playback button
             //
-            // 파일이 재생 가능한 경우에만 재생 버튼을 표시합니다.
+            // Displays play button only when file is playable.
             //
-            // **조건부 버튼 표시:**
+            // **Conditional Button Display:**
             //
             // videoFile.isPlayable:
-            //   - 파일이 손상되지 않음
-            //   - 모든 필수 데이터가 있음
-            //   - 지원되는 코덱
+            //   - File is not corrupted
+            //   - All required data is present
+            //   - Supported codec
             //
-            // 재생 불가능한 경우 버튼을 숨기는 이유:
-            //   - 클릭해도 아무 일도 안 일어나면 혼란
-            //   - 명확한 사용자 피드백
-            //   - 불필요한 UI 요소 제거
+            // Why hide button when not playable:
+            //   - Clicking with no result causes confusion
+            //   - Clear user feedback
+            //   - Removes unnecessary UI elements
             //
             if videoFile.isPlayable {
                 Button(action: {
                     // TODO: Play video
                     //
-                    // 실제 구현에서는:
-                    //   1. 비디오 플레이어 뷰 열기
-                    //   2. VideoPlayerViewModel에 파일 로드
-                    //   3. 재생 시작
+                    // In actual implementation:
+                    //   1. Open video player view
+                    //   2. Load file into VideoPlayerViewModel
+                    //   3. Start playback
                     //
-                    // 예시:
+                    // Example:
                     // ```swift
                     // playerViewModel.load(videoFile)
                     // showPlayer = true
@@ -785,80 +785,80 @@ struct FileRow: View {
                 }) {
                     // **SF Symbols - play.circle.fill:**
                     //
-                    // 채워진 원 안에 재생 아이콘입니다.
+                    // Play icon inside filled circle.
                     //
-                    // 재생 아이콘의 표준:
-                    //   - 삼각형 (▶️)
-                    //   - 오른쪽을 가리킴
-                    //   - 보편적으로 인식됨
+                    // Standard for play icon:
+                    //   - Triangle (▶️)
+                    //   - Points to the right
+                    //   - Universally recognized
                     //
-                    // .circle.fill을 사용하는 이유:
-                    //   - 버튼임을 명확히 표현
-                    //   - 클릭 가능한 영역이 넓어 보임
-                    //   - 시각적으로 더 돋보임
+                    // Why use .circle.fill:
+                    //   - Clearly expresses it's a button
+                    //   - Clickable area appears larger
+                    //   - More visually prominent
                     //
                     Image(systemName: "play.circle.fill")
                         // **.font(.title2):**
                         //
-                        // 아이콘 크기를 title2로 설정합니다.
+                        // Sets icon size to title2.
                         //
-                        // 크기 비교:
-                        //   - .caption (작음)
-                        //   - .body (중간)
-                        //   - .title3 (크게)
-                        //   - .title2 (더 크게) ← 현재 사용
-                        //   - .title (가장 크게)
+                        // Size comparison:
+                        //   - .caption (small)
+                        //   - .body (medium)
+                        //   - .title3 (large)
+                        //   - .title2 (larger) ← currently used
+                        //   - .title (largest)
                         //
-                        // title2를 사용하는 이유:
-                        //   - 버튼은 쉽게 클릭할 수 있어야 함
-                        //   - 주요 액션이므로 눈에 띄어야 함
-                        //   - 너무 크면 레이아웃 차지
+                        // Why use title2:
+                        //   - Button should be easy to click
+                        //   - Primary action so should be noticeable
+                        //   - Too large would take up layout space
                         //
                         .font(.title2)
 
                         // **.foregroundColor(.accentColor):**
                         //
-                        // 앱의 강조 색상(accent color)을 사용합니다.
+                        // Uses the app's accent color.
                         //
-                        // **Accent Color란?**
+                        // **What is Accent Color?**
                         //
-                        // 앱 전체에서 일관되게 사용되는 브랜드 색상입니다:
-                        //   - Assets.xcassets에서 정의
-                        //   - 버튼, 링크, 선택 항목 등에 사용
-                        //   - 사용자가 상호작용 가능한 요소를 표시
+                        // A brand color used consistently throughout the app:
+                        //   - Defined in Assets.xcassets
+                        //   - Used for buttons, links, selected items, etc.
+                        //   - Indicates elements users can interact with
                         //
-                        // 예시:
-                        //   - iOS: 파란색 (기본)
-                        //   - 사용자 정의: 회사 브랜드 색상
+                        // Examples:
+                        //   - iOS: Blue (default)
+                        //   - Custom: Company brand color
                         //
-                        // 장점:
-                        //   ✓ 일관성 - 앱 전체에서 같은 색상
-                        //   ✓ 변경 용이 - 한 곳만 수정하면 전체 앱 색상 변경
-                        //   ✓ 브랜딩 - 앱의 정체성 표현
+                        // Advantages:
+                        //   ✓ Consistency - Same color throughout app
+                        //   ✓ Easy to change - Modify in one place to change entire app
+                        //   ✓ Branding - Expresses app identity
                         //
                         .foregroundColor(.accentColor)
                 }
                 // **.buttonStyle(.plain):**
                 //
-                // 버튼의 기본 스타일을 제거합니다.
+                // Removes default button styling.
                 //
-                // macOS 버튼 스타일:
-                //   - 기본: 파란색 배경, 둥근 모서리
-                //   - .plain: 배경 없음, 콘텐츠만 표시
+                // macOS button styles:
+                //   - Default: Blue background, rounded corners
+                //   - .plain: No background, only content
                 //
-                // Plain을 사용하는 이유:
-                //   - 이미 play.circle.fill 아이콘이 버튼처럼 보임
-                //   - 추가 배경이 불필요
-                //   - 깔끔한 디자인
+                // Why use Plain:
+                //   - play.circle.fill icon already looks like a button
+                //   - Additional background unnecessary
+                //   - Clean design
                 //
                 .buttonStyle(.plain)
             }
         }
         // **.padding(.vertical, 8):**
         //
-        // 상하(vertical) 여백을 8pt 추가합니다.
+        // Adds 8pt vertical padding (top and bottom).
         //
-        // 여백:
+        // Padding:
         // ```
         // ┌───────────────────────┐
         // │    ← 8pt padding      │
@@ -870,9 +870,9 @@ struct FileRow: View {
         .padding(.vertical, 8)
         // **.padding(.horizontal, 12):**
         //
-        // 좌우(horizontal) 여백을 12pt 추가합니다.
+        // Adds 12pt horizontal padding (left and right).
         //
-        // 여백:
+        // Padding:
         // ```
         // ┌────────────────────────┐
         // │ 12pt  [Row Content] 12pt│
@@ -885,13 +885,13 @@ struct FileRow: View {
 
         // **.background(...):**
         //
-        // 행의 배경을 설정합니다.
+        // Sets the row background.
         //
-        // **선택 상태에 따른 배경:**
+        // **Background based on selection state:**
         //
         .background(
             RoundedRectangle(cornerRadius: 8)
-                // **삼항 연산자 (Ternary Operator):**
+                // **Ternary Operator:**
                 //
                 // ```swift
                 // condition ? valueIfTrue : valueIfFalse
@@ -899,31 +899,31 @@ struct FileRow: View {
                 //
                 // isSelected ? Color.accentColor.opacity(0.1) : Color.clear
                 // ~~~~~~~~~~   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~   ~~~~~~~~~~~
-                // 조건         선택됨 (강조 색상 10% 투명도)    선택 안 됨 (투명)
+                // Condition    Selected (accent 10% opacity)    Unselected (clear)
                 //
-                // **opacity(0.1)이란?**
+                // **What is opacity(0.1)?**
                 //
-                // 색상의 투명도를 설정합니다:
-                //   - 0.0 = 완전 투명 (보이지 않음)
-                //   - 0.1 = 90% 투명 (거의 보이지 않음) ← 현재 사용
-                //   - 0.5 = 50% 투명 (반투명)
-                //   - 1.0 = 불투명 (완전히 보임)
+                // Sets color transparency:
+                //   - 0.0 = Fully transparent (invisible)
+                //   - 0.1 = 90% transparent (barely visible) ← currently used
+                //   - 0.5 = 50% transparent (semi-transparent)
+                //   - 1.0 = Opaque (fully visible)
                 //
-                // 왜 0.1처럼 낮은 투명도를 사용하는가?
-                //   - 너무 강한 배경은 텍스트 가독성 저하
-                //   - 미묘한 하이라이트로 선택 상태 표시
-                //   - 깔끔하고 세련된 디자인
+                // Why use low opacity like 0.1?
+                //   - Too strong background reduces text readability
+                //   - Subtle highlight indicates selection state
+                //   - Clean and refined design
                 //
-                // 선택 상태 비교:
+                // Selection state comparison:
                 // ```
-                // 선택 안 됨:
+                // Unselected:
                 // ┌─────────────────────────────┐
-                // │ [Row Content]               │ ← 투명 배경
+                // │ [Row Content]               │ ← Transparent background
                 // └─────────────────────────────┘
                 //
-                // 선택됨:
+                // Selected:
                 // ┌─────────────────────────────┐
-                // │ [Row Content]               │ ← 연한 파란색 배경
+                // │ [Row Content]               │ ← Light blue background
                 // └─────────────────────────────┘
                 // ```
                 //
@@ -932,72 +932,72 @@ struct FileRow: View {
 
         // **.overlay(...):**
         //
-        // 행의 위에 테두리를 오버레이합니다.
+        // Overlays border on top of the row.
         //
-        // **배경 vs 오버레이:**
+        // **Background vs Overlay:**
         //
         // .background:
-        //   - View 뒤에 렌더링
-        //   - 콘텐츠 아래 레이어
+        //   - Renders behind View
+        //   - Layer below content
         //
         // .overlay:
-        //   - View 앞에 렌더링
-        //   - 콘텐츠 위 레이어
+        //   - Renders in front of View
+        //   - Layer above content
         //
-        // 레이어 순서:
+        // Layer order:
         // ```
-        // Overlay (테두리) ← 가장 앞
+        // Overlay (border) ← Front
         //     ↓
-        // Content (텍스트, 아이콘 등)
+        // Content (text, icons, etc.)
         //     ↓
-        // Background (배경 색상) ← 가장 뒤
+        // Background (background color) ← Back
         // ```
         //
         .overlay(
             RoundedRectangle(cornerRadius: 8)
                 // **.stroke(...):**
                 //
-                // 도형의 윤곽선만 그립니다 (채우기 없음).
+                // Draws only the shape outline (no fill).
                 //
                 // .fill vs .stroke:
                 // ```
-                // .fill (채우기):
+                // .fill:
                 // ┌──────┐
-                // │██████│ ← 내부를 색상으로 채움
+                // │██████│ ← Fills interior with color
                 // └──────┘
                 //
-                // .stroke (윤곽선):
+                // .stroke:
                 // ┌──────┐
-                // │      │ ← 테두리만 그림
+                // │      │ ← Only draws border
                 // └──────┘
                 // ```
                 //
-                // **선택 상태에 따른 테두리:**
+                // **Border based on selection state:**
                 //
                 // isSelected ? Color.accentColor : Color.clear
                 // ~~~~~~~~~~   ~~~~~~~~~~~~~~~~~~   ~~~~~~~~~~~
-                // 조건         선택됨 (강조 색상)    선택 안 됨 (투명)
+                // Condition    Selected (accent)      Unselected (clear)
                 //
                 // lineWidth: 2
-                //   - 테두리 두께를 2pt로 설정
-                //   - 너무 얇으면 안 보임
-                //   - 너무 두꺼우면 시끄러움
+                //   - Sets border thickness to 2pt
+                //   - Too thin is invisible
+                //   - Too thick is noisy
                 //
-                // **배경 + 테두리의 조합 효과:**
+                // **Combined effect of background + border:**
                 //
-                // 선택된 행:
+                // Selected row:
                 // ```
-                // ┌─────────────────────────────┐ ← 파란 테두리 (2pt)
+                // ┌─────────────────────────────┐ ← Blue border (2pt)
                 // │                             │
-                // │ [Row Content]               │ ← 연한 파란 배경 (10%)
+                // │ [Row Content]               │ ← Light blue background (10%)
                 // │                             │
                 // └─────────────────────────────┘
                 // ```
                 //
-                // 두 가지를 모두 사용하는 이유:
-                //   ✓ 배경만: 너무 미묘해서 놓칠 수 있음
-                //   ✓ 테두리만: 배경과 대비가 약할 수 있음
-                //   ✓ 배경 + 테두리: 명확하고 시각적으로 강조됨
+                // Why use both:
+                //   ✓ Background only: Too subtle, may be missed
+                //   ✓ Border only: May have weak contrast with background
+                //   ✓ Background + Border: Clear and visually emphasized
                 //
                 .stroke(isSelected ? Color.accentColor : Color.clear, lineWidth: 2)
         )
@@ -1007,36 +1007,36 @@ struct FileRow: View {
 // MARK: - Event Badge
 
 /// @struct EventBadge
-/// @brief 이벤트 타입 색상 배지 컴포넌트
+/// @brief Event type colored badge component
 ///
 /// @details
-/// 이벤트 타입을 색상 배지로 표시하는 컴포넌트입니다.
+/// Component that displays event type as a colored badge.
 ///
-/// **사용 예시:**
+/// **Usage Example:**
 /// ```swift
-/// EventBadge(eventType: .impact)  // 빨간색 "IMPACT" 배지
-/// EventBadge(eventType: .normal)  // 녹색 "NORMAL" 배지
+/// EventBadge(eventType: .impact)  // Red "IMPACT" badge
+/// EventBadge(eventType: .normal)  // Green "NORMAL" badge
 /// ```
 ///
-/// **연관 타입:**
-/// - `EventType`: 이벤트 타입 enum
+/// **Associated Types:**
+/// - `EventType`: Event type enum
 ///
 struct EventBadge: View {
     // MARK: - Properties
 
     /// Event type
     ///
-    /// 표시할 이벤트 타입입니다.
+    /// The event type to display.
     ///
     /// **EventType enum:**
     /// ```swift
     /// enum EventType {
-    ///     case normal     // 일반 녹화 - Green
-    ///     case impact     // 충격 이벤트 - Red
-    ///     case parking    // 주차 모드 - Blue
-    ///     case manual     // 수동 녹화 - Orange
-    ///     case emergency  // 비상 녹화 - Purple
-    ///     case unknown    // 알 수 없음 - Gray
+    ///     case normal     // Normal recording - Green
+    ///     case impact     // Impact event - Red
+    ///     case parking    // Parking mode - Blue
+    ///     case manual     // Manual recording - Orange
+    ///     case emergency  // Emergency recording - Purple
+    ///     case unknown    // Unknown - Gray
     ///
     ///     var displayName: String { ... }
     ///     var colorHex: String { ... }
@@ -1048,92 +1048,92 @@ struct EventBadge: View {
     // MARK: - Body
 
     var body: some View {
-        // **배지 텍스트:**
+        // **Badge text:**
         //
         // eventType.displayName.uppercased()
-        //   - displayName: 이벤트 타입의 표시 이름 ("Impact", "Normal" 등)
-        //   - uppercased(): 모두 대문자로 변환 ("IMPACT", "NORMAL")
+        //   - displayName: Event type display name ("Impact", "Normal", etc.)
+        //   - uppercased(): Converts to all uppercase ("IMPACT", "NORMAL")
         //
-        // **왜 대문자를 사용하는가?**
+        // **Why use uppercase?**
         //
-        // ✓ 시각적 강조
-        //   → 대문자는 더 강하고 명확하게 보임
+        // ✓ Visual emphasis
+        //   → Uppercase appears stronger and clearer
         //
-        // ✓ 표준 배지 스타일
-        //   → 상태 배지는 일반적으로 대문자 사용
-        //   → GitHub, Slack 등의 UI 패턴
+        // ✓ Standard badge style
+        //   → Status badges typically use uppercase
+        //   → UI pattern in GitHub, Slack, etc.
         //
-        // ✓ 일관성
-        //   → 모든 배지가 같은 스타일
+        // ✓ Consistency
+        //   → All badges have same style
         //
-        // 예시:
+        // Example:
         // ```
-        // 소문자: impact  ← 덜 눈에 띔
-        // 대문자: IMPACT  ← 더 강조됨
+        // Lowercase: impact  ← Less noticeable
+        // Uppercase: IMPACT  ← More emphasized
         // ```
         //
         Text(eventType.displayName.uppercased())
             // **.font(.caption):**
             //
-            // 작은 텍스트 크기를 사용합니다.
+            // Uses small text size.
             //
-            // 배지는 부차적 정보이므로:
-            //   - 너무 크면 주객전도
-            //   - 적당히 작아야 배지처럼 보임
+            // Badge is secondary information so:
+            //   - Too large would overwhelm primary content
+            //   - Appropriately small looks like a badge
             //
             .font(.caption)
 
             // **.fontWeight(.bold):**
             //
-            // 폰트를 굵게 표시합니다.
+            // Displays font in bold.
             //
-            // Bold를 사용하는 이유:
-            //   - 작은 크기(.caption)에서도 선명하게 보임
-            //   - 배지의 중요성을 강조
-            //   - 색상 배경과의 대비 향상
+            // Why use Bold:
+            //   - Remains clear even at small size (.caption)
+            //   - Emphasizes badge importance
+            //   - Improves contrast with colored background
             //
             .fontWeight(.bold)
 
             // **.foregroundColor(.white):**
             //
-            // 텍스트를 흰색으로 표시합니다.
+            // Displays text in white.
             //
-            // 흰색을 사용하는 이유:
-            //   - 색상 배경 위에서 가독성 최고
-            //   - 모든 배경 색상과 잘 어울림 (녹색, 빨간색, 파란색 등)
-            //   - 접근성 (Accessibility) - 충분한 대비
+            // Why use white:
+            //   - Best readability on colored backgrounds
+            //   - Works well with all background colors (green, red, blue, etc.)
+            //   - Accessibility - sufficient contrast
             //
-            // 색상 대비 예시:
+            // Color contrast example:
             // ```
-            // 빨간 배경 + 흰 텍스트:   IMPACT  ✓ 잘 보임
-            // 빨간 배경 + 검은 텍스트: IMPACT  ✗ 안 보임
+            // Red background + white text:   IMPACT  ✓ Visible
+            // Red background + black text:   IMPACT  ✗ Not visible
             // ```
             //
             .foregroundColor(.white)
 
             // **.padding(.horizontal, 8):**
             //
-            // 텍스트 좌우에 8pt 여백을 추가합니다.
+            // Adds 8pt padding to left and right of text.
             //
-            // 여백:
+            // Padding:
             // ```
             // ┌──────────────┐
             // │ 8pt│IMPACT│8pt│
             // └──────────────┘
             // ```
             //
-            // 여백이 필요한 이유:
-            //   - 텍스트가 배경 가장자리에 붙어있으면 답답해 보임
-            //   - 클릭 가능한 영역 확대
-            //   - 시각적 균형
+            // Why padding is needed:
+            //   - Text stuck to background edge looks cramped
+            //   - Enlarges clickable area
+            //   - Visual balance
             //
             .padding(.horizontal, 8)
 
             // **.padding(.vertical, 4):**
             //
-            // 텍스트 상하에 4pt 여백을 추가합니다.
+            // Adds 4pt padding to top and bottom of text.
             //
-            // 여백:
+            // Padding:
             // ```
             // ┌──────────┐
             // │   4pt    │
@@ -1142,27 +1142,27 @@ struct EventBadge: View {
             // └──────────┘
             // ```
             //
-            // 상하 여백이 좌우보다 작은 이유:
-            //   - 좌우: 8pt (더 넓게)
-            //   - 상하: 4pt (더 좁게)
-            //   - 결과: 가로로 긴 배지 형태 (전형적인 배지 모양)
+            // Why vertical padding is smaller than horizontal:
+            //   - Horizontal: 8pt (wider)
+            //   - Vertical: 4pt (narrower)
+            //   - Result: Horizontally elongated badge shape (typical badge form)
             //
             .padding(.vertical, 4)
 
             // **.background(...):**
             //
-            // 배지의 배경을 설정합니다.
+            // Sets the badge background.
             //
             .background(
                 RoundedRectangle(cornerRadius: 4)
                     // **.fill(Color(hex: eventType.colorHex)):**
                     //
-                    // 이벤트 타입에 따른 색상으로 배경을 채웁니다.
+                    // Fills background with color based on event type.
                     //
-                    // **Color(hex:) 커스텀 이니셜라이저:**
+                    // **Color(hex:) Custom Initializer:**
                     //
-                    // Swift의 Color는 기본적으로 hex 색상을 지원하지 않습니다.
-                    // 이 프로젝트에서는 커스텀 익스텐션을 추가한 것으로 보입니다:
+                    // Swift's Color doesn't natively support hex colors.
+                    // This project appears to have added a custom extension:
                     //
                     // ```swift
                     // extension Color {
@@ -1176,50 +1176,50 @@ struct EventBadge: View {
                     //
                     // **eventType.colorHex:**
                     //
-                    // 각 이벤트 타입은 고유한 hex 색상 코드를 가집니다:
+                    // Each event type has a unique hex color code:
                     //
                     // ```
-                    // .normal     → "#4CAF50" (녹색)
-                    // .impact     → "#F44336" (빨간색)
-                    // .parking    → "#2196F3" (파란색)
-                    // .manual     → "#FF9800" (주황색)
-                    // .emergency  → "#9C27B0" (보라색)
-                    // .unknown    → "#9E9E9E" (회색)
+                    // .normal     → "#4CAF50" (green)
+                    // .impact     → "#F44336" (red)
+                    // .parking    → "#2196F3" (blue)
+                    // .manual     → "#FF9800" (orange)
+                    // .emergency  → "#9C27B0" (purple)
+                    // .unknown    → "#9E9E9E" (gray)
                     // ```
                     //
-                    // **Material Design 색상:**
+                    // **Material Design Colors:**
                     //
-                    // 이 색상들은 Google의 Material Design 팔레트에서 가져온 것으로 보입니다:
-                    //   ✓ 시각적으로 균형잡힘
-                    //   ✓ 접근성 고려 (충분한 대비)
-                    //   ✓ 현대적인 디자인
+                    // These colors appear to be from Google's Material Design palette:
+                    //   ✓ Visually balanced
+                    //   ✓ Accessibility considered (sufficient contrast)
+                    //   ✓ Modern design
                     //
                     // **cornerRadius: 4:**
                     //
-                    // 모서리를 4pt 둥글게 만듭니다.
+                    // Rounds corners to 4pt.
                     //
-                    // 둥근 모서리 효과:
+                    // Rounded corner effect:
                     // ```
-                    // cornerRadius: 0 (각진 모서리):
+                    // cornerRadius: 0 (sharp corners):
                     // ┌──────────┐
                     // │ IMPACT   │
                     // └──────────┘
                     //
-                    // cornerRadius: 4 (약간 둥근):
+                    // cornerRadius: 4 (slightly rounded):
                     // ╭──────────╮
                     // │ IMPACT   │
                     // ╰──────────╯
                     //
-                    // cornerRadius: 20 (매우 둥근, 캡슐 형태):
+                    // cornerRadius: 20 (very rounded, capsule shape):
                     // ╭─────────╮
                     // │ IMPACT  │
                     // ╰─────────╯
                     // ```
                     //
-                    // 4pt를 사용하는 이유:
-                    //   - 너무 각지지 않음 (부드러운 느낌)
-                    //   - 너무 둥글지 않음 (버블 느낌 방지)
-                    //   - 전형적인 배지/태그 스타일
+                    // Why use 4pt:
+                    //   - Not too sharp (soft feeling)
+                    //   - Not too round (prevents bubble appearance)
+                    //   - Typical badge/tag style
                     //
                     .fill(Color(hex: eventType.colorHex))
             )
@@ -1230,60 +1230,60 @@ struct EventBadge: View {
 
 /// SwiftUI Preview
 ///
-/// Xcode의 Canvas에서 FileRow를 미리 볼 수 있게 해주는 프리뷰입니다.
+/// Preview that allows viewing FileRow in Xcode's Canvas.
 ///
-/// **이 Preview의 구성:**
+/// **This Preview's Composition:**
 ///
-/// 5가지 다른 VideoFile 샘플을 표시하여 다양한 상태를 확인합니다:
+/// Displays 5 different VideoFile samples to check various states:
 ///
-/// 1. **normal5Channel**: 일반 녹화, 5채널
-///    - 선택 안 됨
-///    - 녹색 "NORMAL" 배지
+/// 1. **normal5Channel**: Normal recording, 5 channels
+///    - Not selected
+///    - Green "NORMAL" badge
 ///
-/// 2. **impact2Channel**: 충격 이벤트, 2채널
-///    - 선택됨 (파란 배경 + 테두리)
-///    - 빨간색 "IMPACT" 배지
-///    - 충격 인디케이터 표시
+/// 2. **impact2Channel**: Impact event, 2 channels
+///    - Selected (blue background + border)
+///    - Red "IMPACT" badge
+///    - Impact indicator shown
 ///
-/// 3. **parking1Channel**: 주차 모드, 1채널
-///    - 선택 안 됨
-///    - 파란색 "PARKING" 배지
+/// 3. **parking1Channel**: Parking mode, 1 channel
+///    - Not selected
+///    - Blue "PARKING" badge
 ///
-/// 4. **favoriteRecording**: 즐겨찾기 표시
-///    - 선택 안 됨
-///    - 노란 별 인디케이터 표시
+/// 4. **favoriteRecording**: Marked as favorite
+///    - Not selected
+///    - Yellow star indicator shown
 ///
-/// 5. **corruptedFile**: 손상된 파일
-///    - 선택 안 됨
-///    - 빨간 X 인디케이터 표시
-///    - 재생 버튼 없음 (재생 불가)
+/// 5. **corruptedFile**: Corrupted file
+///    - Not selected
+///    - Red X indicator shown
+///    - No play button (not playable)
 ///
 /// **VStack(spacing: 8):**
 ///
-/// 각 행을 8pt 간격으로 세로 배치합니다:
+/// Arranges each row vertically with 8pt spacing:
 /// ```
 /// ┌─────────────────┐
 /// │ Row 1           │
-/// ├─────────────────┤ ← 8pt 간격
-/// │ Row 2 (선택됨)  │
-/// ├─────────────────┤ ← 8pt 간격
+/// ├─────────────────┤ ← 8pt spacing
+/// │ Row 2 (selected)│
+/// ├─────────────────┤ ← 8pt spacing
 /// │ Row 3           │
 /// └─────────────────┘
 /// ```
 ///
 /// **.previewLayout(.sizeThatFits):**
 ///
-/// 프리뷰를 콘텐츠 크기에 맞게 조정합니다.
+/// Adjusts preview to fit content size.
 ///
-/// 레이아웃 옵션:
-///   - .device: 실제 기기 크기 (iPhone, iPad 등)
-///   - .fixed(width:height:): 고정 크기
-///   - .sizeThatFits: 콘텐츠에 맞게 자동 조정 ← 현재 사용
+/// Layout options:
+///   - .device: Actual device size (iPhone, iPad, etc.)
+///   - .fixed(width:height:): Fixed size
+///   - .sizeThatFits: Auto-adjust to content ← currently used
 ///
-/// sizeThatFits를 사용하는 이유:
-///   - 불필요한 빈 공간 제거
-///   - 컴포넌트에 집중
-///   - 빠른 미리보기 로딩
+/// Why use sizeThatFits:
+///   - Removes unnecessary empty space
+///   - Focuses on component
+///   - Faster preview loading
 ///
 struct FileRow_Previews: PreviewProvider {
     static var previews: some View {

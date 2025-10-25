@@ -1,31 +1,31 @@
 /// @file SpeedometerGaugeView.swift
-/// @brief 시각적 속도계 게이지 뷰
+/// @brief Visual speedometer gauge view
 /// @author BlackboxPlayer Development Team
 /// @details
-/// 원형 또는 반원형 속도계 게이지를 표시하는 SwiftUI 뷰입니다.
-/// 속도에 따라 색상이 변하고 애니메이션 효과가 있습니다.
+/// SwiftUI view that displays a circular or semi-circular speedometer gauge.
+/// Colors change according to speed with animation effects.
 
 import SwiftUI
 
 /// @struct SpeedometerGaugeView
-/// @brief 시각적 속도계 게이지
+/// @brief Visual speedometer gauge
 ///
 /// @details
-/// ## 기능
-/// - 반원형 게이지 (0° ~ 180°)
-/// - 속도 범위: 0 ~ 200 km/h
-/// - 색상 코딩: 저속(녹색) → 중속(노란색) → 고속(주황색) → 과속(빨간색)
-/// - 부드러운 애니메이션
+/// ## Features
+/// - Semi-circular gauge (0° ~ 180°)
+/// - Speed range: 0 ~ 200 km/h
+/// - Color coding: Low speed (green) → Medium speed (yellow) → High speed (orange) → Overspeed (red)
+/// - Smooth animation
 ///
-/// ## 속도 범위별 색상
+/// ## Colors by speed range
 /// ```
-/// 0-60 km/h   → 녹색   (도심 주행)
-/// 60-100 km/h → 노란색 (일반 도로)
-/// 100-140 km/h → 주황색 (고속 도로)
-/// 140+ km/h   → 빨간색 (과속)
+/// 0-60 km/h   → Green   (Urban driving)
+/// 60-100 km/h → Yellow  (Regular roads)
+/// 100-140 km/h → Orange  (Highway)
+/// 140+ km/h   → Red     (Overspeeding)
 /// ```
 ///
-/// ## 사용 예제
+/// ## Usage example
 /// ```swift
 /// SpeedometerGaugeView(speed: 85.0)
 ///     .frame(width: 160, height: 100)
@@ -34,26 +34,26 @@ struct SpeedometerGaugeView: View {
     // MARK: - Properties
 
     /// @var speed
-    /// @brief 현재 속도 (km/h)
+    /// @brief Current speed (km/h)
     let speed: Double
 
     /// @var maxSpeed
-    /// @brief 최대 속도 (기본 200 km/h)
+    /// @brief Maximum speed (default 200 km/h)
     let maxSpeed: Double = 200.0
 
     /// @var minSpeed
-    /// @brief 최소 속도 (기본 0 km/h)
+    /// @brief Minimum speed (default 0 km/h)
     let minSpeed: Double = 0.0
 
     // MARK: - Computed Properties
 
-    /// @brief 속도 비율 (0.0 ~ 1.0)
+    /// @brief Speed ratio (0.0 ~ 1.0)
     ///
     /// @details
-    /// **계산:**
+    /// **Calculation:**
     /// ```
-    /// speedRatio = (현재 속도 - 최소) / (최대 - 최소)
-    /// 예: speed = 100, maxSpeed = 200
+    /// speedRatio = (current speed - min) / (max - min)
+    /// Example: speed = 100, maxSpeed = 200
     ///     → speedRatio = 100 / 200 = 0.5 (50%)
     /// ```
     private var speedRatio: Double {
@@ -61,10 +61,10 @@ struct SpeedometerGaugeView: View {
         return (clamped - minSpeed) / (maxSpeed - minSpeed)
     }
 
-    /// @brief 게이지 각도 (0° ~ 180°)
+    /// @brief Gauge angle (0° ~ 180°)
     ///
     /// @details
-    /// 반원형 게이지이므로 180도 범위
+    /// 180-degree range for semi-circular gauge
     /// speedRatio = 0.0 → 0°
     /// speedRatio = 0.5 → 90°
     /// speedRatio = 1.0 → 180°
@@ -72,14 +72,14 @@ struct SpeedometerGaugeView: View {
         return speedRatio * 180.0
     }
 
-    /// @brief 속도에 따른 색상
+    /// @brief Color based on speed
     ///
     /// @details
-    /// 속도 범위별 색상:
-    /// - 0-60: 녹색 (도심)
-    /// - 60-100: 노란색 (일반 도로)
-    /// - 100-140: 주황색 (고속 도로)
-    /// - 140+: 빨간색 (과속)
+    /// Colors by speed range:
+    /// - 0-60: Green (urban)
+    /// - 60-100: Yellow (regular roads)
+    /// - 100-140: Orange (highway)
+    /// - 140+: Red (overspeeding)
     private var speedColor: Color {
         if speed < 60 {
             return .green
@@ -96,56 +96,56 @@ struct SpeedometerGaugeView: View {
 
     var body: some View {
         ZStack {
-            // 배경 게이지 (회색, 반원)
+            // Background gauge (gray, semi-circle)
             backgroundGauge
 
-            // 속도 게이지 (색상, 현재 속도만큼)
+            // Speed gauge (colored, up to current speed)
             speedGauge
 
-            // 중앙 속도 텍스트
+            // Center speed text
             speedText
         }
     }
 
     // MARK: - Background Gauge
 
-    /// @brief 배경 게이지 (회색 반원)
+    /// @brief Background gauge (gray semi-circle)
     ///
     /// @details
-    /// 전체 속도 범위를 나타내는 반투명 배경 게이지
+    /// Semi-transparent background gauge representing the full speed range
     private var backgroundGauge: some View {
         Circle()
-            .trim(from: 0, to: 0.5)  // 반원 (0° ~ 180°)
+            .trim(from: 0, to: 0.5)  // Semi-circle (0° ~ 180°)
             .stroke(
                 Color.white.opacity(0.2),
                 style: StrokeStyle(lineWidth: 12, lineCap: .round)
             )
-            .rotationEffect(.degrees(180))  // 아래쪽 반원으로 회전
+            .rotationEffect(.degrees(180))  // Rotate to bottom semi-circle
     }
 
     // MARK: - Speed Gauge
 
-    /// @brief 속도 게이지 (색상 반원)
+    /// @brief Speed gauge (colored semi-circle)
     ///
     /// @details
-    /// 현재 속도만큼만 표시되며, 속도에 따라 색상이 변경됨
+    /// Displays up to current speed, color changes based on speed
     private var speedGauge: some View {
         Circle()
-            .trim(from: 0, to: CGFloat(speedRatio) * 0.5)  // 현재 속도만큼
+            .trim(from: 0, to: CGFloat(speedRatio) * 0.5)  // Up to current speed
             .stroke(
                 speedColor,
                 style: StrokeStyle(lineWidth: 12, lineCap: .round)
             )
-            .rotationEffect(.degrees(180))  // 아래쪽 반원으로 회전
-            .animation(.easeInOut(duration: 0.5), value: speed)  // 부드러운 애니메이션
+            .rotationEffect(.degrees(180))  // Rotate to bottom semi-circle
+            .animation(.easeInOut(duration: 0.5), value: speed)  // Smooth animation
     }
 
     // MARK: - Speed Text
 
-    /// @brief 중앙 속도 텍스트
+    /// @brief Center speed text
     ///
     /// @details
-    /// 게이지 중앙에 큰 숫자로 속도 표시
+    /// Display speed as large numbers in the center of the gauge
     private var speedText: some View {
         VStack(spacing: 0) {
             Text(String(format: "%.0f", speed))
@@ -156,7 +156,7 @@ struct SpeedometerGaugeView: View {
                 .font(.system(size: 10))
                 .foregroundColor(.white.opacity(0.6))
         }
-        .offset(y: 20)  // 반원 아래쪽에 위치
+        .offset(y: 20)  // Position below semi-circle
     }
 }
 
@@ -165,25 +165,25 @@ struct SpeedometerGaugeView: View {
 struct SpeedometerGaugeView_Previews: PreviewProvider {
     static var previews: some View {
         VStack(spacing: 40) {
-            // 저속 (녹색)
+            // Low speed (green)
             SpeedometerGaugeView(speed: 45)
                 .frame(width: 160, height: 100)
                 .background(Color.black)
                 .previewDisplayName("Low Speed (45 km/h)")
 
-            // 중속 (노란색)
+            // Medium speed (yellow)
             SpeedometerGaugeView(speed: 85)
                 .frame(width: 160, height: 100)
                 .background(Color.black)
                 .previewDisplayName("Medium Speed (85 km/h)")
 
-            // 고속 (주황색)
+            // High speed (orange)
             SpeedometerGaugeView(speed: 120)
                 .frame(width: 160, height: 100)
                 .background(Color.black)
                 .previewDisplayName("High Speed (120 km/h)")
 
-            // 과속 (빨간색)
+            // Overspeeding (red)
             SpeedometerGaugeView(speed: 160)
                 .frame(width: 160, height: 100)
                 .background(Color.black)
