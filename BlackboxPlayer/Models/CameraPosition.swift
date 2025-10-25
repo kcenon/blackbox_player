@@ -777,25 +777,26 @@ enum CameraPosition: String, Codable, CaseIterable {
         if let lastComponent = components.last {
             let withoutExtension = lastComponent.components(separatedBy: ".").first ?? ""
 
-            // Try exact match first
-            // 1. 정확한 매칭 시도
+            // Try exact match first (case-insensitive)
+            // 1. 정확한 매칭 시도 (대소문자 무시)
+            let uppercased = withoutExtension.uppercased()
             for position in CameraPosition.allCases {
-                if withoutExtension == position.rawValue {
+                if uppercased == position.rawValue {
                     return position
                 }
             }
 
-            // Try partial match
-            // 2. 부분 매칭 시도
-            if withoutExtension.contains("F") {
+            // Try partial match (case-insensitive)
+            // 2. 부분 매칭 시도 (대소문자 무시)
+            if uppercased.contains("F") {
                 return .front  // "F" 포함 → 전방
-            } else if withoutExtension.contains("R") && !withoutExtension.contains("Ri") {
-                return .rear  // "R" 포함하지만 "Ri"는 아님 → 후방
-            } else if withoutExtension.contains("L") {
+            } else if uppercased.contains("R") && !uppercased.contains("RI") {
+                return .rear  // "R" 포함하지만 "RI"는 아님 → 후방
+            } else if uppercased.contains("L") {
                 return .left  // "L" 포함 → 좌측
-            } else if withoutExtension.contains("Ri") {
-                return .right  // "Ri" 포함 → 우측
-            } else if withoutExtension.contains("I") {
+            } else if uppercased.contains("RI") {
+                return .right  // "RI" 포함 → 우측
+            } else if uppercased.contains("I") {
                 return .interior  // "I" 포함 → 실내
             }
         }

@@ -339,7 +339,7 @@ final class DeviceDetectorTests: XCTestCase {
     /// 1. 테스트 시작
     /// 2. SD 카드 또는 USB 드라이브 삽입
     /// 3. 30초 이내에 콜백 호출 확인
-    func testMonitorDeviceChanges_DetectsConnection_MANUAL() {
+    func disabled_testMonitorDeviceChanges_DetectsConnection_MANUAL() {
         // Given: Expectation 설정
         let connectExpectation = expectation(description: "Device connected")
 
@@ -372,7 +372,7 @@ final class DeviceDetectorTests: XCTestCase {
     /// 1. SD 카드 또는 USB 드라이브를 미리 연결
     /// 2. 테스트 시작
     /// 3. 30초 이내에 장치 꺼내기
-    func testMonitorDeviceChanges_DetectsDisconnection_MANUAL() {
+    func disabled_testMonitorDeviceChanges_DetectsDisconnection_MANUAL() {
         // Given: Expectation 설정
         let disconnectExpectation = expectation(description: "Device disconnected")
 

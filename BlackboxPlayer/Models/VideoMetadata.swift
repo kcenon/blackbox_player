@@ -429,17 +429,56 @@ struct VideoMetadata: Codable, Equatable, Hashable {
         // 1. GPS 데이터가 없으면 nil 반환
         guard !gpsPoints.isEmpty else { return nil }
 
-        // 2. 첫 번째 GPS 포인트의 타임스탬프를 기준점(t0)으로 사용
-        // 3. min(by:) 클로저로 각 포인트의 시간 차이 계산 후 최소값 찾기
-        // 4. point1과 point2를 비교하여 diff1 < diff2이면 point1이 더 가까움
-        return gpsPoints.min(by: { point1, point2 in
-            // point1의 시간 차이 계산
-            let diff1 = abs(point1.timestamp.timeIntervalSince(gpsPoints[0].timestamp) - timeOffset)
-            // point2의 시간 차이 계산
-            let diff2 = abs(point2.timestamp.timeIntervalSince(gpsPoints[0].timestamp) - timeOffset)
-            // 시간 차이가 작은 것이 "더 가까운" 포인트
-            return diff1 < diff2
-        })
+        // 2. 포인트가 하나만 있으면 그것을 반환
+        guard gpsPoints.count > 1 else { return gpsPoints.first }
+
+        let baseTime = gpsPoints[0].timestamp
+
+        // 3. timeOffset에 해당하는 두 포인트 찾기 (선형 보간용)
+        var beforePoint: GPSPoint?
+        var afterPoint: GPSPoint?
+
+        for i in 0..<gpsPoints.count {
+            let offset = gpsPoints[i].timestamp.timeIntervalSince(baseTime)
+
+            if offset <= timeOffset {
+                beforePoint = gpsPoints[i]
+            } else {
+                afterPoint = gpsPoints[i]
+                break
+            }
+        }
+
+        // 4. 보간 수행
+        if let before = beforePoint, let after = afterPoint {
+            // 두 포인트 사이 - 선형 보간
+            let t1 = before.timestamp.timeIntervalSince(baseTime)
+            let t2 = after.timestamp.timeIntervalSince(baseTime)
+            let ratio = (timeOffset - t1) / (t2 - t1)
+
+            // 위도, 경도, 속도 보간
+            let lat = before.latitude + (after.latitude - before.latitude) * ratio
+            let lon = before.longitude + (after.longitude - before.longitude) * ratio
+            let speed = (before.speed ?? 0) + ((after.speed ?? 0) - (before.speed ?? 0)) * ratio
+
+            // 보간된 타임스탬프
+            let interpolatedTime = baseTime.addingTimeInterval(timeOffset)
+
+            return GPSPoint(
+                timestamp: interpolatedTime,
+                latitude: lat,
+                longitude: lon,
+                speed: speed
+            )
+        } else if let before = beforePoint {
+            // timeOffset이 마지막 포인트 이후 - 마지막 포인트 반환
+            return before
+        } else if let after = afterPoint {
+            // timeOffset이 첫 포인트 이전 - 첫 포인트 반환
+            return after
+        }
+
+        return nil
     }
 
     /// @brief 총 주행 거리 계산

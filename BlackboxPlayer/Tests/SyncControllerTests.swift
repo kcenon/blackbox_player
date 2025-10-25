@@ -577,8 +577,8 @@ final class SyncControllerTests: XCTestCase {
                 // 수신한 상태 저장
                 receivedStates.append(state)
 
-                // 1개 이상 수신하면 expectation 완료
-                if receivedStates.count >= 1 {
+                // 정확히 1개 수신했을 때만 expectation 완료 (multiple fulfill 방지)
+                if receivedStates.count == 1 {
                     expectation.fulfill()
                 }
             }
@@ -661,8 +661,8 @@ final class SyncControllerTests: XCTestCase {
                 // 수신한 시간 저장
                 receivedTimes.append(time)
 
-                // 1개 이상 수신하면 expectation 완료
-                if receivedTimes.count >= 1 {
+                // 정확히 1개 수신했을 때만 expectation 완료 (multiple fulfill 방지)
+                if receivedTimes.count == 1 {
                     expectation.fulfill()
                 }
             }
