@@ -49,7 +49,7 @@ import Foundation
 
  VideoFile
  ├─ EventType enum         (Event Type)
- ├─ [channelInfo]          (channel array)
+ ├─ [ChannelInfo]          (channel array)
  │   └─ CameraPosition enum (camera abovetion)
  │
  └─ VideoMetadata          (metadata)
@@ -152,14 +152,14 @@ import Foundation
  timestamp: Date(),
  eventType: .normal,
  duration: 60.0,
- channels: [frontchannel, rearchannel],
+ channels: [frontChannel, rearChannel],
  metadata: metadata,
  basePath: "normal/2025_01_10_09_00_00"
  )
 
  // channel access
- if let frontchannel = videoFile.frontchannel {
- print("Front Camera: \(frontchannel.resolutionName)")
+ if let frontChannel = videoFile.frontChannel {
+ print("Front Camera: \(frontChannel.resolutionName)")
  }
 
  // metadata check
@@ -210,14 +210,14 @@ import Foundation
 ///     timestamp: Date(),
 ///     eventType: .normal,
 ///     duration: 60.0,
-///     channels: [frontchannel, rearchannel],
+///     channels: [frontChannel, rearChannel],
 ///     metadata: metadata,
 ///     basePath: "normal/2025_01_10_09_00_00"
 /// )
 ///
 /// // channel check
 /// print("channel number: \(videoFile.channelCount)")
-/// print("Front Camera: \(videoFile.haschannel(.front) ? "available" : "none")")
+/// print("Front Camera: \(videoFile.hasChannel(.front) ? "available" : "none")")
 ///
 /// // metadata check
 /// if videoFile.hasImpactEvents {
@@ -368,7 +368,7 @@ struct VideoFile: Codable, Equatable, Identifiable, Hashable {
     ///
     /// all video channel array.
     ///
-    /// **channelInfo array:**
+    /// **ChannelInfo array:**
     /// - 1~5 channel include
     /// - each channel independentin video file
     /// - sameone timestamp, duration
@@ -399,11 +399,11 @@ struct VideoFile: Codable, Equatable, Identifiable, Hashable {
     /// }
     ///
     /// // specific channel 
-    /// if let frontchannel = videoFile.frontchannel {
-    ///     print("Front: \(frontchannel.fileSizeString)")
+    /// if let frontChannel = videoFile.frontChannel {
+    ///     print("Front: \(frontChannel.fileSizeString)")
     /// }
     /// ```
-    let channels: [channelInfo]
+    let channels: [ChannelInfo]
 
     /// @var metadata
     /// @brief GPS  G-Sensor metadata
@@ -646,7 +646,7 @@ struct VideoFile: Codable, Equatable, Identifiable, Hashable {
         timestamp: Date,
         eventType: EventType,
         duration: TimeInterval,
-        channels: [channelInfo],
+        channels: [ChannelInfo],
         metadata: VideoMetadata = VideoMetadata(),
         basePath: String,
         isFavorite: Bool = false,
@@ -683,14 +683,14 @@ struct VideoFile: Codable, Equatable, Identifiable, Hashable {
     /// - time : O(n), n = channels.count ( 1~5)
     ///
     /// ** return:**
-    /// - channels if available channelInfo return
+    /// - channels if available ChannelInfo return
     /// - channels notuh nil return
     ///
     /// **use example:**
     /// ```swift
     /// // Front Camera 
-    /// if let frontchannel = videoFile.channel(for: .front) {
-    ///     print("Front: \(frontchannel.resolutionName)")
+    /// if let frontChannel = videoFile.channel(for: .front) {
+    ///     print("Front: \(frontChannel.resolutionName)")
     /// } else {
     ///     print("Front Camera none")
     /// }
@@ -702,7 +702,7 @@ struct VideoFile: Codable, Equatable, Identifiable, Hashable {
     ///     }
     /// }
     /// ```
-    func channel(for position: CameraPosition) -> channelInfo? {
+    func channel(for position: CameraPosition) -> ChannelInfo? {
         return channels.first { $0.position == position }
     }
 
@@ -719,12 +719,12 @@ struct VideoFile: Codable, Equatable, Identifiable, Hashable {
     ///
     /// **use example:**
     /// ```swift
-    /// if let front = videoFile.frontchannel {
+    /// if let front = videoFile.frontChannel {
     ///     print("Front resolution: \(front.resolutionName)")
     ///     playerView.loadVideo(from: front.filePath)
     /// }
     /// ```
-    var frontchannel: channelInfo? {
+    var frontChannel: ChannelInfo? {
         return channel(for: .front)
     }
 
@@ -741,12 +741,12 @@ struct VideoFile: Codable, Equatable, Identifiable, Hashable {
     ///
     /// **use example:**
     /// ```swift
-    /// if let rear = videoFile.rearchannel {
+    /// if let rear = videoFile.rearChannel {
     ///     print("Rear resolution: \(rear.resolutionName)")
     ///     rearPlayerView.loadVideo(from: rear.filePath)
     /// }
     /// ```
-    var rearchannel: channelInfo? {
+    var rearChannel: ChannelInfo? {
         return channel(for: .rear)
     }
 
@@ -767,18 +767,18 @@ struct VideoFile: Codable, Equatable, Identifiable, Hashable {
     /// **use example:**
     /// ```swift
     /// // channeleach UI display/
-    /// rearPlayerView.isHidden = !videoFile.haschannel(.rear)
-    /// leftPlayerView.isHidden = !videoFile.haschannel(.left)
-    /// rightPlayerView.isHidden = !videoFile.haschannel(.right)
+    /// rearPlayerView.isHidden = !videoFile.hasChannel(.rear)
+    /// leftPlayerView.isHidden = !videoFile.hasChannel(.left)
+    /// rightPlayerView.isHidden = !videoFile.hasChannel(.right)
     ///
     /// // channel count not
-    /// if videoFile.haschannel(.rear) {
+    /// if videoFile.hasChannel(.rear) {
     ///     print("2channel or more blackbox")
     /// } else {
     ///     print("1channel blackbox")
     /// }
     /// ```
-    func haschannel(_ position: CameraPosition) -> Bool {
+    func hasChannel(_ position: CameraPosition) -> Bool {
         return channel(for: position) != nil
     }
 
@@ -830,13 +830,13 @@ struct VideoFile: Codable, Equatable, Identifiable, Hashable {
     /// **use example:**
     /// ```swift
     /// // enableded channelonly playback
-    /// for channel in videoFile.enabledchannels {
+    /// for channel in videoFile.enabledChannels {
     ///     createPlayerView(for: channel)
     /// }
     ///
-    /// print("\(videoFile.enabledchannels.count) channel enabled")
+    /// print("\(videoFile.enabledChannels.count) channel enabled")
     /// ```
-    var enabledchannels: [channelInfo] {
+    var enabledChannels: [ChannelInfo] {
         return channels.filter { $0.isEnabled }
     }
 
@@ -859,7 +859,7 @@ struct VideoFile: Codable, Equatable, Identifiable, Hashable {
     ///
     /// **use example:**
     /// ```swift
-    /// if videoFile.isMultichannel {
+    /// if videoFile.isMultiChannel {
     ///     // channel   display
     ///     channelSwitchButton.isHidden = false
     ///
@@ -871,7 +871,7 @@ struct VideoFile: Codable, Equatable, Identifiable, Hashable {
     ///     splitViewButton.isEnabled = false
     /// }
     /// ```
-    var isMultichannel: Bool {
+    var isMultiChannel: Bool {
         return channels.count > 1
     }
 
@@ -895,9 +895,9 @@ struct VideoFile: Codable, Equatable, Identifiable, Hashable {
     ///
     /// // stepeach calculate (2channel example):
     /// initial: result = 0
-    /// 1step: result = 0 + frontchannel.fileSize (100 MB)
+    /// 1step: result = 0 + frontChannel.fileSize (100 MB)
     ///        result = 100 MB
-    /// 2step: result = 100 MB + rearchannel.fileSize (50 MB)
+    /// 2step: result = 100 MB + rearChannel.fileSize (50 MB)
     ///        result = 150 MB
     /// final: 150 MB
     /// ```
@@ -1407,16 +1407,16 @@ struct VideoFile: Codable, Equatable, Identifiable, Hashable {
     /// **:**
     /// 1. channels array mapuh iterate
     /// 2. corresponding position channel 
-    /// 3. corresponding channelonly new channelInfo create (isEnabled change)
+    /// 3. corresponding channelonly new ChannelInfo create (isEnabled change)
     /// 4.  channel  return
     /// 5. updateed channels new VideoFile create
     ///
     /// **map operation:**
     /// ```swift
-    /// channels.map { channel -> channelInfo in
+    /// channels.map { channel -> ChannelInfo in
     ///     if channel.position == position {
     ///         //  channelonly numbering
-    ///         return channelInfo(..., isEnabled: enabled)
+    ///         return ChannelInfo(..., isEnabled: enabled)
     ///     }
     ///     //  
     ///     return channel
@@ -1432,21 +1432,21 @@ struct VideoFile: Codable, Equatable, Identifiable, Hashable {
     /// let shownInterior = videoFile.withchannel(.interior, enabled: true)
     ///
     /// // channel 
-    /// if let rear = videoFile.rearchannel {
+    /// if let rear = videoFile.rearChannel {
     ///     let toggled = videoFile.withchannel(.rear, enabled: !rear.isEnabled)
     /// }
     ///
     /// // UI  
     /// @objc func toggleRearCamera() {
-    ///     videoFile = videoFile.withchannel(.rear, enabled: !videoFile.rearchannel!.isEnabled)
+    ///     videoFile = videoFile.withchannel(.rear, enabled: !videoFile.rearChannel!.isEnabled)
     /// }
     /// ```
     func withchannel(_ position: CameraPosition, enabled: Bool) -> VideoFile {
         // channel array iterateha specific channelonly numbering
-        let updatedchannels = channels.map { channel -> channelInfo in
+        let updatedChannels = channels.map { channel -> ChannelInfo in
             if channel.position == position {
                 // corresponding channel: isEnabledonly changeone new instance create
-                return channelInfo(
+                return ChannelInfo(
                     id: channel.id,
                     position: channel.position,
                     filePath: channel.filePath,
@@ -1470,7 +1470,7 @@ struct VideoFile: Codable, Equatable, Identifiable, Hashable {
             timestamp: timestamp,
             eventType: eventType,
             duration: duration,
-            channels: updatedchannels,
+            channels: updatedChannels,
             metadata: metadata,
             basePath: basePath,
             isFavorite: isFavorite,
@@ -1491,17 +1491,17 @@ struct VideoFile: Codable, Equatable, Identifiable, Hashable {
 
  【normal Sample】
 
- 1. normal5channel: 5channel Normal recording
+ 1. normal5Channel: 5channel Normal recording
  - all channel include (Front, Rear, Left, Right, Interior)
  - complete metadata (GPS + G-Sensor)
  - 5channel blackbox test
 
- 2. impact2channel: 2channel Impact events
+ 2. impact2Channel: 2channel Impact events
  - Front + Rear
  - impact metadata include
  - accident video simulation
 
- 3. parking1channel: 1channel Parking mode
+ 3. parking1Channel: 1channel Parking mode
  - Frontonly
  - GPSonly (Sensor none)
  - Parking mode test
@@ -1521,7 +1521,7 @@ struct VideoFile: Codable, Equatable, Identifiable, Hashable {
   video file useha test data:
  - comma2k19Test: Comma.ai erdriving data (48second)
  - test360p, test720p, test1080p: one resolution test
- - multichannel4Test: 4channel multiview test
+ - multiChannel4Test: 4channel multiview test
 
  【Usage Example】
 
@@ -1530,10 +1530,10 @@ struct VideoFile: Codable, Equatable, Identifiable, Hashable {
  struct VideoFileView_Previews: PreviewProvider {
  static var previews: some View {
  Group {
- VideoFileView(file: .normal5channel)
+ VideoFileView(file: .normal5Channel)
  .previewDisplayName("5 channels")
 
- VideoFileView(file: .impact2channel)
+ VideoFileView(file: .impact2Channel)
  .previewDisplayName("Impact Event")
 
  VideoFileView(file: .corruptedFile)
@@ -1546,14 +1546,14 @@ struct VideoFile: Codable, Equatable, Identifiable, Hashable {
  unit test:
  ```swift
  func testMultichannel() {
- let file = VideoFile.normal5channel
+ let file = VideoFile.normal5Channel
  XCTAssertEqual(file.channelCount, 5)
- XCTAssertTrue(file.isMultichannel)
+ XCTAssertTrue(file.isMultiChannel)
  XCTAssertTrue(file.isValid)
  }
 
  func testImpactDetection() {
- let file = VideoFile.impact2channel
+ let file = VideoFile.impact2Channel
  XCTAssertTrue(file.hasImpactEvents)
  XCTAssertGreaterThan(file.impactEventCount, 0)
  }
@@ -1579,11 +1579,11 @@ extension VideoFile {
     /// - GPS: 60 points (1 minute)
     /// - G-Sensor: 600 points (1 minute, 10Hz)
     /// - device information: BlackVue DR900X-2CH
-    static let normal5channel = VideoFile(
+    static let normal5Channel = VideoFile(
         timestamp: Date(),
         eventType: .normal,
         duration: 60.0,
-        channels: channelInfo.allSamplechannels,
+        channels: ChannelInfo.allSampleChannels,
         metadata: VideoMetadata.sample,
         basePath: "normal/2025_01_10_09_00_00"
     )
@@ -1601,11 +1601,11 @@ extension VideoFile {
     /// - Impact events include (3.5G)
     /// - short Duration (30second)
     /// - impact  15second
-    static let impact2channel = VideoFile(
+    static let impact2Channel = VideoFile(
         timestamp: Date().addingTimeInterval(-3600),
         eventType: .impact,
         duration: 30.0,
-        channels: [channelInfo.frontHD, channelInfo.rearHD],
+        channels: [ChannelInfo.frontHD, ChannelInfo.rearHD],
         metadata: VideoMetadata.withImpact,
         basePath: "event/2025_01_10_10_30_15"
     )
@@ -1621,11 +1621,11 @@ extension VideoFile {
     /// - GPSonly (Sensor none)
     /// - short Duration (10second)
     /// - ing detection  recording
-    static let parking1channel = VideoFile(
+    static let parking1Channel = VideoFile(
         timestamp: Date().addingTimeInterval(-7200),
         eventType: .parking,
         duration: 10.0,
-        channels: [channelInfo.frontHD],
+        channels: [ChannelInfo.frontHD],
         metadata: VideoMetadata.gpsOnly,
         basePath: "parking/2025_01_10_18_00_00"
     )
@@ -1643,7 +1643,7 @@ extension VideoFile {
         timestamp: Date().addingTimeInterval(-10800),
         eventType: .manual,
         duration: 120.0,
-        channels: [channelInfo.frontHD, channelInfo.rearHD],
+        channels: [ChannelInfo.frontHD, ChannelInfo.rearHD],
         metadata: VideoMetadata.sample,
         basePath: "manual/2025_01_10_15_00_00",
         isFavorite: true,
@@ -1663,7 +1663,7 @@ extension VideoFile {
         timestamp: Date().addingTimeInterval(-14400),
         eventType: .normal,
         duration: 0.0,
-        channels: [channelInfo.frontHD],
+        channels: [ChannelInfo.frontHD],
         metadata: VideoMetadata.sample,
         basePath: "normal/2025_01_10_12_00_00",
         isCorrupted: true
@@ -1674,9 +1674,9 @@ extension VideoFile {
     /// all Sample File array.
     ///
     /// **include Sample:**
-    /// - normal5channel: 5channel normal
-    /// - impact2channel: 2channel impact
-    /// - parking1channel: 1channel parking
+    /// - normal5Channel: 5channel normal
+    /// - impact2Channel: 2channel impact
+    /// - parking1Channel: 1channel parking
     /// - favoriteRecording: Favorite
     /// - corruptedFile: corrupted File
     ///
@@ -1687,9 +1687,9 @@ extension VideoFile {
     /// }
     /// ```
     static let allSamples: [VideoFile] = [
-        normal5channel,
-        impact2channel,
-        parking1channel,
+        normal5Channel,
+        impact2Channel,
+        parking1Channel,
         favoriteRecording,
         corruptedFile
     ]
@@ -1711,7 +1711,7 @@ extension VideoFile {
         eventType: .normal,
         duration: 48.0,
         channels: [
-            channelInfo(
+            ChannelInfo(
                 position: .front,
                 filePath: "/Users/dongcheolshin/Downloads/blackbox_test_data/comma2k19_sample.mp4",
                 width: 1164,
@@ -1741,7 +1741,7 @@ extension VideoFile {
         eventType: .normal,
         duration: 10.0,
         channels: [
-            channelInfo(
+            ChannelInfo(
                 position: .front,
                 filePath: "/Users/dongcheolshin/Downloads/blackbox_test_data/big_buck_bunny_360p.mp4",
                 width: 640,
@@ -1771,7 +1771,7 @@ extension VideoFile {
         eventType: .normal,
         duration: 10.0,
         channels: [
-            channelInfo(
+            ChannelInfo(
                 position: .front,
                 filePath: "/Users/dongcheolshin/Downloads/blackbox_test_data/big_buck_bunny_720p.mp4",
                 width: 1280,
@@ -1801,7 +1801,7 @@ extension VideoFile {
         eventType: .normal,
         duration: 10.0,
         channels: [
-            channelInfo(
+            ChannelInfo(
                 position: .front,
                 filePath: "/Users/dongcheolshin/Downloads/blackbox_test_data/sample_1080p.mp4",
                 width: 1920,
@@ -1826,12 +1826,12 @@ extension VideoFile {
     /// - all channel same video (comma2k19) use
     /// - total size: approximately 60 MB (4 × 15 MB)
     /// - multi channel UI test
-    static let multichannel4Test = VideoFile(
+    static let multiChannel4Test = VideoFile(
         timestamp: Date(),
         eventType: .normal,
         duration: 48.0,
         channels: [
-            channelInfo(
+            ChannelInfo(
                 position: .front,
                 filePath: "/Users/dongcheolshin/Downloads/blackbox_test_data/comma2k19_sample.mp4",
                 width: 1164,
@@ -1842,7 +1842,7 @@ extension VideoFile {
                 fileSize: 15_439_382,
                 duration: 48.0
             ),
-            channelInfo(
+            ChannelInfo(
                 position: .rear,
                 filePath: "/Users/dongcheolshin/Downloads/blackbox_test_data/comma2k19_sample.mp4",
                 width: 1164,
@@ -1853,7 +1853,7 @@ extension VideoFile {
                 fileSize: 15_439_382,
                 duration: 48.0
             ),
-            channelInfo(
+            ChannelInfo(
                 position: .left,
                 filePath: "/Users/dongcheolshin/Downloads/blackbox_test_data/comma2k19_sample.mp4",
                 width: 1164,
@@ -1864,7 +1864,7 @@ extension VideoFile {
                 fileSize: 15_439_382,
                 duration: 48.0
             ),
-            channelInfo(
+            ChannelInfo(
                 position: .right,
                 filePath: "/Users/dongcheolshin/Downloads/blackbox_test_data/comma2k19_sample.mp4",
                 width: 1164,
@@ -1885,7 +1885,7 @@ extension VideoFile {
     /// all  test File array.
     ///
     /// **include test:**
-    /// - multichannel4Test: 4channel multiview ( , er use)
+    /// - multiChannel4Test: 4channel multiview ( , er use)
     /// - comma2k19Test: erdriving data
     /// - test1080p: Full HD 60fps
     /// - test720p: HD 30fps
@@ -1901,7 +1901,7 @@ extension VideoFile {
     /// }
     /// ```
     static let allTestFiles: [VideoFile] = [
-        multichannel4Test,  // Multi-channel test first for easy access
+        multiChannel4Test,  // Multi-channel test first for easy access
         comma2k19Test,
         test1080p,
         test720p,

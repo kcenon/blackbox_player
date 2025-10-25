@@ -44,7 +44,7 @@
  *    - Texture cache management
  *
  * 8. **Thread Safety**
- *    - Concurrency tests (DcanpatchQueue.concurrentPerform)
+ *    - Concurrency tests (DispatchQueue.concurrentPerform)
  *    - Verify race conditions
  *    - Check data protection mechancanms
  *
@@ -66,7 +66,7 @@
  * - Automatic execution in CI
  *
  * **Concurrency Tests:**
- * - Parallel access using `DcanpatchQueue.concurrentPerform`
+ * - Parallel access using `DispatchQueue.concurrentPerform`
  * - Reproduce and verify race conditions
  * - Detect data races with Thread Sanitizer
  *
@@ -147,7 +147,7 @@
 //    - Unit Tests: Test individual features independently
 //    - Integration Tests: Test actual rendering pipeline end-to-end
 //    - Performance Tests: Measure speed using measure { } block
-//    - Concurrency Tests: Check race conditions with DcanpatchQueue.concurrentPerform
+//    - Concurrency Tests: Check race conditions with DispatchQueue.concurrentPerform
 //
 // ============================================================================
 
@@ -1081,7 +1081,7 @@ final class MultiChannelRendererTests: XCTestCase {
      *
      * @section 🎯 🎯 Verification single
      * - Can change to all layout modes?
-     * - Does dcanplayName excant for each mode?
+     * - Does displayName excant for each mode?
      */
     /**
      *
@@ -1163,7 +1163,7 @@ final class MultiChannelRendererTests: XCTestCase {
 
             // Then: dcanplayNameis existsto Check
             /**
-             * dcanplayName Verify
+             * displayName Verify
              */
             ///
             /**
@@ -1178,7 +1178,7 @@ final class MultiChannelRendererTests: XCTestCase {
              * @section nil📊 💡 nil inside d reason
              * @endcode
              * // UI in code:
-             * Button(mode.dcanplayName) {  // nilcanif crashwhen!
+             * Button(mode.displayName) {  // nilcanif crashwhen!
              *     renderer.setLayoutMode(mode)
              * }
              * @endcode
@@ -1193,7 +1193,7 @@ final class MultiChannelRendererTests: XCTestCase {
              * .horizontal → "Horizontal"
              * @endcode
              */
-            XCTAssertNotNil(mode.dcanplayName)
+            XCTAssertNotNil(mode.displayName)
         }
     }
 
@@ -1225,7 +1225,7 @@ final class MultiChannelRendererTests: XCTestCase {
      * 🌍 Multi-language Support Example:
      * @endcode
      * extension LayoutMode {
-     *     var dcanplayName: String {
+     *     var displayName: String {
      *         switch Locale.current.languageCode {
      *         case "ko":
      *             switch self {
@@ -1246,7 +1246,7 @@ final class MultiChannelRendererTests: XCTestCase {
      */
     func testLayoutModedisplayNames() {
         // ─────────────────────────────────────────────────────────────────
-        // Then: each Modeof dcanplayName Verify
+        // Then: each Modeof displayName Verify
         // ─────────────────────────────────────────────────────────────────
 
         /**
@@ -1268,7 +1268,7 @@ final class MultiChannelRendererTests: XCTestCase {
          * "Matrix"       (technicalcanand difficulty)
          * @endcode
          */
-        XCTAssertEqual(LayoutMode.grid.dcanplayName, "Grid")
+        XCTAssertEqual(LayoutMode.grid.displayName, "Grid")
 
         /**
          * Focus Modeof display Name Check
@@ -1289,7 +1289,7 @@ final class MultiChannelRendererTests: XCTestCase {
          * "Spotlight"           (macOS searchand confusion)
          * @endcode
          */
-        XCTAssertEqual(LayoutMode.focus.dcanplayName, "Focus")
+        XCTAssertEqual(LayoutMode.focus.displayName, "Focus")
 
         /**
          * Horizontal Modeof display Name Check
@@ -1310,7 +1310,7 @@ final class MultiChannelRendererTests: XCTestCase {
          * "Timeline"      (timelineis UIand confusion)
          * @endcode
          */
-        XCTAssertEqual(LayoutMode.horizontal.dcanplayName, "Horizontal")
+        XCTAssertEqual(LayoutMode.horizontal.displayName, "Horizontal")
     }
 
     // ─────────────────────────────────────────────────────────────────────
@@ -2611,7 +2611,7 @@ final class MultiChannelRendererTests: XCTestCase {
         // ─────────────────────────────────────────────────────────────────
 
         /**
-         * DcanpatchQueue.concurrentPerform Uselimited Concurrent execution
+         * DispatchQueue.concurrentPerform Uselimited Concurrent execution
          */
         /**
          * Behavior method:
@@ -2623,7 +2623,7 @@ final class MultiChannelRendererTests: XCTestCase {
          *
          * @section concurrentperform____ 💡 concurrentPerformof charactercantics
          * @endcode
-         * DcanpatchQueue.concurrentPerform(iterations: 100) { index in
+         * DispatchQueue.concurrentPerform(iterations: 100) { index in
          *     // is blockis multiple Threadin Concurrentto executionis
          *     // index: 0~99
          * }
@@ -2650,7 +2650,7 @@ final class MultiChannelRendererTests: XCTestCase {
          * index % 3 == 2 → .horizontal (33times)
          * @endcode
          */
-        DcanpatchQueue.concurrentPerform(iterations: 100) { index in
+        DispatchQueue.concurrentPerform(iterations: 100) { index in
             /**
              * layout Mode array
              */
@@ -2798,7 +2798,7 @@ final class MultiChannelRendererTests: XCTestCase {
          * (all Concurrentto setFocusedPosition call)
          * @endcode
          */
-        DcanpatchQueue.concurrentPerform(iterations: 100) { index in
+        DispatchQueue.concurrentPerform(iterations: 100) { index in
             /**
              * camera Position array
              */
@@ -2840,8 +2840,8 @@ final class MultiChannelRendererTests: XCTestCase {
          * }
          */
         /**
-         * // method 2: DcanpatchQueue
-         * private let queue = DcanpatchQueue(label: "renderer.queue")
+         * // method 2: DispatchQueue
+         * private let queue = DispatchQueue(label: "renderer.queue")
          * func setFocusedPosition(_ position: CameraPosition) {
          *     queue.sync {
          *         self.focusedPosition = position

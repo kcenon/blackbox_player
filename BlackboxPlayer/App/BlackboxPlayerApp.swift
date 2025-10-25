@@ -1,276 +1,276 @@
 /**
  * @file BlackboxPlayerApp.swift
- * @brief macOS용 블랙박스 비디오 플레이어 애플리케이션의 진입점
+ * @brief Entry point for the macOS blackbox video player application
  * @author BlackboxPlayer Team
  * @details
- * BlackboxPlayer 앱의 진입점(Entry Point)이자 최상위 구조를 정의하는 파일입니다.
- * SwiftUI의 App 프로토콜을 채택하여 앱의 생명주기를 관리하고, 메인 윈도우 및
- * 메뉴 시스템을 구성합니다.
+ * This file defines the entry point and top-level structure of the BlackboxPlayer app.
+ * It adopts the SwiftUI App protocol to manage the app's lifecycle and configure
+ * the main window and menu system.
  *
- * @section app_structure 앱 구조
- * - @main 어노테이션으로 프로그램 진입점 지정
- * - WindowGroup을 통한 메인 윈도우 구성
- * - Commands modifier를 통한 메뉴 커스터마이징
- * - 키보드 단축키 정의
+ * @section app_structure App Structure
+ * - Program entry point specified with @main annotation
+ * - Main window configuration via WindowGroup
+ * - Menu customization via Commands modifier
+ * - Keyboard shortcut definitions
  *
- * @section ui_components UI 구성요소
- * - hiddenTitleBar 스타일로 타이틀 바 숨김
- * - File, View, Playback, Help 메뉴 커스터마이징
- * - 다중 윈도우 지원 (Cmd+N)
+ * @section ui_components UI Components
+ * - Title bar hidden with hiddenTitleBar style
+ * - File, View, Playback, Help menu customization
+ * - Multi-window support (Cmd+N)
  *
- * @section keyboard_shortcuts 주요 키보드 단축키
- * - ⌘O: 폴더 열기
- * - ⌘R: 파일 목록 새로고침
- * - ⌘1/2/3: 오버레이 토글
- * - Space: 재생/일시정지
- * - ⌘←/→: 프레임 단위 이동
- * - ⌘[/]: 재생 속도 조절
+ * @section keyboard_shortcuts Main Keyboard Shortcuts
+ * - ⌘O: Open folder
+ * - ⌘R: Refresh file list
+ * - ⌘1/2/3: Toggle overlays
+ * - Space: Play/Pause
+ * - ⌘←/→: Frame-by-frame navigation
+ * - ⌘[/]: Adjust playback speed
  *
- * @note SwiftUI의 App 프로토콜을 채택하여 선언적 방식으로 앱 구조를 정의합니다.
- * @note UIKit의 AppDelegate/SceneDelegate 구조를 단일 파일로 통합한 현대적 접근 방식입니다.
+ * @note Defines app structure declaratively by adopting SwiftUI's App protocol.
+ * @note Modern approach that consolidates UIKit's AppDelegate/SceneDelegate structure into a single file.
  *
  * ╔══════════════════════════════════════════════════════════════════════════════╗
  * ║                        BlackboxPlayer App Entry Point                        ║
- * ║                    SwiftUI 앱의 진입점 및 생명주기 관리                          ║
+ * ║                   SwiftUI App Entry Point and Lifecycle Management           ║
  * ╚══════════════════════════════════════════════════════════════════════════════╝
 
- 📚 이 파일의 목적
+ 📚 Purpose of This File
  ════════════════════════════════════════════════════════════════════════════════
- BlackboxPlayer 앱의 진입점(Entry Point)이자 최상위 구조를 정의하는 파일입니다.
+ This file defines the entry point and top-level structure of the BlackboxPlayer app.
 
- SwiftUI의 App 프로토콜을 채택하여 앱의 생명주기를 관리하고, 메인 윈도우 및
- 메뉴 시스템을 구성합니다.
+ It adopts SwiftUI's App protocol to manage the app's lifecycle and configure
+ the main window and menu system.
 
- 📌 주요 역할:
- 1) 앱 시작점 정의 (@main 어노테이션)
- 2) 메인 윈도우 구성 (WindowGroup)
- 3) 메뉴 커스터마이징 (Commands)
- 4) 키보드 단축키 정의
+ 📌 Main Responsibilities:
+ 1) Define app entry point (@main annotation)
+ 2) Configure main window (WindowGroup)
+ 3) Customize menus (Commands)
+ 4) Define keyboard shortcuts
 
 
- 🚀 @main 어노테이션이란?
+ 🚀 What is the @main Annotation?
  ════════════════════════════════════════════════════════════════════════════════
- Swift의 @main 어노테이션은 프로그램의 진입점(Entry Point)을 표시합니다.
+ Swift's @main annotation marks the program's entry point.
 
- 📌 기본 개념:
- 모든 실행 가능한 프로그램은 시작점이 필요합니다.
- C/C++의 main() 함수처럼, Swift도 어디서 시작할지 지정해야 합니다.
+ 📌 Basic Concept:
+ Every executable program needs a starting point.
+ Like C/C++'s main() function, Swift needs to specify where to start.
 
- 📌 @main의 역할:
- • 이 타입을 앱의 시작점으로 지정
- • 시스템이 앱을 실행하면 이 타입의 인스턴스를 생성
- • App 프로토콜을 채택한 타입에만 사용 가능
- • 프로젝트 전체에 단 하나만 존재해야 함
+ 📌 Role of @main:
+ • Designates this type as the app's starting point
+ • System creates an instance of this type when running the app
+ • Can only be used on types that adopt the App protocol
+ • Only one can exist in the entire project
 
- 📌 UIKit과의 비교:
- UIKit 시대 (복잡):
- - AppDelegate.swift (앱 생명주기)
- - SceneDelegate.swift (화면 생명주기)
- - main.swift 또는 @UIApplicationMain
- → 3개 파일로 분산된 구조
+ 📌 Comparison with UIKit:
+ UIKit Era (Complex):
+ - AppDelegate.swift (app lifecycle)
+ - SceneDelegate.swift (scene lifecycle)
+ - main.swift or @UIApplicationMain
+ → Structure distributed across 3 files
 
- SwiftUI 시대 (단순):
- - @main 어노테이션 하나로 통합
- - 선언적(Declarative) 방식
- → 1개 파일로 완결
+ SwiftUI Era (Simple):
+ - Consolidated into one @main annotation
+ - Declarative approach
+ → Complete in 1 file
 
 
- 📱 App 프로토콜이란?
+ 📱 What is the App Protocol?
  ════════════════════════════════════════════════════════════════════════════════
- SwiftUI의 App 프로토콜은 앱의 구조와 동작을 정의합니다.
+ SwiftUI's App protocol defines the structure and behavior of the app.
 
- 📌 필수 요구사항:
+ 📌 Required Implementation:
  protocol App {
  associatedtype Body: Scene
  var body: Self.Body { get }
  }
 
- • body 프로퍼티 구현 필수
- • body는 Scene 타입을 반환 (View가 아님!)
- • Scene은 앱의 UI 계층 구조를 나타냄
+ • Must implement body property
+ • body returns Scene type (not View!)
+ • Scene represents the UI hierarchy of the app
 
  📌 App vs View:
- App (최상위):
- - 앱 전체의 구조 정의
- - Scene들의 컨테이너
- - 생명주기 관리
+ App (Top Level):
+ - Defines overall app structure
+ - Container for Scenes
+ - Manages lifecycle
 
- Scene (중간):
- - WindowGroup, DocumentGroup 등
- - 플랫폼별 창/화면 단위
+ Scene (Middle):
+ - WindowGroup, DocumentGroup, etc.
+ - Platform-specific window/screen units
 
- View (하위):
- - UI 컴포넌트
- - Button, Text, ContentView 등
+ View (Bottom):
+ - UI components
+ - Button, Text, ContentView, etc.
 
 
- 🪟 Scene과 WindowGroup이란?
+ 🪟 What are Scene and WindowGroup?
  ════════════════════════════════════════════════════════════════════════════════
- Scene은 앱의 사용자 인터페이스 인스턴스를 나타냅니다.
+ Scene represents an instance of the app's user interface.
 
- 📌 Scene의 종류:
+ 📌 Types of Scenes:
  1) WindowGroup
- - 하나 이상의 윈도우를 관리
- - macOS: 여러 윈도우 인스턴스 가능 (Cmd+N으로 새 윈도우)
- - iOS/iPadOS: 멀티 윈도우 지원 (iPadOS)
+ - Manages one or more windows
+ - macOS: Multiple window instances possible (new window with Cmd+N)
+ - iOS/iPadOS: Multi-window support (iPadOS)
 
  2) DocumentGroup
- - 문서 기반 앱 (예: Pages, Keynote)
- - 파일 시스템 통합
+ - Document-based apps (e.g., Pages, Keynote)
+ - File system integration
 
  3) Settings (macOS only)
- - 설정 윈도우 전용
+ - Dedicated settings window
 
- 📌 WindowGroup의 특징:
- • 동일한 View 계층을 여러 윈도우로 표시
- • macOS: Cmd+N으로 새 윈도우 생성 가능
- • 각 윈도우는 독립적인 상태 유지 가능
- • 자동으로 Window 메뉴 항목 추가
+ 📌 WindowGroup Characteristics:
+ • Displays the same View hierarchy in multiple windows
+ • macOS: Create new windows with Cmd+N
+ • Each window can maintain independent state
+ • Automatically adds Window menu items
 
- 📌 이 프로젝트의 WindowGroup:
+ 📌 This Project's WindowGroup:
  WindowGroup { ContentView() }
- → ContentView를 루트로 하는 윈도우 생성
- → 사용자가 여러 블랙박스 영상을 동시에 볼 수 있도록 다중 윈도우 지원
+ → Creates a window with ContentView as the root
+ → Supports multiple windows so users can view multiple blackbox videos simultaneously
 
 
- 🎨 windowStyle Modifier란?
+ 🎨 What is the windowStyle Modifier?
  ════════════════════════════════════════════════════════════════════════════════
- windowStyle은 윈도우의 외형을 커스터마이징하는 modifier입니다.
+ windowStyle is a modifier that customizes the window's appearance.
 
  📌 .hiddenTitleBar:
- • 타이틀 바(제목 표시줄)를 숨김
- • 더 넓은 콘텐츠 영역 확보
- • 현대적이고 미니멀한 디자인
- • 닫기/최소화/최대화 버튼은 유지
+ • Hides the title bar (title display bar)
+ • Provides more content area
+ • Modern and minimal design
+ • Retains close/minimize/maximize buttons
 
- 📌 다른 windowStyle 옵션:
- • .automatic: 기본 스타일 (타이틀 바 표시)
- • .titleBar: 명시적으로 타이틀 바 표시
- • .hiddenTitleBar: 타이틀 바 숨김
+ 📌 Other windowStyle Options:
+ • .automatic: Default style (shows title bar)
+ • .titleBar: Explicitly shows title bar
+ • .hiddenTitleBar: Hides title bar
 
- 📌 왜 hiddenTitleBar를 사용하나요?
- 블랙박스 영상 플레이어는 영상 콘텐츠가 주요 초점이므로
- 타이틀 바를 숨겨 화면 공간을 최대한 활용합니다.
- (YouTube, Netflix 같은 비디오 플레이어와 유사한 UX)
+ 📌 Why use hiddenTitleBar?
+ The blackbox video player focuses on video content, so hiding the title bar
+ maximizes screen space usage.
+ (Similar UX to video players like YouTube, Netflix)
 
 
- ⌨️ Commands 시스템이란?
+ ⌨️ What is the Commands System?
  ════════════════════════════════════════════════════════════════════════════════
- Commands는 macOS 메뉴 바의 메뉴 항목을 커스터마이징하는 시스템입니다.
+ Commands is a system for customizing menu items in the macOS menu bar.
 
- 📌 기본 개념:
- SwiftUI는 기본 메뉴를 자동으로 생성하지만, Commands를 통해
- 메뉴를 추가/수정/대체할 수 있습니다.
+ 📌 Basic Concept:
+ SwiftUI automatically generates default menus, but Commands allows you to
+ add, modify, or replace menus.
 
- 📌 Commands의 종류:
+ 📌 Types of Commands:
 
  1) CommandGroup(replacing:)
- - 기존 메뉴 그룹을 완전히 대체
- - .newItem, .appInfo 등 표준 그룹 대체 가능
+ - Completely replaces existing menu groups
+ - Can replace standard groups like .newItem, .appInfo
 
  2) CommandGroup(after:) / CommandGroup(before:)
- - 기존 메뉴 그룹 앞/뒤에 새 항목 추가
- - .sidebar, .toolbar 등 기준점 지정
+ - Adds new items before/after existing menu groups
+ - Specifies reference points like .sidebar, .toolbar
 
- 3) CommandMenu("이름")
- - 완전히 새로운 메뉴 생성
- - 메뉴 바에 새 탭 추가
+ 3) CommandMenu("Name")
+ - Creates a completely new menu
+ - Adds a new tab to the menu bar
 
- 📌 표준 CommandGroupPlacement:
+ 📌 Standard CommandGroupPlacement:
  • .newItem: File > New
  • .saveItem: File > Save
- • .sidebar: View > Sidebar 관련
- • .toolbar: View > Toolbar 관련
+ • .sidebar: View > Sidebar related
+ • .toolbar: View > Toolbar related
  • .appInfo: App > About
 
 
- 🎮 이 프로젝트의 메뉴 구조
+ 🎮 This Project's Menu Structure
  ════════════════════════════════════════════════════════════════════════════════
 
- 1. File 메뉴 (CommandGroup replacing .newItem)
- - Open Folder... (⌘O): 블랙박스 영상 폴더 열기
- - Refresh File List (⌘R): 파일 목록 새로고침
+ 1. File Menu (CommandGroup replacing .newItem)
+ - Open Folder... (⌘O): Open blackbox video folder
+ - Refresh File List (⌘R): Refresh file list
 
- 2. View 메뉴 (CommandGroup after .sidebar)
- - Toggle Sidebar (⌥⌘S): 사이드바 표시/숨김
- - Toggle Metadata Overlay (⌘1): 메타데이터 오버레이
- - Toggle Map Overlay (⌘2): GPS 지도 오버레이
- - Toggle Graph Overlay (⌘3): G-센서 그래프 오버레이
+ 2. View Menu (CommandGroup after .sidebar)
+ - Toggle Sidebar (⌥⌘S): Show/hide sidebar
+ - Toggle Metadata Overlay (⌘1): Metadata overlay
+ - Toggle Map Overlay (⌘2): GPS map overlay
+ - Toggle Graph Overlay (⌘3): G-sensor graph overlay
 
- 3. Playback 메뉴 (새로운 CommandMenu)
- - Play/Pause (Space): 재생/일시정지
- - Step Forward (⌘→): 프레임 단위 앞으로
- - Step Backward (⌘←): 프레임 단위 뒤로
- - Increase Speed (⌘]): 재생 속도 증가
- - Decrease Speed (⌘[): 재생 속도 감소
- - Normal Speed (⌘0): 정상 속도로 복귀
+ 3. Playback Menu (New CommandMenu)
+ - Play/Pause (Space): Play/pause
+ - Step Forward (⌘→): Frame-by-frame forward
+ - Step Backward (⌘←): Frame-by-frame backward
+ - Increase Speed (⌘]): Increase playback speed
+ - Decrease Speed (⌘[): Decrease playback speed
+ - Normal Speed (⌘0): Return to normal speed
 
- 4. Help 메뉴 (CommandGroup replacing .appInfo)
- - About BlackboxPlayer: 앱 정보 표시
- - BlackboxPlayer Help (⌘?): 도움말 표시
+ 4. Help Menu (CommandGroup replacing .appInfo)
+ - About BlackboxPlayer: Display app info
+ - BlackboxPlayer Help (⌘?): Display help
 
 
- ⌨️ keyboardShortcut Modifier란?
+ ⌨️ What is the keyboardShortcut Modifier?
  ════════════════════════════════════════════════════════════════════════════════
- 키보드 단축키를 Button이나 메뉴 항목에 할당하는 modifier입니다.
+ A modifier that assigns keyboard shortcuts to Buttons or menu items.
 
- 📌 사용 방법:
+ 📌 Usage:
  .keyboardShortcut(key, modifiers: [modifiers])
 
- • key: KeyEquivalent 타입 (문자, 화살표 등)
+ • key: KeyEquivalent type (characters, arrows, etc.)
  • modifiers: EventModifiers (command, option, shift, control)
 
- 📌 KeyEquivalent 종류:
- 1) 문자: "o", "r", "s", "0", "1", "2", "3"
- 2) 기호: "[", "]", "?", "/"
- 3) 특수키: .space, .escape, .return, .delete
- 4) 화살표: .leftArrow, .rightArrow, .upArrow, .downArrow
+ 📌 KeyEquivalent Types:
+ 1) Characters: "o", "r", "s", "0", "1", "2", "3"
+ 2) Symbols: "[", "]", "?", "/"
+ 3) Special Keys: .space, .escape, .return, .delete
+ 4) Arrows: .leftArrow, .rightArrow, .upArrow, .downArrow
 
- 📌 EventModifiers 조합:
- • .command (⌘): Command 키
- • .option (⌥): Option(Alt) 키
- • .shift (⇧): Shift 키
- • .control (⌃): Control 키
- • 배열로 조합 가능: [.command, .option]
+ 📌 EventModifiers Combinations:
+ • .command (⌘): Command key
+ • .option (⌥): Option(Alt) key
+ • .shift (⇧): Shift key
+ • .control (⌃): Control key
+ • Can be combined in arrays: [.command, .option]
 
- 📌 이 프로젝트의 단축키 철학:
- • ⌘O: Open (표준 macOS 관례)
- • ⌘R: Refresh (표준 macOS 관례)
- • ⌘1/2/3: 오버레이 토글 (숫자 키로 빠른 전환)
- • Space: 재생/일시정지 (비디오 플레이어 표준)
- • ⌘←/→: 프레임 이동 (타임라인 탐색)
- • ⌘[/]: 속도 조절 (대괄호로 증감)
+ 📌 This Project's Shortcut Philosophy:
+ • ⌘O: Open (standard macOS convention)
+ • ⌘R: Refresh (standard macOS convention)
+ • ⌘1/2/3: Toggle overlays (quick switching with number keys)
+ • Space: Play/pause (video player standard)
+ • ⌘←/→: Frame navigation (timeline exploration)
+ • ⌘[/]: Speed adjustment (increase/decrease with brackets)
 
 
- 💡 TODO 항목에 대하여
+ 💡 About TODO Items
  ════════════════════════════════════════════════════════════════════════════════
- 현재 모든 버튼 액션에 TODO 주석이 있습니다.
+ Currently all button actions have TODO comments.
 
- 📌 TODO의 의미:
- 이 파일은 앱의 구조(Structure)를 정의하는 역할만 합니다.
- 실제 기능 구현은 별도의 ViewModel이나 Service에서 처리됩니다.
+ 📌 Meaning of TODO:
+ This file only defines the app's structure.
+ Actual feature implementation is handled in separate ViewModels or Services.
 
- 📌 향후 구현 방향:
- 1) ViewModel 또는 AppState 생성
+ 📌 Future Implementation Direction:
+ 1) Create ViewModel or AppState
  @StateObject var appState = AppState()
 
- 2) 환경 객체로 전달
+ 2) Pass as environment object
  .environmentObject(appState)
 
- 3) 버튼 액션에서 호출
+ 3) Call in button actions
  Button("Open Folder...") {
  appState.openFolderPicker()
  }
 
- 📌 SwiftUI 아키텍처 패턴:
- App (구조 정의)
- → Scene (윈도우 관리)
- → View (UI 표현)
- → ViewModel (비즈니스 로직)
- → Service (데이터/기능)
+ 📌 SwiftUI Architecture Pattern:
+ App (Structure definition)
+ → Scene (Window management)
+ → View (UI presentation)
+ → ViewModel (Business logic)
+ → Service (Data/features)
 
- 이 파일은 최상위 "구조 정의" 역할만 수행하며,
- 세부 기능은 하위 계층에서 구현됩니다.
+ This file only performs the top-level "structure definition" role,
+ while detailed features are implemented in lower layers.
 
 
  ═══════════════════════════════════════════════════════════════════════════════
@@ -282,32 +282,32 @@ import SwiftUI
 
 /**
  * @class BlackboxPlayerApp
- * @brief BlackboxPlayer 앱의 메인 진입점 구조체
+ * @brief Main entry point structure for the BlackboxPlayer app
  * @details
- * SwiftUI의 App 프로토콜을 채택하여 앱의 생명주기와 메인 UI를 관리합니다.
+ * Adopts SwiftUI's App protocol to manage the app's lifecycle and main UI.
  *
- * @note @main 어노테이션
- * - 이 타입을 프로그램의 시작점으로 지정
- * - 시스템이 BlackboxPlayerApp 인스턴스를 생성
- * - body 프로퍼티를 평가하여 Scene 구성
- * - Scene에 정의된 WindowGroup으로 메인 윈도우 표시
- * - 전체 프로젝트에 @main은 단 하나만 존재해야 함
+ * @note @main annotation
+ * - Designates this type as the program's starting point
+ * - System creates a BlackboxPlayerApp instance
+ * - Evaluates the body property to configure the Scene
+ * - Displays the main window with WindowGroup defined in the Scene
+ * - Only one @main can exist in the entire project
  *
- * @par 실행 순서:
- * 1. 시스템이 BlackboxPlayerApp 인스턴스 생성
- * 2. body 프로퍼티 평가
- * 3. WindowGroup으로 메인 윈도우 표시
+ * @par Execution Order:
+ * 1. System creates a BlackboxPlayerApp instance
+ * 2. Evaluates the body property
+ * 3. Displays the main window with WindowGroup
  *
- * 📌 초보자를 위한 @main 설명
+ * 📌 Explanation of @main for Beginners
  * ─────────────────────────────────────────────────────────────────
- * @main 어노테이션은 이 타입을 프로그램의 시작점으로 지정합니다.
+ * The @main annotation designates this type as the program's starting point.
  *
- * 앱이 실행되면:
- * 1) 시스템이 BlackboxPlayerApp의 인스턴스를 생성
- * 2) body 프로퍼티를 평가하여 Scene 구성
- * 3) Scene에 정의된 WindowGroup으로 메인 윈도우 표시
+ * When the app runs:
+ * 1) System creates an instance of BlackboxPlayerApp
+ * 2) Evaluates the body property to configure the Scene
+ * 3) Displays the main window with WindowGroup defined in the Scene
  *
- * 전체 프로젝트에 @main은 단 하나만 있어야 합니다.
+ * Only one @main should exist in the entire project.
  */
 @main
 struct BlackboxPlayerApp: App {
@@ -316,144 +316,144 @@ struct BlackboxPlayerApp: App {
 
     /**
      * @var body
-     * @brief 앱의 Scene 구성을 정의하는 프로퍼티
-     * @return WindowGroup과 Commands로 구성된 Scene
+     * @brief Property that defines the app's Scene configuration
+     * @return Scene composed of WindowGroup and Commands
      * @details
-     * App 프로토콜의 필수 요구사항인 body 프로퍼티입니다.
+     * This is the body property required by the App protocol.
      *
-     * @par Scene 구조:
-     * - WindowGroup: 메인 윈도우 그룹 정의
-     *   - ContentView()를 루트 뷰로 사용
-     *   - macOS에서 여러 윈도우 인스턴스 생성 가능 (Cmd+N)
-     * - .windowStyle(.hiddenTitleBar): 타이틀 바 숨김
-     *   - 영상 콘텐츠에 집중할 수 있도록 화면 공간 최대화
-     *   - 닫기/최소화/최대화 버튼은 유지
-     * - .commands: 메뉴 커스터마이징
-     *   - File, View, Playback, Help 메뉴 정의
-     *   - 키보드 단축키 할당
+     * @par Scene Structure:
+     * - WindowGroup: Defines the main window group
+     *   - Uses ContentView() as the root view
+     *   - Can create multiple window instances on macOS (Cmd+N)
+     * - .windowStyle(.hiddenTitleBar): Hides the title bar
+     *   - Maximizes screen space to focus on video content
+     *   - Retains close/minimize/maximize buttons
+     * - .commands: Menu customization
+     *   - Defines File, View, Playback, Help menus
+     *   - Assigns keyboard shortcuts
      *
-     * @note body는 "some Scene" 타입을 반환
-     * @note some은 Swift 5.1+ Opaque Type
-     * @note Scene은 앱의 UI 계층 구조를 나타내는 프로토콜
+     * @note body returns "some Scene" type
+     * @note some is Swift 5.1+ Opaque Type
+     * @note Scene is a protocol representing the app's UI hierarchy
      */
-    /// 앱의 Scene 구성
+    /// App's Scene configuration
     ///
-    /// 📌 초보자를 위한 body 설명
+    /// 📌 Explanation of body for Beginners
     /// ─────────────────────────────────────────────────────────────────
-    /// App 프로토콜의 필수 요구사항인 body 프로퍼티입니다.
+    /// This is the body property required by the App protocol.
     ///
-    /// body는 "some Scene" 타입을 반환합니다:
+    /// body returns "some Scene" type:
     /// • some: Opaque Type (Swift 5.1+)
-    /// • Scene: 앱의 UI 계층 구조를 나타내는 프로토콜
+    /// • Scene: Protocol representing the app's UI hierarchy
     ///
-    /// WindowGroup, DocumentGroup 등이 Scene을 채택합니다.
+    /// WindowGroup, DocumentGroup, etc. adopt Scene.
     ///
     ///
-    /// 🏗️ Scene 구조 설명
+    /// 🏗️ Scene Structure Explanation
     /// ─────────────────────────────────────────────────────────────────
-    /// 1) WindowGroup: 메인 윈도우 그룹 정의
-    ///    - ContentView()를 루트 뷰로 사용
-    ///    - macOS에서 여러 윈도우 인스턴스 생성 가능 (Cmd+N)
+    /// 1) WindowGroup: Defines the main window group
+    ///    - Uses ContentView() as the root view
+    ///    - Can create multiple window instances on macOS (Cmd+N)
     ///
-    /// 2) .windowStyle(.hiddenTitleBar): 타이틀 바 숨김
-    ///    - 영상 콘텐츠에 집중할 수 있도록 화면 공간 최대화
-    ///    - 닫기/최소화/최대화 버튼은 유지
+    /// 2) .windowStyle(.hiddenTitleBar): Hides the title bar
+    ///    - Maximizes screen space to focus on video content
+    ///    - Retains close/minimize/maximize buttons
     ///
-    /// 3) .commands: 메뉴 커스터마이징
-    ///    - macOS 메뉴 바의 메뉴 항목 추가/수정
-    ///    - File, View, Playback, Help 메뉴 정의
+    /// 3) .commands: Menu customization
+    ///    - Adds/modifies menu items in the macOS menu bar
+    ///    - Defines File, View, Playback, Help menus
     ///
     var body: some Scene {
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // WindowGroup: 메인 윈도우 정의
+        // WindowGroup: Main window definition
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         //
-        // 📌 WindowGroup이란?
-        //    SwiftUI의 Scene 타입 중 하나로, 하나 이상의 윈도우를 관리합니다.
+        // 📌 What is WindowGroup?
+        //    One of SwiftUI's Scene types that manages one or more windows.
         //
-        // 📌 동작 방식:
-        //    macOS에서 사용자가 File > New Window (Cmd+N)을 선택하면
-        //    WindowGroup이 ContentView()의 새 인스턴스를 가진 윈도우를 생성합니다.
+        // 📌 How it works:
+        //    When a user selects File > New Window (Cmd+N) on macOS,
+        //    WindowGroup creates a window with a new instance of ContentView().
         //
         // 📌 ContentView():
-        //    앱의 메인 UI를 정의하는 루트 뷰입니다.
-        //    이 뷰가 전체 UI 계층 구조의 시작점이 됩니다.
+        //    The root view that defines the app's main UI.
+        //    This view becomes the starting point of the entire UI hierarchy.
         //
-        // 📌 왜 클로저(trailing closure) 문법을 사용하나요?
-        //    WindowGroup의 생성자는 @ViewBuilder를 받습니다:
+        // 📌 Why use trailing closure syntax?
+        //    WindowGroup's constructor accepts @ViewBuilder:
         //    WindowGroup(@ViewBuilder content: () -> Content)
         //
-        //    클로저 내부에서 View를 선언적으로 구성할 수 있습니다.
+        //    Views can be declaratively composed inside the closure.
         //
         WindowGroup {
             ContentView()
         }
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // Window Style: 타이틀 바 숨김
+        // Window Style: Hide title bar
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         //
-        // 📌 .hiddenTitleBar의 효과:
-        //    • 윈도우 상단의 타이틀 바 제거
-        //    • 콘텐츠 영역이 윈도우 전체를 차지
-        //    • 트래픽 라이트 버튼(닫기/최소화/최대화)은 유지
+        // 📌 Effect of .hiddenTitleBar:
+        //    • Removes the title bar at the top of the window
+        //    • Content area occupies the entire window
+        //    • Traffic light buttons (close/minimize/maximize) are retained
         //
-        // 📌 사용 이유:
-        //    블랙박스 영상 플레이어는 영상이 주요 콘텐츠이므로
-        //    타이틀 바 영역을 콘텐츠에 할애하여 몰입감 증대
+        // 📌 Reason for use:
+        //    The blackbox video player focuses on video as the main content,
+        //    so the title bar area is allocated to content to enhance immersion
         //
-        // 📌 대안:
-        //    .windowStyle(.titleBar) → 타이틀 바 표시 (기본값)
-        //    .windowStyle(.automatic) → 시스템 기본 스타일
+        // 📌 Alternatives:
+        //    .windowStyle(.titleBar) → Shows title bar (default)
+        //    .windowStyle(.automatic) → System default style
         //
         .windowStyle(.hiddenTitleBar)
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // Commands: 메뉴 커스터마이징
+        // Commands: Menu customization
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         //
-        // 📌 .commands modifier란?
-        //    macOS 메뉴 바의 메뉴 항목을 커스터마이징하는 modifier입니다.
+        // 📌 What is the .commands modifier?
+        //    A modifier that customizes menu items in the macOS menu bar.
         //
         // 📌 @CommandsBuilder:
-        //    .commands { } 클로저는 @CommandsBuilder를 받습니다.
-        //    여러 CommandGroup과 CommandMenu를 선언적으로 구성할 수 있습니다.
+        //    The .commands { } closure accepts @CommandsBuilder.
+        //    Multiple CommandGroups and CommandMenus can be declaratively composed.
         //
-        // 📌 메뉴 구성 방식:
-        //    1) CommandGroup(replacing:) - 기존 메뉴 대체
-        //    2) CommandGroup(after/before:) - 기존 메뉴에 항목 추가
-        //    3) CommandMenu("이름") - 새 메뉴 생성
+        // 📌 Menu composition methods:
+        //    1) CommandGroup(replacing:) - Replace existing menus
+        //    2) CommandGroup(after/before:) - Add items to existing menus
+        //    3) CommandMenu("Name") - Create new menus
         //
         .commands {
 
             // ═══════════════════════════════════════════════════════════════
-            // File 메뉴 커스터마이징
+            // File menu customization
             // ═══════════════════════════════════════════════════════════════
             //
             // 📌 CommandGroup(replacing: .newItem):
-            //    기본 "File > New" 메뉴 그룹을 완전히 대체합니다.
+            //    Completely replaces the default "File > New" menu group.
             //
-            // 📌 왜 대체하나요?
-            //    블랙박스 플레이어는 "새 문서" 개념이 없으므로
-            //    대신 "폴더 열기"와 "새로고침" 기능을 제공합니다.
+            // 📌 Why replace it?
+            //    The blackbox player has no "new document" concept,
+            //    so instead provides "open folder" and "refresh" functionality.
             //
-            // 📌 .newItem이란?
-            //    CommandGroupPlacement.newItem은 표준 macOS 메뉴 위치입니다.
-            //    보통 File 메뉴의 첫 번째 그룹에 위치합니다.
+            // 📌 What is .newItem?
+            //    CommandGroupPlacement.newItem is a standard macOS menu position.
+            //    Usually located in the first group of the File menu.
             //
             CommandGroup(replacing: .newItem) {
 
                 // ───────────────────────────────────────────────────────────
-                // Open Folder 버튼
+                // Open Folder button
                 // ───────────────────────────────────────────────────────────
                 //
                 // 📌 Button("Open Folder..."):
-                //    메뉴 항목으로 표시될 버튼입니다.
-                //    "..." 표기는 macOS 관례로, "추가 대화상자가 열림"을 의미합니다.
+                //    A button that will be displayed as a menu item.
+                //    The "..." notation is a macOS convention meaning "additional dialog will open".
                 //
                 // 📌 TODO: Open folder picker
-                //    향후 NSOpenPanel을 사용하여 폴더 선택 대화상자를 구현할 예정
+                //    Will implement folder selection dialog using NSOpenPanel in the future
                 //
-                // 📌 구현 예시 (향후):
+                // 📌 Implementation example (future):
                 //    let panel = NSOpenPanel()
                 //    panel.canChooseFiles = false
                 //    panel.canChooseDirectories = true
@@ -463,41 +463,41 @@ struct BlackboxPlayerApp: App {
                     NotificationCenter.default.post(name: .openFolderRequested, object: nil)
                 }
                 // 📌 .keyboardShortcut("o", modifiers: .command):
-                //    Command+O (⌘O) 단축키 할당
+                //    Assigns Command+O (⌘O) shortcut
                 //
-                //    "o"는 KeyEquivalent 타입으로, 문자 "o"를 나타냅니다.
-                //    .command는 EventModifiers로, Command(⌘) 키를 의미합니다.
+                //    "o" is a KeyEquivalent type representing the character "o".
+                //    .command is EventModifiers meaning the Command(⌘) key.
                 //
-                //    ⌘O는 macOS 표준 "Open" 단축키입니다.
-                //    (Finder, Safari, TextEdit 등 모든 앱에서 사용)
+                //    ⌘O is the standard macOS "Open" shortcut.
+                //    (Used in all apps like Finder, Safari, TextEdit)
                 //
                 .keyboardShortcut("o", modifiers: .command)
 
                 // ───────────────────────────────────────────────────────────
-                // Divider: 메뉴 구분선
+                // Divider: Menu separator
                 // ───────────────────────────────────────────────────────────
                 //
                 // 📌 Divider():
-                //    메뉴 항목 사이에 시각적 구분선을 추가합니다.
-                //    관련 항목을 그룹화하여 가독성을 높입니다.
+                //    Adds a visual separator line between menu items.
+                //    Groups related items to improve readability.
                 //
-                // 📌 macOS 메뉴 디자인 가이드라인:
-                //    의미상 다른 기능은 Divider로 구분하는 것이 권장됩니다.
-                //    (Open과 Refresh는 다른 작업이므로 구분선 사용)
+                // 📌 macOS menu design guidelines:
+                //    It's recommended to separate semantically different functions with a Divider.
+                //    (Open and Refresh are different operations, so use a separator)
                 //
                 Divider()
 
                 // ───────────────────────────────────────────────────────────
-                // Refresh File List 버튼
+                // Refresh File List button
                 // ───────────────────────────────────────────────────────────
                 //
                 // 📌 Button("Refresh File List"):
-                //    현재 열린 폴더의 파일 목록을 새로고침합니다.
+                //    Refreshes the file list of the currently open folder.
                 //
                 // 📌 TODO: Refresh files
-                //    FileSystemService를 호출하여 파일 목록을 다시 스캔할 예정
+                //    Will call FileSystemService to rescan the file list
                 //
-                // 📌 구현 예시 (향후):
+                // 📌 Implementation example (future):
                 //    await fileSystemService.refreshFiles()
                 //    await videoLibrary.reload()
                 //
@@ -505,42 +505,42 @@ struct BlackboxPlayerApp: App {
                     NotificationCenter.default.post(name: .refreshFileListRequested, object: nil)
                 }
                 // 📌 .keyboardShortcut("r", modifiers: .command):
-                //    Command+R (⌘R) 단축키 할당
+                //    Assigns Command+R (⌘R) shortcut
                 //
-                //    ⌘R은 macOS에서 "Refresh/Reload"의 표준 단축키입니다.
-                //    (Safari 새로고침, Xcode 빌드 등에서 사용)
+                //    ⌘R is the standard macOS shortcut for "Refresh/Reload".
+                //    (Used in Safari refresh, Xcode build, etc.)
                 //
                 .keyboardShortcut("r", modifiers: .command)
             }
 
             // ═══════════════════════════════════════════════════════════════
-            // View 메뉴 항목 추가
+            // Add View menu items
             // ═══════════════════════════════════════════════════════════════
             //
             // 📌 CommandGroup(after: .sidebar):
-            //    기본 "View > Sidebar" 그룹 뒤에 새 항목들을 추가합니다.
+            //    Adds new items after the default "View > Sidebar" group.
             //
-            // 📌 .sidebar란?
-            //    CommandGroupPlacement.sidebar는 View 메뉴의 사이드바 관련
-            //    항목이 위치하는 표준 위치입니다.
+            // 📌 What is .sidebar?
+            //    CommandGroupPlacement.sidebar is the standard position for
+            //    sidebar-related items in the View menu.
             //
-            // 📌 왜 after를 사용하나요?
-            //    기존 "Hide/Show Sidebar" 항목을 유지하면서
-            //    블랙박스 플레이어 전용 뷰 옵션을 추가로 제공합니다.
+            // 📌 Why use after?
+            //    Keeps the existing "Hide/Show Sidebar" items while
+            //    additionally providing view options specific to the blackbox player.
             //
             CommandGroup(after: .sidebar) {
 
                 // ───────────────────────────────────────────────────────────
-                // Toggle Sidebar 버튼
+                // Toggle Sidebar button
                 // ───────────────────────────────────────────────────────────
                 //
                 // 📌 Button("Toggle Sidebar"):
-                //    사이드바(파일 목록)의 표시/숨김을 전환합니다.
+                //    Toggles the display/hide of the sidebar (file list).
                 //
                 // 📌 TODO: Toggle sidebar
-                //    NavigationSplitView의 columnVisibility를 토글할 예정
+                //    Will toggle columnVisibility of NavigationSplitView
                 //
-                // 📌 구현 예시 (향후):
+                // 📌 Implementation example (future):
                 //    @State var sidebarVisibility: NavigationSplitViewVisibility
                 //    sidebarVisibility = sidebarVisibility == .all ? .detailOnly : .all
                 //
@@ -548,61 +548,61 @@ struct BlackboxPlayerApp: App {
                     NotificationCenter.default.post(name: .toggleSidebarRequested, object: nil)
                 }
                 // 📌 .keyboardShortcut("s", modifiers: [.command, .option]):
-                //    Option+Command+S (⌥⌘S) 단축키 할당
+                //    Assigns Option+Command+S (⌥⌘S) shortcut
                 //
-                //    modifiers 배열에 여러 modifier를 조합할 수 있습니다.
-                //    [.command, .option]은 두 키를 동시에 누르는 것을 의미합니다.
+                //    Multiple modifiers can be combined in the modifiers array.
+                //    [.command, .option] means pressing both keys simultaneously.
                 //
-                //    ⌥⌘S는 많은 macOS 앱에서 사이드바 토글에 사용됩니다.
-                //    (Xcode, Finder 등)
+                //    ⌥⌘S is used for sidebar toggle in many macOS apps.
+                //    (Xcode, Finder, etc.)
                 //
                 .keyboardShortcut("s", modifiers: [.command, .option])
 
                 Divider()
 
                 // ───────────────────────────────────────────────────────────
-                // Toggle Metadata Overlay 버튼
+                // Toggle Metadata Overlay button
                 // ───────────────────────────────────────────────────────────
                 //
                 // 📌 Button("Toggle Metadata Overlay"):
-                //    영상 위에 메타데이터 오버레이를 표시/숨김합니다.
+                //    Shows/hides the metadata overlay on top of the video.
                 //
-                // 📌 메타데이터 오버레이란?
-                //    영상 재생 중 다음 정보를 화면에 표시:
-                //    - 현재 시간
-                //    - GPS 좌표
-                //    - 속도
-                //    - G-센서 값
+                // 📌 What is the metadata overlay?
+                //    Displays the following information on screen during video playback:
+                //    - Current time
+                //    - GPS coordinates
+                //    - Speed
+                //    - G-sensor values
                 //
                 // 📌 TODO: Toggle metadata
-                //    @State var showMetadata: Bool 변수를 토글할 예정
+                //    Will toggle @State var showMetadata: Bool variable
                 //
                 Button("Toggle Metadata Overlay") {
                     NotificationCenter.default.post(name: .toggleMetadataOverlayRequested, object: nil)
                 }
                 // 📌 .keyboardShortcut("1", modifiers: .command):
-                //    Command+1 (⌘1) 단축키 할당
+                //    Assigns Command+1 (⌘1) shortcut
                 //
-                //    숫자 키(1, 2, 3)를 사용하여 다양한 오버레이를 빠르게 전환합니다.
-                //    숫자 순서가 우선순위를 나타냅니다 (1=메타데이터, 2=지도, 3=그래프)
+                //    Number keys (1, 2, 3) are used to quickly switch between different overlays.
+                //    The number order represents priority (1=metadata, 2=map, 3=graph)
                 //
                 .keyboardShortcut("1", modifiers: .command)
 
                 // ───────────────────────────────────────────────────────────
-                // Toggle Map Overlay 버튼
+                // Toggle Map Overlay button
                 // ───────────────────────────────────────────────────────────
                 //
                 // 📌 Button("Toggle Map Overlay"):
-                //    GPS 데이터를 기반으로 한 지도 오버레이를 표시/숨김합니다.
+                //    Shows/hides the map overlay based on GPS data.
                 //
-                // 📌 지도 오버레이란?
-                //    영상 재생 중 현재 위치를 지도에 표시:
-                //    - 이동 경로 (path)
-                //    - 현재 위치 마커
-                //    - 축적 및 방향
+                // 📌 What is the map overlay?
+                //    Displays current location on a map during video playback:
+                //    - Travel path
+                //    - Current location marker
+                //    - Scale and direction
                 //
                 // 📌 TODO: Toggle map
-                //    MapKit 뷰를 표시/숨김하는 기능 구현 예정
+                //    Will implement functionality to show/hide MapKit view
                 //
                 Button("Toggle Map Overlay") {
                     NotificationCenter.default.post(name: .toggleMapOverlayRequested, object: nil)
@@ -610,20 +610,20 @@ struct BlackboxPlayerApp: App {
                 .keyboardShortcut("2", modifiers: .command)
 
                 // ───────────────────────────────────────────────────────────
-                // Toggle Graph Overlay 버튼
+                // Toggle Graph Overlay button
                 // ───────────────────────────────────────────────────────────
                 //
                 // 📌 Button("Toggle Graph Overlay"):
-                //    G-센서 데이터를 그래프로 표시/숨김합니다.
+                //    Shows/hides G-sensor data as a graph.
                 //
-                // 📌 그래프 오버레이란?
-                //    G-센서(가속도) 데이터를 시간별로 시각화:
-                //    - X, Y, Z축 가속도 그래프
-                //    - 충격 이벤트 표시
-                //    - 실시간 동기화
+                // 📌 What is the graph overlay?
+                //    Visualizes G-sensor (acceleration) data over time:
+                //    - X, Y, Z axis acceleration graphs
+                //    - Impact event display
+                //    - Real-time synchronization
                 //
                 // 📌 TODO: Toggle graph
-                //    Charts 프레임워크를 사용한 그래프 뷰 표시/숨김 예정
+                //    Will show/hide graph view using Charts framework
                 //
                 Button("Toggle Graph Overlay") {
                     NotificationCenter.default.post(name: .toggleGraphOverlayRequested, object: nil)
@@ -632,33 +632,33 @@ struct BlackboxPlayerApp: App {
             }
 
             // ═══════════════════════════════════════════════════════════════
-            // Playback 메뉴 생성 (새 메뉴)
+            // Create Playback menu (new menu)
             // ═══════════════════════════════════════════════════════════════
             //
             // 📌 CommandMenu("Playback"):
-            //    "Playback"이라는 이름의 새 메뉴를 메뉴 바에 추가합니다.
+            //    Adds a new menu named "Playback" to the menu bar.
             //
-            // 📌 위치:
-            //    메뉴 바에서 Help 메뉴 바로 앞에 위치합니다.
-            //    (App, File, Edit, View, Playback, Window, Help 순서)
+            // 📌 Position:
+            //    Located right before the Help menu in the menu bar.
+            //    (App, File, Edit, View, Playback, Window, Help order)
             //
-            // 📌 왜 새 메뉴를 만들었나요?
-            //    영상 재생 관련 기능은 블랙박스 플레이어의 핵심 기능이므로
-            //    별도 메뉴로 분리하여 접근성을 높였습니다.
+            // 📌 Why create a new menu?
+            //    Video playback functionality is a core feature of the blackbox player,
+            //    so it's separated into its own menu for better accessibility.
             //
             CommandMenu("Playback") {
 
                 // ───────────────────────────────────────────────────────────
-                // Play/Pause 버튼
+                // Play/Pause button
                 // ───────────────────────────────────────────────────────────
                 //
                 // 📌 Button("Play/Pause"):
-                //    영상 재생/일시정지를 토글합니다.
+                //    Toggles video playback/pause.
                 //
                 // 📌 TODO: Play/pause
-                //    VideoPlayerService의 togglePlayPause() 메서드 호출 예정
+                //    Will call VideoPlayerService's togglePlayPause() method
                 //
-                // 📌 구현 예시 (향후):
+                // 📌 Implementation example (future):
                 //    if videoPlayer.isPlaying {
                 //        videoPlayer.pause()
                 //    } else {
@@ -669,55 +669,55 @@ struct BlackboxPlayerApp: App {
                     NotificationCenter.default.post(name: .playPauseRequested, object: nil)
                 }
                 // 📌 .keyboardShortcut(.space):
-                //    Space 키 단축키 할당
+                //    Assigns Space key shortcut
                 //
-                //    .space는 KeyEquivalent.space의 축약형입니다.
-                //    modifier 없이 Space 키만으로 동작합니다.
+                //    .space is shorthand for KeyEquivalent.space.
+                //    Works with just the Space key without modifiers.
                 //
-                //    Space는 모든 비디오 플레이어의 표준 재생/일시정지 단축키입니다.
-                //    (YouTube, QuickTime, VLC 등)
+                //    Space is the standard play/pause shortcut for all video players.
+                //    (YouTube, QuickTime, VLC, etc.)
                 //
                 .keyboardShortcut(.space)
 
                 Divider()
 
                 // ───────────────────────────────────────────────────────────
-                // Step Forward 버튼
+                // Step Forward button
                 // ───────────────────────────────────────────────────────────
                 //
                 // 📌 Button("Step Forward"):
-                //    영상을 한 프레임씩 앞으로 이동합니다.
+                //    Moves the video forward one frame at a time.
                 //
-                // 📌 프레임 단위 이동이란?
-                //    1/30초 또는 1/60초 단위로 정밀하게 영상을 탐색합니다.
-                //    충격 순간을 정확히 분석하는 데 유용합니다.
+                // 📌 What is frame-by-frame movement?
+                //    Precisely navigates the video in 1/30 or 1/60 second units.
+                //    Useful for accurately analyzing impact moments.
                 //
                 // 📌 TODO: Step forward
-                //    현재 재생 위치에서 정확히 1프레임 앞으로 이동할 예정
+                //    Will move exactly 1 frame forward from current playback position
                 //
                 Button("Step Forward") {
                     NotificationCenter.default.post(name: .stepForwardRequested, object: nil)
                 }
                 // 📌 .keyboardShortcut(.rightArrow, modifiers: .command):
-                //    Command+→ (⌘→) 단축키 할당
+                //    Assigns Command+→ (⌘→) shortcut
                 //
-                //    .rightArrow는 KeyEquivalent.rightArrow입니다.
-                //    오른쪽 화살표 키와 Command를 함께 누릅니다.
+                //    .rightArrow is KeyEquivalent.rightArrow.
+                //    Press right arrow key together with Command.
                 //
-                //    화살표 키를 사용한 탐색은 비디오 편집 도구의 표준입니다.
-                //    (Final Cut Pro, Adobe Premiere 등)
+                //    Arrow key navigation is standard for video editing tools.
+                //    (Final Cut Pro, Adobe Premiere, etc.)
                 //
                 .keyboardShortcut(.rightArrow, modifiers: .command)
 
                 // ───────────────────────────────────────────────────────────
-                // Step Backward 버튼
+                // Step Backward button
                 // ───────────────────────────────────────────────────────────
                 //
                 // 📌 Button("Step Backward"):
-                //    영상을 한 프레임씩 뒤로 이동합니다.
+                //    Moves the video backward one frame at a time.
                 //
                 // 📌 TODO: Step backward
-                //    현재 재생 위치에서 정확히 1프레임 뒤로 이동할 예정
+                //    Will move exactly 1 frame backward from current playback position
                 //
                 Button("Step Backward") {
                     NotificationCenter.default.post(name: .stepBackwardRequested, object: nil)
@@ -727,42 +727,42 @@ struct BlackboxPlayerApp: App {
                 Divider()
 
                 // ───────────────────────────────────────────────────────────
-                // Increase Speed 버튼
+                // Increase Speed button
                 // ───────────────────────────────────────────────────────────
                 //
                 // 📌 Button("Increase Speed"):
-                //    재생 속도를 증가시킵니다 (예: 1x → 1.5x → 2x → 4x).
+                //    Increases playback speed (e.g., 1x → 1.5x → 2x → 4x).
                 //
-                // 📌 재생 속도 조절의 용도:
-                //    긴 주행 영상을 빠르게 검토하거나
-                //    특정 구간을 느리게 분석하는 데 사용됩니다.
+                // 📌 Purpose of speed control:
+                //    Used to quickly review long driving videos or
+                //    slowly analyze specific sections.
                 //
                 // 📌 TODO: Increase speed
-                //    videoPlayer.rate를 증가시킬 예정 (0.5x ~ 4x 범위)
+                //    Will increase videoPlayer.rate (0.5x ~ 4x range)
                 //
                 Button("Increase Speed") {
                     NotificationCenter.default.post(name: .increaseSpeedRequested, object: nil)
                 }
                 // 📌 .keyboardShortcut("]", modifiers: .command):
-                //    Command+] (⌘]) 단축키 할당
+                //    Assigns Command+] (⌘]) shortcut
                 //
-                //    "]" (닫는 대괄호)는 "증가"를 나타냅니다.
-                //    "[" (여는 대괄호)와 쌍을 이루는 직관적인 인터페이스입니다.
+                //    "]" (closing bracket) represents "increase".
+                //    Pairs intuitively with "[" (opening bracket).
                 //
-                //    많은 비디오 앱에서 대괄호로 속도를 조절합니다.
-                //    (VLC, IINA 등)
+                //    Many video apps use brackets for speed control.
+                //    (VLC, IINA, etc.)
                 //
                 .keyboardShortcut("]", modifiers: .command)
 
                 // ───────────────────────────────────────────────────────────
-                // Decrease Speed 버튼
+                // Decrease Speed button
                 // ───────────────────────────────────────────────────────────
                 //
                 // 📌 Button("Decrease Speed"):
-                //    재생 속도를 감소시킵니다 (예: 2x → 1.5x → 1x → 0.5x).
+                //    Decreases playback speed (e.g., 2x → 1.5x → 1x → 0.5x).
                 //
                 // 📌 TODO: Decrease speed
-                //    videoPlayer.rate를 감소시킬 예정 (0.5x ~ 4x 범위)
+                //    Will decrease videoPlayer.rate (0.5x ~ 4x range)
                 //
                 Button("Decrease Speed") {
                     NotificationCenter.default.post(name: .decreaseSpeedRequested, object: nil)
@@ -770,55 +770,55 @@ struct BlackboxPlayerApp: App {
                 .keyboardShortcut("[", modifiers: .command)
 
                 // ───────────────────────────────────────────────────────────
-                // Normal Speed 버튼
+                // Normal Speed button
                 // ───────────────────────────────────────────────────────────
                 //
                 // 📌 Button("Normal Speed"):
-                //    재생 속도를 정상(1.0x)으로 복귀합니다.
+                //    Returns playback speed to normal (1.0x).
                 //
                 // 📌 TODO: Normal speed
-                //    videoPlayer.rate = 1.0으로 설정할 예정
+                //    Will set videoPlayer.rate = 1.0
                 //
                 Button("Normal Speed") {
                     NotificationCenter.default.post(name: .normalSpeedRequested, object: nil)
                 }
                 // 📌 .keyboardShortcut("0", modifiers: .command):
-                //    Command+0 (⌘0) 단축키 할당
+                //    Assigns Command+0 (⌘0) shortcut
                 //
-                //    "0"은 "기본값으로 복원"을 의미합니다.
-                //    Xcode에서 ⌘0이 "실제 크기"를 의미하는 것과 유사합니다.
+                //    "0" means "restore to default value".
+                //    Similar to how ⌘0 means "actual size" in Xcode.
                 //
                 .keyboardShortcut("0", modifiers: .command)
             }
 
             // ═══════════════════════════════════════════════════════════════
-            // Help 메뉴 커스터마이징
+            // Help menu customization
             // ═══════════════════════════════════════════════════════════════
             //
             // 📌 CommandGroup(replacing: .appInfo):
-            //    기본 "About App" 메뉴 항목을 대체합니다.
+            //    Replaces the default "About App" menu item.
             //
-            // 📌 .appInfo란?
-            //    CommandGroupPlacement.appInfo는 앱 정보를 표시하는 표준 위치입니다.
-            //    보통 App 메뉴의 첫 번째 항목입니다.
+            // 📌 What is .appInfo?
+            //    CommandGroupPlacement.appInfo is the standard position for displaying app info.
+            //    Usually the first item in the App menu.
             //
-            // 📌 왜 대체하나요?
-            //    기본 About 창 대신 커스텀 About 창을 표시하기 위해
-            //    직접 버튼 액션을 정의합니다.
+            // 📌 Why replace it?
+            //    Defines button actions directly to show a custom About window
+            //    instead of the default About window.
             //
             CommandGroup(replacing: .appInfo) {
 
                 // ───────────────────────────────────────────────────────────
-                // About BlackboxPlayer 버튼
+                // About BlackboxPlayer button
                 // ───────────────────────────────────────────────────────────
                 //
                 // 📌 Button("About BlackboxPlayer"):
-                //    앱 정보(버전, 저작권, 라이선스 등)를 표시하는 창을 엽니다.
+                //    Opens a window displaying app information (version, copyright, license, etc.).
                 //
                 // 📌 TODO: Show about window
-                //    커스텀 About 창(Sheet 또는 Window)을 표시할 예정
+                //    Will display custom About window (Sheet or Window)
                 //
-                // 📌 구현 예시 (향후):
+                // 📌 Implementation example (future):
                 //    @State var showAbout = false
                 //    .sheet(isPresented: $showAbout) {
                 //        AboutView()
@@ -831,27 +831,27 @@ struct BlackboxPlayerApp: App {
                 Divider()
 
                 // ───────────────────────────────────────────────────────────
-                // BlackboxPlayer Help 버튼
+                // BlackboxPlayer Help button
                 // ───────────────────────────────────────────────────────────
                 //
                 // 📌 Button("BlackboxPlayer Help"):
-                //    앱 사용법 도움말을 표시합니다.
+                //    Displays help on how to use the app.
                 //
                 // 📌 TODO: Show help
-                //    도움말 뷰 또는 외부 문서 링크를 열 예정
+                //    Will open help view or external documentation link
                 //
-                // 📌 구현 예시 (향후):
+                // 📌 Implementation example (future):
                 //    NSWorkspace.shared.open(helpURL)
-                //    또는 커스텀 HelpView() 표시
+                //    or display custom HelpView()
                 //
                 Button("BlackboxPlayer Help") {
                     NotificationCenter.default.post(name: .showHelpRequested, object: nil)
                 }
                 // 📌 .keyboardShortcut("?", modifiers: .command):
-                //    Command+? (⌘?) 단축키 할당
+                //    Assigns Command+? (⌘?) shortcut
                 //
-                //    Shift+Command+/와 동일합니다 (?는 Shift+/ 키)
-                //    ⌘?는 macOS의 표준 "도움말" 단축키입니다.
+                //    Same as Shift+Command+/ (? is Shift+/ key)
+                //    ⌘? is the standard macOS "Help" shortcut.
                 //
                 .keyboardShortcut("?", modifiers: .command)
             }

@@ -726,7 +726,7 @@ class MultiChannelRenderer {
     ///
     /// @param frames Frame for each channel (camera position → frame)
     /// @param drawable Rendering target (Screen buffer)
-    /// @param drawablesize Screen size
+    /// @param drawableSize Screen size
     ///
     /// @details
     /// What is Drawable?
@@ -748,7 +748,7 @@ class MultiChannelRenderer {
     func render(
         frames: [CameraPosition: VideoFrame],
         to drawable: CAMetalDrawable,
-        drawablesize: CGsize
+        drawableSize: CGSize
     ) {
         // 1. Pipeline Check
         guard let pipelineState = pipelineState else {
@@ -804,7 +804,7 @@ class MultiChannelRenderer {
         // rawValue Order: front, rear, left, right, interior
 
         // 9. Viewport Calculate
-        let viewports = calculateViewports(for: sortedPositions, in: drawablesize)
+        let viewports = calculateViewports(for: sortedPositions, in: drawableSize)
         // Calculate screen position and size for each channel
         // Depends on layout mode
 
@@ -1068,7 +1068,7 @@ class MultiChannelRenderer {
     /// - .horizontal: calculateHorizontalViewports
     private func calculateViewports(
         for positions: [CameraPosition],
-        in size: CGsize
+        in size: CGSize
     ) -> [CameraPosition: CGRect] {
         var viewports: [CameraPosition: CGRect] = [:]
 
@@ -1110,7 +1110,7 @@ class MultiChannelRenderer {
     /// - 5channels: 2×3 (5 + Empty space 1)
     private func calculateGridViewports(
         positions: [CameraPosition],
-        size: CGsize
+        size: CGSize
     ) -> [CameraPosition: CGRect] {
         var viewports: [CameraPosition: CGRect] = [:]
         let count = positions.count
@@ -1189,7 +1189,7 @@ class MultiChannelRenderer {
     /// ```
     private func calculateFocusViewports(
         positions: [CameraPosition],
-        size: CGsize
+        size: CGSize
     ) -> [CameraPosition: CGRect] {
         var viewports: [CameraPosition: CGRect] = [:]
 
@@ -1245,7 +1245,7 @@ class MultiChannelRenderer {
     /// ```
     private func calculateHorizontalViewports(
         positions: [CameraPosition],
-        size: CGsize
+        size: CGSize
     ) -> [CameraPosition: CGRect] {
         var viewports: [CameraPosition: CGRect] = [:]
         let count = positions.count

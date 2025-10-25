@@ -641,7 +641,7 @@ struct VideoFileInfo {
  ///
  /// Purpose:
  /// - Event filtering
- /// - UI icon display (ï )
+ /// - UI icon display
  let eventType: EventType
 
  /// @var fileSize
@@ -785,7 +785,7 @@ struct VideoFileGroup {
  ///
  /// Returns.unknown if files is empty.
  var eventType: EventType {
- return files.first?.eventType ??.unknown
+ return files.first?.eventType ?? .unknown
  }
 
  /// @var baseFilename

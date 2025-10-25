@@ -288,7 +288,7 @@ class FileSystemService {
  /// // Inject mock for testing
  /// let service = FileSystemService(fileManager: mockFileManager)
  /// ```
- init(fileManager: FileManager =.default) {
+ init(fileManager: FileManager = .default) {
  self.fileManager = fileManager
  }
 
@@ -532,7 +532,7 @@ class FileSystemService {
  return FileInfo(
  name: url.lastPathComponent,
  size: attributes[.size] as? Int64 ?? 0,
- isDirectory: (attributes[.type] as? FileAttributeType) ==.typeDirectory,
+ isDirectory: (attributes[.type] as? FileAttributeType) == .typeDirectory,
  path: url.path,
  creationDate: attributes[.creationDate] as? Date,
  modificationDate: attributes[.modificationDate] as? Date
