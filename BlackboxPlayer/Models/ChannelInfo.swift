@@ -1,5 +1,5 @@
 /// @file ChannelInfo.swift
-/// @brief 블랙박스 비디오 채널/카메라 정보 모델
+/// @brief Blackbox video channel/camera information model
 /// @author BlackboxPlayer Development Team
 ///
 /// Model for video channel/camera information
@@ -8,47 +8,47 @@ import Foundation
 
 /*
  ═══════════════════════════════════════════════════════════════════════════════
- ChannelInfo - 비디오 채널 정보
+ ChannelInfo - Video Channel Information
  ═══════════════════════════════════════════════════════════════════════════════
 
- 【개요】
- ChannelInfo는 멀티 카메라 블랙박스 시스템에서 개별 채널(카메라)의 정보를 나타내는
- 구조체입니다. 각 채널의 해상도, 프레임 레이트, 코덱, 파일 경로 등 비디오 스펙을
- 저장하고 관리합니다.
+ 【Overview】
+ ChannelInfo is a struct that represents information about individual channels (cameras)
+ in a multi-camera blackbox system. It stores and manages video specifications for each
+ channel, including resolution, frame rate, codec, file path, etc.
 
- 【비디오 채널(Video Channel)이란?】
+ 【What is a Video Channel?】
 
- 채널은 블랙박스의 각 카메라를 의미합니다.
+ A channel refers to each camera in the blackbox.
 
- 멀티 채널 블랙박스 구성 예시:
- - 1채널: 전방 카메라만 (기본)
- - 2채널: 전방 + 후방 (가장 일반적)
- - 3채널: 전방 + 후방 + 실내
- - 4채널: 전방 + 후방 + 좌측 + 우측
- - 5채널: 전방 + 후방 + 좌측 + 우측 + 실내 (고급형)
+ Multi-channel blackbox configuration examples:
+ - 1 channel: Front camera only (basic)
+ - 2 channels: Front + Rear (most common)
+ - 3 channels: Front + Rear + Interior
+ - 4 channels: Front + Rear + Left + Right
+ - 5 channels: Front + Rear + Left + Right + Interior (premium)
 
- 각 채널은 독립적인 비디오 파일로 녹화됩니다:
- 2025_01_10_09_00_00_F.mp4  ← 전방(Front) 채널
- 2025_01_10_09_00_00_R.mp4  ← 후방(Rear) 채널
- 2025_01_10_09_00_00_I.mp4  ← 실내(Interior) 채널
+ Each channel is recorded as an independent video file:
+ 2025_01_10_09_00_00_F.mp4  ← Front channel
+ 2025_01_10_09_00_00_R.mp4  ← Rear channel
+ 2025_01_10_09_00_00_I.mp4  ← Interior channel
 
- 【비디오 해상도(Resolution)】
+ 【Video Resolution】
 
- 해상도는 영상의 픽셀 수를 나타냅니다.
+ Resolution represents the number of pixels in the video.
 
- 해상도 표기:
- 너비(Width) × 높이(Height)
- 예: 1920 × 1080 (Full HD)
+ Resolution notation:
+ Width × Height
+ Example: 1920 × 1080 (Full HD)
 
- 일반적인 해상도 등급:
+ Common resolution grades:
 
- 4K UHD:    3840 × 2160  (829만 픽셀) ★★★★★ 최고급
- 2K QHD:    2560 × 1440  (369만 픽셀) ★★★★ 고급
- Full HD:   1920 × 1080  (207만 픽셀) ★★★ 일반
- HD:        1280 × 720   (92만 픽셀)  ★★ 보급형
- SD:         640 × 480   (31만 픽셀)  ★ 구형
+ 4K UHD:    3840 × 2160  (8.29 million pixels) ★★★★★ Premium
+ 2K QHD:    2560 × 1440  (3.69 million pixels) ★★★★ High-end
+ Full HD:   1920 × 1080  (2.07 million pixels) ★★★ Standard
+ HD:        1280 × 720   (0.92 million pixels) ★★ Budget
+ SD:         640 × 480   (0.31 million pixels) ★ Legacy
 
- 비교:
+ Comparison:
  ┌──────────────────────────────────┐
  │                                  │  4K (3840×2160)
  │                                  │
@@ -60,147 +60,147 @@ import Foundation
  │      └──────────────────┘        │
  └──────────────────────────────────┘
 
- 해상도가 높을수록:
- - 더 선명한 영상
- - 더 큰 파일 크기
- - 더 많은 저장 공간 필요
- - 더 높은 처리 성능 요구
+ Higher resolution means:
+ - Sharper video quality
+ - Larger file size
+ - More storage space required
+ - Higher processing power needed
 
- 【화면 비율(Aspect Ratio)】
+ 【Aspect Ratio】
 
- 화면 비율은 가로와 세로의 비율입니다.
+ Aspect ratio is the ratio of width to height.
 
- 일반적인 비율:
- 16:9  - 와이드스크린 (일반 블랙박스, TV, 모니터)
- 4:3   - 구형 비율 (오래된 블랙박스, 구형 TV)
- 21:9  - 울트라 와이드 (영화관, 고급 모니터)
+ Common ratios:
+ 16:9  - Widescreen (standard blackbox, TV, monitor)
+ 4:3   - Legacy ratio (old blackbox, old TV)
+ 21:9  - Ultra-wide (cinema, premium monitors)
 
- 비율 비교:
- 16:9  ▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬  (와이드)
+ Ratio comparison:
+ 16:9  ▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬  (wide)
  ▬▬▬▬▬▬▬▬▬▬▬
 
- 4:3   ▬▬▬▬▬▬▬▬▬▬▬▬      (정사각형에 가까움)
+ 4:3   ▬▬▬▬▬▬▬▬▬▬▬▬      (closer to square)
  ▬▬▬▬▬▬▬▬▬
 
- 계산 예시:
+ Calculation examples:
  1920 ÷ 1080 = 1.777... ≈ 16/9 = 1.777...
  1280 ÷ 720  = 1.777... ≈ 16/9
  1024 ÷ 768  = 1.333... ≈ 4/3 = 1.333...
 
- 【프레임 레이트(Frame Rate)】
+ 【Frame Rate】
 
- 프레임 레이트는 1초당 표시되는 프레임(정지 화면) 개수입니다.
- 단위: fps (frames per second, 초당 프레임)
+ Frame rate is the number of frames (still images) displayed per second.
+ Unit: fps (frames per second)
 
- 일반적인 프레임 레이트:
- 60 fps  - 매우 부드러운 영상 (고급 블랙박스, 게임, 슬로우모션)
- 30 fps  - 일반 영상 (대부분의 블랙박스, 유튜브)
- 24 fps  - 영화 표준
- 15 fps  - 저성능 모드 (주차 모드)
+ Common frame rates:
+ 60 fps  - Very smooth video (premium blackbox, gaming, slow motion)
+ 30 fps  - Standard video (most blackboxes, YouTube)
+ 24 fps  - Cinema standard
+ 15 fps  - Low-power mode (parking mode)
 
- 프레임 레이트와 부드러움:
- 15 fps:  ●   ●   ●   ●      (뚝뚝 끊김)
- 30 fps:  ●●  ●●  ●●  ●●     (자연스러움)
- 60 fps:  ●●●●●●●●●●●●●●●● (매우 부드러움)
+ Frame rate and smoothness:
+ 15 fps:  ●   ●   ●   ●      (choppy)
+ 30 fps:  ●●  ●●  ●●  ●●     (natural)
+ 60 fps:  ●●●●●●●●●●●●●●●● (very smooth)
 
- 높은 프레임 레이트의 장점:
- - 더 부드러운 영상
- - 빠른 움직임 포착 (사고 순간 포착)
- - 슬로우모션 가능
+ Advantages of higher frame rate:
+ - Smoother video
+ - Better capture of fast motion (accident moments)
+ - Slow-motion playback possible
 
- 단점:
- - 더 큰 파일 크기
- - 더 많은 처리 성능 필요
+ Disadvantages:
+ - Larger file size
+ - More processing power required
 
- 【비트레이트(Bitrate)】
+ 【Bitrate】
 
- 비트레이트는 1초당 저장되는 데이터 양입니다.
- 단위: bps (bits per second, 초당 비트)
+ Bitrate is the amount of data stored per second.
+ Unit: bps (bits per second)
 
- 단위 변환:
+ Unit conversion:
  1 Kbps = 1,000 bps
  1 Mbps = 1,000,000 bps = 1,000 Kbps
 
- 일반적인 비트레이트:
+ Common bitrates:
 
  Full HD (1920×1080):
- - 저품질:  4 Mbps
- - 일반:    8 Mbps  ← 대부분의 블랙박스
- - 고품질: 12 Mbps
+ - Low quality:    4 Mbps
+ - Standard:       8 Mbps  ← Most blackboxes
+ - High quality:  12 Mbps
 
  4K (3840×2160):
- - 저품질: 16 Mbps
- - 일반:   24 Mbps
- - 고품질: 40 Mbps
+ - Low quality:   16 Mbps
+ - Standard:      24 Mbps
+ - High quality:  40 Mbps
 
- 비트레이트와 화질:
- 낮은 비트레이트 (4 Mbps):
- - 압축 많음 → 화질 저하
- - 작은 파일 크기
- - 저장 공간 절약
+ Bitrate and quality:
+ Low bitrate (4 Mbps):
+ - Heavy compression → Lower quality
+ - Smaller file size
+ - Storage savings
 
- 높은 비트레이트 (12 Mbps):
- - 압축 적음 → 선명한 화질
- - 큰 파일 크기
- - 더 많은 저장 공간 필요
+ High bitrate (12 Mbps):
+ - Light compression → Sharp quality
+ - Larger file size
+ - More storage space required
 
- 【비디오 코덱(Video Codec)】
+ 【Video Codec】
 
- 코덱(Codec)은 영상을 압축/해제하는 기술입니다.
- Codec = Coder(압축) + Decoder(해제)
+ Codec is a technology for compressing/decompressing video.
+ Codec = Coder (compression) + Decoder (decompression)
 
- 일반적인 비디오 코덱:
+ Common video codecs:
 
  H.264 (AVC):
- - 가장 널리 사용
- - 호환성 최고
- - 적당한 압축률
- - 대부분의 블랙박스 사용
+ - Most widely used
+ - Best compatibility
+ - Moderate compression ratio
+ - Used by most blackboxes
 
  H.265 (HEVC):
- - H.264보다 2배 효율적인 압축
- - 같은 화질에 파일 크기 절반
- - 최신 블랙박스 사용
- - 일부 구형 기기에서 재생 안 될 수 있음
+ - 2x more efficient compression than H.264
+ - Half the file size at same quality
+ - Used by modern blackboxes
+ - May not play on some older devices
 
- 압축률 비교 (같은 화질 기준):
+ Compression ratio comparison (same quality):
  H.264: ████████ (8 MB)
- H.265: ████     (4 MB) ← 50% 작음
+ H.265: ████     (4 MB) ← 50% smaller
 
- 【오디오 코덱(Audio Codec)】
+ 【Audio Codec】
 
- 오디오 압축 기술입니다.
+ Audio compression technology.
 
  AAC:
- - 고음질 압축
- - Apple 기기 최적화
- - 최신 블랙박스 사용
+ - High-quality compression
+ - Optimized for Apple devices
+ - Used by modern blackboxes
 
  MP3:
- - 범용 코덱
- - 호환성 최고
- - 구형 블랙박스 사용
+ - Universal codec
+ - Best compatibility
+ - Used by older blackboxes
 
- 【파일 크기 계산 예시】
+ 【File Size Calculation Example】
 
- Full HD, 30 fps, 8 Mbps, 1분 녹화:
- 8 Mbps = 8,000,000 bits/초
- = 1,000,000 bytes/초 (8 bits = 1 byte)
- = 1 MB/초
+ Full HD, 30 fps, 8 Mbps, 1 minute recording:
+ 8 Mbps = 8,000,000 bits/sec
+ = 1,000,000 bytes/sec (8 bits = 1 byte)
+ = 1 MB/sec
 
- 1분 = 60초
- 파일 크기 = 1 MB/초 × 60초 = 60 MB
+ 1 minute = 60 seconds
+ File size = 1 MB/sec × 60 sec = 60 MB
 
- 1시간 녹화:
- 60 MB/분 × 60분 = 3,600 MB = 3.6 GB
+ 1 hour recording:
+ 60 MB/min × 60 min = 3,600 MB = 3.6 GB
 
- 32GB SD 카드 녹화 시간:
- 32 GB ÷ 3.6 GB/시간 ≈ 8.9시간
+ 32GB SD card recording time:
+ 32 GB ÷ 3.6 GB/hour ≈ 8.9 hours
 
- 【ChannelInfo 사용 예시】
+ 【ChannelInfo Usage Example】
 
  ```swift
- // 전방 카메라 Full HD 채널
+ // Front camera Full HD channel
  let frontChannel = ChannelInfo(
  position: .front,
  filePath: "normal/2025_01_10_09_00_00_F.mp4",
@@ -213,40 +213,40 @@ import Foundation
  fileSize: 100_000_000  // 100 MB
  )
 
- // 채널 정보 표시
- print("카메라 위치: \(frontChannel.position.displayName)")
- print("해상도: \(frontChannel.resolutionName) (\(frontChannel.resolutionString))")
- print("화면 비율: \(frontChannel.aspectRatioString)")
- print("프레임 레이트: \(frontChannel.frameRateString)")
- print("비트레이트: \(frontChannel.bitrateString ?? "N/A")")
- print("파일 크기: \(frontChannel.fileSizeString)")
- print("고해상도: \(frontChannel.isHighResolution ? "예" : "아니오")")
- print("오디오: \(frontChannel.hasAudio ? "있음" : "없음")")
+ // Display channel information
+ print("Camera position: \(frontChannel.position.displayName)")
+ print("Resolution: \(frontChannel.resolutionName) (\(frontChannel.resolutionString))")
+ print("Aspect ratio: \(frontChannel.aspectRatioString)")
+ print("Frame rate: \(frontChannel.frameRateString)")
+ print("Bitrate: \(frontChannel.bitrateString ?? "N/A")")
+ print("File size: \(frontChannel.fileSizeString)")
+ print("High resolution: \(frontChannel.isHighResolution ? "Yes" : "No")")
+ print("Audio: \(frontChannel.hasAudio ? "Yes" : "No")")
  ```
 
  ═══════════════════════════════════════════════════════════════════════════════
  */
 
 /// @struct ChannelInfo
-/// @brief 비디오 채널/카메라 정보
+/// @brief Video channel/camera information
 ///
 /// Information about a video channel/camera in a multi-camera system
 ///
-/// 멀티 카메라 시스템에서 개별 비디오 채널(카메라)의 정보를 나타내는 구조체입니다.
+/// Struct representing information about an individual video channel (camera) in a multi-camera system.
 ///
-/// **주요 정보:**
-/// - 카메라 위치 및 파일 경로
-/// - 비디오 스펙 (해상도, 프레임 레이트, 비트레이트)
-/// - 코덱 정보 (비디오/오디오)
-/// - 파일 메타데이터 (크기, 길이)
+/// **Key Information:**
+/// - Camera position and file path
+/// - Video specifications (resolution, frame rate, bitrate)
+/// - Codec information (video/audio)
+/// - File metadata (size, duration)
 ///
-/// **프로토콜:**
-/// - Codable: JSON 직렬화/역직렬화
-/// - Equatable: 동등성 비교
-/// - Identifiable: SwiftUI List/ForEach에서 고유 식별 (id 프로퍼티)
-/// - Hashable: Set/Dictionary 키로 사용 가능
+/// **Protocols:**
+/// - Codable: JSON serialization/deserialization
+/// - Equatable: Equality comparison
+/// - Identifiable: Unique identification in SwiftUI List/ForEach (id property)
+/// - Hashable: Can be used as Set/Dictionary key
 ///
-/// **사용 예시:**
+/// **Usage Example:**
 /// ```swift
 /// let channel = ChannelInfo(
 ///     position: .front,
@@ -264,48 +264,48 @@ import Foundation
 /// ```
 struct ChannelInfo: Codable, Equatable, Identifiable, Hashable {
     /// @var id
-    /// @brief 채널 고유 식별자 (UUID)
+    /// @brief Channel unique identifier (UUID)
     ///
     /// Unique identifier for this channel
     ///
-    /// 채널의 고유 식별자입니다.
+    /// Unique identifier for the channel.
     ///
     /// **UUID (Universally Unique Identifier):**
-    /// - 128비트 숫자로 구성된 고유 식별자
-    /// - 형식: 8-4-4-4-12 (36자, 하이픈 포함)
-    /// - 예: "550e8400-e29b-41d4-a716-446655440000"
-    /// - 충돌 확률: 거의 0 (10^-18 수준)
+    /// - Unique identifier composed of 128-bit number
+    /// - Format: 8-4-4-4-12 (36 characters including hyphens)
+    /// - Example: "550e8400-e29b-41d4-a716-446655440000"
+    /// - Collision probability: Nearly 0 (10^-18 level)
     ///
-    /// **Identifiable 프로토콜:**
-    /// - SwiftUI의 List, ForEach에서 각 항목을 구별하기 위해 사용
-    /// - id 프로퍼티를 통해 각 ChannelInfo를 고유하게 식별
+    /// **Identifiable Protocol:**
+    /// - Used to distinguish each item in SwiftUI's List and ForEach
+    /// - Each ChannelInfo is uniquely identified through the id property
     ///
-    /// **사용 예시:**
+    /// **Usage Example:**
     /// ```swift
-    /// // SwiftUI에서 채널 목록 표시
+    /// // Display channel list in SwiftUI
     /// List(channels) { channel in
-    ///     // channel.id가 자동으로 고유 식별자로 사용됨
+    ///     // channel.id is automatically used as unique identifier
     ///     Text(channel.position.displayName)
     /// }
     /// ```
     let id: UUID
 
     /// @var position
-    /// @brief 카메라 위치/종류
+    /// @brief Camera position/type
     ///
     /// Camera position/type
     ///
-    /// 카메라의 위치/종류입니다.
+    /// The position/type of the camera.
     ///
     /// **CameraPosition enum:**
-    /// - front: 전방 카메라
-    /// - rear: 후방 카메라
-    /// - left: 좌측 카메라
-    /// - right: 우측 카메라
-    /// - interior: 실내 카메라
-    /// - unknown: 알 수 없음
+    /// - front: Front camera
+    /// - rear: Rear camera
+    /// - left: Left camera
+    /// - right: Right camera
+    /// - interior: Interior camera
+    /// - unknown: Unknown
     ///
-    /// **채널 배치 예시:**
+    /// **Channel Layout Example:**
     /// ```
     ///         left
     ///          │
@@ -317,234 +317,234 @@ struct ChannelInfo: Codable, Equatable, Identifiable, Hashable {
     ///          │
     ///        right
     ///
-    ///    interior (차량 내부)
+    ///    interior (inside vehicle)
     /// ```
     let position: CameraPosition
 
     /// @var filePath
-    /// @brief 비디오 파일 경로
+    /// @brief Video file path
     ///
     /// File path to the video file for this channel
     ///
-    /// 채널의 비디오 파일 경로입니다.
+    /// File path to the channel's video file.
     ///
-    /// **경로 형식:**
-    /// - 상대 경로 또는 절대 경로
-    /// - 일반적으로 블랙박스 SD 카드 내 경로
+    /// **Path Format:**
+    /// - Relative or absolute path
+    /// - Typically path within blackbox SD card
     ///
-    /// **경로 예시:**
+    /// **Path Examples:**
     /// ```
-    /// "normal/2025_01_10_09_00_00_F.mp4"   (전방, 일반 녹화)
-    /// "event/2025_01_10_10_30_15_R.mp4"    (후방, 이벤트)
-    /// "/media/sd/normal/2025_01_10_09_00_00_F.mp4"  (절대 경로)
+    /// "normal/2025_01_10_09_00_00_F.mp4"   (Front, normal recording)
+    /// "event/2025_01_10_10_30_15_R.mp4"    (Rear, event)
+    /// "/media/sd/normal/2025_01_10_09_00_00_F.mp4"  (Absolute path)
     /// ```
     ///
-    /// **파일명 규칙:**
+    /// **Filename Convention:**
     /// - YYYY_MM_DD_HH_MM_SS_Position.mp4
-    /// - Position: F(전방), R(후방), L(좌측), Ri(우측), I(실내)
+    /// - Position: F(Front), R(Rear), L(Left), Ri(Right), I(Interior)
     let filePath: String
 
     /// @var width
-    /// @brief 비디오 가로 해상도 (픽셀)
+    /// @brief Video horizontal resolution (pixels)
     ///
     /// Video resolution width in pixels
     ///
-    /// 비디오 해상도의 가로 픽셀 수입니다.
+    /// Video resolution horizontal pixel count.
     ///
-    /// **일반적인 가로 해상도:**
+    /// **Common horizontal resolutions:**
     /// - 3840: 4K UHD
     /// - 2560: 2K QHD
     /// - 1920: Full HD
     /// - 1280: HD
     /// - 640: SD
     ///
-    /// **픽셀(Pixel):**
-    /// - 화면을 구성하는 최소 단위 점
-    /// - Picture Element의 약자
-    /// - 더 많은 픽셀 = 더 선명한 영상
+    /// **Pixel:**
+    /// - Smallest unit point composing the screen
+    /// - Abbreviation of Picture Element
+    /// - More pixels = Sharper video
     let width: Int
 
     /// @var height
-    /// @brief 비디오 세로 해상도 (픽셀)
+    /// @brief Video vertical resolution (pixels)
     ///
     /// Video resolution height in pixels
     ///
-    /// 비디오 해상도의 세로 픽셀 수입니다.
+    /// Video resolution vertical pixel count.
     ///
-    /// **일반적인 세로 해상도:**
+    /// **Common vertical resolutions:**
     /// - 2160: 4K UHD
     /// - 1440: 2K QHD
     /// - 1080: Full HD (1080p)
     /// - 720: HD (720p)
     /// - 480: SD (480p)
     ///
-    /// **"p"의 의미:**
-    /// - p = Progressive scan (순차 주사)
-    /// - 1080p: 1080줄의 수평선을 순차적으로 표시
-    /// - 모든 현대 블랙박스는 p 방식 사용
+    /// **Meaning of "p":**
+    /// - p = Progressive scan
+    /// - 1080p: Displays 1080 horizontal lines progressively
+    /// - All modern blackboxes use p method
     let height: Int
 
     /// @var frameRate
-    /// @brief 프레임 레이트 (fps)
+    /// @brief Frame rate (fps)
     ///
     /// Frame rate in frames per second
     ///
-    /// 초당 프레임 수입니다. (fps: frames per second)
+    /// Frames per second. (fps: frames per second)
     ///
-    /// **프레임(Frame):**
-    /// - 영상을 구성하는 개별 정지 화면
-    /// - 여러 프레임을 빠르게 보여주면 동영상처럼 보임
+    /// **Frame:**
+    /// - Individual still image composing the video
+    /// - Showing multiple frames quickly appears like a video
     ///
-    /// **일반적인 프레임 레이트:**
-    /// - 60.0 fps: 고급 블랙박스, 매우 부드러운 영상
-    /// - 30.0 fps: 일반 블랙박스 (가장 일반적)
-    /// - 24.0 fps: 영화 표준
-    /// - 15.0 fps: 주차 모드 (저전력)
+    /// **Common frame rates:**
+    /// - 60.0 fps: Premium blackbox, very smooth video
+    /// - 30.0 fps: Standard blackbox (most common)
+    /// - 24.0 fps: Cinema standard
+    /// - 15.0 fps: Parking mode (low power)
     ///
-    /// **프레임 레이트와 영상 품질:**
-    /// - 높을수록 부드러운 영상
-    /// - 빠른 움직임 포착에 유리 (사고 순간)
-    /// - 파일 크기와 비례 (60fps는 30fps보다 2배 큼)
+    /// **Frame rate and video quality:**
+    /// - Higher = smoother video
+    /// - Better for capturing fast motion (accident moments)
+    /// - Proportional to file size (60fps is 2x larger than 30fps)
     ///
-    /// **Double 타입인 이유:**
-    /// - 일부 블랙박스는 29.97 fps 같은 소수점 프레임 레이트 사용
-    /// - NTSC 표준 (미국, 한국): 29.97 fps
-    /// - PAL 표준 (유럽): 25.0 fps
+    /// **Reason for Double type:**
+    /// - Some blackboxes use decimal frame rates like 29.97 fps
+    /// - NTSC standard (US, Korea): 29.97 fps
+    /// - PAL standard (Europe): 25.0 fps
     let frameRate: Double
 
     /// @var bitrate
-    /// @brief 비디오 비트레이트 (bps, 옵셔널)
+    /// @brief Video bitrate (bps, optional)
     ///
     /// Video bitrate in bits per second (optional)
     ///
-    /// 비디오 비트레이트입니다. (단위: bps, bits per second)
+    /// Video bitrate. (Unit: bps, bits per second)
     ///
-    /// **비트레이트(Bitrate):**
-    /// - 1초당 저장되는 데이터 양
-    /// - 높을수록 선명한 화질, 큰 파일 크기
-    /// - 낮을수록 압축된 화질, 작은 파일 크기
+    /// **Bitrate:**
+    /// - Amount of data stored per second
+    /// - Higher = sharper quality, larger file size
+    /// - Lower = compressed quality, smaller file size
     ///
-    /// **단위 변환:**
-    /// - 1,000 bps = 1 Kbps (킬로비트)
-    /// - 1,000,000 bps = 1 Mbps (메가비트)
+    /// **Unit conversion:**
+    /// - 1,000 bps = 1 Kbps (kilobit)
+    /// - 1,000,000 bps = 1 Mbps (megabit)
     /// - 8 bits = 1 byte
-    /// - 8 Mbps = 1 MB/s (초당 1메가바이트)
+    /// - 8 Mbps = 1 MB/s (1 megabyte per second)
     ///
-    /// **일반적인 비트레이트:**
+    /// **Common bitrates:**
     /// - Full HD (1920×1080):
-    ///   - 4,000,000 bps (4 Mbps): 저품질
-    ///   - 8,000,000 bps (8 Mbps): 일반 ★
-    ///   - 12,000,000 bps (12 Mbps): 고품질
+    ///   - 4,000,000 bps (4 Mbps): Low quality
+    ///   - 8,000,000 bps (8 Mbps): Standard ★
+    ///   - 12,000,000 bps (12 Mbps): High quality
     ///
     /// - 4K (3840×2160):
-    ///   - 16,000,000 bps (16 Mbps): 저품질
-    ///   - 24,000,000 bps (24 Mbps): 일반
-    ///   - 40,000,000 bps (40 Mbps): 고품질
+    ///   - 16,000,000 bps (16 Mbps): Low quality
+    ///   - 24,000,000 bps (24 Mbps): Standard
+    ///   - 40,000,000 bps (40 Mbps): High quality
     ///
-    /// **옵셔널인 이유:**
-    /// - 일부 파일 포맷은 비트레이트 정보를 포함하지 않을 수 있음
-    /// - 파싱 실패 시 nil
+    /// **Reason for optional:**
+    /// - Some file formats may not include bitrate information
+    /// - nil on parsing failure
     let bitrate: Int?
 
     /// @var codec
-    /// @brief 비디오 코덱 (옵셔널)
+    /// @brief Video codec (optional)
     ///
     /// Video codec (e.g., "h264", "h265")
     ///
-    /// 비디오 코덱입니다.
+    /// Video codec.
     ///
-    /// **코덱(Codec):**
-    /// - Coder(압축) + Decoder(해제)의 합성어
-    /// - 영상 데이터를 압축/해제하는 알고리즘
-    /// - 압축 없이는 파일 크기가 너무 큼
+    /// **Codec:**
+    /// - Portmanteau of Coder (compression) + Decoder (decompression)
+    /// - Algorithm for compressing/decompressing video data
+    /// - File size would be too large without compression
     ///
-    /// **압축 없는 Full HD 1초 크기:**
-    /// - 1920 × 1080 픽셀 × 3 bytes(RGB) × 30 프레임
-    /// - = 186 MB/초
-    /// - 1분 = 11 GB (!!)
+    /// **Uncompressed Full HD 1 second size:**
+    /// - 1920 × 1080 pixels × 3 bytes(RGB) × 30 frames
+    /// - = 186 MB/sec
+    /// - 1 minute = 11 GB (!!)
     ///
-    /// **일반적인 비디오 코덱:**
+    /// **Common video codecs:**
     ///
     /// 1. h264 (AVC, MPEG-4 Part 10):
-    ///    - 가장 널리 사용되는 코덱
-    ///    - 호환성 최고 (거의 모든 기기 재생 가능)
-    ///    - 적당한 압축률
-    ///    - 대부분의 블랙박스 사용
-    ///    - 예: "h264", "avc1"
+    ///    - Most widely used codec
+    ///    - Best compatibility (playable on almost all devices)
+    ///    - Moderate compression ratio
+    ///    - Used by most blackboxes
+    ///    - Examples: "h264", "avc1"
     ///
     /// 2. h265 (HEVC, High Efficiency Video Coding):
-    ///    - H.264보다 2배 효율적인 압축
-    ///    - 같은 화질에 파일 크기 약 50% 감소
-    ///    - 최신 블랙박스 사용
-    ///    - 일부 구형 기기에서 재생 안 될 수 있음
-    ///    - 예: "h265", "hevc", "hvc1"
+    ///    - 2x more efficient compression than H.264
+    ///    - File size reduced by ~50% at same quality
+    ///    - Used by modern blackboxes
+    ///    - May not play on some older devices
+    ///    - Examples: "h265", "hevc", "hvc1"
     ///
-    /// **압축률 비교 (같은 화질 기준):**
+    /// **Compression ratio comparison (same quality):**
     /// ```
-    /// 압축 없음: ████████████████ (186 MB/초)
-    /// H.264:     ████ (1 MB/초, 약 1/186 압축)
-    /// H.265:     ██ (0.5 MB/초, 약 1/372 압축)
+    /// Uncompressed: ████████████████ (186 MB/sec)
+    /// H.264:        ████ (1 MB/sec, ~1/186 compression)
+    /// H.265:        ██ (0.5 MB/sec, ~1/372 compression)
     /// ```
     ///
-    /// **옵셔널인 이유:**
-    /// - 코덱 정보를 파싱하지 못할 수 있음
-    /// - 알 수 없는 코덱 형식
+    /// **Reason for optional:**
+    /// - Codec information may fail to parse
+    /// - Unknown codec format
     let codec: String?
 
     /// @var audioCodec
-    /// @brief 오디오 코덱 (옵셔널)
+    /// @brief Audio codec (optional)
     ///
     /// Audio codec (e.g., "mp3", "aac") (optional)
     ///
-    /// 오디오 코덱입니다.
+    /// Audio codec.
     ///
-    /// **일반적인 오디오 코덱:**
+    /// **Common audio codecs:**
     ///
     /// 1. AAC (Advanced Audio Coding):
-    ///    - MP3보다 고음질/고효율
-    ///    - Apple 기기 최적화
-    ///    - 최신 블랙박스 사용
-    ///    - 예: "aac", "mp4a"
+    ///    - Higher quality/efficiency than MP3
+    ///    - Optimized for Apple devices
+    ///    - Used by modern blackboxes
+    ///    - Examples: "aac", "mp4a"
     ///
     /// 2. MP3 (MPEG Audio Layer 3):
-    ///    - 가장 범용적인 코덱
-    ///    - 호환성 최고
-    ///    - 구형 블랙박스 사용
-    ///    - 예: "mp3", "mp3a"
+    ///    - Most universal codec
+    ///    - Best compatibility
+    ///    - Used by older blackboxes
+    ///    - Examples: "mp3", "mp3a"
     ///
-    /// **오디오가 없는 경우:**
-    /// - 일부 블랙박스는 오디오 녹음 안 함
-    /// - 오디오 비활성화 설정
+    /// **When audio is absent:**
+    /// - Some blackboxes don't record audio
+    /// - Audio recording disabled in settings
     /// - audioCodec = nil
     ///
-    /// **옵셔널인 이유:**
-    /// - 오디오가 없는 비디오 파일
-    /// - 코덱 정보 파싱 실패
+    /// **Reason for optional:**
+    /// - Video file without audio
+    /// - Codec information parsing failure
     let audioCodec: String?
 
     /// @var isEnabled
-    /// @brief 채널 활성화 여부
+    /// @brief Channel enabled status
     ///
     /// Channel is enabled/active
     ///
-    /// 채널이 활성화되어 있는지 여부입니다.
+    /// Whether the channel is enabled.
     ///
-    /// **활성화/비활성화:**
-    /// - true: 채널이 활성화됨 (재생, 표시)
-    /// - false: 채널이 비활성화됨 (숨김, 재생 안 함)
+    /// **Enabled/Disabled:**
+    /// - true: Channel is enabled (playback, display)
+    /// - false: Channel is disabled (hidden, no playback)
     ///
-    /// **사용 시나리오:**
-    /// - 사용자가 특정 채널 숨기기 (예: 실내 카메라 프라이버시)
-    /// - 파일 손상으로 재생 불가
-    /// - 선택적 채널 표시 (전방만 표시 등)
+    /// **Usage scenarios:**
+    /// - User hides specific channel (e.g., interior camera privacy)
+    /// - File corrupted, cannot play
+    /// - Selective channel display (show front only, etc.)
     ///
-    /// **UI 표시:**
+    /// **UI display:**
     /// ```swift
     /// if channel.isEnabled {
-    ///     // 채널 재생
+    ///     // Play channel
     ///     playerView.isHidden = false
     /// } else {
-    ///     // 채널 숨김
+    ///     // Hide channel
     ///     playerView.isHidden = true
     ///     showDisabledMessage()
     /// }

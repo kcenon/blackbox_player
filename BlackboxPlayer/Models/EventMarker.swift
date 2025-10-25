@@ -1,68 +1,68 @@
 /// @file EventMarker.swift
-/// @brief 비디오 이벤트 마커 모델
+/// @brief Video event marker model
 /// @author BlackboxPlayer Development Team
 /// @details
-/// 블랙박스 비디오에서 감지된 이벤트(급가속, 급감속, 급회전 등)를 표현하는 모델입니다.
-/// GPS 데이터 분석을 통해 자동으로 이벤트를 감지하고 타임라인에 표시합니다.
+/// Model representing events detected in blackbox video (rapid acceleration, hard braking, sharp turns, etc.).
+/// Automatically detects events through GPS data analysis and displays them on the timeline.
 
 import Foundation
 
 /// @enum DrivingEventType
-/// @brief 주행 이벤트 유형
+/// @brief Driving event type
 ///
 /// @details
-/// GPS 데이터 분석으로 감지 가능한 주행 이벤트 유형입니다.
+/// Types of driving events that can be detected through GPS data analysis.
 ///
-/// ## 감지 기준
-/// - **hardBraking**: 0.5초 내 20km/h 이상 감속 (충격 위험)
-/// - **rapidAcceleration**: 0.5초 내 20km/h 이상 가속 (급발진)
-/// - **sharpTurn**: 속도 유지 중 45도 이상 급격한 방향 전환 (전복 위험)
+/// ## Detection Criteria
+/// - **hardBraking**: Deceleration of 20km/h or more within 0.5 seconds (impact risk)
+/// - **rapidAcceleration**: Acceleration of 20km/h or more within 0.5 seconds (sudden start)
+/// - **sharpTurn**: Sudden direction change of 45 degrees or more while maintaining speed (rollover risk)
 ///
-/// ## 색상 코딩
-/// - hardBraking → 빨간색 (위험)
-/// - rapidAcceleration → 주황색 (경고)
-/// - sharpTurn → 노란색 (주의)
+/// ## Color Coding
+/// - hardBraking → Red (danger)
+/// - rapidAcceleration → Orange (warning)
+/// - sharpTurn → Yellow (caution)
 enum DrivingEventType: String, Codable {
-    /// 급감속 (급정거)
+    /// Hard braking (emergency stop)
     case hardBraking = "hard_braking"
 
-    /// 급가속
+    /// Rapid acceleration
     case rapidAcceleration = "rapid_acceleration"
 
-    /// 급회전
+    /// Sharp turn
     case sharpTurn = "sharp_turn"
 
-    /// @brief 이벤트 표시 이름
+    /// @brief Event display name
     var displayName: String {
         switch self {
         case .hardBraking:
-            return "급감속"
+            return "Hard Braking"
         case .rapidAcceleration:
-            return "급가속"
+            return "Rapid Acceleration"
         case .sharpTurn:
-            return "급회전"
+            return "Sharp Turn"
         }
     }
 
-    /// @brief 이벤트 설명
+    /// @brief Event description
     var description: String {
         switch self {
         case .hardBraking:
-            return "급격한 속도 감소"
+            return "Sudden speed decrease"
         case .rapidAcceleration:
-            return "급격한 속도 증가"
+            return "Sudden speed increase"
         case .sharpTurn:
-            return "급격한 방향 전환"
+            return "Sudden direction change"
         }
     }
 
-    /// @brief 이벤트 심각도 (0.0 ~ 1.0)
+    /// @brief Event severity (0.0 ~ 1.0)
     ///
     /// @details
-    /// 위험도 순위:
-    /// 1. hardBraking: 1.0 (충격 사고 가능성)
-    /// 2. sharpTurn: 0.7 (전복 사고 가능성)
-    /// 3. rapidAcceleration: 0.5 (급발진)
+    /// Risk ranking:
+    /// 1. hardBraking: 1.0 (collision risk)
+    /// 2. sharpTurn: 0.7 (rollover risk)
+    /// 3. rapidAcceleration: 0.5 (sudden start)
     var severity: Double {
         switch self {
         case .hardBraking:
@@ -76,12 +76,12 @@ enum DrivingEventType: String, Codable {
 }
 
 /// @struct EventMarker
-/// @brief 비디오 이벤트 마커
+/// @brief Video event marker
 ///
 /// @details
-/// 비디오 재생 중 특정 시점에 발생한 이벤트를 표시하는 마커입니다.
+/// Marker that displays events occurring at specific points during video playback.
 ///
-/// ## 사용 예제
+/// ## Usage Example
 /// ```swift
 /// let marker = EventMarker(
 ///     timestamp: 15.5,
@@ -90,69 +90,69 @@ enum DrivingEventType: String, Codable {
 ///     metadata: ["speed_before": 80.0, "speed_after": 50.0]
 /// )
 ///
-/// print(marker.displayName)  // "급감속"
-/// print(marker.description)  // "15.5초: 급격한 속도 감소 (강도: 80%)"
+/// print(marker.displayName)  // "Hard Braking"
+/// print(marker.description)  // "15.5s: Sudden speed decrease (magnitude: 80%)"
 /// ```
 struct EventMarker: Identifiable, Codable {
     // MARK: - Properties
 
     /// @var id
-    /// @brief 고유 식별자
+    /// @brief Unique identifier
     let id: UUID
 
     /// @var timestamp
-    /// @brief 이벤트 발생 시간 (초)
+    /// @brief Event occurrence time (seconds)
     ///
     /// @details
-    /// 비디오 재생 시간 기준 (0초부터 시작)
-    /// 타임라인에서의 위치를 결정합니다.
+    /// Based on video playback time (starting from 0 seconds)
+    /// Determines the position on the timeline.
     let timestamp: TimeInterval
 
     /// @var type
-    /// @brief 이벤트 유형
+    /// @brief Event type
     let type: DrivingEventType
 
     /// @var magnitude
-    /// @brief 이벤트 강도 (0.0 ~ 1.0)
+    /// @brief Event magnitude (0.0 ~ 1.0)
     ///
     /// @details
-    /// 이벤트의 심각도를 나타내는 0~1 범위의 값입니다.
-    /// - 0.0 ~ 0.3: 경미
-    /// - 0.3 ~ 0.7: 보통
-    /// - 0.7 ~ 1.0: 심각
+    /// Value in the range of 0~1 representing the severity of the event.
+    /// - 0.0 ~ 0.3: Minor
+    /// - 0.3 ~ 0.7: Moderate
+    /// - 0.7 ~ 1.0: Severe
     ///
-    /// **계산 예시 (급감속):**
+    /// **Calculation Example (Hard Braking):**
     /// ```
-    /// 속도 변화량 = |속도_이후 - 속도_이전|
-    /// magnitude = min(1.0, 속도변화량 / 50.0)
+    /// Speed change = |speed_after - speed_before|
+    /// magnitude = min(1.0, speed_change / 50.0)
     ///
-    /// 예: 80km/h → 30km/h (50km/h 감소)
-    /// magnitude = 50 / 50 = 1.0 (매우 심각)
+    /// Example: 80km/h → 30km/h (50km/h decrease)
+    /// magnitude = 50 / 50 = 1.0 (very severe)
     /// ```
     let magnitude: Double
 
     /// @var metadata
-    /// @brief 추가 메타데이터
+    /// @brief Additional metadata
     ///
     /// @details
-    /// 이벤트와 관련된 추가 정보를 저장합니다.
+    /// Stores additional information related to the event.
     ///
-    /// **저장 가능한 정보:**
-    /// - "speed_before": 이벤트 이전 속도 (km/h)
-    /// - "speed_after": 이벤트 이후 속도 (km/h)
-    /// - "heading_before": 이전 방향 (도)
-    /// - "heading_after": 이후 방향 (도)
-    /// - "gps_lat": GPS 위도
-    /// - "gps_lon": GPS 경도
+    /// **Storable Information:**
+    /// - "speed_before": Speed before event (km/h)
+    /// - "speed_after": Speed after event (km/h)
+    /// - "heading_before": Previous heading (degrees)
+    /// - "heading_after": New heading (degrees)
+    /// - "gps_lat": GPS latitude
+    /// - "gps_lon": GPS longitude
     let metadata: [String: Double]?
 
     // MARK: - Initialization
 
-    /// @brief EventMarker 초기화
-    /// @param timestamp 이벤트 발생 시간 (초)
-    /// @param type 이벤트 유형
-    /// @param magnitude 이벤트 강도 (0.0 ~ 1.0)
-    /// @param metadata 추가 메타데이터 (선택사항)
+    /// @brief EventMarker initialization
+    /// @param timestamp Event occurrence time (seconds)
+    /// @param type Event type
+    /// @param magnitude Event magnitude (0.0 ~ 1.0)
+    /// @param metadata Additional metadata (optional)
     init(
         timestamp: TimeInterval,
         type: DrivingEventType,
@@ -162,24 +162,24 @@ struct EventMarker: Identifiable, Codable {
         self.id = UUID()
         self.timestamp = timestamp
         self.type = type
-        self.magnitude = min(1.0, max(0.0, magnitude))  // 0~1 범위로 제한
+        self.magnitude = min(1.0, max(0.0, magnitude))  // Clamp to 0~1 range
         self.metadata = metadata
     }
 
     // MARK: - Computed Properties
 
-    /// @brief 이벤트 표시 이름
+    /// @brief Event display name
     var displayName: String {
         return type.displayName
     }
 
-    /// @brief 이벤트 상세 설명
+    /// @brief Event detailed description
     var description: String {
         let magnitudePercent = Int(magnitude * 100)
-        return "\(String(format: "%.1f", timestamp))초: \(type.description) (강도: \(magnitudePercent)%)"
+        return "\(String(format: "%.1f", timestamp))s: \(type.description) (magnitude: \(magnitudePercent)%)"
     }
 
-    /// @brief 시간 포맷 문자열 (MM:SS)
+    /// @brief Time format string (MM:SS)
     var timeString: String {
         let totalSeconds = Int(timestamp)
         let minutes = totalSeconds / 60
@@ -191,7 +191,7 @@ struct EventMarker: Identifiable, Codable {
 // MARK: - Comparable
 
 extension EventMarker: Comparable {
-    /// @brief 타임스탬프 기준으로 정렬
+    /// @brief Sort by timestamp
     static func < (lhs: EventMarker, rhs: EventMarker) -> Bool {
         return lhs.timestamp < rhs.timestamp
     }
@@ -200,7 +200,7 @@ extension EventMarker: Comparable {
 // MARK: - Sample Data
 
 extension EventMarker {
-    /// @brief 샘플 이벤트 마커 (급감속)
+    /// @brief Sample event marker (hard braking)
     static let sampleHardBraking = EventMarker(
         timestamp: 15.5,
         type: .hardBraking,
@@ -213,7 +213,7 @@ extension EventMarker {
         ]
     )
 
-    /// @brief 샘플 이벤트 마커 (급가속)
+    /// @brief Sample event marker (rapid acceleration)
     static let sampleRapidAcceleration = EventMarker(
         timestamp: 32.0,
         type: .rapidAcceleration,
@@ -224,7 +224,7 @@ extension EventMarker {
         ]
     )
 
-    /// @brief 샘플 이벤트 마커 (급회전)
+    /// @brief Sample event marker (sharp turn)
     static let sampleSharpTurn = EventMarker(
         timestamp: 48.5,
         type: .sharpTurn,
@@ -235,7 +235,7 @@ extension EventMarker {
         ]
     )
 
-    /// @brief 샘플 이벤트 마커 배열
+    /// @brief Sample event marker array
     static let samples: [EventMarker] = [
         sampleHardBraking,
         sampleRapidAcceleration,

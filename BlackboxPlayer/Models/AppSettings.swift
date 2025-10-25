@@ -1,17 +1,17 @@
 /// @file AppSettings.swift
-/// @brief 앱 설정 모델
+/// @brief App settings model
 /// @author BlackboxPlayer Development Team
 /// @details
-/// 앱의 전역 설정을 관리하는 모델입니다.
-/// UserDefaults를 사용하여 설정을 저장하고 불러옵니다.
+/// Model that manages global app settings.
+/// Uses UserDefaults to save and load settings.
 
 import Foundation
 import SwiftUI
 
 /// @struct AppSettings
-/// @brief 앱 설정 관리 클래스
+/// @brief App settings management class
 /// @details
-/// ObservableObject로 구현되어 설정 변경 시 자동으로 UI 업데이트
+/// Implemented as ObservableObject to automatically update UI when settings change
 class AppSettings: ObservableObject {
     // MARK: - Singleton
 
@@ -23,82 +23,82 @@ class AppSettings: ObservableObject {
 
     // MARK: - UI Settings
 
-    /// 사이드바 기본 표시 여부
+    /// Show sidebar by default
     @Published var showSidebarByDefault: Bool = true {
         didSet { UserDefaults.standard.set(showSidebarByDefault, forKey: "showSidebarByDefault") }
     }
 
-    /// 디버그 로그 기본 표시 여부
+    /// Show debug log by default
     @Published var showDebugLogByDefault: Bool = false {
         didSet { UserDefaults.standard.set(showDebugLogByDefault, forKey: "showDebugLogByDefault") }
     }
 
     // MARK: - Overlay Settings
 
-    /// GPS 오버레이 기본 표시 여부
+    /// Show GPS overlay by default
     @Published var showGPSOverlayByDefault: Bool = true {
         didSet { UserDefaults.standard.set(showGPSOverlayByDefault, forKey: "showGPSOverlayByDefault") }
     }
 
-    /// 메타데이터 오버레이 기본 표시 여부
+    /// Show metadata overlay by default
     @Published var showMetadataOverlayByDefault: Bool = true {
         didSet { UserDefaults.standard.set(showMetadataOverlayByDefault, forKey: "showMetadataOverlayByDefault") }
     }
 
-    /// 지도 오버레이 기본 표시 여부
+    /// Show map overlay by default
     @Published var showMapOverlayByDefault: Bool = true {
         didSet { UserDefaults.standard.set(showMapOverlayByDefault, forKey: "showMapOverlayByDefault") }
     }
 
-    /// 그래프 오버레이 기본 표시 여부
+    /// Show graph overlay by default
     @Published var showGraphOverlayByDefault: Bool = true {
         didSet { UserDefaults.standard.set(showGraphOverlayByDefault, forKey: "showGraphOverlayByDefault") }
     }
 
     // MARK: - Playback Settings
 
-    /// 기본 재생 속도
+    /// Default playback speed
     @Published var defaultPlaybackSpeed: Double = 1.0 {
         didSet { UserDefaults.standard.set(defaultPlaybackSpeed, forKey: "defaultPlaybackSpeed") }
     }
 
-    /// 기본 볼륨
+    /// Default volume
     @Published var defaultVolume: Double = 0.8 {
         didSet { UserDefaults.standard.set(defaultVolume, forKey: "defaultVolume") }
     }
 
-    /// 자동 재생 여부
+    /// Auto-play on selection
     @Published var autoPlayOnSelect: Bool = false {
         didSet { UserDefaults.standard.set(autoPlayOnSelect, forKey: "autoPlayOnSelect") }
     }
 
     // MARK: - Video Settings
 
-    /// 기본 레이아웃 모드
+    /// Default layout mode
     @Published var defaultLayoutMode: String = "grid" {
         didSet { UserDefaults.standard.set(defaultLayoutMode, forKey: "defaultLayoutMode") }
     }
 
-    /// 컨트롤 자동 숨김 시간 (초)
+    /// Controls auto-hide delay (seconds)
     @Published var controlsAutoHideDelay: Double = 3.0 {
         didSet { UserDefaults.standard.set(controlsAutoHideDelay, forKey: "controlsAutoHideDelay") }
     }
 
     // MARK: - Performance Settings
 
-    /// 목표 프레임율
+    /// Target frame rate
     @Published var targetFrameRate: Int = 30 {
         didSet { UserDefaults.standard.set(targetFrameRate, forKey: "targetFrameRate") }
     }
 
-    /// 하드웨어 가속 사용 여부
+    /// Use hardware acceleration
     @Published var useHardwareAcceleration: Bool = true {
         didSet { UserDefaults.standard.set(useHardwareAcceleration, forKey: "useHardwareAcceleration") }
     }
 
     // MARK: - Methods
 
-    /// 설정 불러오기
+    /// Load settings
     private func loadSettings() {
         let defaults = UserDefaults.standard
 
@@ -152,7 +152,7 @@ class AppSettings: ObservableObject {
         }
     }
 
-    /// 설정 초기화
+    /// Reset settings to defaults
     func resetToDefaults() {
         // UI Settings
         showSidebarByDefault = true
