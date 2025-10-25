@@ -1,285 +1,285 @@
 /// @file AudioFrame.swift
-/// @brief 디코딩된 오디오 프레임 데이터 모델
+/// @brief Decoded audio frame data model
 /// @author BlackboxPlayer Development Team
 /// @details
-/// FFmpeg에서 디코딩한 원시 오디오 데이터(PCM)를 담는 구조체입니다.
-/// 비디오 파일의 MP3/AAC 등 압축된 오디오를 디코딩하면 PCM(Pulse Code Modulation) 형태의
-/// 원시 오디오 데이터가 생성되는데, 이를 프레임 단위로 관리합니다.
+/// A structure containing raw audio data (PCM) decoded from FFmpeg.
+/// When compressed audio (MP3/AAC) from video files is decoded, it produces
+/// PCM (Pulse Code Modulation) raw audio data, which is managed per frame.
 ///
-/// [이 파일의 역할]
-/// FFmpeg에서 디코딩한 원시 오디오 데이터(PCM)를 담는 구조체입니다.
-/// 비디오 파일의 MP3/AAC 등 압축된 오디오를 디코딩하면 PCM(Pulse Code Modulation) 형태의
-/// 원시 오디오 데이터가 생성되는데, 이를 프레임 단위로 관리합니다.
+/// [Purpose of this file]
+/// A structure containing raw audio data (PCM) decoded from FFmpeg.
+/// When compressed audio (MP3/AAC) from video files is decoded, it produces
+/// PCM (Pulse Code Modulation) raw audio data, which is managed per frame.
 ///
-/// [오디오 프레임이란?]
-/// 오디오도 비디오처럼 "프레임" 단위로 처리됩니다:
-/// - 비디오 프레임 = 한 장의 이미지
-/// - 오디오 프레임 = 일정 개수의 오디오 샘플 묶음 (보통 1024개)
+/// [What is an audio frame?]
+/// Audio is processed in "frames" just like video:
+/// - Video frame = One image
+/// - Audio frame = A group of audio samples (typically 1024)
 ///
-/// 예시:
-/// - 샘플레이트 48000Hz (1초에 48000개 샘플)
-/// - 프레임당 1024 샘플
-/// - 프레임 지속시간 = 1024 / 48000 = 약 21ms
+/// Example:
+/// - Sample rate 48000Hz (48000 samples per second)
+/// - 1024 samples per frame
+/// - Frame duration = 1024 / 48000 = approximately 21ms
 ///
-/// [PCM (Pulse Code Modulation)이란?]
-/// 아날로그 소리를 디지털로 변환한 가장 기본적인 형태:
+/// [What is PCM (Pulse Code Modulation)?]
+/// The most basic form of converting analog sound to digital:
 ///
-/// 아날로그 소리파  →  샘플링  →  양자화  →  PCM 데이터
-///  (연속 파형)      (1초에 N번)  (숫자로 변환)  ([-1.0, 0.5, -0.3, ...])
+/// Analog sound wave  →  Sampling  →  Quantization  →  PCM data
+///  (continuous wave)    (N times/sec)  (convert to numbers)  ([-1.0, 0.5, -0.3, ...])
 ///
-/// 음질을 결정하는 요소:
-/// 1. 샘플레이트: 1초에 몇 번 측정하는가? (44.1kHz, 48kHz 등)
-/// 2. 비트 깊이: 각 샘플을 몇 비트로 표현하는가? (16bit, 32bit 등)
-/// 3. 채널 수: 모노(1)? 스테레오(2)? 5.1채널(6)?
+/// Factors determining audio quality:
+/// 1. Sample rate: How many measurements per second? (44.1kHz, 48kHz, etc.)
+/// 2. Bit depth: How many bits represent each sample? (16bit, 32bit, etc.)
+/// 3. Channel count: Mono(1)? Stereo(2)? 5.1 channel(6)?
 ///
-/// [데이터 흐름]
-/// 1. VideoDecoder가 FFmpeg로 MP3 디코딩 → PCM 데이터 생성
-/// 2. AudioFrame 구조체에 PCM 데이터 + 메타정보 저장
-/// 3. AudioPlayer가 AudioFrame을 AVAudioPCMBuffer로 변환
-/// 4. AVAudioEngine이 스피커로 재생
+/// [Data flow]
+/// 1. VideoDecoder decodes MP3 with FFmpeg → PCM data generated
+/// 2. AudioFrame structure stores PCM data + metadata
+/// 3. AudioPlayer converts AudioFrame to AVAudioPCMBuffer
+/// 4. AVAudioEngine plays through speakers
 ///
-/// MP3 파일 (압축) → FFmpeg 디코딩 → AudioFrame (PCM) → AVAudioPCMBuffer → 🔊 재생
+/// MP3 file (compressed) → FFmpeg decoding → AudioFrame (PCM) → AVAudioPCMBuffer → 🔊 playback
 ///
 
 import Foundation
 import AVFoundation
 
-// MARK: - AudioFrame 구조체
+// MARK: - AudioFrame Structure
 
 /// @struct AudioFrame
-/// @brief 디코딩된 오디오 프레임 (PCM 샘플 데이터)
+/// @brief Decoded audio frame (PCM sample data)
 ///
 /// @details
-/// FFmpeg에서 디코딩한 원시 오디오 데이터를 Swift에서 다루기 쉽게 포장한 구조체입니다.
-/// 이 구조체는 다음 정보를 포함합니다:
-/// - 타임스탬프: 이 오디오가 비디오의 몇 초 지점인가?
-/// - 오디오 포맷: 샘플레이트, 채널 수, 데이터 형식
-/// - PCM 데이터: 실제 오디오 샘플 값들
+/// A structure wrapping raw audio data decoded from FFmpeg for easy handling in Swift.
+/// This structure contains the following information:
+/// - Timestamp: At what point in the video does this audio belong?
+/// - Audio format: Sample rate, channel count, data format
+/// - PCM data: Actual audio sample values
 ///
-/// ## 사용 예시
+/// ## Usage Example
 /// ```swift
-/// // FFmpeg에서 디코딩된 오디오 프레임 생성
+/// // Create audio frame decoded from FFmpeg
 /// let frame = AudioFrame(
-///     timestamp: 1.5,              // 비디오 1.5초 지점
-///     sampleRate: 48000,           // 48kHz (CD 품질)
-///     channels: 2,                 // 스테레오
-///     format: .floatPlanar,        // 32비트 float, planar 배치
-///     data: pcmData,               // 실제 PCM 바이트
-///     sampleCount: 1024            // 1024개 샘플
+///     timestamp: 1.5,              // 1.5 second position in video
+///     sampleRate: 48000,           // 48kHz (CD quality)
+///     channels: 2,                 // Stereo
+///     format: .floatPlanar,        // 32-bit float, planar layout
+///     data: pcmData,               // Actual PCM bytes
+///     sampleCount: 1024            // 1024 samples
 /// )
 ///
-/// // 재생을 위해 AVAudioPCMBuffer로 변환
+/// // Convert to AVAudioPCMBuffer for playback
 /// if let buffer = frame.toAudioBuffer() {
-///     audioPlayer.enqueue(buffer)  // 재생 큐에 추가
+///     audioPlayer.enqueue(buffer)  // Add to playback queue
 /// }
 /// ```
 ///
-/// ## Planar vs Interleaved 배치
-/// 스테레오(2채널) 오디오 데이터를 메모리에 배치하는 두 가지 방식:
+/// ## Planar vs Interleaved Layout
+/// Two ways to arrange stereo (2-channel) audio data in memory:
 ///
-/// **Interleaved (교차 배치)**: LRLRLRLR...
+/// **Interleaved**: LRLRLRLR...
 /// ```
 /// [L0, R0, L1, R1, L2, R2, L3, R3, ...]
-///  왼쪽0, 오른쪽0, 왼쪽1, 오른쪽1...
+///  Left0, Right0, Left1, Right1...
 /// ```
-/// - 장점: 메모리 연속성, 캐시 효율 좋음
-/// - 단점: 채널별 처리 시 stride 필요
+/// - Advantages: Memory contiguity, better cache efficiency
+/// - Disadvantages: Requires stride for per-channel processing
 ///
-/// **Planar (평면 배치)**: LLL...RRR...
+/// **Planar**: LLL...RRR...
 /// ```
 /// [L0, L1, L2, L3, ...] [R0, R1, R2, R3, ...]
-///  왼쪽 채널 전체        오른쪽 채널 전체
+///  Entire left channel  Entire right channel
 /// ```
-/// - 장점: 채널별 처리 쉬움 (DSP, 이펙트)
-/// - 단점: 메모리 분산
+/// - Advantages: Easier per-channel processing (DSP, effects)
+/// - Disadvantages: Memory fragmentation
 ///
-/// FFmpeg는 보통 Planar 형식으로 디코딩하고,
-/// AVAudioEngine는 Interleaved를 선호합니다.
-/// 이 구조체가 변환을 담당합니다.
+/// FFmpeg typically decodes to Planar format,
+/// AVAudioEngine prefers Interleaved.
+/// This structure handles the conversion.
 struct AudioFrame {
     // MARK: - Properties
 
     /// @var timestamp
-    /// @brief 프레젠테이션 타임스탬프 (초 단위)
+    /// @brief Presentation timestamp (in seconds)
     ///
     /// @details
-    /// 이 오디오 프레임이 비디오의 몇 초 지점에서 재생되어야 하는지를 나타냅니다.
+    /// Indicates at what point in the video this audio frame should be played.
     ///
-    /// **왜 필요한가?**
-    /// 오디오와 비디오의 동기화(Lip Sync)를 맞추기 위해 필수적입니다.
+    /// **Why is this needed?**
+    /// Essential for audio-video synchronization (Lip Sync).
     ///
-    /// **예시**:
+    /// **Examples**:
     /// ```
-    /// Frame 1: timestamp = 0.000초 (시작)
-    /// Frame 2: timestamp = 0.021초 (21ms 후)
-    /// Frame 3: timestamp = 0.043초 (43ms 후)
+    /// Frame 1: timestamp = 0.000s (start)
+    /// Frame 2: timestamp = 0.021s (21ms later)
+    /// Frame 3: timestamp = 0.043s (43ms later)
     /// ...
     /// ```
     ///
-    /// 비디오 프레임의 타임스탬프와 오디오 프레임의 타임스탬프를 비교하여
-    /// 동기화를 맞춥니다. 예를 들어:
-    /// - 비디오 프레임: 1.500초
-    /// - 오디오 프레임: 1.498초 → 거의 일치 (±2ms 이내)
+    /// Synchronization is achieved by comparing timestamps of video and audio frames.
+    /// For example:
+    /// - Video frame: 1.500s
+    /// - Audio frame: 1.498s → Nearly matched (within ±2ms)
     let timestamp: TimeInterval
 
     /// @var sampleRate
-    /// @brief 샘플레이트 (초당 샘플 수)
+    /// @brief Sample rate (samples per second)
     ///
     /// @details
-    /// 1초에 몇 개의 오디오 샘플을 측정하는가를 나타냅니다.
-    /// 높을수록 고음질이지만, 데이터 크기도 증가합니다.
+    /// Indicates how many audio samples are measured per second.
+    /// Higher values mean better quality but also larger data size.
     ///
-    /// **일반적인 샘플레이트**:
-    /// - 8000 Hz: 전화 품질 (낮은 음질, 음성 통화용)
-    /// - 22050 Hz: 라디오 품질 (중간 음질)
-    /// - 44100 Hz: CD 품질 (표준 음악 품질) ⭐
-    /// - 48000 Hz: DVD/블루레이 품질 (비디오 표준) ⭐⭐
-    /// - 96000 Hz: 고해상도 오디오 (스튜디오 품질)
+    /// **Common sample rates**:
+    /// - 8000 Hz: Telephone quality (low quality, voice calls)
+    /// - 22050 Hz: Radio quality (medium quality)
+    /// - 44100 Hz: CD quality (standard music quality) ⭐
+    /// - 48000 Hz: DVD/Blu-ray quality (video standard) ⭐⭐
+    /// - 96000 Hz: High-resolution audio (studio quality)
     ///
-    /// **나이퀴스트 정리**:
-    /// 인간이 들을 수 있는 최고 주파수는 약 20kHz입니다.
-    /// 이를 정확히 재현하려면 최소 40kHz의 샘플레이트가 필요합니다.
-    /// (샘플레이트 ≥ 2 × 최대 주파수)
-    /// 그래서 CD는 44.1kHz를 사용합니다.
+    /// **Nyquist theorem**:
+    /// The highest frequency humans can hear is about 20kHz.
+    /// To accurately reproduce this, a minimum sample rate of 40kHz is needed.
+    /// (Sample rate ≥ 2 × maximum frequency)
+    /// That's why CDs use 44.1kHz.
     ///
-    /// **예시**:
+    /// **Example**:
     /// ```
     /// sampleRate = 48000 Hz
-    /// → 1초 = 48,000개 샘플
-    /// → 1ms = 48개 샘플
-    /// → 1개 샘플 = 0.0208ms
+    /// → 1 second = 48,000 samples
+    /// → 1ms = 48 samples
+    /// → 1 sample = 0.0208ms
     /// ```
     let sampleRate: Int
 
     /// @var channels
-    /// @brief 오디오 채널 수
+    /// @brief Number of audio channels
     ///
     /// @details
-    /// 오디오가 몇 개의 독립적인 신호 채널을 가지는가를 나타냅니다.
+    /// Indicates how many independent signal channels the audio has.
     ///
-    /// **채널 구성**:
-    /// - 1 채널 = Mono (모노): 단일 스피커, 음성 녹음
-    /// - 2 채널 = Stereo (스테레오): 좌/우 분리, 음악/영화 표준 ⭐
-    /// - 4 채널 = Quad (쿼드): 전/후 + 좌/우
-    /// - 5.1 채널 = 홈시어터: 전방 3개 + 후방 2개 + 서브우퍼
-    /// - 7.1 채널 = 고급 홈시어터: 전방 3개 + 측면 2개 + 후방 2개 + 서브우퍼
+    /// **Channel configurations**:
+    /// - 1 channel = Mono: Single speaker, voice recording
+    /// - 2 channels = Stereo: Left/right separation, music/movie standard ⭐
+    /// - 4 channels = Quad: Front/back + left/right
+    /// - 5.1 channels = Home theater: 3 front + 2 rear + subwoofer
+    /// - 7.1 channels = Premium home theater: 3 front + 2 side + 2 rear + subwoofer
     ///
-    /// 블랙박스는 보통 1채널(모노) 또는 2채널(스테레오)을 사용합니다.
+    /// Dashcams typically use 1 channel (mono) or 2 channels (stereo).
     ///
-    /// **메모리 계산**:
+    /// **Memory calculation**:
     /// ```
-    /// channels = 2 (스테레오)
+    /// channels = 2 (stereo)
     /// sampleCount = 1024
     /// bytesPerSample = 4 (float32)
-    /// → 총 크기 = 2 × 1024 × 4 = 8,192 bytes = 8KB
+    /// → Total size = 2 × 1024 × 4 = 8,192 bytes = 8KB
     /// ```
     let channels: Int
 
     /// @var format
-    /// @brief 오디오 샘플 포맷 (데이터 타입)
+    /// @brief Audio sample format (data type)
     ///
     /// @details
-    /// PCM 샘플 하나를 어떤 데이터 타입으로 표현하는가를 정의합니다.
-    /// 포맷에 따라 음질, 메모리 크기, 처리 속도가 달라집니다.
+    /// Defines what data type is used to represent each PCM sample.
+    /// Format affects audio quality, memory size, and processing speed.
     ///
-    /// **주요 포맷**:
-    /// - `.floatPlanar`: 32비트 float, planar 배치 (FFmpeg 기본값) ⭐
-    /// - `.floatInterleaved`: 32비트 float, interleaved 배치
-    /// - `.s16Planar`: 16비트 정수, planar 배치 (메모리 절약)
-    /// - `.s16Interleaved`: 16비트 정수, interleaved 배치 (CD 형식)
+    /// **Main formats**:
+    /// - `.floatPlanar`: 32-bit float, planar layout (FFmpeg default) ⭐
+    /// - `.floatInterleaved`: 32-bit float, interleaved layout
+    /// - `.s16Planar`: 16-bit integer, planar layout (memory saving)
+    /// - `.s16Interleaved`: 16-bit integer, interleaved layout (CD format)
     ///
     /// **Float vs Integer**:
     /// ```
-    /// Float32 (32비트 부동소수점):
-    /// - 범위: -1.0 ~ +1.0 (정규화된 값)
-    /// - 장점: 처리 중 오버플로우 없음, 정밀도 높음
-    /// - 단점: 메모리 2배 (4바이트)
+    /// Float32 (32-bit floating point):
+    /// - Range: -1.0 ~ +1.0 (normalized values)
+    /// - Advantages: No overflow during processing, high precision
+    /// - Disadvantages: 2x memory (4 bytes)
     ///
-    /// Int16 (16비트 정수):
-    /// - 범위: -32768 ~ +32767
-    /// - 장점: 메모리 절약 (2바이트), CD 표준
-    /// - 단점: 처리 중 오버플로우 가능
+    /// Int16 (16-bit integer):
+    /// - Range: -32768 ~ +32767
+    /// - Advantages: Memory savings (2 bytes), CD standard
+    /// - Disadvantages: Possible overflow during processing
     /// ```
     let format: AudioFormat
 
     /// @var data
-    /// @brief 원시 PCM 오디오 데이터 (바이트 배열)
+    /// @brief Raw PCM audio data (byte array)
     ///
     /// @details
-    /// 실제 오디오 샘플 값들이 바이너리 형태로 저장된 Data입니다.
-    /// 이 데이터의 해석 방법은 `format`, `channels`, `sampleCount`에 따라 달라집니다.
+    /// Data storing actual audio sample values in binary format.
+    /// How this data is interpreted depends on `format`, `channels`, and `sampleCount`.
     ///
-    /// **데이터 구조 예시 (스테레오 float planar)**:
+    /// **Data structure example (stereo float planar)**:
     /// ```
     /// sampleCount = 4, channels = 2, format = .floatPlanar
     ///
-    /// 메모리 레이아웃:
-    /// [L0_bytes][L1_bytes][L2_bytes][L3_bytes]  ← 왼쪽 채널 (16바이트)
-    /// [R0_bytes][R1_bytes][R2_bytes][R3_bytes]  ← 오른쪽 채널 (16바이트)
-    /// 총 32바이트
+    /// Memory layout:
+    /// [L0_bytes][L1_bytes][L2_bytes][L3_bytes]  ← Left channel (16 bytes)
+    /// [R0_bytes][R1_bytes][R2_bytes][R3_bytes]  ← Right channel (16 bytes)
+    /// Total 32 bytes
     ///
-    /// Float 해석:
-    /// 왼쪽: [-0.5, 0.3, -0.8, 0.1]
-    /// 오른쪽: [-0.4, 0.2, -0.7, 0.0]
+    /// Float interpretation:
+    /// Left: [-0.5, 0.3, -0.8, 0.1]
+    /// Right: [-0.4, 0.2, -0.7, 0.0]
     /// ```
     ///
-    /// **데이터 크기 계산**:
+    /// **Data size calculation**:
     /// ```
     /// dataSize = sampleCount × channels × bytesPerSample
     ///          = 1024 × 2 × 4
     ///          = 8,192 bytes (8KB per frame)
     /// ```
     ///
-    /// FFmpeg에서 디코딩 시 이 Data를 채웁니다.
+    /// This Data is populated during FFmpeg decoding.
     let data: Data
 
     /// @var sampleCount
-    /// @brief 샘플 개수 (채널당)
+    /// @brief Number of samples (per channel)
     ///
     /// @details
-    /// 이 프레임이 담고 있는 오디오 샘플의 개수입니다.
-    /// 주의: 전체 샘플이 아니라 **채널당 샘플 개수**입니다!
+    /// The number of audio samples contained in this frame.
+    /// Note: This is **samples per channel**, not total samples!
     ///
-    /// **예시**:
+    /// **Example**:
     /// ```
     /// sampleCount = 1024
-    /// channels = 2 (스테레오)
-    /// → 왼쪽 채널: 1024개 샘플
-    /// → 오른쪽 채널: 1024개 샘플
-    /// → 전체: 2048개 샘플 (하지만 sampleCount는 1024)
+    /// channels = 2 (stereo)
+    /// → Left channel: 1024 samples
+    /// → Right channel: 1024 samples
+    /// → Total: 2048 samples (but sampleCount is 1024)
     /// ```
     ///
-    /// **일반적인 프레임 크기**:
-    /// - AAC: 1024 샘플 per frame
-    /// - MP3: 1152 샘플 per frame
-    /// - Opus: 120~960 샘플 (가변)
+    /// **Common frame sizes**:
+    /// - AAC: 1024 samples per frame
+    /// - MP3: 1152 samples per frame
+    /// - Opus: 120~960 samples (variable)
     ///
-    /// **지속시간 계산**:
+    /// **Duration calculation**:
     /// ```
     /// duration = sampleCount / sampleRate
     ///          = 1024 / 48000
-    ///          = 0.0213초 = 21.3ms
+    ///          = 0.0213s = 21.3ms
     /// ```
     let sampleCount: Int
 
     // MARK: - Initialization
 
-    /// @brief 오디오 프레임 초기화
+    /// @brief Initialize audio frame
     ///
     /// @details
-    /// FFmpeg에서 디코딩한 PCM 데이터로 AudioFrame을 생성합니다.
-    /// 일반적으로 VideoDecoder 내부에서 호출되며, 직접 생성할 일은 드뭅니다.
+    /// Creates an AudioFrame from PCM data decoded by FFmpeg.
+    /// Typically called internally by VideoDecoder; direct instantiation is rare.
     ///
-    /// @param timestamp 비디오 타임라인 상의 위치 (초)
-    /// @param sampleRate 샘플링 주파수 (Hz)
-    /// @param channels 채널 수 (1=모노, 2=스테레오)
-    /// @param format PCM 샘플 포맷
-    /// @param data 원시 PCM 바이트 데이터
-    /// @param sampleCount 채널당 샘플 개수
+    /// @param timestamp Position in video timeline (seconds)
+    /// @param sampleRate Sampling frequency (Hz)
+    /// @param channels Number of channels (1=mono, 2=stereo)
+    /// @param format PCM sample format
+    /// @param data Raw PCM byte data
+    /// @param sampleCount Number of samples per channel
     ///
-    /// ## 생성 예시 (VideoDecoder 내부)
+    /// ## Creation Example (Inside VideoDecoder)
     /// ```swift
-    /// // FFmpeg에서 디코딩한 AVFrame을 AudioFrame으로 변환
+    /// // Convert AVFrame decoded from FFmpeg to AudioFrame
     /// let pcmData = Data(bytes: avFrame.data[0], count: dataSize)
     ///
     /// let audioFrame = AudioFrame(
@@ -309,106 +309,106 @@ struct AudioFrame {
 
     // MARK: - Computed Properties
 
-    /// @brief 이 오디오 프레임의 지속시간 (초)
+    /// @brief Duration of this audio frame (seconds)
     ///
-    /// @return 지속시간 (TimeInterval)
+    /// @return Duration (TimeInterval)
     ///
     /// @details
-    /// 이 프레임을 재생하는 데 걸리는 시간을 계산합니다.
+    /// Calculates the time required to play this frame.
     ///
-    /// **계산 공식**:
+    /// **Calculation Formula**:
     /// ```
     /// duration = sampleCount / sampleRate
     /// ```
     ///
-    /// **예시 계산**:
+    /// **Example Calculations**:
     /// ```
-    /// // AAC 표준 프레임
+    /// // AAC standard frame
     /// sampleCount = 1024
     /// sampleRate = 48000 Hz
-    /// duration = 1024 / 48000 = 0.021333...초 = 21.33ms
+    /// duration = 1024 / 48000 = 0.021333...s = 21.33ms
     ///
-    /// // MP3 표준 프레임
+    /// // MP3 standard frame
     /// sampleCount = 1152
     /// sampleRate = 44100 Hz
-    /// duration = 1152 / 44100 = 0.026122...초 = 26.12ms
+    /// duration = 1152 / 44100 = 0.026122...s = 26.12ms
     /// ```
     ///
-    /// **용도**:
-    /// - 타임스탬프 계산: `nextTimestamp = currentTimestamp + duration`
-    /// - 버퍼링 시간 계산: `totalBufferedTime = sum(frame.duration)`
-    /// - 동기화 검증: 프레임 지속시간 vs 실제 재생 시간 비교
+    /// **Use Cases**:
+    /// - Timestamp calculation: `nextTimestamp = currentTimestamp + duration`
+    /// - Buffering time calculation: `totalBufferedTime = sum(frame.duration)`
+    /// - Synchronization verification: compare frame duration vs actual playback time
     var duration: TimeInterval {
         return Double(sampleCount) / Double(sampleRate)
 
-        // 예시 결과:
+        // Example result:
         // sampleCount=1024, sampleRate=48000
-        // → 1024.0 / 48000.0 = 0.0213초 = 21.3ms
+        // → 1024.0 / 48000.0 = 0.0213s = 21.3ms
     }
 
-    /// @brief PCM 데이터의 총 바이트 크기
+    /// @brief Total byte size of PCM data
     ///
-    /// @return 데이터 크기 (바이트)
+    /// @return Data size (bytes)
     ///
     /// @details
-    /// `data` 프로퍼티에 저장된 바이트 배열의 크기를 반환합니다.
+    /// Returns the size of the byte array stored in the `data` property.
     ///
-    /// **크기 계산 예시**:
+    /// **Size Calculation Examples**:
     /// ```
-    /// // 스테레오 float planar
+    /// // Stereo float planar
     /// sampleCount = 1024
     /// channels = 2
     /// bytesPerSample = 4 (float32)
     ///
     /// dataSize = 1024 × 2 × 4 = 8,192 bytes = 8KB
     ///
-    /// // 초당 데이터량 (48kHz 스테레오 float)
+    /// // Data rate (48kHz stereo float)
     /// sampleRate = 48000
     /// frames_per_second = 48000 / 1024 ≈ 47 frames
     /// data_per_second = 8192 × 47 ≈ 385KB/s
     /// data_per_minute = 385KB × 60 ≈ 22.6MB/min
     /// ```
     ///
-    /// **포맷별 크기 비교 (1024 샘플, 스테레오 기준)**:
+    /// **Size Comparison by Format (1024 samples, stereo)**:
     /// - Float32: 1024 × 2 × 4 = 8,192 bytes
-    /// - Int16: 1024 × 2 × 2 = 4,096 bytes (절반!)
+    /// - Int16: 1024 × 2 × 2 = 4,096 bytes (50% savings!)
     var dataSize: Int {
         return data.count
     }
 
-    /// @brief 샘플 하나당 바이트 크기 (모든 채널 포함)
+    /// @brief Byte size per sample (all channels included)
     ///
-    /// @return 바이트 크기
+    /// @return Byte size
     ///
     /// @details
-    /// 하나의 "시점"에서 모든 채널의 샘플을 저장하는 데 필요한 바이트 수입니다.
+    /// The number of bytes required to store samples from all channels at one "time point".
     ///
-    /// **계산 공식**:
+    /// **Calculation Formula**:
     /// ```
     /// bytesPerSample = format.bytesPerSample × channels
     /// ```
     ///
-    /// **예시 계산**:
+    /// **Example Calculations**:
     /// ```
-    /// // Float32 스테레오
+    /// // Float32 stereo
     /// format.bytesPerSample = 4 bytes (float32)
     /// channels = 2
     /// → bytesPerSample = 4 × 2 = 8 bytes
-    ///   (왼쪽 4바이트 + 오른쪽 4바이트)
+    ///   (left 4 bytes + right 4 bytes)
     ///
-    /// // Int16 모노
+    /// // Int16 mono
     /// format.bytesPerSample = 2 bytes (int16)
     /// channels = 1
     /// → bytesPerSample = 2 × 1 = 2 bytes
     /// ```
     ///
-    /// **Interleaved 포맷에서의 메모리 레이아웃**:
+    /// **Memory Layout in Interleaved Format**:
     /// ```
     /// bytesPerSample = 8 (Float32 Stereo)
     ///
-    /// [L0: 4바이트][R0: 4바이트] ← 샘플 0 (8바이트)
-    /// [L1: 4바이트][R1: 4바이트] ← 샘플 1 (8바이트)
-    /// [L2: 4바이트][R2: 4바이트] ← 샘플 2 (8바이트)
+    /// [L0: 4bytes][R0: 4bytes] ← sample 0 (8 bytes)
+    /// [L1: 4bytes][R1: 4bytes] ← sample 1 (8 bytes)
+    /// [L2: 4bytes][R2: 4bytes] ← sample 2 (8 bytes)
     /// ...
     /// ```
     var bytesPerSample: Int {
@@ -417,127 +417,127 @@ struct AudioFrame {
 
     // MARK: - Audio Buffer Conversion
 
-    /// @brief AVAudioPCMBuffer로 변환 (재생용)
+    /// @brief Convert to AVAudioPCMBuffer (for playback)
     ///
-    /// @return 변환된 AVAudioPCMBuffer, 실패 시 nil
+    /// @return Converted AVAudioPCMBuffer, or nil on failure
     ///
     /// @details
-    /// FFmpeg의 PCM 데이터를 Apple의 AVAudioEngine에서 재생 가능한
-    /// AVAudioPCMBuffer 형식으로 변환합니다.
+    /// Converts FFmpeg PCM data to AVAudioPCMBuffer format
+    /// that can be played by Apple's AVAudioEngine.
     ///
-    /// **변환 과정**:
+    /// **Conversion Process**:
     /// ```
-    /// 1. AVAudioFormat 생성
-    ///    - 샘플레이트, 채널 수, 포맷 정보 설정
+    /// 1. Create AVAudioFormat
+    ///    - Set sample rate, channel count, format info
     ///
-    /// 2. AVAudioPCMBuffer 할당
-    ///    - 필요한 메모리 공간 확보
+    /// 2. Allocate AVAudioPCMBuffer
+    ///    - Reserve required memory space
     ///
-    /// 3. PCM 데이터 복사
-    ///    - Planar → Planar: 채널별 복사
-    ///    - Interleaved → Interleaved: 전체 복사
+    /// 3. Copy PCM data
+    ///    - Planar → Planar: copy per channel
+    ///    - Interleaved → Interleaved: copy entire block
     ///
-    /// 4. frameLength 설정
-    ///    - 실제 사용된 샘플 개수 표시
+    /// 4. Set frameLength
+    ///    - Indicate actual number of samples used
     /// ```
     ///
-    /// **Planar vs Interleaved 변환**:
+    /// **Planar vs Interleaved Conversion**:
     /// ```
-    /// Planar 입력 (FFmpeg 기본):
+    /// Planar input (FFmpeg default):
     /// data = [L0,L1,L2,L3][R0,R1,R2,R3]
-    ///         ↓ 채널별로 복사
+    ///         ↓ copy per channel
     /// AVAudioPCMBuffer (Planar):
     /// channelData[0] = [L0,L1,L2,L3]
     /// channelData[1] = [R0,R1,R2,R3]
     ///
-    /// Interleaved 입력:
+    /// Interleaved input:
     /// data = [L0,R0,L1,R1,L2,R2,L3,R3]
-    ///         ↓ 전체 복사
+    ///         ↓ copy entire block
     /// AVAudioPCMBuffer (Interleaved):
     /// channelData[0] = [L0,R0,L1,R1,L2,R2,L3,R3]
     /// ```
     ///
-    /// **실제 사용 예시**:
+    /// **Actual Usage Example**:
     /// ```swift
-    /// // AudioPlayer에서 재생
+    /// // Playback in AudioPlayer
     /// func playFrame(_ frame: AudioFrame) {
     ///     guard let buffer = frame.toAudioBuffer() else {
-    ///         print("버퍼 변환 실패")
+    ///         print("Buffer conversion failed")
     ///         return
     ///     }
     ///
-    ///     // AVAudioPlayerNode에 스케줄링
+    ///     // Schedule to AVAudioPlayerNode
     ///     playerNode.scheduleBuffer(buffer) {
-    ///         print("재생 완료")
+    ///         print("Playback complete")
     ///     }
     /// }
     /// ```
     ///
-    /// **실패 케이스**:
-    /// - 지원하지 않는 오디오 포맷
-    /// - 잘못된 샘플레이트 또는 채널 수
-    /// - 메모리 부족
+    /// **Failure Cases**:
+    /// - Unsupported audio format
+    /// - Invalid sample rate or channel count
+    /// - Out of memory
     func toAudioBuffer() -> AVAudioPCMBuffer? {
-        // 1단계: AVAudioFormat 생성
-        // Apple의 오디오 시스템이 이해할 수 있는 포맷 객체 생성
+        // Step 1: Create AVAudioFormat
+        // Create a format object that Apple's audio system can understand
         guard let audioFormat = AVAudioFormat(
-            commonFormat: format.commonFormat,      // 샘플 타입 (.pcmFormatFloat32 등)
+            commonFormat: format.commonFormat,      // Sample type (.pcmFormatFloat32, etc.)
             sampleRate: Double(sampleRate),         // 48000.0 Hz
-            channels: AVAudioChannelCount(channels), // 2 (스테레오)
+            channels: AVAudioChannelCount(channels), // 2 (stereo)
             interleaved: format.isInterleaved       // false (planar)
         ) else {
-            // 포맷 생성 실패 = 지원하지 않는 조합
+            // Format creation failed = unsupported combination
             return nil
         }
 
-        // 2단계: AVAudioPCMBuffer 할당
-        // 실제 PCM 데이터를 담을 메모리 버퍼 생성
+        // Step 2: Allocate AVAudioPCMBuffer
+        // Create memory buffer to hold actual PCM data
         guard let buffer = AVAudioPCMBuffer(
-            pcmFormat: audioFormat,                        // 위에서 생성한 포맷
-            frameCapacity: AVAudioFrameCount(sampleCount) // 최대 1024개 샘플
+            pcmFormat: audioFormat,                        // Format created above
+            frameCapacity: AVAudioFrameCount(sampleCount) // Maximum 1024 samples
         ) else {
-            // 버퍼 할당 실패 = 메모리 부족
+            // Buffer allocation failed = out of memory
             return nil
         }
 
-        // 실제 사용할 프레임 개수 설정 (중요!)
-        // frameCapacity는 "최대 용량", frameLength는 "실제 사용량"
+        // Set actual frame count to use (important!)
+        // frameCapacity is "maximum capacity", frameLength is "actual usage"
         buffer.frameLength = AVAudioFrameCount(sampleCount)
 
-        // 예시:
-        // frameCapacity = 1024 (할당된 공간)
-        // frameLength = 512 (실제 사용된 공간)
-        // → 512개만 재생됨
+        // Example:
+        // frameCapacity = 1024 (allocated space)
+        // frameLength = 512 (actually used space)
+        // → Only 512 samples will be played
 
-        // 3단계: PCM 데이터 복사
+        // Step 3: Copy PCM data
         // self.data (Data) → buffer.floatChannelData (UnsafeMutablePointer)
 
         if format.isInterleaved {
             // ═══════════════════════════════════════════════════════════
-            // Interleaved 포맷: LRLRLR... 형식
+            // Interleaved format: LRLRLR... pattern
             // ═══════════════════════════════════════════════════════════
             //
-            // 데이터 레이아웃 (스테레오):
+            // Data layout (stereo):
             // [L0, R0, L1, R1, L2, R2, ...]
             //
             // AVAudioPCMBuffer (Interleaved):
-            // channelData[0] = 모든 데이터 (L과 R 섞여있음)
+            // channelData[0] = all data (L and R interleaved)
             //
-            // 복사 방법: 전체를 한 번에 memcpy
+            // Copy method: memcpy entire block at once
             //
             if let channelData = buffer.floatChannelData {
-                // Data를 unsafe bytes로 접근
+                // Access Data as unsafe bytes
                 data.withUnsafeBytes { dataBytes in
-                    // baseAddress = Data의 시작 포인터
+                    // baseAddress = starting pointer of Data
                     if let sourcePtr = dataBytes.baseAddress {
-                        // 전체 데이터를 channelData[0]으로 복사
+                        // Copy entire data to channelData[0]
                         memcpy(
-                            channelData[0],   // 목적지: buffer의 첫 번째 채널
-                            sourcePtr,        // 소스: self.data의 시작
-                            data.count        // 크기: 전체 바이트
+                            channelData[0],   // Destination: buffer's first channel
+                            sourcePtr,        // Source: start of self.data
+                            data.count        // Size: total bytes
                         )
 
-                        // 예시: 8바이트 복사 (Float32 스테레오, 1샘플)
+                        // Example: copy 8 bytes (Float32 stereo, 1 sample)
                         // sourcePtr:      [L0:4byte][R0:4byte]
                         //                    ↓ memcpy
                         // channelData[0]: [L0:4byte][R0:4byte]
@@ -547,47 +547,47 @@ struct AudioFrame {
 
         } else {
             // ═══════════════════════════════════════════════════════════
-            // Planar 포맷: LLL...RRR... 형식 (FFmpeg 기본)
+            // Planar format: LLL...RRR... pattern (FFmpeg default)
             // ═══════════════════════════════════════════════════════════
             //
-            // 데이터 레이아웃 (스테레오):
+            // Data layout (stereo):
             // [L0, L1, L2, ...] [R0, R1, R2, ...]
-            //  왼쪽 채널 전체    오른쪽 채널 전체
+            //  entire left ch    entire right ch
             //
             // AVAudioPCMBuffer (Planar):
             // channelData[0] = [L0, L1, L2, ...]
             // channelData[1] = [R0, R1, R2, ...]
             //
-            // 복사 방법: 채널별로 나눠서 memcpy
+            // Copy method: memcpy per channel
             //
             if let channelData = buffer.floatChannelData {
-                // 채널 하나당 바이트 크기 계산
+                // Calculate byte size per channel
                 let bytesPerChannel = sampleCount * format.bytesPerSample
-                // 예: 1024 샘플 × 4바이트(float32) = 4096바이트
+                // Example: 1024 samples × 4 bytes (float32) = 4096 bytes
 
                 data.withUnsafeBytes { dataBytes in
                     if let sourcePtr = dataBytes.baseAddress {
-                        // 각 채널을 순회하며 복사
+                        // Iterate through each channel and copy
                         for channel in 0..<channels {
-                            // 이 채널의 데이터 시작 위치 계산
+                            // Calculate starting position for this channel's data
                             let offset = channel * bytesPerChannel
 
-                            // 예시 (스테레오):
-                            // channel 0 (왼쪽): offset = 0 × 4096 = 0
-                            // channel 1 (오른쪽): offset = 1 × 4096 = 4096
+                            // Example (stereo):
+                            // channel 0 (left): offset = 0 × 4096 = 0
+                            // channel 1 (right): offset = 1 × 4096 = 4096
                             //
-                            // 메모리 맵:
-                            // sourcePtr + 0    : [L0,L1,L2,L3,...] (4096바이트)
-                            // sourcePtr + 4096 : [R0,R1,R2,R3,...] (4096바이트)
+                            // Memory map:
+                            // sourcePtr + 0    : [L0,L1,L2,L3,...] (4096 bytes)
+                            // sourcePtr + 4096 : [R0,R1,R2,R3,...] (4096 bytes)
 
-                            // 이 채널의 데이터를 버퍼로 복사
+                            // Copy this channel's data to buffer
                             memcpy(
-                                channelData[channel],  // 목적지: 채널별 버퍼
-                                sourcePtr + offset,    // 소스: 채널 시작 위치
-                                bytesPerChannel        // 크기: 4096바이트
+                                channelData[channel],  // Destination: per-channel buffer
+                                sourcePtr + offset,    // Source: channel start position
+                                bytesPerChannel        // Size: 4096 bytes
                             )
 
-                            // 결과:
+                            // Result:
                             // channelData[0] ← [L0,L1,L2,L3,...]
                             // channelData[1] ← [R0,R1,R2,R3,...]
                         }
@@ -596,8 +596,8 @@ struct AudioFrame {
             }
         }
 
-        // 4단계: 변환 완료된 버퍼 반환
-        // 이제 AVAudioPlayerNode.scheduleBuffer()로 재생 가능
+        // Step 4: Return converted buffer
+        // Now playable via AVAudioPlayerNode.scheduleBuffer()
         return buffer
     }
 }
@@ -605,245 +605,245 @@ struct AudioFrame {
 // MARK: - Supporting Types
 
 /// @enum AudioFormat
-/// @brief 오디오 샘플 포맷 정의
+/// @brief Audio sample format definition
 ///
 /// @details
-/// PCM(Pulse Code Modulation) 샘플을 메모리에 저장하는 방식을 정의합니다.
-/// 포맷 선택은 음질, 메모리 크기, 처리 속도에 영향을 줍니다.
+/// Defines how PCM (Pulse Code Modulation) samples are stored in memory.
+/// Format selection affects audio quality, memory size, and processing speed.
 ///
-/// ## 포맷 선택 가이드
+/// ## Format Selection Guide
 ///
-/// **Float (부동소수점) vs Integer (정수)**:
+/// **Float (floating-point) vs Integer**:
 /// ```
-/// Float 형식 (권장):
-/// ✅ 처리 중 오버플로우 없음 (-1.0 ~ +1.0 정규화)
-/// ✅ 정밀도 높음 (32비트 = 약 150dB 다이내믹 레인지)
-/// ✅ DSP 연산 간편 (증폭, 믹싱 등)
-/// ❌ 메모리 2배 (4바이트)
-/// ❌ 디스크 저장 시 비효율
+/// Float format (recommended):
+/// ✅ No overflow during processing (-1.0 ~ +1.0 normalized)
+/// ✅ High precision (32-bit = ~150dB dynamic range)
+/// ✅ Easy DSP operations (amplification, mixing, etc.)
+/// ❌ 2x memory (4 bytes)
+/// ❌ Inefficient for disk storage
 ///
-/// Integer 형식:
-/// ✅ 메모리 절약 (2바이트)
-/// ✅ CD 표준 (Int16)
-/// ✅ 디스크 저장 효율
-/// ❌ 처리 중 오버플로우 주의
-/// ❌ 정밀도 제한 (16비트 = 96dB)
+/// Integer format:
+/// ✅ Memory savings (2 bytes)
+/// ✅ CD standard (Int16)
+/// ✅ Efficient disk storage
+/// ❌ Watch for overflow during processing
+/// ❌ Limited precision (16-bit = 96dB)
 /// ```
 ///
 /// **Planar vs Interleaved**:
 /// ```
-/// Planar (채널 분리):
-/// ✅ 채널별 처리 쉬움 (볼륨, 이펙트)
-/// ✅ FFmpeg 기본 출력
-/// ❌ 캐시 효율 낮음
-/// ❌ 메모리 분산
+/// Planar (channel separation):
+/// ✅ Easy per-channel processing (volume, effects)
+/// ✅ FFmpeg default output
+/// ❌ Lower cache efficiency
+/// ❌ Memory fragmentation
 ///
-/// Interleaved (채널 교차):
-/// ✅ 메모리 연속성
-/// ✅ 캐시 효율 높음
-/// ✅ CD/파일 저장 표준
-/// ❌ 채널별 처리 시 stride 필요
+/// Interleaved (channel interleaving):
+/// ✅ Memory contiguity
+/// ✅ Higher cache efficiency
+/// ✅ CD/file storage standard
+/// ❌ Requires stride for per-channel processing
 /// ```
 ///
-/// ## 포맷별 메모리 크기 비교
-/// (1024 샘플, 스테레오, 48kHz 기준)
+/// ## Memory Size Comparison by Format
+/// (1024 samples, stereo, 48kHz)
 ///
-/// | 포맷 | 1프레임 | 1초 | 1분 |
-/// |------|---------|-----|-----|
+/// | Format | 1 frame | 1 sec | 1 min |
+/// |--------|---------|-------|-------|
 /// | Float32 | 8KB | 375KB | 22MB |
 /// | Int16 | 4KB | 188KB | 11MB |
 ///
-/// ## 사용 예시
+/// ## Usage Example
 /// ```swift
-/// // FFmpeg 디코딩 결과 (일반적으로 Planar)
+/// // FFmpeg decoding result (typically Planar)
 /// let format: AudioFormat = .floatPlanar
 ///
-/// // AVAudioEngine 재생 시 자동 변환
+/// // Automatic conversion for AVAudioEngine playback
 /// if format.isInterleaved {
-///     // 그대로 사용
+///     // Use as is
 /// } else {
-///     // Planar → Interleaved 변환 (toAudioBuffer 내부)
+///     // Planar → Interleaved conversion (inside toAudioBuffer)
 /// }
 /// ```
 enum AudioFormat: String, Codable {
     // ═══════════════════════════════════════════════════════
-    // Float 형식 (32비트 부동소수점)
+    // Float format (32-bit floating-point)
     // ═══════════════════════════════════════════════════════
 
-    /// @brief 32비트 Float (Planar 배치)
+    /// @brief 32-bit Float (Planar layout)
     ///
     /// @details
-    /// FFmpeg의 기본 오디오 출력 형식입니다.
-    /// 각 채널의 샘플이 메모리에서 분리되어 연속으로 배치됩니다.
+    /// FFmpeg's default audio output format.
+    /// Samples of each channel are stored separately and contiguously in memory.
     ///
-    /// **메모리 레이아웃 (스테레오, 4샘플)**:
+    /// **Memory Layout (stereo, 4 samples)**:
     /// ```
-    /// Offset 0~15:  [L0][L1][L2][L3]  ← 왼쪽 채널 (16바이트)
-    /// Offset 16~31: [R0][R1][R2][R3]  ← 오른쪽 채널 (16바이트)
+    /// Offset 0~15:  [L0][L1][L2][L3]  ← left channel (16 bytes)
+    /// Offset 16~31: [R0][R1][R2][R3]  ← right channel (16 bytes)
     /// ```
     ///
-    /// **샘플 값 범위**: -1.0 ~ +1.0
-    /// - -1.0 = 최대 음압 (음)
-    /// -  0.0 = 무음
-    /// - +1.0 = 최대 음압 (양)
+    /// **Sample Value Range**: -1.0 ~ +1.0
+    /// - -1.0 = maximum sound pressure (negative)
+    /// -  0.0 = silence
+    /// - +1.0 = maximum sound pressure (positive)
     ///
-    /// **특징**:
+    /// **Characteristics**:
     /// - FFmpeg: `AV_SAMPLE_FMT_FLTP`
     /// - CoreAudio: `kAudioFormatFlagIsFloat | kAudioFormatFlagIsNonInterleaved`
-    /// - 크기: 4바이트 × 샘플 수 × 채널 수
+    /// - Size: 4 bytes × sample count × channel count
     case floatPlanar = "fltp"
 
-    /// @brief 32비트 Float (Interleaved 배치)
+    /// @brief 32-bit Float (Interleaved layout)
     ///
     /// @details
-    /// 스테레오의 경우 좌우 샘플이 번갈아 나타납니다.
-    /// 일부 오디오 처리 라이브러리가 선호하는 형식입니다.
+    /// For stereo, left and right samples alternate.
+    /// Preferred format by some audio processing libraries.
     ///
-    /// **메모리 레이아웃 (스테레오, 4샘플)**:
+    /// **Memory Layout (stereo, 4 samples)**:
     /// ```
     /// [L0][R0][L1][R1][L2][R2][L3][R3]
     ///  ↑   ↑   ↑   ↑   ...
-    ///  좌  우  좌  우
+    ///  L   R   L   R
     /// ```
     ///
-    /// **특징**:
+    /// **Characteristics**:
     /// - FFmpeg: `AV_SAMPLE_FMT_FLT`
     /// - CoreAudio: `kAudioFormatFlagIsFloat | kAudioFormatFlagIsPacked`
-    /// - 크기: 4바이트 × 샘플 수 × 채널 수
+    /// - Size: 4 bytes × sample count × channel count
     case floatInterleaved = "flt"
 
     // ═══════════════════════════════════════════════════════
-    // Integer 형식 (16비트/32비트 정수)
+    // Integer format (16-bit/32-bit integer)
     // ═══════════════════════════════════════════════════════
 
-    /// @brief 16비트 Signed Integer (Planar 배치)
+    /// @brief 16-bit Signed Integer (Planar layout)
     ///
     /// @details
-    /// 메모리를 절약하면서도 CD 품질을 제공합니다.
-    /// 채널별로 분리되어 저장됩니다.
+    /// Saves memory while providing CD quality.
+    /// Stored separately per channel.
     ///
-    /// **메모리 레이아웃 (스테레오, 4샘플)**:
+    /// **Memory Layout (stereo, 4 samples)**:
     /// ```
-    /// Offset 0~7:  [L0][L1][L2][L3]  ← 왼쪽 채널 (8바이트)
-    /// Offset 8~15: [R0][R1][R2][R3]  ← 오른쪽 채널 (8바이트)
+    /// Offset 0~7:  [L0][L1][L2][L3]  ← left channel (8 bytes)
+    /// Offset 8~15: [R0][R1][R2][R3]  ← right channel (8 bytes)
     /// ```
     ///
-    /// **샘플 값 범위**: -32768 ~ +32767
-    /// - -32768 = 최대 음압 (음)
-    /// -      0 = 무음
-    /// - +32767 = 최대 음압 (양)
+    /// **Sample Value Range**: -32768 ~ +32767
+    /// - -32768 = maximum sound pressure (negative)
+    /// -      0 = silence
+    /// - +32767 = maximum sound pressure (positive)
     ///
-    /// **Float 변환**:
+    /// **Float Conversion**:
     /// ```
     /// intValue → floatValue:
     /// floatValue = intValue / 32768.0
     ///
-    /// 예:
+    /// Examples:
     /// 32767 → 32767 / 32768.0 = +0.999969... ≈ +1.0
     /// -16384 → -16384 / 32768.0 = -0.5
     /// 0 → 0 / 32768.0 = 0.0
     /// ```
     ///
-    /// **특징**:
+    /// **Characteristics**:
     /// - FFmpeg: `AV_SAMPLE_FMT_S16P`
-    /// - CD 표준 (CD-DA)
-    /// - 크기: Float의 절반 (2바이트 × 샘플 수 × 채널 수)
+    /// - CD standard (CD-DA)
+    /// - Size: Half of Float (2 bytes × sample count × channel count)
     case s16Planar = "s16p"
 
-    /// @brief 16비트 Signed Integer (Interleaved 배치)
+    /// @brief 16-bit Signed Integer (Interleaved layout)
     ///
     /// @details
-    /// CD 오디오 표준 형식입니다.
-    /// WAV 파일의 기본 포맷이기도 합니다.
+    /// CD audio standard format.
+    /// Also the default format for WAV files.
     ///
-    /// **메모리 레이아웃 (스테레오, 4샘플)**:
+    /// **Memory Layout (stereo, 4 samples)**:
     /// ```
     /// [L0][R0][L1][R1][L2][R2][L3][R3]
-    /// 각 샘플 2바이트, 총 16바이트
+    /// Each sample 2 bytes, total 16 bytes
     /// ```
     ///
-    /// **특징**:
+    /// **Characteristics**:
     /// - FFmpeg: `AV_SAMPLE_FMT_S16`
-    /// - CD 표준, WAV 표준
-    /// - 크기: 2바이트 × 샘플 수 × 채널 수
+    /// - CD standard, WAV standard
+    /// - Size: 2 bytes × sample count × channel count
     case s16Interleaved = "s16"
 
-    /// @brief 32비트 Signed Integer (Planar 배치)
+    /// @brief 32-bit Signed Integer (Planar layout)
     ///
     /// @details
-    /// 고음질이 필요하지만 부동소수점 연산을 피하고 싶을 때 사용합니다.
-    /// DVD-Audio, 일부 고급 오디오 장비에서 사용됩니다.
+    /// Used when high quality is needed but floating-point operations should be avoided.
+    /// Used in DVD-Audio and some high-end audio equipment.
     ///
-    /// **샘플 값 범위**: -2,147,483,648 ~ +2,147,483,647
+    /// **Sample Value Range**: -2,147,483,648 ~ +2,147,483,647
     ///
-    /// **특징**:
+    /// **Characteristics**:
     /// - FFmpeg: `AV_SAMPLE_FMT_S32P`
-    /// - 크기: 4바이트 × 샘플 수 × 채널 수 (Float와 동일)
+    /// - Size: 4 bytes × sample count × channel count (same as Float)
     case s32Planar = "s32p"
 
-    /// @brief 32비트 Signed Integer (Interleaved 배치)
+    /// @brief 32-bit Signed Integer (Interleaved layout)
     ///
     /// @details
-    /// **특징**:
+    /// **Characteristics**:
     /// - FFmpeg: `AV_SAMPLE_FMT_S32`
-    /// - 크기: 4바이트 × 샘플 수 × 채널 수
+    /// - Size: 4 bytes × sample count × channel count
     case s32Interleaved = "s32"
 
-    /// @brief 샘플 하나당 바이트 크기
+    /// @brief Byte size per sample
     ///
-    /// @return 바이트 크기
+    /// @return Byte size
     ///
     /// @details
-    /// 채널 수를 제외한, 순수하게 하나의 샘플 값을 저장하는 데 필요한 바이트 수입니다.
+    /// The number of bytes required to store one sample value, excluding channel count.
     ///
-    /// **반환값**:
+    /// **Return Values**:
     /// ```
-    /// Float32 / Int32: 4바이트
-    /// Int16:           2바이트
+    /// Float32 / Int32: 4 bytes
+    /// Int16:           2 bytes
     /// ```
     var bytesPerSample: Int {
         switch self {
         case .floatPlanar, .floatInterleaved, .s32Planar, .s32Interleaved:
-            return 4  // 32비트 = 4바이트
+            return 4  // 32-bit = 4 bytes
         case .s16Planar, .s16Interleaved:
-            return 2  // 16비트 = 2바이트
+            return 2  // 16-bit = 2 bytes
         }
     }
 
-    /// @brief Interleaved 형식인가?
+    /// @brief Is this an interleaved format?
     ///
-    /// @return Interleaved이면 true, Planar이면 false
+    /// @return true if Interleaved, false if Planar
     ///
     /// @details
-    /// 채널들이 교차(Interleaved)되어 있는지, 분리(Planar)되어 있는지 반환합니다.
+    /// Returns whether channels are interleaved or separated (planar).
     ///
-    /// **반환값**:
+    /// **Return Values**:
     /// ```
-    /// Interleaved 포맷: true  (flt, s16, s32)
-    /// Planar 포맷:      false (fltp, s16p, s32p)
+    /// Interleaved formats: true  (flt, s16, s32)
+    /// Planar formats:      false (fltp, s16p, s32p)
     /// ```
     var isInterleaved: Bool {
         switch self {
         case .floatInterleaved, .s16Interleaved, .s32Interleaved:
-            return true  // 교차 배치
+            return true  // Interleaved layout
         case .floatPlanar, .s16Planar, .s32Planar:
-            return false // 평면 배치
+            return false // Planar layout
         }
     }
 
-    /// @brief AVAudioCommonFormat으로 변환
+    /// @brief Convert to AVAudioCommonFormat
     ///
     /// @return AVAudioCommonFormat
     ///
     /// @details
-    /// Apple의 AVFoundation에서 사용하는 표준 포맷 enum으로 변환합니다.
-    /// toAudioBuffer() 메서드에서 AVAudioFormat 생성 시 사용됩니다.
+    /// Converts to the standard format enum used by Apple's AVFoundation.
+    /// Used when creating AVAudioFormat in the toAudioBuffer() method.
     ///
-    /// **매핑**:
+    /// **Mapping**:
     /// ```
-    /// Float (32비트) → .pcmFormatFloat32
-    /// Int16 (16비트) → .pcmFormatInt16
-    /// Int32 (32비트) → .pcmFormatInt32
+    /// Float (32-bit) → .pcmFormatFloat32
+    /// Int16 (16-bit) → .pcmFormatInt16
+    /// Int32 (32-bit) → .pcmFormatInt32
     /// ```
     var commonFormat: AVAudioCommonFormat {
         switch self {
@@ -859,127 +859,127 @@ enum AudioFormat: String, Codable {
 
 // MARK: - Equatable
 
-/// @brief AudioFrame 동등성 비교
+/// @brief AudioFrame equality comparison
 ///
 /// @details
-/// 두 AudioFrame이 "같은" 프레임인지 판단합니다.
-/// 주로 디버깅, 테스트, 중복 제거 등에 사용됩니다.
+/// Determines if two AudioFrames are "the same" frame.
+/// Mainly used for debugging, testing, and duplicate removal.
 ///
-/// **비교 기준**:
-/// - timestamp: 같은 시점인가?
-/// - sampleCount: 같은 개수의 샘플인가?
-/// - sampleRate: 같은 샘플레이트인가?
-/// - channels: 같은 채널 수인가?
+/// **Comparison Criteria**:
+/// - timestamp: Same time point?
+/// - sampleCount: Same number of samples?
+/// - sampleRate: Same sample rate?
+/// - channels: Same channel count?
 ///
-/// **주의**: `data`는 비교하지 않습니다!
-/// 실제 PCM 바이트 데이터가 달라도, 메타정보가 같으면 "같은 프레임"으로 간주합니다.
-/// 이는 성능상의 이유입니다. (data는 수천 바이트일 수 있음)
+/// **Note**: `data` is NOT compared!
+/// Even if the actual PCM byte data differs, frames are considered "equal" if metadata matches.
+/// This is for performance reasons (data can be thousands of bytes).
 ///
-/// ## 사용 예시
+/// ## Usage Example
 /// ```swift
 /// let frame1 = AudioFrame(timestamp: 1.0, ...)
 /// let frame2 = AudioFrame(timestamp: 1.0, ...)
 /// let frame3 = AudioFrame(timestamp: 2.0, ...)
 ///
-/// frame1 == frame2  // true (같은 타임스탬프)
-/// frame1 == frame3  // false (다른 타임스탬프)
+/// frame1 == frame2  // true (same timestamp)
+/// frame1 == frame3  // false (different timestamp)
 ///
-/// // 중복 프레임 제거
+/// // Remove duplicate frames
 /// let frames = [frame1, frame2, frame3]
 /// let uniqueFrames = Array(Set(frames))  // [frame1, frame3]
 /// ```
 extension AudioFrame: Equatable {
-    /// @brief 두 AudioFrame 비교
-    /// @param lhs 왼쪽 피연산자
-    /// @param rhs 오른쪽 피연산자
-    /// @return 동등하면 true
+    /// @brief Compare two AudioFrames
+    /// @param lhs Left-hand side operand
+    /// @param rhs Right-hand side operand
+    /// @return true if equal
     static func == (lhs: AudioFrame, rhs: AudioFrame) -> Bool {
         return lhs.timestamp == rhs.timestamp &&
             lhs.sampleCount == rhs.sampleCount &&
             lhs.sampleRate == rhs.sampleRate &&
             lhs.channels == rhs.channels
 
-        // data는 비교하지 않음 (성능상 이유)
-        // 필요시 data 비교 추가 가능:
+        // data is not compared (for performance)
+        // Can add data comparison if needed:
         // && lhs.data == rhs.data
     }
 }
 
 // MARK: - CustomStringConvertible
 
-/// @brief AudioFrame 디버그 문자열 표현
+/// @brief AudioFrame debug string representation
 ///
 /// @details
-/// print() 또는 디버거에서 AudioFrame을 출력할 때 보기 좋은 형태로 변환합니다.
+/// Converts AudioFrame to a readable format when printed or displayed in debugger.
 ///
-/// **출력 예시**:
+/// **Output Example**:
 /// ```
 /// Audio @ 1.500s (48000 Hz, stereo, fltp format) 1024 samples, 8192 bytes
 ///
-/// 해석:
-/// - 타임스탬프: 1.500초
-/// - 샘플레이트: 48000 Hz
-/// - 채널: stereo (2채널)
-/// - 포맷: fltp (Float32 Planar)
-/// - 샘플 개수: 1024개
-/// - 데이터 크기: 8192바이트 (8KB)
+/// Interpretation:
+/// - Timestamp: 1.500 seconds
+/// - Sample rate: 48000 Hz
+/// - Channels: stereo (2 channels)
+/// - Format: fltp (Float32 Planar)
+/// - Sample count: 1024 samples
+/// - Data size: 8192 bytes (8KB)
 /// ```
 ///
-/// **채널 표시**:
+/// **Channel Display**:
 /// ```
 /// channels = 1 → "mono"
 /// channels = 2 → "stereo"
-/// channels = 6 → "6ch" (5.1 서라운드)
+/// channels = 6 → "6ch" (5.1 surround)
 /// ```
 ///
-/// ## 사용 예시
+/// ## Usage Example
 /// ```swift
 /// let frame = AudioFrame(...)
 ///
-/// // 직접 출력
+/// // Direct output
 /// print(frame)
-/// // 출력: Audio @ 1.500s (48000 Hz, stereo, fltp format) 1024 samples, 8192 bytes
+/// // Output: Audio @ 1.500s (48000 Hz, stereo, fltp format) 1024 samples, 8192 bytes
 ///
-/// // 로그에 포함
-/// print("재생 중: \(frame)")
-/// // 출력: 재생 중: Audio @ 1.500s (48000 Hz, stereo, fltp format) 1024 samples, 8192 bytes
+/// // Include in log
+/// print("Playing: \(frame)")
+/// // Output: Playing: Audio @ 1.500s (48000 Hz, stereo, fltp format) 1024 samples, 8192 bytes
 /// ```
 extension AudioFrame: CustomStringConvertible {
-    /// @brief 디버그 문자열
+    /// @brief Debug string
     var description: String {
-        // 채널 수를 사람이 읽기 좋은 문자열로 변환
+        // Convert channel count to human-readable string
         let channelStr: String
         if channels == 1 {
-            channelStr = "mono"      // 모노
+            channelStr = "mono"      // Mono
         } else if channels == 2 {
-            channelStr = "stereo"    // 스테레오
+            channelStr = "stereo"    // Stereo
         } else {
-            channelStr = "\(channels)ch"  // "6ch", "8ch" 등
+            channelStr = "\(channels)ch"  // "6ch", "8ch", etc.
         }
 
-        // 포맷된 문자열 생성
+        // Generate formatted string
         return String(
             format: "Audio @ %.3fs (%d Hz, %@, %@ format) %d samples, %d bytes",
-            timestamp,              // 타임스탬프 (소수점 3자리)
-            sampleRate,            // 샘플레이트
-            channelStr,            // 채널 문자열
-            format.rawValue,       // 포맷 ("fltp", "s16" 등)
-            sampleCount,           // 샘플 개수
-            dataSize               // 바이트 크기
+            timestamp,              // Timestamp (3 decimal places)
+            sampleRate,            // Sample rate
+            channelStr,            // Channel string
+            format.rawValue,       // Format ("fltp", "s16", etc.)
+            sampleCount,           // Sample count
+            dataSize               // Byte size
         )
 
-        // 예시 결과:
+        // Example result:
         // "Audio @ 1.500s (48000 Hz, stereo, fltp format) 1024 samples, 8192 bytes"
     }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 통합 가이드: AudioFrame 사용 플로우
+// Integrated Guide: AudioFrame Usage Flow
 // ═══════════════════════════════════════════════════════════════════════════
 //
-// 1️⃣ 디코딩 (VideoDecoder)
+// 1️⃣ Decoding (VideoDecoder)
 // ────────────────────────────────────────────────
-// MP3/AAC 파일 → FFmpeg 디코딩 → PCM 데이터
+// MP3/AAC file → FFmpeg decoding → PCM data
 //
 // let audioFrame = AudioFrame(
 //     timestamp: pts,
@@ -990,30 +990,30 @@ extension AudioFrame: CustomStringConvertible {
 //     sampleCount: 1024
 // )
 //
-// 2️⃣ 큐잉 (VideoChannel)
+// 2️⃣ Queueing (VideoChannel)
 // ────────────────────────────────────────────────
-// 디코딩된 프레임을 버퍼에 저장
+// Store decoded frames in buffer
 //
 // audioBuffer.append(audioFrame)
 //
-// 3️⃣ 동기화 (SyncController)
+// 3️⃣ Synchronization (SyncController)
 // ────────────────────────────────────────────────
-// 비디오 프레임과 타임스탬프 비교
+// Compare timestamps with video frames
 //
 // if abs(videoFrame.timestamp - audioFrame.timestamp) < 0.05 {
-//     // 동기화 OK (±50ms 이내)
+//     // Sync OK (within ±50ms)
 // }
 //
-// 4️⃣ 재생 (AudioPlayer)
+// 4️⃣ Playback (AudioPlayer)
 // ────────────────────────────────────────────────
-// AVAudioPCMBuffer로 변환 후 재생
+// Convert to AVAudioPCMBuffer and play
 //
 // if let buffer = audioFrame.toAudioBuffer() {
 //     playerNode.scheduleBuffer(buffer)
 // }
 //
-// 5️⃣ 스피커 출력
+// 5️⃣ Speaker Output
 // ────────────────────────────────────────────────
-// AVAudioEngine → 시스템 오디오 → 🔊
+// AVAudioEngine → System Audio → 🔊
 //
 // ═══════════════════════════════════════════════════════════════════════════

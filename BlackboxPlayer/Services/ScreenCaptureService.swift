@@ -3,59 +3,59 @@
 /// @author BlackboxPlayer Development Team
 /// @details
 /**
- # ScreenCaptureService - 화면 캡처 서비스
+ # ScreenCaptureService - Screen capture service
 
- ## 📸 화면 캡처란?
+ ## 📸 What is Screen Capture?
 
- 현재 재생 중인 영상의 특정 순간을 이미지 파일로 저장하는 기능입니다.
+ Feature to save the current playback moment as an image file.
 
- ### 사용 예시:
+ ### Usage Example:
  ```
- 사용자가 영상에서 중요한 장면 발견
+ User discovers important scene in video
  ↓
- 캡처 버튼 클릭
+ Click capture button
  ↓
- 현재 화면을 PNG/JPEG 파일로 저장
+ Save current screen as PNG/JPEG file
  ```
 
- ## 🎯 주요 기능
+ ## 🎯 Key Features
 
- 1. **Metal Texture → Image 변환**
- - GPU 메모리의 텍스처를 CPU 메모리의 이미지로 변환
- - CGImage, NSImage 사용
+ 1. **Metal Texture → Image Conversion**
+ - Convert GPU memory textures to CPU memory images
+ - Uses CGImage and NSImage
 
- 2. **타임스탬프 오버레이**
- - 캡처 시각 표시
- - 영상 재생 시간 표시
+ 2. **Timestamp Overlay**
+ - Display capture time
+ - Display video playback time
 
- 3. **이미지 포맷 지원**
- - PNG: 무손실 압축, 파일 크기 큼
- - JPEG: 손실 압축, 파일 크기 작음
+ 3. **Image Format Support**
+ - PNG: lossless compression, larger file size
+ - JPEG: lossy compression, smaller file size
 
- 4. **파일 저장**
- - 저장 위치 선택 다이얼로그
- - 저장 완료 알림
+ 4. **File Saving**
+ - Dialog to select save location
+ - Notification upon completion
 
- ## 💡 기술 개념
+ ## 💡 Technical Concepts
 
- ### Metal Texture vs Image 파일
+ ### Metal Texture vs Image file
  ```
- Metal Texture (GPU 메모리):
- - GPU가 직접 접근 가능
- - 렌더링에 최적화
- - 파일로 저장 불가
+ Metal Texture (GPU memory):
+ - Direct GPU access possible
+ - Optimized for rendering
+ - Cannot be saved to file
 
- Image 파일 (디스크):
- - CPU가 처리
- - PNG, JPEG 등 표준 포맷
- - 다른 앱에서 열기 가능
+ Image file (disk):
+ - CPU processing
+ - Standard formats like PNG, JPEG
+ - Can be opened in other apps
  ```
 
- ### 변환 과정:
+ ### Conversion Process:
  ```
  MTLTexture (GPU)
- ↓ texture.getBytes() - GPU → CPU 복사
- [UInt8] 배열 (픽셀 데이터)
+ ↓ texture.getBytes() - GPU → CPU copy
+ [UInt8] array (pixel data)
  ↓ CGDataProvider
  CGImage (Core Graphics)
  ↓ NSImage
@@ -63,23 +63,23 @@
  ↓ NSBitmapImageRep
  PNG/JPEG Data
  ↓ write(to:)
- 파일 저장
+ File saved
  ```
 
- ## 📚 사용 예제
+ ## 📚 Usage Examples
 
  ```swift
- // 1. 서비스 생성
+ // 1. Create service
  let captureService = ScreenCaptureService(device: metalDevice)
 
- // 2. 현재 프레임 캡처
+ // 2. Capture current frame
  if let data = captureService.captureFrame(
  from: currentTexture,
  format: .png,
  timestamp: Date(),
- videoTimestamp: 5.25  // 5.25초 시점
+ videoTimestamp: 5.25  // At 5.25 seconds
  ) {
- // 3. 저장 다이얼로그 표시
+ // 3. Display save dialog
  captureService.showSavePanel(
  data: data,
  format: .png,
@@ -90,7 +90,7 @@
 
  ---
 
- 이 서비스는 GPU 렌더링 결과를 사용자가 보관할 수 있는 이미지 파일로 변환합니다.
+ This service converts GPU rendering results to image files that users can save.
  */
 
 import Foundation
@@ -102,55 +102,55 @@ import MetalKit
 // MARK: - Image Format Enum
 
 /**
- ## CaptureImageFormat - 이미지 포맷
+ ## CaptureImageFormat - Image format
 
- 캡처한 화면을 저장할 때 사용할 이미지 포맷을 정의합니다.
+ Defines the image format to use when saving captured screens.
 
- ### 포맷 비교:
+ ### Format Comparison:
 
  **PNG (Portable Network Graphics)**
- - 무손실 압축: 원본 품질 100% 유지
- - 파일 크기: 큰 편 (1920×1080: ~2-5MB)
- - 투명도 지원: Alpha 채널 있음
- - 용도: 고품질 보관, 편집용
+ - Lossless compression: maintains 100% original quality
+ - File size: larger (1920×1080: ~2-5MB)
+ - Transparency support: has alpha channel
+ - Use case: high-quality archival, editing
 
  **JPEG (Joint Photographic Experts Group)**
- - 손실 압축: 품질 다소 저하 (눈에 거의 안 보임)
- - 파일 크기: 작은 편 (1920×1080: ~200-500KB)
- - 투명도 미지원: RGB만
- - 용도: 빠른 공유, 저장 공간 절약
+ - Lossy compression: slight quality loss (not visible to the eye)
+ - File size: smaller (1920×1080: ~200-500KB)
+ - No transparency support: RGB only
+ - Use case: quick sharing, saving storage space
 
- ### 선택 가이드:
+ ### Selection Guide:
  ```
- PNG를 선택하는 경우:
- - 나중에 편집할 예정
- - 최고 품질 필요
- - 저장 공간 충분
+ Choose PNG when:
+ - Planning to edit later
+ - Highest quality needed
+ - Storage space is sufficient
 
- JPEG를 선택하는 경우:
- - 바로 공유할 예정
- - 저장 공간 부족
- - 품질 90-95%로 충분
+ Choose JPEG when:
+ - Need to share immediately
+ - Storage space is limited
+ - 90-95% quality is sufficient
  ```
  */
 /// @enum CaptureImageFormat
-/// @brief 캡처 이미지 저장 포맷 정의
+/// @brief Capture image format definition
 enum CaptureImageFormat: String {
-    /// @brief PNG 포맷 (무손실)
+    /// @brief PNG format (lossless)
     case png = "png"
 
-    /// @brief JPEG 포맷 (손실)
+    /// @brief JPEG format (lossy)
     case jpeg = "jpg"
 
     /**
-     사용자에게 표시할 포맷 이름
+     Format name to display to user
 
      - PNG → "PNG"
      - JPEG → "JPEG"
      */
     /// @var displayName
-    /// @brief 사용자에게 표시할 포맷 이름
-    /// @return PNG 또는 JPEG 문자열
+    /// @brief Format name to display to user
+    /// @return PNG or JPEG string
     var displayName: String {
         switch self {
         case .png: return "PNG"
@@ -161,23 +161,23 @@ enum CaptureImageFormat: String {
     /**
      Uniform Type Identifier (UTI)
 
-     ### UTI란?
-     - macOS/iOS에서 파일 형식을 식별하는 표준 방법
-     - 파일 확장자보다 정확하고 명확
+     ### What is UTI?
+     - Standard method for identifying file formats on macOS/iOS
+     - More accurate and explicit than file extensions
 
-     예:
-     - "public.png" → PNG 이미지
-     - "public.jpeg" → JPEG 이미지
-     - "public.mp4" → MP4 비디오
+     Example:
+     - "public.png" → PNG image
+     - "public.jpeg" → JPEG image
+     - "public.mp4" → MP4 video
 
-     ### 사용 용도:
-     - NSSavePanel에서 허용할 파일 타입 지정
-     - 파일 타입 검증
-     - 시스템과 파일 형식 정보 공유
+     ### Usage:
+     - Specify allowed file types in NSSavePanel
+     - File type validation
+     - Share file format information with the system
      */
     /// @var utType
     /// @brief Uniform Type Identifier (UTI)
-    /// @return public.png 또는 public.jpeg
+    /// @return public.png or public.jpeg
     var utType: String {
         switch self {
         case .png: return "public.png"
@@ -189,19 +189,19 @@ enum CaptureImageFormat: String {
 // MARK: - Screen Capture Service
 
 /**
- ## ScreenCaptureService - 화면 캡처 서비스
+ ## ScreenCaptureService - Screen capture service
 
- GPU 메모리의 Metal 텍스처를 CPU 메모리의 이미지 파일로 변환하여 저장합니다.
+ Converts Metal textures in GPU memory to image files in CPU memory and saves them.
 
- ### 주요 책임:
- 1. Metal 텍스처 → CGImage 변환
- 2. 타임스탬프 오버레이 추가
- 3. PNG/JPEG 포맷으로 인코딩
- 4. 파일 저장 다이얼로그 표시
- 5. 저장 완료 알림
+ ### Main Responsibilities:
+ 1. Convert Metal texture → CGImage
+ 2. Add timestamp overlay
+ 3. Encode to PNG/JPEG format
+ 4. Display file save dialog
+ 5. Show save completion notification
  */
 /// @class ScreenCaptureService
-/// @brief GPU 메모리의 Metal 텍스처를 CPU 메모리의 이미지 파일로 변환하여 저장하는 서비스
+/// @brief Service for converting Metal textures from GPU memory to image files in CPU memory and saving
 class ScreenCaptureService {
 
     // MARK: - Properties
@@ -209,65 +209,65 @@ class ScreenCaptureService {
     /**
      ## Metal Device
 
-     ### MTLDevice란?
-     GPU(그래픽 처리 장치)를 추상화한 객체입니다.
+     ### What is MTLDevice?
+     An abstraction object for the GPU (Graphics Processing Unit).
 
-     이 서비스에서 사용하는 이유:
-     - Metal 텍스처는 특정 GPU device에 속함
-     - 텍스처 데이터를 읽으려면 해당 device가 필요
+     Why this service uses it:
+     - Metal textures belong to a specific GPU device
+     - The corresponding device is needed to read texture data
 
-     비유:
-     - device = "회사 ID 카드"
-     - texture = "회사 내부 문서"
-     - ID 카드가 있어야 문서 접근 가능
+     Analogy:
+     - device = "Company ID card"
+     - texture = "Internal company document"
+     - You need the ID card to access the document
      */
     /// @var device
-    /// @brief Metal device (GPU 접근용)
+    /// @brief Metal device (for GPU access)
     private let device: MTLDevice
 
     /**
-     ## JPEG 품질 (0.0 ~ 1.0)
+     ## JPEG Quality (0.0 ~ 1.0)
 
-     ### 품질 값의 의미:
-     - 0.0 = 최저 품질, 최소 파일 크기 (많이 깨짐)
-     - 0.5 = 중간 품질
-     - 0.95 = 높은 품질, 큰 파일 크기 (기본값)
-     - 1.0 = 최고 품질, 최대 파일 크기
+     ### Quality value meaning:
+     - 0.0 = Lowest quality, minimum file size (significant artifacts)
+     - 0.5 = Medium quality
+     - 0.95 = High quality, larger file size (default value)
+     - 1.0 = Highest quality, maximum file size
 
-     ### 품질 vs 파일 크기:
+     ### Quality vs file size:
      ```
-     1920×1080 이미지 예시:
+     For 1920×1080 image example:
 
-     quality = 0.5  →  ~150KB  (눈에 띄는 압축 흔적)
-     quality = 0.8  →  ~300KB  (적당한 품질)
-     quality = 0.95 →  ~500KB  (높은 품질, 기본값)
-     quality = 1.0  →  ~800KB  (최고 품질)
+     quality = 0.5  →  ~150KB  (noticeable compression artifacts)
+     quality = 0.8  →  ~300KB  (decent quality)
+     quality = 0.95 →  ~500KB  (high quality, default value)
+     quality = 1.0  →  ~800KB  (highest quality)
      ```
 
-     ### 권장 설정:
-     - 일반 용도: 0.85 ~ 0.95
-     - 고품질 필요: 0.95 ~ 1.0
-     - 파일 크기 중요: 0.7 ~ 0.85
+     ### Recommended settings:
+     - General use: 0.85 ~ 0.95
+     - High quality needed: 0.95 ~ 1.0
+     - File size important: 0.7 ~ 0.85
      */
     /// @var jpegQuality
-    /// @brief JPEG 압축 품질 (0.0 ~ 1.0, 기본값 0.95)
+    /// @brief JPEG compression quality (0.0 ~ 1.0, default value 0.95)
     var jpegQuality: CGFloat = 0.95
 
     // MARK: - Initialization
 
     /**
-     서비스 초기화
+     Initialize service
 
-     - Parameter device: Metal device (GPU 접근용)
+     - Parameter device: Metal device (for GPU access)
 
-     ### 초기화 시점:
+     ### Initialization example:
      ```swift
-     // MultiChannelRenderer에서 생성:
+     // Create in MultiChannelRenderer:
      let captureService = ScreenCaptureService(device: metalDevice)
      ```
      */
-    /// @brief 서비스 초기화
-    /// @param device Metal device (GPU 접근용)
+    /// @brief Initialize service
+    /// @param device Metal device (for GPU access)
     init(device: MTLDevice) {
         self.device = device
     }
@@ -275,106 +275,106 @@ class ScreenCaptureService {
     // MARK: - Public Methods
 
     /**
-     ## Metal 텍스처에서 프레임 캡처
+     ## Capture frame from Metal texture
 
-     현재 GPU에 렌더링된 화면을 이미지 데이터로 변환합니다.
+     Converts the current GPU-rendered screen to image data.
 
-     ### 처리 단계:
+     ### Processing Steps:
      ```
-     1. MTLTexture → CGImage 변환
-     - GPU 메모리 → CPU 메모리 복사
-     - RGBA 픽셀 데이터 추출
+     1. Convert MTLTexture → CGImage
+     - Copy GPU memory → CPU memory
+     - Extract RGBA pixel data
 
-     2. CGImage → NSImage 변환
-     - AppKit 이미지 객체 생성
+     2. Convert CGImage → NSImage
+     - Create AppKit image object
 
-     3. 타임스탬프 오버레이 (선택)
-     - 현재 시각 표시
-     - 영상 재생 시간 표시
+     3. Add timestamp overlay (optional)
+     - Display current time
+     - Display video playback time
 
-     4. PNG/JPEG 인코딩
-     - 지정된 포맷으로 압축
+     4. Encode to PNG/JPEG
+     - Compress to specified format
 
-     5. Data 반환
-     - 파일에 쓸 수 있는 바이너리 데이터
+     5. Return Data
+     - Binary data that can be written to file
      ```
 
      - Parameters:
-     - texture: 캡처할 Metal 텍스처 (현재 화면)
-     - format: 저장할 이미지 포맷 (PNG 또는 JPEG)
-     - timestamp: 오버레이할 시각 (nil이면 오버레이 안 함)
-     - videoTimestamp: 영상 재생 시간 (초 단위)
+     - texture: Metal texture to capture (current screen)
+     - format: Image format to save (PNG or JPEG)
+     - timestamp: Time to overlay (no overlay if nil)
+     - videoTimestamp: video playback time (in seconds)
 
-     - Returns: 이미지 데이터 (Data), 실패 시 nil
+     - Returns: Image data (Data), or nil on failure
 
-     ### 사용 예제:
+     ### Usage Examples:
      ```swift
-     // 1. 타임스탬프 없이 캡처
+     // 1. Capture without timestamp
      let data = captureService.captureFrame(
      from: currentTexture,
      format: .png
      )
 
-     // 2. 타임스탬프 포함 캡처
+     // 2. Capture including timestamp
      let data = captureService.captureFrame(
      from: currentTexture,
      format: .jpeg,
-     timestamp: Date(),           // 현재 시각: 2024-10-12 15:30:45
-     videoTimestamp: 125.5        // 영상 시간: 00:02:05.500
+     timestamp: Date(),           // current time: 2024-10-12 15:30:45
+     videoTimestamp: 125.5        // video time: 00:02:05.500
      )
      ```
 
-     ### 실패하는 경우:
-     - 텍스처가 비어있음
-     - 메모리 부족
-     - 포맷 변환 실패
+     ### Failure cases:
+     - Empty texture
+     - Out of memory
+     - Format conversion failure
      */
-    /// @brief Metal 텍스처에서 프레임 캡처
-    /// @param texture 캡처할 Metal 텍스처 (현재 화면)
-    /// @param format 저장할 이미지 포맷 (PNG 또는 JPEG)
-    /// @param timestamp 오버레이할 시각 (nil이면 오버레이 안 함)
-    /// @param videoTimestamp 영상 재생 시간 (초 단위)
-    /// @return 이미지 데이터 (Data), 실패 시 nil
+    /// @brief Capture frame from Metal texture
+    /// @param texture Metal texture to capture (current screen)
+    /// @param format Image format to save (PNG or JPEG)
+    /// @param timestamp Time to overlay (no overlay if nil)
+    /// @param videoTimestamp video playback time (in seconds)
+    /// @return Image data (Data), or nil on failure
     func captureFrame(
         from texture: MTLTexture,
         format: CaptureImageFormat,
         timestamp: Date? = nil,
         videoTimestamp: TimeInterval? = nil
     ) -> Data? {
-        // ===== 1단계: MTLTexture → CGImage =====
-        // GPU 메모리의 텍스처를 CPU 메모리의 이미지로 변환
+        // ===== Step 1: MTLTexture → CGImage =====
+        // Convert texture in GPU memory to image in CPU memory
         guard let cgImage = createCGImage(from: texture) else {
             errorLog("[ScreenCaptureService] Failed to create CGImage from texture")
             return nil
         }
 
-        // ===== 2단계: CGImage → NSImage =====
-        // Core Graphics 이미지를 AppKit 이미지로 변환
+        // ===== Step 2: CGImage → NSImage =====
+        // Convert Core Graphics image to AppKit image
         let size = NSSize(width: cgImage.width, height: cgImage.height)
         let nsImage = NSImage(cgImage: cgImage, size: size)
 
-        // ===== 3단계: 타임스탬프 오버레이 (선택) =====
-        // if-let 표현식 (Swift 5.9+):
-        // - timestamp가 nil이 아니면 → 오버레이 추가한 이미지
-        // - timestamp가 nil이면 → 원본 이미지
+        // ===== Step 3: Add timestamp overlay (optional) =====
+        // if-let expression (Swift 5.9+):
+        // - If timestamp is not nil → add overlay to image
+        // - If timestamp is nil → use original image
         let finalImage = if let timestamp = timestamp {
             addTimestampOverlay(to: nsImage, timestamp: timestamp, videoTimestamp: videoTimestamp)
         } else {
             nsImage
         }
 
-        // ===== 4단계: PNG/JPEG 인코딩 =====
-        // NSImage → Data (파일에 쓸 수 있는 바이너리)
+        // ===== Step 4: Encode to PNG/JPEG =====
+        // NSImage → Data (binary data writable to file)
         return convertToData(image: finalImage, format: format)
     }
 
     /**
-     ## 저장 다이얼로그 표시 및 파일 저장
+     ## Display save dialog and save file
 
-     사용자에게 저장 위치를 선택하게 하고, 이미지 파일을 저장합니다.
+     Allows the user to select a save location and saves the image file.
 
-     ### NSSavePanel이란?
-     macOS의 표준 "다른 이름으로 저장" 대화상자입니다.
+     ### What is NSSavePanel?
+     macOS standard "Save As" dialog.
 
      ```
      ┌─────────────────────────────────────┐
@@ -389,52 +389,52 @@ class ScreenCaptureService {
      └─────────────────────────────────────┘
      ```
 
-     ### 처리 흐름:
+     ### Processing flow:
      ```
-     1. NSSavePanel 생성 및 설정
-     - 제목, 메시지 설정
-     - 기본 파일명 설정
-     - 허용할 파일 확장자 설정
+     1. Create and configure NSSavePanel
+     - Set title and message
+     - Set default filename
+     - Set allowed file extensions
 
-     2. runModal() 호출
-     - 다이얼로그 표시 (모달)
-     - 사용자 입력 대기
-     - 취소 또는 저장 버튼 클릭 대기
+     2. Call runModal()
+     - Display dialog (modal)
+     - Wait for user input
+     - Wait for Cancel or Save button click
 
-     3. 응답 확인
-     - .OK → 저장 진행
-     - 취소 → false 반환
+     3. Check response
+     - .OK → proceed with save
+     - Cancel → return false
 
-     4. 파일 쓰기
+     4. Write file
      - data.write(to: url)
-     - 성공 → 알림 표시
-     - 실패 → 에러 알림
+     - Success → display notification
+     - Failure → error notification
      ```
 
      - Parameters:
-     - data: 저장할 이미지 데이터
-     - format: 이미지 포맷 (확장자 결정)
-     - defaultFilename: 기본 파일명 (확장자 제외)
+     - data: Image data to save
+     - format: Image format (determines extension)
+     - defaultFilename: Default filename (excluding extension)
 
-     - Returns: 저장 성공 여부 (true/false)
+     - Returns: Whether save was successful (true/false)
 
-     ### @discardableResult란?
-     - 반환값을 무시해도 경고가 안 뜨게 하는 속성
-     - 이 메서드는 결과를 확인할 필요가 없는 경우도 많기 때문
+     ### What is @discardableResult?
+     - Attribute to suppress warning when return value is ignored
+     - Because this method's result doesn't always need to be checked
 
      ```swift
-     // 반환값 사용:
+     // Using return value:
      if captureService.showSavePanel(data: data, format: .png) {
-     print("저장 성공!")
+     print("Save successful!")
      }
 
-     // 반환값 무시 (경고 없음):
+     // Ignoring return value (no warning):
      captureService.showSavePanel(data: data, format: .png)
      ```
 
-     ### 사용 예제:
+     ### Usage Example:
      ```swift
-     // 캡처 및 저장:
+     // Capture and save:
      if let data = captureService.captureFrame(from: texture, format: .png) {
      captureService.showSavePanel(
      data: data,
@@ -444,62 +444,62 @@ class ScreenCaptureService {
      }
      ```
      */
-    /// @brief 저장 다이얼로그 표시 및 파일 저장
-    /// @param data 저장할 이미지 데이터
-    /// @param format 이미지 포맷 (확장자 결정)
-    /// @param defaultFilename 기본 파일명 (확장자 제외)
-    /// @return 저장 성공 여부 (true/false)
+    /// @brief Display save dialog and save file
+    /// @param data to save image data
+    /// @param format Image format (determines extension)
+    /// @param defaultFilename Default filename (excluding extension)
+    /// @return save success whether (true/false)
     @discardableResult
     func showSavePanel(
         data: Data,
         format: CaptureImageFormat,
         defaultFilename: String = "BlackboxCapture"
     ) -> Bool {
-        // ===== 1단계: NSSavePanel 생성 및 설정 =====
+        // ===== Step 1: Create and configure NSSavePanel =====
         let savePanel = NSSavePanel()
 
-        // 다이얼로그 제목
+        // Dialog title
         savePanel.title = "Save Screenshot"
 
-        // 안내 메시지
+        // Internal message
         savePanel.message = "Choose where to save the captured frame"
 
-        // 기본 파일명 (예: "BlackboxCapture.png")
+        // Default filename (Example: "BlackboxCapture.png")
         savePanel.nameFieldStringValue = "\(defaultFilename).\(format.rawValue)"
 
-        // 허용할 파일 확장자
-        // [.init(filenameExtension: "png")!] → PNG만 허용
+        // Allowed file extensions
+        // [.init(filenameExtension: "png")!] → Allow PNG only
         savePanel.allowedContentTypes = [.init(filenameExtension: format.rawValue)!]
 
-        // 폴더 생성 버튼 표시
+        // Display create folder button
         savePanel.canCreateDirectories = true
 
-        // 확장자 표시 (숨기지 않음)
+        // Display extension (don't hide)
         savePanel.isExtensionHidden = false
 
-        // ===== 2단계: 다이얼로그 표시 (모달) =====
-        // runModal()은 사용자가 버튼을 클릭할 때까지 대기
-        // 반환값:
-        // - .OK: "저장" 버튼 클릭
-        // - .cancel: "취소" 버튼 클릭 또는 ESC 키
+        // ===== Step 2: Display dialog (modal) =====
+        // runModal() waits until user clicks button
+        // Return value:
+        // - .OK: "Save" button clicked
+        // - .cancel: "Cancel" button clicked or ESC key
         let response = savePanel.runModal()
 
-        // ===== 3단계: 응답 확인 =====
+        // ===== Step 3: Check response =====
         guard response == .OK, let url = savePanel.url else {
-            // 취소 또는 URL 없음 → 저장 안 함
+            // Cancelled or no URL → don't save
             return false
         }
 
-        // ===== 4단계: 파일 쓰기 =====
+        // ===== Step 4: Write file =====
         do {
-            // Data를 파일로 저장
-            // atomically: true → 임시 파일에 쓴 후 rename (안전)
+            // Save Data to file
+            // atomically: true → write to temp file then rename (safe)
             try data.write(to: url)
 
-            // 로그 기록
+            // Record log
             infoLog("[ScreenCaptureService] Saved screenshot to: \(url.path)")
 
-            // ===== 5단계: 성공 알림 =====
+            // ===== Step 5: Success notification =====
             showNotification(
                 title: "Screenshot Saved",
                 message: "Saved to \(url.lastPathComponent)"
@@ -508,10 +508,10 @@ class ScreenCaptureService {
             return true
 
         } catch {
-            // ===== 에러 처리 =====
+            // ===== Error handling =====
             errorLog("[ScreenCaptureService] Failed to save screenshot: \(error)")
 
-            // 실패 알림
+            // Failure notification
             showNotification(
                 title: "Save Failed",
                 message: error.localizedDescription,
@@ -525,186 +525,186 @@ class ScreenCaptureService {
     // MARK: - Private Methods
 
     /**
-     ## Metal 텍스처를 CGImage로 변환
+     ## Convert Metal texture to CGImage
 
-     ### 변환 과정 (상세):
+     ### Conversion Process (detailed):
 
      ```
-     단계 1: 메모리 할당
+     Step 1: Memory allocation
      ┌─────────────────────────────────────┐
-     │ CPU 메모리 (빈 배열)                 │
+     │ CPU memory (empty array)            │
      │ [0, 0, 0, 0, 0, 0, 0, 0, ...]       │
-     │ 크기: width × height × 4 바이트      │
+     │ Size: width × height × 4 bytes      │
      └─────────────────────────────────────┘
 
-     단계 2: GPU → CPU 복사
+     Step 2: GPU → CPU copy
      ┌─────────────────┐
-     │ GPU 메모리       │  texture.getBytes()
-     │ (MTLTexture)    │  ──────────────────→  CPU 메모리
-     │ RGBA 픽셀 데이터 │                       [R,G,B,A, R,G,B,A, ...]
+     │ GPU memory      │  texture.getBytes()
+     │ (MTLTexture)    │  ──────────────────→  CPU memory
+     │ RGBA pixel data │                       [R,G,B,A, R,G,B,A, ...]
      └─────────────────┘
 
-     단계 3: CGDataProvider 생성
-     - 픽셀 데이터를 Core Graphics에 제공
-     - 메모리 관리 자동화
+     Step 3: Create CGDataProvider
+     - Provide pixel data to Core Graphics
+     - Automated memory management
 
-     단계 4: CGImage 생성
-     - width, height 정보
-     - 픽셀 포맷 정보 (RGBA, 8bit per channel)
-     - colorSpace (RGB)
-     - bitmapInfo (Alpha 채널 위치)
+     Step 4: Create CGImage
+     - Width, height info
+     - Pixel format info (RGBA, 8bit per channel)
+     - ColorSpace (RGB)
+     - BitmapInfo (Alpha channel location)
      ```
 
-     ### 픽셀 데이터 구조:
+     ### Pixel data structure:
      ```
-     하나의 픽셀 = 4바이트 (RGBA)
+     Single pixel = 4 bytes (RGBA)
 
-     예: 빨간색 픽셀
+     Example: Red pixel
      [255, 0, 0, 255]
      R   G  B  A
 
-     2×2 이미지:
-     [255,0,0,255,  0,255,0,255,    ← 첫 번째 줄 (빨강, 초록)
-     0,0,255,255,  255,255,255,255] ← 두 번째 줄 (파랑, 흰색)
+     2×2 image:
+     [255,0,0,255,  0,255,0,255,    ← First row (red, green)
+     0,0,255,255,  255,255,255,255] ← Second row (blue, white)
 
-     총 크기 = 2 × 2 × 4 = 16바이트
+     Total size = 2 × 2 × 4 = 16 bytes
      ```
 
-     - Parameter texture: 변환할 Metal 텍스처
-     - Returns: CGImage, 실패 시 nil
+     - Parameter texture: Metal texture to convert
+     - Returns: CGImage, or nil on failure
      */
-    /// @brief Metal 텍스처를 CGImage로 변환
-    /// @param texture 변환할 Metal 텍스처
-    /// @return CGImage, 실패 시 nil
+    /// @brief Convert Metal texture to CGImage
+    /// @param texture Metal texture to convert
+    /// @return CGImage, or nil on failure
     private func createCGImage(from texture: MTLTexture) -> CGImage? {
-        // ===== 텍스처 정보 가져오기 =====
-        let width = texture.width        // 예: 1920
-        let height = texture.height      // 예: 1080
-        let bytesPerPixel = 4            // RGBA = 4바이트
-        let bytesPerRow = width * bytesPerPixel  // 한 줄의 바이트 수
-        let bitsPerComponent = 8         // R, G, B, A 각각 8비트
+        // ===== Get texture info =====
+        let width = texture.width        // Example: 1920
+        let height = texture.height      // Example: 1080
+        let bytesPerPixel = 4            // RGBA = 4 bytes
+        let bytesPerRow = width * bytesPerPixel  // Bytes per row
+        let bitsPerComponent = 8         // R, G, B, A each 8 bits
 
-        // ===== 1단계: CPU 메모리 할당 =====
-        // 전체 픽셀 데이터를 저장할 배열
-        // 크기 = 1920 × 1080 × 4 = 8,294,400 바이트 (약 8MB)
+        // ===== Step 1: Allocate CPU memory =====
+        // Array to store all pixel data
+        // Size = 1920 × 1080 × 4 = 8,294,400 bytes (about 8MB)
         var pixelData = [UInt8](repeating: 0, count: width * height * bytesPerPixel)
 
-        // ===== 2단계: GPU → CPU 복사 =====
-        // 텍스처의 어느 영역을 복사할지 지정 (전체 영역)
+        // ===== Step 2: Copy GPU → CPU =====
+        // Specify which region of texture to copy (entire region)
         let region = MTLRegionMake2D(0, 0, width, height)
 
         // texture.getBytes():
-        // - GPU 메모리에서 CPU 메모리로 픽셀 데이터 복사
-        // - 이 작업은 비교적 느림 (GPU ↔ CPU 버스 통과)
-        // - 하지만 캡처는 가끔만 하므로 성능 문제 없음
+        // - Copy pixel data from GPU memory to CPU memory
+        // - This operation is relatively slow (GPU ↔ CPU bus communication)
+        // - But no performance issue since capture happens rarely
         texture.getBytes(
-            &pixelData,                  // 복사할 CPU 메모리 주소
-            bytesPerRow: bytesPerRow,    // 한 줄당 바이트 수
-            from: region,                // 복사할 영역 (전체)
-            mipmapLevel: 0               // 밉맵 레벨 (0 = 원본 크기)
+            &pixelData,                  // CPU memory address to copy to
+            bytesPerRow: bytesPerRow,    // Bytes per row
+            from: region,                // Region to copy (entire)
+            mipmapLevel: 0               // Mipmap level (0 = original size)
         )
 
-        // ===== 3단계: CGDataProvider 생성 =====
-        // CGDataProvider란?
-        // - Core Graphics에 픽셀 데이터를 제공하는 객체
-        // - 데이터 소스 추상화 (메모리, 파일, 네트워크 등)
+        // ===== Step 3: Create CGDataProvider =====
+        // What is CGDataProvider?
+        // - Object that provides pixel data to Core Graphics
+        // - Abstracts data source (memory, file, network, etc.)
         guard let dataProvider = CGDataProvider(
             data: Data(pixelData) as CFData
         ) else {
             return nil
         }
 
-        // ===== 4단계: CGImage 생성 =====
-        // CGImage란?
-        // - Core Graphics의 이미지 객체
-        // - 플랫폼 독립적 (macOS, iOS 공통)
-        // - 불변(immutable) 객체
+        // ===== Step 4: Create CGImage =====
+        // What is CGImage?
+        // - Core Graphics image object
+        // - Platform independent (macOS, iOS shared)
+        // - Immutable object
         return CGImage(
-            width: width,                // 이미지 너비
-            height: height,              // 이미지 높이
-            bitsPerComponent: bitsPerComponent,  // 채널당 비트 (8bit)
-            bitsPerPixel: bytesPerPixel * bitsPerComponent,  // 픽셀당 비트 (32bit)
-            bytesPerRow: bytesPerRow,    // 한 줄의 바이트 수
-            space: CGColorSpaceCreateDeviceRGB(),  // 색 공간 (RGB)
+            width: width,                // Image width
+            height: height,              // Image height
+            bitsPerComponent: bitsPerComponent,  // Bits per channel (8bit)
+            bitsPerPixel: bytesPerPixel * bitsPerComponent,  // Bits per pixel (32bit)
+            bytesPerRow: bytesPerRow,    // Bytes per row
+            space: CGColorSpaceCreateDeviceRGB(),  // Color space (RGB)
             bitmapInfo: CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedLast.rawValue),
-            // ↑ Alpha 채널 위치: RGBA (마지막)
-            // premultiplied: RGB 값이 이미 Alpha로 곱해짐
-            provider: dataProvider,      // 픽셀 데이터 제공자
-            decode: nil,                 // 디코드 배열 (없음)
-            shouldInterpolate: true,     // 보간 사용 (부드러운 확대/축소)
-            intent: .defaultIntent       // 렌더링 의도 (기본)
+            // ↑ Alpha channel location: RGBA (last)
+            // premultiplied: RGB values already multiplied by Alpha
+            provider: dataProvider,      // Pixel data provider
+            decode: nil,                 // Decode array (none)
+            shouldInterpolate: true,     // Use interpolation (smooth scaling)
+            intent: .defaultIntent       // Rendering intent (default)
         )
     }
 
     /**
-     ## 이미지에 타임스탬프 오버레이 추가
+     ## Add timestamp overlay to image
 
-     ### 오버레이란?
-     원본 이미지 위에 텍스트나 그래픽을 덧그리는 것입니다.
+     ### What is overlay?
+     Text or graphics added on top of the original image.
 
      ```
-     원본 이미지:
+     Original image:
      ┌─────────────────────────────┐
      │                             │
-     │     [영상 화면]              │
+     │     [Video screen]          │
      │                             │
      │                             │
      │                             │
      └─────────────────────────────┘
 
-     타임스탬프 오버레이 후:
+     After timestamp overlay:
      ┌─────────────────────────────┐
      │                             │
-     │     [영상 화면]              │
+     │     [Video screen]          │
      │                             │
      │                             │
      │   ┌───────────────────────┐ │
-     │   │ 2024-10-12 15:30:45   │ │ ← 추가된 텍스트
+     │   │ 2024-10-12 15:30:45   │ │ ← Added text
      │   │ [00:02:05.500]        │ │
      └───┴───────────────────────┴─┘
      ```
 
-     ### 처리 단계:
+     ### Processing Steps:
      ```
-     1. NSBitmapImageRep 생성
-     - 비트맵 이미지 표현 객체
-     - 픽셀 데이터를 직접 조작 가능
+     1. Create NSBitmapImageRep
+     - Bitmap image representation object
+     - Can directly manipulate pixel data
 
-     2. NSGraphicsContext 설정
-     - 그래픽 그리기 컨텍스트
-     - 현재 그리기 대상 설정
+     2. Set NSGraphicsContext
+     - Graphics drawing context
+     - Set current drawing target
 
-     3. 원본 이미지 그리기
-     - 배경으로 사용
+     3. Draw original image
+     - Use as background
 
-     4. 타임스탬프 텍스트 포맷팅
-     - 날짜/시간: "2024-10-12 15:30:45"
-     - 영상 시간: "[00:02:05.500]"
+     4. Format timestamp text
+     - Date/time: "2024-10-12 15:30:45"
+     - Video time: "[00:02:05.500]"
 
-     5. 배경 사각형 그리기
-     - 반투명 검은색
-     - 텍스트 가독성 향상
+     5. Draw background rectangle
+     - Semi-transparent black
+     - Improve text readability
 
-     6. 텍스트 그리기
-     - 흰색 고정폭 폰트
-     - 우하단 위치
+     6. Draw text
+     - White monospace font
+     - Bottom-right position
 
-     7. NSImage로 변환
-     - 최종 결과 이미지
+     7. Convert to NSImage
+     - Final result image
      ```
 
      - Parameters:
-     - image: 원본 이미지
-     - timestamp: 캡처 시각
-     - videoTimestamp: 영상 재생 시간 (초)
+     - image: Original image
+     - timestamp: Capture time
+     - videoTimestamp: Video playback time (seconds)
 
-     - Returns: 타임스탬프가 추가된 이미지
+     - Returns: Image with timestamp added
      */
-    /// @brief 이미지에 타임스탬프 오버레이 추가
-    /// @param image 원본 이미지
-    /// @param timestamp 캡처 시각
-    /// @param videoTimestamp 영상 재생 시간 (초)
-    /// @return 타임스탬프가 추가된 이미지
+    /// @brief Add timestamp overlay to image
+    /// @param image Original image
+    /// @param timestamp capture time
+    /// @param videoTimestamp video playback time (seconds)
+    /// @return Timestamp add image
     private func addTimestampOverlay(
         to image: NSImage,
         timestamp: Date,
@@ -712,109 +712,109 @@ class ScreenCaptureService {
     ) -> NSImage {
         let size = image.size
 
-        // ===== 1단계: NSBitmapImageRep 생성 =====
-        // NSBitmapImageRep이란?
-        // - 비트맵(픽셀 기반) 이미지의 표현
-        // - 픽셀 데이터 직접 조작 가능
-        // - 다양한 픽셀 포맷 지원
+        // ===== Step 1: Create NSBitmapImageRep =====
+        // What is NSBitmapImageRep?
+        // - Bitmap (pixel-based) image representation
+        // - Can directly manipulate pixel data
+        // - Supports various pixel formats
         guard let bitmapRep = NSBitmapImageRep(
-            bitmapDataPlanes: nil,          // 데이터 평면 (nil = 자동 할당)
-            pixelsWide: Int(size.width),    // 너비 (픽셀)
-            pixelsHigh: Int(size.height),   // 높이 (픽셀)
-            bitsPerSample: 8,               // 샘플당 비트 (R, G, B, A 각각 8비트)
-            samplesPerPixel: 4,             // 픽셀당 샘플 (RGBA = 4개)
-            hasAlpha: true,                 // Alpha 채널 있음
-            isPlanar: false,                // Planar 형식 아님 (인터리브)
-            colorSpaceName: .deviceRGB,     // RGB 색 공간
-            bytesPerRow: 0,                 // 0 = 자동 계산
-            bitsPerPixel: 0                 // 0 = 자동 계산
+            bitmapDataPlanes: nil,          // Data planes (nil = auto allocate)
+            pixelsWide: Int(size.width),    // Width (pixels)
+            pixelsHigh: Int(size.height),   // Height (pixels)
+            bitsPerSample: 8,               // Bits per sample (R, G, B, A each 8 bits)
+            samplesPerPixel: 4,             // Samples per pixel (RGBA = 4)
+            hasAlpha: true,                 // Has alpha channel
+            isPlanar: false,                // Not planar format (interleaved)
+            colorSpaceName: .deviceRGB,     // RGB color space
+            bytesPerRow: 0,                 // 0 = auto calculate
+            bitsPerPixel: 0                 // 0 = auto calculate
         ) else {
-            // 생성 실패 → 원본 반환
+            // Creation failure → return original
             return image
         }
 
-        // ===== 2단계: NSGraphicsContext 설정 =====
-        // NSGraphicsContext란?
-        // - AppKit의 그리기 컨텍스트
-        // - 현재 그리기 대상을 관리
-        // - draw(), fill() 등의 명령이 이 컨텍스트에 적용됨
+        // ===== Step 2: Set NSGraphicsContext =====
+        // What is NSGraphicsContext?
+        // - AppKit drawing context
+        // - Manages current drawing target
+        // - Commands like draw(), fill() apply to this context
 
-        // 현재 상태 저장
+        // Save current state
         NSGraphicsContext.saveGraphicsState()
 
-        // defer란?
-        // - 함수가 종료될 때 실행할 코드
-        // - return, throw, break 등 어떤 경로든 실행됨
-        // - 리소스 정리에 유용 (파일 닫기, 잠금 해제 등)
+        // What is defer?
+        // - Code to execute when function ends
+        // - Always executes regardless of return, throw, break, etc.
+        // - Useful for resource cleanup (close files, release locks, etc.)
         defer { NSGraphicsContext.restoreGraphicsState() }
 
-        // bitmapRep에 그릴 수 있는 컨텍스트 생성
+        // Create context that can draw to bitmapRep
         guard let context = NSGraphicsContext(bitmapImageRep: bitmapRep) else {
             return image
         }
 
-        // 현재 그리기 컨텍스트 설정
-        // 이제 모든 그리기 명령은 bitmapRep에 적용됨
+        // Set current drawing context
+        // Now all drawing commands apply to bitmapRep
         NSGraphicsContext.current = context
 
-        // ===== 3단계: 원본 이미지 그리기 (배경) =====
+        // ===== Step 3: Draw original image (background) =====
         image.draw(
-            in: NSRect(origin: .zero, size: size),   // 그릴 위치 (전체)
-            from: NSRect(origin: .zero, size: size), // 원본 영역 (전체)
-            operation: .copy,                        // 복사 (덮어쓰기)
-            fraction: 1.0                            // 불투명도 100%
+            in: NSRect(origin: .zero, size: size),   // Position to draw (entire)
+            from: NSRect(origin: .zero, size: size), // Source region (entire)
+            operation: .copy,                        // Copy (overwrite)
+            fraction: 1.0                            // Opacity 100%
         )
 
-        // ===== 4단계: 타임스탬프 텍스트 포맷팅 =====
+        // ===== Step 4: Format timestamp text =====
 
-        // DateFormatter란?
-        // - Date 객체를 문자열로 변환
-        // - 날짜/시간 형식 지정 가능
+        // What is DateFormatter?
+        // - Converts Date object to string
+        // - Can specify date/time format
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
-        // 예: "2024-10-12 15:30:45"
+        // Example: "2024-10-12 15:30:45"
 
         var timestampText = dateFormatter.string(from: timestamp)
 
-        // 영상 재생 시간 추가 (있는 경우)
+        // Add video playback time (if available)
         if let videoTime = videoTimestamp {
-            // 시간 계산:
-            // videoTime = 125.5초
+            // Time calculation:
+            // videoTime = 125.5 seconds
             // → hours = 0, minutes = 2, seconds = 5, milliseconds = 500
             let hours = Int(videoTime) / 3600
             let minutes = (Int(videoTime) % 3600) / 60
             let seconds = Int(videoTime) % 60
             let milliseconds = Int((videoTime.truncatingRemainder(dividingBy: 1)) * 1000)
 
-            // 형식: "[HH:MM:SS.mmm]"
+            // Format: "[HH:MM:SS.mmm]"
             timestampText += String(format: " [%02d:%02d:%02d.%03d]", hours, minutes, seconds, milliseconds)
-            // 예: " [00:02:05.500]"
+            // Example: " [00:02:05.500]"
         }
 
-        // 최종 텍스트 예:
+        // Final text example:
         // "2024-10-12 15:30:45 [00:02:05.500]"
 
-        // ===== 5단계: 텍스트 스타일 설정 =====
+        // ===== Step 5: Set text style =====
 
-        // NSAttributedString이란?
-        // - 스타일이 적용된 문자열
-        // - 폰트, 색상, 크기 등 지정 가능
+        // What is NSAttributedString?
+        // - String with styling applied
+        // - Can specify font, color, size, etc.
         let attributes: [NSAttributedString.Key: Any] = [
-            // 고정폭 폰트 (숫자 정렬에 유리)
+            // Monospace font (good for number alignment)
             .font: NSFont.monospacedSystemFont(ofSize: 16, weight: .medium),
-            // 흰색 텍스트 (검은 배경에 잘 보임)
+            // White text (stands out on dark background)
             .foregroundColor: NSColor.white
         ]
 
         let attributedString = NSAttributedString(string: timestampText, attributes: attributes)
-        let textSize = attributedString.size()  // 텍스트가 차지할 크기
+        let textSize = attributedString.size()  // Size that text will occupy
 
-        // ===== 6단계: 배경 사각형 위치 계산 =====
+        // ===== Step 6: Calculate background rectangle position =====
 
-        let padding: CGFloat = 12                    // 화면 가장자리 여백
-        let backgroundPadding: CGFloat = 8           // 텍스트 주변 여백
+        let padding: CGFloat = 12                    // Screen edge margin
+        let backgroundPadding: CGFloat = 8           // Margin around text
 
-        // 우하단 위치 계산:
+        // Calculate bottom-right position:
         // ```
         //              padding
         //              ↓
@@ -823,7 +823,7 @@ class ScreenCaptureService {
         //    │                             │
         //    │                             │
         //    │   ┌─────────────────────┐   │
-        //    │   │ 2024-10-12 15:30:45 │   │ ← 여기에 배치
+        //    │   │ 2024-10-12 15:30:45 │   │ ← Place here
         //    └───┴─────────────────────┴───┘
         //        ↑                       ↑
         //    padding              backgroundPadding
@@ -835,26 +835,26 @@ class ScreenCaptureService {
             height: textSize.height + backgroundPadding * 2
         )
 
-        // ===== 7단계: 배경 사각형 그리기 =====
+        // ===== Step 7: Draw background rectangle =====
 
-        // 반투명 검은색:
-        // - 검은색 (black)
-        // - 70% 불투명 (alpha = 0.7)
-        // - 텍스트 가독성 향상
+        // Semi-transparent black:
+        // - Black color
+        // - 70% opacity (alpha = 0.7)
+        // - Improves text readability
         NSColor.black.withAlphaComponent(0.7).setFill()
 
-        // 둥근 모서리 사각형
+        // Rounded corner rectangle
         let backgroundPath = NSBezierPath(roundedRect: textRect, xRadius: 4, yRadius: 4)
         backgroundPath.fill()
 
-        // ===== 8단계: 텍스트 그리기 =====
+        // ===== Step 8: Draw text =====
 
         attributedString.draw(at: NSPoint(
             x: textRect.origin.x + backgroundPadding,
             y: textRect.origin.y + backgroundPadding
         ))
 
-        // ===== 9단계: NSImage로 변환 =====
+        // ===== Step 9: Convert to NSImage =====
 
         let finalImage = NSImage(size: size)
         finalImage.addRepresentation(bitmapRep)
@@ -863,63 +863,63 @@ class ScreenCaptureService {
     }
 
     /**
-     ## NSImage를 PNG/JPEG 데이터로 변환
+     ## Convert NSImage to PNG/JPEG data
 
-     ### 변환 과정:
+     ### Conversion Process:
      ```
-     NSImage (AppKit 객체)
+     NSImage (AppKit object)
      ↓ tiffRepresentation
-     TIFF Data (임시 포맷)
+     TIFF Data (temporary format)
      ↓ NSBitmapImageRep
-     비트맵 표현
+     Bitmap representation
      ↓ representation(using:)
-     PNG/JPEG Data (최종)
+     PNG/JPEG Data (final)
      ```
 
-     ### 왜 TIFF를 거쳐가나?
-     - NSImage는 벡터/비트맵 혼합 가능
-     - TIFF는 모든 표현을 비트맵으로 통일
-     - NSBitmapImageRep으로 변환 용이
+     ### Why go through TIFF?
+     - NSImage can mix vector/bitmap
+     - TIFF unifies all representations into bitmap
+     - Easy to convert to NSBitmapImageRep
 
-     ### JPEG 압축 옵션:
+     ### JPEG compression options:
      ```swift
      properties: [.compressionFactor: 0.95]
      ```
-     - compressionFactor: 압축 품질 (0.0 ~ 1.0)
-     - 0.95 = 95% 품질 (기본값)
+     - compressionFactor: compression quality (0.0 ~ 1.0)
+     - 0.95 = 95% quality (default value)
 
      - Parameters:
-     - image: 변환할 이미지
-     - format: 목표 포맷 (PNG 또는 JPEG)
+     - image: Image to convert
+     - format: Target format (PNG or JPEG)
 
-     - Returns: 이미지 데이터, 실패 시 nil
+     - Returns: Image data, or nil on failure
      */
-    /// @brief NSImage를 PNG/JPEG 데이터로 변환
-    /// @param image 변환할 이미지
-    /// @param format 목표 포맷 (PNG 또는 JPEG)
-    /// @return 이미지 데이터, 실패 시 nil
+    /// @brief NSImage PNG/JPEG data convert
+    /// @param image Image to convert
+    /// @param format Target format (PNG or JPEG)
+    /// @return Image data, or nil on failure
     private func convertToData(image: NSImage, format: CaptureImageFormat) -> Data? {
-        // ===== 1단계: NSImage → TIFF Data =====
+        // ===== Step 1: NSImage → TIFF Data =====
         // TIFF (Tagged Image File Format):
-        // - 무손실 포맷
-        // - 임시 중간 포맷으로 사용
+        // - Lossless format
+        // - Used as temporary intermediate format
         guard let tiffData = image.tiffRepresentation,
               let bitmapRep = NSBitmapImageRep(data: tiffData) else {
             return nil
         }
 
-        // ===== 2단계: NSBitmapImageRep → PNG/JPEG Data =====
+        // ===== Step 2: NSBitmapImageRep → PNG/JPEG Data =====
         switch format {
         case .png:
-            // PNG 인코딩:
-            // - 무손실 압축
-            // - properties = [:] → 기본 설정 사용
+            // PNG encoding:
+            // - Lossless compression
+            // - properties = [:] → use default settings
             return bitmapRep.representation(using: .png, properties: [:])
 
         case .jpeg:
-            // JPEG 인코딩:
-            // - 손실 압축
-            // - compressionFactor = 0.95 → 95% 품질
+            // JPEG encoding:
+            // - Lossy compression
+            // - compressionFactor = 0.95 → 95% quality
             return bitmapRep.representation(
                 using: .jpeg,
                 properties: [.compressionFactor: jpegQuality]
@@ -928,89 +928,89 @@ class ScreenCaptureService {
     }
 
     /**
-     ## 사용자 알림 표시
+     ## Display user notification
 
-     ### NSAlert란?
-     macOS의 표준 알림 대화상자입니다.
+     ### What is NSAlert?
+     macOS standard notification dialog.
 
      ```
      ┌─────────────────────────────┐
-     │  ⓘ Screenshot Saved         │  ← 제목
+     │  ⓘ Screenshot Saved         │  ← Title
      │                             │
-     │  Saved to Blackbox_001.png  │  ← 메시지
+     │  Saved to Blackbox_001.png  │  ← Message
      │                             │
-     │              [ OK ]          │  ← 버튼
+     │              [ OK ]          │  ← Button
      └─────────────────────────────┘
      ```
 
      ### Alert Style:
-     - .informational: 정보 아이콘 (파란색 ⓘ)
-     - .warning: 경고 아이콘 (노란색 ⚠)
-     - .critical: 위험 아이콘 (빨간색 ⛔)
+     - .informational: Info icon (blue ⓘ)
+     - .warning: Warning icon (yellow ⚠)
+     - .critical: Critical icon (red ⛔)
 
-     ### 왜 DispatchQueue.main.async?
-     - UI 업데이트는 메인 스레드에서만 가능
-     - 이 메서드는 백그라운드 스레드에서 호출될 수 있음
-     - async로 메인 스레드에 작업 전달
+     ### Why DispatchQueue.main.async?
+     - UI updates can only happen on the main thread
+     - This method may be called from a background thread
+     - async delivers the work to the main thread
 
      - Parameters:
-     - title: 알림 제목
-     - message: 알림 메시지
-     - isError: 에러 알림 여부 (true = 경고 스타일)
+     - title: Notification title
+     - message: Notification message
+     - isError: Whether error notification (true = warning style)
      */
-    /// @brief 사용자 알림 표시
-    /// @param title 알림 제목
-    /// @param message 알림 메시지
-    /// @param isError 에러 알림 여부 (true = 경고 스타일)
+    /// @brief Display user notification
+    /// @param title Notification title
+    /// @param message notification message
+    /// @param isError Whether error notification (true = warning style)
     private func showNotification(title: String, message: String, isError: Bool = false) {
-        // ===== 메인 스레드에서 실행 =====
-        // UI 작업은 반드시 메인 스레드에서!
+        // ===== Execute on main thread =====
+        // UI work must happen on main thread!
         DispatchQueue.main.async {
-            // NSAlert 생성
+            // Create NSAlert
             let alert = NSAlert()
 
-            // 제목 설정
+            // Set title
             alert.messageText = title
 
-            // 상세 메시지 설정
+            // Set detailed message
             alert.informativeText = message
 
-            // 스타일 설정:
-            // - 에러 → .warning (경고 아이콘)
-            // - 정상 → .informational (정보 아이콘)
+            // Set style:
+            // - Error → .warning (warning icon)
+            // - Normal → .informational (info icon)
             alert.alertStyle = isError ? .warning : .informational
 
-            // 버튼 추가
+            // Add button
             alert.addButton(withTitle: "OK")
 
-            // 모달 실행:
-            // - 화면에 대화상자 표시
-            // - 사용자가 버튼 클릭할 때까지 대기
+            // Run modal:
+            // - Display dialog on screen
+            // - Wait until user clicks button
             alert.runModal()
         }
     }
 }
 
 /**
- # ScreenCaptureService 사용 가이드
+ # ScreenCaptureService Usage Guide
 
- ## 기본 사용법:
+ ## Basic Usage:
 
  ```swift
- // 1. 서비스 생성 (앱 시작 시 한 번)
+ // 1. Create service (once at app start)
  let captureService = ScreenCaptureService(device: metalDevice)
 
- // 2. JPEG 품질 설정 (선택)
- captureService.jpegQuality = 0.90  // 90% 품질
+ // 2. Set JPEG quality (optional)
+ captureService.jpegQuality = 0.90  // 90% quality
 
- // 3. 프레임 캡처
+ // 3. Capture frame
  if let data = captureService.captureFrame(
  from: currentTexture,
  format: .png,
  timestamp: Date(),
  videoTimestamp: syncController.currentTime
  ) {
- // 4. 파일 저장
+ // 4. Save file
  captureService.showSavePanel(
  data: data,
  format: .png,
@@ -1019,7 +1019,7 @@ class ScreenCaptureService {
  }
  ```
 
- ## 파일명 생성 예제:
+ ## Filename Creation Example:
 
  ```swift
  func generateFilename() -> String {
@@ -1027,14 +1027,14 @@ class ScreenCaptureService {
  dateFormatter.dateFormat = "yyyy-MM-dd_HH-mm-ss"
  let dateString = dateFormatter.string(from: Date())
 
- let position = "Front"  // 또는 currentCameraPosition
+ let position = "Front"  // or currentCameraPosition
 
  return "Blackbox_\(position)_\(dateString)"
- // 예: "Blackbox_Front_2024-10-12_15-30-45"
+ // Example: "Blackbox_Front_2024-10-12_15-30-45"
  }
  ```
 
- ## 키보드 단축키로 캡처:
+ ## Keyboard Shortcut Capture:
 
  ```swift
  // ContentView.swift
@@ -1051,11 +1051,11 @@ class ScreenCaptureService {
  }
  }
 
- // 단축키 등록: Command+S
+ // Register shortcut: Command+S
  .keyboardShortcut("s", modifiers: .command)
  ```
 
- ## 자동 저장 (다이얼로그 없이):
+ ## Auto Save (without dialog):
 
  ```swift
  func autoSaveCapture() {
@@ -1063,12 +1063,12 @@ class ScreenCaptureService {
 
  guard let data = captureService.captureFrame(
  from: texture,
- format: .jpeg,  // 파일 크기 작음
+ format: .jpeg,  // Smaller file size
  timestamp: Date(),
  videoTimestamp: syncController.currentTime
  ) else { return }
 
- // 자동 저장 경로
+ // Auto save path
  let filename = generateFilename() + ".jpg"
  let documentsURL = FileManager.default.urls(for: .picturesDirectory, in: .userDomainMask)[0]
  let fileURL = documentsURL.appendingPathComponent("Blackbox").appendingPathComponent(filename)
@@ -1082,19 +1082,19 @@ class ScreenCaptureService {
  }
  ```
 
- ## 성능 고려사항:
+ ## Performance Considerations:
 
- 1. **캡처는 비용이 큰 작업**
- - GPU → CPU 메모리 복사 (8MB)
- - 이미지 인코딩 (PNG: 느림, JPEG: 빠름)
- - 파일 쓰기
+ 1. **Capture is an expensive operation**
+ - GPU → CPU memory copy (8MB)
+ - Image encoding (PNG: slow, JPEG: fast)
+ - File writing
 
- 2. **권장 사항**
- - 재생 중에는 pause 후 캡처
- - 연속 캡처 방지 (1초 간격 제한)
- - JPEG 사용 (PNG보다 5-10배 빠름)
+ 2. **Recommendations**
+ - Pause playback before capture
+ - Prevent continuous capture (1 second interval limit)
+ - Use JPEG (5-10x faster than PNG)
 
- 3. **메모리 관리**
- - 캡처 후 Data는 자동으로 해제됨
- - 메모리 부족 시 캡처 실패 가능
+ 3. **Memory management**
+ - Data is automatically released after capture
+ - Capture may fail if out of memory
  */

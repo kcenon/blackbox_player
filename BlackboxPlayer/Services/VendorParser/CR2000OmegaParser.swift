@@ -1,17 +1,17 @@
 /**
  * @file CR2000OmegaParser.swift
- * @brief CR-2000 OMEGA 블랙박스 파일 파서
+ * @brief CR-2000 OMEGA dashcam file parser
  * @author BlackboxPlayer Development Team
  *
  * @details
- * CR-2000 OMEGA 블랙박스의 파일명 형식과 메타데이터를 파싱합니다.
+ * Parses CR-2000 OMEGA dashcam filename format and metadata.
  *
- * 파일명 형식: YYYY-MM-DD-HHh-MMm-SSs_X_type.mp4
- * - 예: 2025-10-07-09h-11m-09s_F_normal.mp4
+ * Filename format: YYYY-MM-DD-HHh-MMm-SSs_X_type.mp4
+ * - Example: 2025-10-07-09h-11m-09s_F_normal.mp4
  *
- * 메타데이터: Stream #2 (mp4s)
+ * Metadata: Stream #2 (mp4s)
  * - GPS: X,Y,Z,gJ$GPRMC (NMEA 0183)
- * - 가속도: X,Y,Z (앞부분)
+ * - Acceleration: X,Y,Z (front part)
  */
 
 import Foundation
@@ -22,7 +22,7 @@ import Foundation
 
 /**
  * @class CR2000OmegaParser
- * @brief CR-2000 OMEGA 블랙박스 파일 파서
+ * @brief CR-2000 OMEGA dashcam file parser
  */
 class CR2000OmegaParser: VendorParserProtocol {
 
@@ -34,22 +34,22 @@ class CR2000OmegaParser: VendorParserProtocol {
     // MARK: - Private Properties
 
     /**
-     * 파일명 정규식 패턴: YYYY-MM-DD-HHh-MMm-SSs_X_type.mp4
+     * Filename regex pattern: YYYY-MM-DD-HHh-MMm-SSs_X_type.mp4
      *
-     * 캡처 그룹:
-     * - 1: 년 (YYYY) - 4자리 숫자
-     * - 2: 월 (MM) - 2자리 숫자
-     * - 3: 일 (DD) - 2자리 숫자
-     * - 4: 시 (HH) - 2자리 숫자
-     * - 5: 분 (MM) - 2자리 숫자
-     * - 6: 초 (SS) - 2자리 숫자
-     * - 7: 카메라 위치 (F/R/L/I)
-     * - 8: 녹화 타입 (normal/event/parking/motion)
-     * - 9: 확장자 (mp4/avi 등)
+     * Capture groups:
+     * - 1: Year (YYYY) - 4 digits
+     * - 2: Month (MM) - 2 digits
+     * - 3: Day (DD) - 2 digits
+     * - 4: Hour (HH) - 2 digits
+     * - 5: Minute (MM) - 2 digits
+     * - 6: Second (SS) - 2 digits
+     * - 7: Camera position (F/R/L/I)
+     * - 8: Recording type (normal/event/parking/motion)
+     * - 9: Extension (mp4/avi etc.)
      */
     private let filenamePattern = #"^(\d{4})-(\d{2})-(\d{2})-(\d{2})h-(\d{2})m-(\d{2})s_([FRLIi])_(normal|event|parking|motion)\.(\w+)$"#
 
-    /// 컴파일된 정규식
+    /// Compiled regular expression
     private let filenameRegex: NSRegularExpression?
 
     // MARK: - Initialization
@@ -64,9 +64,9 @@ class CR2000OmegaParser: VendorParserProtocol {
     // MARK: - VendorParserProtocol Methods
 
     /**
-     * @brief 파일명이 CR-2000 OMEGA 형식과 일치하는지 검사
-     * @param filename 검사할 파일명
-     * @return 일치 여부
+     * @brief Check if filename matches CR-2000 OMEGA format
+     * @param filename Filename to check
+     * @return Whether it matches
      */
     func matches(_ filename: String) -> Bool {
         guard let regex = filenameRegex else { return false }
@@ -76,23 +76,23 @@ class CR2000OmegaParser: VendorParserProtocol {
     }
 
     /**
-     * @brief 파일명에서 메타데이터 추출
-     * @param fileURL 비디오 파일 URL
-     * @return VideoFileInfo 또는 nil
+     * @brief Extract metadata from filename
+     * @param fileURL Video file URL
+     * @return VideoFileInfo or nil
      *
      * @details
-     * 파일명 파싱 과정:
-     * 1. 정규식으로 날짜, 시간, 카메라 위치, 타입 추출
-     * 2. 날짜/시간 문자열 → Date 변환
-     * 3. 카메라 위치 코드 → CameraPosition enum
-     * 4. 파일명에서 이벤트 타입 직접 추출 (normal/event/parking)
-     * 5. 파일 크기 조회
-     * 6. VideoFileInfo 생성
+     * Filename parsing process:
+     * 1. Extract date, time, camera position, and type using regex
+     * 2. Convert date/time string → Date
+     * 3. Map camera position code → CameraPosition enum
+     * 4. Extract event type directly from filename (normal/event/parking)
+     * 5. Query file size
+     * 6. Create VideoFileInfo
      */
     func parseVideoFile(_ fileURL: URL) -> VideoFileInfo? {
         let filename = fileURL.lastPathComponent
 
-        // 정규식 매칭
+        // Regex matching
         guard let regex = filenameRegex else { return nil }
 
         let range = NSRange(filename.startIndex..<filename.endIndex, in: filename)
@@ -100,10 +100,10 @@ class CR2000OmegaParser: VendorParserProtocol {
             return nil
         }
 
-        // 캡처 그룹 개수 확인: [전체, 년, 월, 일, 시, 분, 초, 위치, 타입, 확장자]
+        // Verify capture group count: [whole, year, month, day, hour, minute, second, position, type, extension]
         guard match.numberOfRanges == 10 else { return nil }
 
-        // 캡처 그룹 추출
+        // Extract capture groups
         let year = (filename as NSString).substring(with: match.range(at: 1))
         let month = (filename as NSString).substring(with: match.range(at: 2))
         let day = (filename as NSString).substring(with: match.range(at: 3))
@@ -113,7 +113,7 @@ class CR2000OmegaParser: VendorParserProtocol {
         let positionCode = (filename as NSString).substring(with: match.range(at: 7))
         let eventTypeString = (filename as NSString).substring(with: match.range(at: 8))
 
-        // 타임스탬프 파싱: "20251007091109" → Date
+        // Parse timestamp: "20251007091109" → Date
         let timestampString = "\(year)\(month)\(day)\(hour)\(minute)\(second)"
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyyMMddHHmmss"
@@ -123,30 +123,30 @@ class CR2000OmegaParser: VendorParserProtocol {
             return nil
         }
 
-        // 카메라 위치 감지
+        // Detect camera position
         let position = CameraPosition.detect(from: positionCode)
 
-        // 파일명에서 이벤트 타입 직접 추출
+        // Extract event type directly from filename
         let eventType: EventType
         switch eventTypeString.lowercased() {
         case "normal":
             eventType = .normal
         case "event":
-            eventType = .impact  // event를 impact로 매핑
+            eventType = .impact  // Map event to impact
         case "parking":
             eventType = .parking
         case "motion":
-            eventType = .impact  // motion을 impact로 매핑
+            eventType = .impact  // Map motion to impact
         default:
             eventType = .unknown
         }
 
-        // 파일 크기 조회
+        // Query file size
         let fileSize = UInt64(
             (try? FileManager.default.attributesOfItem(atPath: fileURL.path)[.size] as? UInt64) ?? 0
         )
 
-        // 기본 파일명 생성 (카메라 위치와 타입 제외)
+        // Generate base filename (excluding camera position and type)
         // "2025-10-07-09h-11m-09s_F_normal.mp4" → "2025-10-07-09h-11m-09s"
         let baseFilename = "\(year)-\(month)-\(day)-\(hour)h-\(minute)m-\(second)s"
 
@@ -161,16 +161,16 @@ class CR2000OmegaParser: VendorParserProtocol {
     }
 
     /**
-     * @brief 비디오에서 GPS 데이터 추출
-     * @param fileURL 비디오 파일 URL
-     * @return GPSPoint 배열
+     * @brief Extract GPS data from video
+     * @param fileURL Video file URL
+     * @return Array of GPSPoint
      *
      * @details
-     * CR-2000 OMEGA는 Stream #2에 "X,Y,Z,gJ$GPRMC,..." 형식으로 저장
-     * gJ 이후의 NMEA 0183 부분만 추출하여 GPSParser로 파싱합니다.
+     * CR-2000 OMEGA stores data in Stream #2 as "X,Y,Z,gJ$GPRMC,..." format
+     * Extracts only the NMEA 0183 portion after gJ and parses with GPSParser.
      */
     func extractGPSData(from fileURL: URL) -> [GPSPoint] {
-        // MetadataStreamParser로 메타데이터 라인 추출
+        // Extract metadata lines with MetadataStreamParser
         let parser = MetadataStreamParser()
         let lines = parser.extractMetadataLines(from: fileURL, streamIndex: 2)
 
@@ -178,19 +178,19 @@ class CR2000OmegaParser: VendorParserProtocol {
             return []
         }
 
-        // 파일명에서 baseDate 추출 (NMEA 시간과 결합용)
+        // Extract base date from filename (for combining with NMEA time)
         let baseDate = extractBaseDate(from: fileURL)
 
-        // GPSParser로 파싱
+        // Parse with GPSParser
         let gpsParser = GPSParser()
         var gpsPoints: [GPSPoint] = []
 
         for line in lines {
-            // "$GPRMC" NMEA 부분 추출 (바이너리 헤더 이미 제거됨)
+            // Extract "$GPRMC" NMEA portion (binary header already removed)
             if let nmeaStart = line.range(of: "$GPRMC") {
                 let nmea = String(line[nmeaStart.lowerBound...])
 
-                // NMEA 문자열을 Data로 변환
+                // Convert NMEA string to Data
                 if let nmeaData = nmea.data(using: .ascii) {
                     let points = gpsParser.parseNMEA(data: nmeaData, baseDate: baseDate)
                     gpsPoints.append(contentsOf: points)
@@ -202,16 +202,16 @@ class CR2000OmegaParser: VendorParserProtocol {
     }
 
     /**
-     * @brief 비디오에서 가속도 데이터 추출
-     * @param fileURL 비디오 파일 URL
-     * @return AccelerationData 배열
+     * @brief Extract acceleration data from video
+     * @param fileURL Video file URL
+     * @return Array of AccelerationData
      *
      * @details
-     * CR-2000 OMEGA는 Stream #2에 "X,Y,Z,gJ$GPRMC,..." 형식으로 저장
-     * 앞부분의 X,Y,Z 값을 추출합니다.
+     * CR-2000 OMEGA stores data in Stream #2 as "X,Y,Z,gJ$GPRMC,..." format
+     * Extracts the X, Y, Z values from the beginning.
      */
     func extractAccelerationData(from fileURL: URL) -> [AccelerationData] {
-        // MetadataStreamParser로 메타데이터 라인 추출
+        // Extract metadata lines with MetadataStreamParser
         let parser = MetadataStreamParser()
         let lines = parser.extractMetadataLines(from: fileURL, streamIndex: 2)
 
@@ -219,15 +219,15 @@ class CR2000OmegaParser: VendorParserProtocol {
             return []
         }
 
-        // 파일명에서 baseDate 추출
+        // Extract base date from filename
         let baseDate = extractBaseDate(from: fileURL)
 
         var accelerationData: [AccelerationData] = []
         var timestamp: TimeInterval = 0.0
 
         for line in lines {
-            // 라인 형식: "X,Y,Z,gJ$GPRMC,..."
-            // 앞 3개 값 (X, Y, Z) 추출
+            // Line format: "X,Y,Z,gJ$GPRMC,..."
+            // Extract first 3 values (X, Y, Z)
             let components = line.split(separator: ",", maxSplits: 3)
 
             guard components.count >= 3,
@@ -237,7 +237,7 @@ class CR2000OmegaParser: VendorParserProtocol {
                 continue
             }
 
-            // AccelerationData 생성 (1초 간격)
+            // Create AccelerationData (1 second interval)
             let data = AccelerationData(
                 timestamp: baseDate.addingTimeInterval(timestamp),
                 x: x,
@@ -246,15 +246,15 @@ class CR2000OmegaParser: VendorParserProtocol {
             )
 
             accelerationData.append(data)
-            timestamp += 1.0  // 1초씩 증가
+            timestamp += 1.0  // Increment by 1 second
         }
 
         return accelerationData
     }
 
     /**
-     * @brief CR-2000 OMEGA 지원 기능
-     * @return VendorFeature 배열
+     * @brief CR-2000 OMEGA supported features
+     * @return Array of VendorFeature
      */
     func supportedFeatures() -> [VendorFeature] {
         return [
@@ -268,19 +268,19 @@ class CR2000OmegaParser: VendorParserProtocol {
     // MARK: - Private Methods
 
     /**
-     * @brief 파일 URL에서 녹화 시작 시각 추출
-     * @param fileURL 비디오 파일 URL
-     * @return 녹화 시작 Date
+     * @brief Extract recording start time from file URL
+     * @param fileURL Video file URL
+     * @return Recording start Date
      *
      * @details
-     * 파일명 형식: "YYYY-MM-DD-HHh-MMm-SSs_X_type.mp4"
-     * 예: "2025-10-07-09h-11m-09s_F_normal.mp4"
+     * Filename format: "YYYY-MM-DD-HHh-MMm-SSs_X_type.mp4"
+     * Example: "2025-10-07-09h-11m-09s_F_normal.mp4"
      * → Date(2025-10-07 09:11:09 +0900)
      */
     private func extractBaseDate(from fileURL: URL) -> Date {
         let filename = fileURL.lastPathComponent
 
-        // 정규식 매칭
+        // Regex matching
         guard let regex = filenameRegex else {
             return Date()
         }
@@ -291,7 +291,7 @@ class CR2000OmegaParser: VendorParserProtocol {
             return Date()
         }
 
-        // 캡처 그룹 추출
+        // Extract capture groups
         let year = (filename as NSString).substring(with: match.range(at: 1))
         let month = (filename as NSString).substring(with: match.range(at: 2))
         let day = (filename as NSString).substring(with: match.range(at: 3))
@@ -299,7 +299,7 @@ class CR2000OmegaParser: VendorParserProtocol {
         let minute = (filename as NSString).substring(with: match.range(at: 5))
         let second = (filename as NSString).substring(with: match.range(at: 6))
 
-        // 타임스탬프 파싱
+        // Parse timestamp
         let timestampString = "\(year)\(month)\(day)\(hour)\(minute)\(second)"
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyyMMddHHmmss"

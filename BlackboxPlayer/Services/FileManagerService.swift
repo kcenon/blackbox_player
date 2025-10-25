@@ -5,258 +5,258 @@
 
 /*
  ┌──────────────────────────────────────────────────────────────────────────┐
- │                     FileManagerService 개요                              │
+ │                     FileManagerService Overview                          │
  │                                                                          │
- │  이 서비스는 블랙박스 비디오 파일의 메타데이터 관리 및 파일 연산을      │
- │  담당하는 핵심 서비스입니다.                                             │
+ │  This service is the core service responsible for managing metadata     │
+ │  and file operations for blackbox video files.                          │
  │                                                                          │
- │  【주요 기능】                                                           │
- │  1. 즐겨찾기 관리 (Favorites Management)                                 │
- │     - UserDefaults를 사용한 영구 저장                                    │
- │     - Set<String> 구조로 중복 없는 ID 관리                               │
+ │  【Key Features】                                                        │
+ │  1. Favorites Management                                                 │
+ │     - Persistent storage using UserDefaults                             │
+ │     - Duplicate-free ID management using Set<String> structure          │
  │                                                                          │
- │  2. 메모 관리 (Notes Management)                                         │
- │     - 비디오 파일별 텍스트 메모 저장                                     │
- │     - Dictionary<UUID, String> 구조                                      │
+ │  2. Notes Management                                                     │
+ │     - Text note storage per video file                                  │
+ │     - Dictionary<UUID, String> structure                                │
  │                                                                          │
- │  3. 파일 연산 (File Operations)                                          │
- │     - 삭제 (Delete): 모든 채널 파일 제거                                 │
- │     - 이동 (Move): 다른 디렉토리로 파일 이동                             │
- │     - 내보내기 (Export): 외부 위치로 복사                                │
+ │  3. File Operations                                                      │
+ │     - Delete: Remove all channel files                                  │
+ │     - Move: Move files to different directory                           │
+ │     - Export: Copy to external location                                 │
  │                                                                          │
- │  4. 캐시 관리 (Cache Management)                                         │
- │     - 메모리 내 VideoFile 캐시                                           │
- │     - 5분 만료 시간, 1000개 크기 제한                                    │
- │     - NSLock으로 스레드 안전성 보장                                      │
+ │  4. Cache Management                                                     │
+ │     - In-memory VideoFile cache                                         │
+ │     - 5-minute expiration time, 1000 items size limit                   │
+ │     - Thread safety guaranteed by NSLock                                │
  │                                                                          │
- │  5. 일괄 작업 (Batch Operations)                                         │
- │     - 여러 파일에 대한 즐겨찾기 설정                                     │
- │     - 여러 파일 삭제 및 오류 수집                                        │
+ │  5. Batch Operations                                                     │
+ │     - Set favorites for multiple files                                  │
+ │     - Delete multiple files and collect errors                          │
  │                                                                          │
- │  【아키텍처 위치】                                                       │
+ │  【Architecture Position】                                               │
  │                                                                          │
  │  Views (ContentView, MultiChannelPlayerView)                            │
  │    │                                                                     │
- │    ├─▶ FileManagerService ◀── 이 파일                                   │
+ │    ├─▶ FileManagerService ◀── This file                                 │
  │    │     │                                                               │
- │    │     ├─▶ UserDefaults (favorites, notes 영구 저장)                  │
- │    │     ├─▶ FileManager (파일 시스템 연산)                             │
- │    │     └─▶ NSLock (캐시 동시 접근 제어)                               │
+ │    │     ├─▶ UserDefaults (persistent storage for favorites, notes)    │
+ │    │     ├─▶ FileManager (file system operations)                       │
+ │    │     └─▶ NSLock (cache concurrent access control)                   │
  │    │                                                                     │
- │    └─▶ FileScanner (파일 검색)                                          │
- │        └─▶ MetadataExtractor (메타데이터 추출)                          │
+ │    └─▶ FileScanner (file search)                                        │
+ │        └─▶ MetadataExtractor (metadata extraction)                      │
  │                                                                          │
- │  【데이터 흐름】                                                         │
+ │  【Data Flow】                                                           │
  │                                                                          │
- │  사용자 액션                                                             │
+ │  User Action                                                             │
  │      │                                                                   │
- │      ├── 즐겨찾기 토글                                                   │
- │      │      └─▶ setFavorite() → UserDefaults 저장                       │
+ │      ├── Toggle favorite                                                │
+ │      │      └─▶ setFavorite() → Save to UserDefaults                    │
  │      │                                                                   │
- │      ├── 메모 작성                                                       │
- │      │      └─▶ setNote() → UserDefaults 저장                           │
+ │      ├── Write note                                                     │
+ │      │      └─▶ setNote() → Save to UserDefaults                        │
  │      │                                                                   │
- │      ├── 파일 삭제                                                       │
+ │      ├── Delete file                                                    │
  │      │      └─▶ deleteVideoFile() → FileManager.removeItem()            │
  │      │                                                                   │
- │      └── 파일 이동/내보내기                                              │
+ │      └── Move/Export file                                               │
  │             └─▶ moveVideoFile() / exportVideoFile()                     │
  │                                                                          │
  └──────────────────────────────────────────────────────────────────────────┘
 
- 【UserDefaults란 무엇인가?】
+ 【What is UserDefaults?】
 
- UserDefaults는 iOS/macOS에서 제공하는 간단한 키-값(Key-Value) 저장소입니다.
- 앱의 설정이나 작은 데이터를 영구적으로 저장하는 데 사용됩니다.
+ UserDefaults is a simple key-value storage provided by iOS/macOS.
+ It is used to permanently store app settings or small data.
 
  ┌────────────────────────────────────────────────┐
- │  UserDefaults (앱 종료 후에도 유지)            │
+ │  UserDefaults (persists after app termination) │
  │  ┌──────────────────────────────────────────┐  │
  │  │ Key: "com.blackboxplayer.favorites"      │  │
  │  │ Value: ["uuid-1", "uuid-2", "uuid-3"]    │  │
  │  │                                          │  │
  │  │ Key: "com.blackboxplayer.notes"          │  │
  │  │ Value: {                                 │  │
- │  │   "uuid-1": "고속도로 사고 영상",        │  │
- │  │   "uuid-2": "주차장 접촉 사고"           │  │
+ │  │   "uuid-1": "Highway accident video",    │  │
+ │  │   "uuid-2": "Parking lot collision"      │  │
  │  │ }                                        │  │
  │  └──────────────────────────────────────────┘  │
  └────────────────────────────────────────────────┘
 
- 장점:
- - 간단한 API (set, get 메서드)
- - 자동 직렬화/역직렬화
- - 앱 재시작 후에도 데이터 유지
+ Advantages:
+ - Simple API (set, get methods)
+ - Automatic serialization/deserialization
+ - Data persists after app restart
 
- 단점:
- - 대용량 데이터 저장 부적합 (수 KB 이하 권장)
- - 복잡한 쿼리 불가능
- - 스레드 안전하지만 느림
+ Disadvantages:
+ - Not suitable for large data (recommended under a few KB)
+ - Complex queries not possible
+ - Thread-safe but slow
 
- 사용 예시:
+ Usage example:
  ```swift
- // 저장
+ // Save
  userDefaults.set(["uuid-1", "uuid-2"], forKey: "favorites")
 
- // 불러오기
+ // Load
  let favorites = userDefaults.array(forKey: "favorites") as? [String]
 
- // 삭제
+ // Delete
  userDefaults.removeObject(forKey: "favorites")
  ```
 
- 【NSLock이란 무엇인가?】
+ 【What is NSLock?】
 
- NSLock은 여러 스레드가 동시에 같은 데이터에 접근하는 것을 방지하는
- 잠금 메커니즘입니다. "뮤텍스(Mutex)"라고도 불립니다.
+ NSLock is a locking mechanism that prevents multiple threads from accessing
+ the same data simultaneously. Also known as "Mutex".
 
  ┌──────────────────────────────────────────────────────────┐
- │  캐시 딕셔너리 (공유 자원)                               │
+ │  Cache Dictionary (shared resource)                      │
  │  fileCache: [String: CachedFileInfo]                     │
  │                                                          │
- │  스레드 A           NSLock          스레드 B             │
+ │  Thread A           NSLock          Thread B             │
  │     │                │                │                  │
- │     ├─ lock() ──────▶│◀───────────────┤ (대기 중...)    │
+ │     ├─ lock() ──────▶│◀───────────────┤ (waiting...)    │
  │     │                │                │                  │
- │     ├─ 캐시 읽기     │                │                  │
+ │     ├─ Read cache    │                │                  │
  │     │                │                │                  │
  │     ├─ unlock() ─────▶│                │                  │
  │     │                │                │                  │
  │     │                │◀─── lock() ────┤                  │
  │     │                │                │                  │
- │     │                │                ├─ 캐시 쓰기      │
+ │     │                │                ├─ Write cache    │
  │     │                │                │                  │
  │     │                │◀─── unlock() ──┤                  │
  └──────────────────────────────────────────────────────────┘
 
- 왜 필요한가?
- - SwiftUI는 멀티스레드 환경에서 동작
- - 메인 스레드(UI)와 백그라운드 스레드(파일 I/O)가 동시에 캐시에 접근
- - 동시 접근 시 데이터 손상 가능 (Race Condition)
+ Why is it needed?
+ - SwiftUI operates in a multi-threaded environment
+ - Main thread (UI) and background threads (file I/O) access cache simultaneously
+ - Concurrent access can corrupt data (Race Condition)
 
- 사용 패턴:
+ Usage pattern:
  ```swift
- cacheLock.lock()         // 1. 잠금 획득 (다른 스레드 대기)
- defer { cacheLock.unlock() }  // 2. 함수 종료 시 자동 해제
+ cacheLock.lock()         // 1. Acquire lock (other threads wait)
+ defer { cacheLock.unlock() }  // 2. Auto-release on function exit
 
- // 3. 안전하게 캐시 접근
+ // 3. Safely access cache
  fileCache[key] = value
  ```
 
- defer의 중요성:
- - return, throw로 함수가 중간에 종료되어도 unlock() 보장
- - 잠금을 해제하지 않으면 다른 스레드가 영원히 대기 (데드락)
+ Importance of defer:
+ - Guarantees unlock() even if function exits early via return or throw
+ - Without releasing lock, other threads wait forever (deadlock)
 
- 【캐시 LRU(Least Recently Used) 전략】
+ 【Cache LRU (Least Recently Used) Strategy】
 
- 캐시 크기가 제한(1000개)을 초과하면 가장 오래된 항목 20%를 제거합니다.
+ When cache size exceeds the limit (1000 items), removes the oldest 20% of entries.
 
  ┌──────────────────────────────────────────────────────────┐
- │  캐시 상태 (1000개 항목)                                 │
+ │  Cache State (1000 items)                                │
  │  ┌───────────────────────────────────────────────────┐   │
  │  │ Key         │ CachedAt                            │   │
  │  ├───────────────────────────────────────────────────┤   │
- │  │ file_001.mp4│ 2025-01-15 10:00:00 ◀── 가장 오래됨 │   │
+ │  │ file_001.mp4│ 2025-01-15 10:00:00 ◀── Oldest      │   │
  │  │ file_002.mp4│ 2025-01-15 10:01:23                 │   │
  │  │ file_003.mp4│ 2025-01-15 10:02:45                 │   │
  │  │ ...         │ ...                                 │   │
  │  │ file_999.mp4│ 2025-01-15 14:58:12                 │   │
- │  │ file_1000.mp4│2025-01-15 15:00:00 ◀── 가장 최근   │   │
+ │  │ file_1000.mp4│2025-01-15 15:00:00 ◀── Newest      │   │
  │  └───────────────────────────────────────────────────┘   │
  │                                                          │
- │  새 항목 추가 시 (1001개가 됨)                           │
+ │  When adding new item (becomes 1001 items)               │
  │  ↓                                                       │
- │  1. cachedAt 기준으로 정렬                               │
- │  2. 가장 오래된 200개 (20%) 제거                         │
- │  3. 새 항목 추가 (총 801개가 됨)                         │
+ │  1. Sort by cachedAt                                     │
+ │  2. Remove oldest 200 items (20%)                        │
+ │  3. Add new item (total becomes 801 items)               │
  └──────────────────────────────────────────────────────────┘
 
- 왜 20%를 제거하는가?
- - 한 번에 많이 제거하여 제거 빈도 감소
- - CPU 오버헤드 최소화
- - 메모리 여유 공간 확보
+ Why remove 20%?
+ - Remove many at once to reduce removal frequency
+ - Minimize CPU overhead
+ - Secure memory headroom
 
- 캐시 만료 시간 (5분):
- - 파일 메타데이터는 자주 변하지 않음
- - 5분 이내 재접근 시 디스크 I/O 절약
- - 5분 경과 시 최신 정보 재로딩
+ Cache expiration time (5 minutes):
+ - File metadata doesn't change frequently
+ - Saves disk I/O if re-accessed within 5 minutes
+ - Reloads latest information after 5 minutes
  */
 
 import Foundation
 
 /*
- 【FileManagerService 클래스】
+ 【FileManagerService Class】
 
- 비디오 파일의 메타데이터와 파일 시스템 연산을 관리하는 서비스입니다.
+ Service for managing video file metadata and file system operations.
 
- 주요 책임:
- 1. 즐겨찾기 상태 관리 (isFavorite)
- 2. 파일별 메모 관리 (notes)
- 3. 파일 삭제/이동/내보내기
- 4. VideoFile 정보 캐싱 (성능 최적화)
- 5. 일괄 작업 지원 (여러 파일 동시 처리)
+ Key Responsibilities:
+ 1. Manage favorite status (isFavorite)
+ 2. Manage per-file notes (notes)
+ 3. File deletion/move/export
+ 4. VideoFile information caching (performance optimization)
+ 5. Batch operation support (simultaneous processing of multiple files)
 
- 설계 패턴:
- - **Service Layer Pattern**: 비즈니스 로직을 View에서 분리
- - **Repository Pattern**: 데이터 저장소(UserDefaults) 추상화
- - **Cache Pattern**: 자주 사용하는 데이터를 메모리에 보관
+ Design Patterns:
+ - **Service Layer Pattern**: Separates business logic from View
+ - **Repository Pattern**: Abstracts data storage (UserDefaults)
+ - **Cache Pattern**: Keeps frequently used data in memory
 
- 의존성:
- - UserDefaults: 즐겨찾기/메모 영구 저장
- - FileManager: 파일 시스템 연산 (삭제/이동/복사)
- - NSLock: 멀티스레드 환경에서 캐시 보호
+ Dependencies:
+ - UserDefaults: Persistent storage for favorites/notes
+ - FileManager: File system operations (delete/move/copy)
+ - NSLock: Protects cache in multi-threaded environment
  */
 /// @class FileManagerService
 /// @brief Service for managing video file metadata and operations
-/// @details 비디오 파일의 메타데이터와 파일 시스템 연산을 관리하는 서비스입니다.
+/// @details Service for managing video file metadata and file system operations.
 class FileManagerService {
     // MARK: - Properties
 
     /*
-     【UserDefaults 인스턴스】
+     【UserDefaults Instance】
 
-     앱의 설정과 작은 데이터를 영구적으로 저장하는 키-값 저장소입니다.
+     Key-value storage for permanently storing app settings and small data.
 
-     저장 위치:
+     Storage Location:
      - macOS: ~/Library/Preferences/[BundleID].plist
      - iOS: /Library/Preferences/[BundleID].plist
 
-     저장되는 데이터:
-     1. favorites: 즐겨찾기한 비디오 파일 UUID 배열
-     2. notes: 비디오 파일 UUID → 메모 텍스트 딕셔너리
+     Stored Data:
+     1. favorites: Array of favorited video file UUIDs
+     2. notes: Dictionary of video file UUID → note text
 
-     특징:
-     - 앱 종료 후에도 데이터 유지
-     - 자동 동기화 (변경 사항 즉시 디스크에 저장)
-     - 스레드 안전 (여러 스레드에서 동시 접근 가능)
+     Features:
+     - Data persists after app termination
+     - Auto-synchronization (changes immediately saved to disk)
+     - Thread-safe (concurrent access from multiple threads)
      */
     /// @var userDefaults
     /// @brief UserDefaults instance for persistent storage
     private let userDefaults: UserDefaults
 
     /*
-     【UserDefaults 키 (Key)】
+     【UserDefaults Keys】
 
-     UserDefaults는 키-값 저장소이므로 데이터를 저장/불러올 때 사용할 키가 필요합니다.
+     UserDefaults is a key-value store, so keys are needed for saving/loading data.
 
-     역방향 도메인 표기법 (Reverse Domain Notation):
+     Reverse Domain Notation:
      - "com.blackboxplayer.favorites"
-     - 앱 식별자를 포함하여 다른 앱/라이브러리와 충돌 방지
-     - Apple 권장 명명 규칙
+     - Includes app identifier to prevent conflicts with other apps/libraries
+     - Apple's recommended naming convention
 
-     예시:
+     Example:
      ```swift
-     // 저장
+     // Save
      userDefaults.set(["uuid-1"], forKey: "com.blackboxplayer.favorites")
 
-     // 불러오기
+     // Load
      let favorites = userDefaults.array(forKey: "com.blackboxplayer.favorites")
      ```
 
-     왜 상수로 선언하는가?
-     - 오타 방지 (컴파일 타임 체크)
-     - 키 변경 시 한 곳만 수정
-     - 코드 자동 완성 지원
+     Why declare as constants?
+     - Prevents typos (compile-time checking)
+     - Only one place to modify when changing keys
+     - Supports code auto-completion
      */
     /// @var favoritesKey
     /// @brief UserDefaults key for favorites storage
@@ -266,70 +266,70 @@ class FileManagerService {
     private let notesKey = "com.blackboxplayer.notes"
 
     /*
-     【파일 정보 캐시】
+     【File Information Cache】
 
-     VideoFile 객체를 메모리에 캐싱하여 반복적인 파일 I/O를 줄입니다.
+     Caches VideoFile objects in memory to reduce repetitive file I/O.
 
-     구조:
-     - Key: 파일 경로 (String) - 예: "/path/to/video.mp4"
-     - Value: CachedFileInfo - VideoFile + 캐시된 시간
+     Structure:
+     - Key: File path (String) - e.g., "/path/to/video.mp4"
+     - Value: CachedFileInfo - VideoFile + cached time
 
-     캐시 설정:
-     - maxCacheAge: 5분 (300초) - 이 시간이 지나면 만료
-     - maxCacheSize: 1000개 - 최대 캐시 항목 수
+     Cache Settings:
+     - maxCacheAge: 5 minutes (300 seconds) - expires after this time
+     - maxCacheSize: 1000 items - maximum cache entries
 
-     캐시 히트 vs 미스:
+     Cache Hit vs Miss:
      ┌───────────────────────────────────────────┐
-     │  요청: "/videos/event/20250115_100000.mp4"│
+     │  Request: "/videos/event/20250115_100000.mp4"│
      │    ↓                                      │
-     │  캐시에 있는가?                            │
-     │    ├─ 있음 & 5분 이내 → 캐시 히트 (반환) │
-     │    ├─ 있음 & 5분 초과 → 만료 (재로딩)    │
-     │    └─ 없음 → 캐시 미스 (파일 읽기)       │
+     │  Is it in cache?                          │
+     │    ├─ Yes & within 5 min → Cache hit (return) │
+     │    ├─ Yes & over 5 min → Expired (reload) │
+     │    └─ No → Cache miss (read file)        │
      └───────────────────────────────────────────┘
 
-     성능 효과:
-     - 캐시 히트 시: 0.001초 (메모리 조회)
-     - 캐시 미스 시: 0.1초 (디스크 I/O + 파싱)
-     - 100배 속도 차이!
+     Performance Impact:
+     - Cache hit: 0.001s (memory lookup)
+     - Cache miss: 0.1s (disk I/O + parsing)
+     - 100x speed difference!
      */
     /// @var fileCache
     /// @brief File information cache
     private var fileCache: [String: CachedFileInfo] = [:]
 
     /*
-     【NSLock - 스레드 안전성을 위한 잠금】
+     【NSLock - Lock for Thread Safety】
 
-     fileCache는 여러 스레드에서 동시에 접근할 수 있습니다.
-     예를 들어:
-     - 메인 스레드: UI에서 캐시 읽기
-     - 백그라운드 스레드: 파일 스캔 후 캐시 쓰기
+     fileCache can be accessed simultaneously from multiple threads.
+     For example:
+     - Main thread: Read cache from UI
+     - Background thread: Write cache after file scan
 
-     동시 접근 문제 (Race Condition):
+     Concurrent Access Problem (Race Condition):
      ```
-     스레드 A                     스레드 B
-     fileCache[key] 읽기 (nil)
+     Thread A                     Thread B
+     fileCache[key] read (nil)
      fileCache[key] = value1
      fileCache[key] = value2
 
-     결과: value1이 손실됨!
+     Result: value1 is lost!
      ```
 
-     NSLock으로 해결:
+     Solution with NSLock:
      ```swift
-     cacheLock.lock()  // 다른 스레드는 여기서 대기
+     cacheLock.lock()  // Other threads wait here
      fileCache[key] = value
-     cacheLock.unlock()  // 잠금 해제
+     cacheLock.unlock()  // Release lock
      ```
 
-     defer 패턴 사용:
+     Using defer pattern:
      ```swift
      cacheLock.lock()
-     defer { cacheLock.unlock() }  // 함수 종료 시 자동 실행
+     defer { cacheLock.unlock() }  // Auto-execute on function exit
 
-     // return이나 throw가 발생해도 unlock() 보장!
+     // Guarantees unlock() even with return or throw!
      if condition {
-     return  // unlock() 자동 호출
+     return  // unlock() automatically called
      }
      ```
      */
@@ -338,22 +338,22 @@ class FileManagerService {
     private let cacheLock = NSLock()
 
     /*
-     【캐시 설정 상수】
+     【Cache Configuration Constants】
 
-     maxCacheAge: 5분 (300초)
-     - 5분 동안은 캐시된 데이터 사용
-     - 5분 후에는 파일에서 다시 읽기
-     - 비디오 메타데이터는 자주 변하지 않으므로 5분이 적절
+     maxCacheAge: 5 minutes (300 seconds)
+     - Use cached data for 5 minutes
+     - Re-read from file after 5 minutes
+     - 5 minutes is appropriate since video metadata doesn't change often
 
-     maxCacheSize: 1000개
-     - 약 1000개의 VideoFile 객체 저장 (약 10MB 메모리)
-     - 1000개 초과 시 가장 오래된 20% (200개) 제거
-     - 메모리 사용량 제한
+     maxCacheSize: 1000 items
+     - Stores about 1000 VideoFile objects (~10MB memory)
+     - Removes oldest 20% (200 items) when exceeding 1000
+     - Limits memory usage
 
-     TimeInterval이란?
-     - Swift의 시간 간격 타입
-     - Double의 별칭 (typealias TimeInterval = Double)
-     - 초 단위로 표현 (300 = 300초 = 5분)
+     What is TimeInterval?
+     - Swift's time interval type
+     - Alias for Double (typealias TimeInterval = Double)
+     - Expressed in seconds (300 = 300 seconds = 5 minutes)
      */
     /// @var maxCacheAge
     /// @brief Maximum cache age in seconds (5 minutes)
@@ -365,32 +365,32 @@ class FileManagerService {
     // MARK: - Initialization
 
     /*
-     【초기화 메서드】
+     【Initialization Method】
 
-     FileManagerService 인스턴스를 생성합니다.
+     Creates a FileManagerService instance.
 
-     매개변수:
-     - userDefaults: UserDefaults 인스턴스 (기본값: .standard)
+     Parameters:
+     - userDefaults: UserDefaults instance (default: .standard)
 
-     기본값 패턴:
+     Default Value Pattern:
      ```swift
      init(userDefaults: UserDefaults = .standard)
      ```
 
-     사용 예시:
+     Usage Examples:
      ```swift
-     // 1. 기본 UserDefaults 사용
+     // 1. Use default UserDefaults
      let service = FileManagerService()
 
-     // 2. 테스트용 UserDefaults 사용
+     // 2. Use custom UserDefaults for testing
      let testDefaults = UserDefaults(suiteName: "test")!
      let testService = FileManagerService(userDefaults: testDefaults)
      ```
 
-     의존성 주입 (Dependency Injection):
-     - UserDefaults를 외부에서 주입받음
-     - 테스트 시 Mock UserDefaults 사용 가능
-     - 유연한 설정 (앱 그룹 UserDefaults 등)
+     Dependency Injection:
+     - UserDefaults injected from outside
+     - Allows using Mock UserDefaults for testing
+     - Flexible configuration (app group UserDefaults, etc.)
      */
     /// @brief Initialize FileManagerService
     /// @param userDefaults UserDefaults instance for storage (default: .standard)
@@ -401,33 +401,33 @@ class FileManagerService {
     // MARK: - Favorites
 
     /*
-     【즐겨찾기 확인 메서드】
+     【Check Favorite Method】
 
-     주어진 비디오 파일이 즐겨찾기에 등록되어 있는지 확인합니다.
+     Checks if the given video file is marked as favorite.
 
-     매개변수:
-     - videoFile: 확인할 VideoFile 객체
+     Parameters:
+     - videoFile: VideoFile object to check
 
-     반환값:
-     - true: 즐겨찾기에 있음
-     - false: 즐겨찾기에 없음
+     Return Value:
+     - true: File is favorited
+     - false: File is not favorited
 
-     동작 순서:
-     1. loadFavorites()로 UserDefaults에서 즐겨찾기 Set 불러오기
-     2. videoFile.id.uuidString이 Set에 있는지 확인
-     3. Set의 contains()는 O(1) 시간 복잡도
+     Operation Sequence:
+     1. Load favorites Set from UserDefaults via loadFavorites()
+     2. Check if videoFile.id.uuidString exists in Set
+     3. Set's contains() has O(1) time complexity
 
      Set vs Array:
-     - Set: contains() = O(1) - 해시 테이블
-     - Array: contains() = O(n) - 순차 검색
+     - Set: contains() = O(1) - hash table
+     - Array: contains() = O(n) - sequential search
 
-     사용 예시:
+     Usage Example:
      ```swift
      let service = FileManagerService()
      let videoFile = VideoFile(...)
 
      if service.isFavorite(videoFile) {
-     print("⭐ 즐겨찾기된 파일입니다")
+     print("⭐ This file is favorited")
      }
      ```
      */
@@ -435,204 +435,204 @@ class FileManagerService {
     /// @param videoFile VideoFile to check
     /// @return true if favorited
     func isFavorite(_ videoFile: VideoFile) -> Bool {
-        let favorites = loadFavorites()  // UserDefaults에서 Set<String> 불러오기
-        return favorites.contains(videoFile.id.uuidString)  // O(1) 시간 복잡도
+        let favorites = loadFavorites()  // Load Set<String> from UserDefaults
+        return favorites.contains(videoFile.id.uuidString)  // O(1) time complexity
     }
 
     /*
-     【즐겨찾기 설정 메서드】
+     【Set Favorite Method】
 
-     비디오 파일의 즐겨찾기 상태를 변경합니다.
+     Changes the favorite status of a video file.
 
-     매개변수:
-     - videoFile: 대상 VideoFile 객체
-     - isFavorite: 설정할 즐겨찾기 상태
+     Parameters:
+     - videoFile: Target VideoFile object
+     - isFavorite: Favorite status to set
 
-     동작 순서:
-     1. loadFavorites()로 현재 즐겨찾기 Set 불러오기
-     2. isFavorite 값에 따라 Set에 추가 또는 제거
-     3. saveFavorites()로 변경된 Set을 UserDefaults에 저장
+     Operation Sequence:
+     1. Load current favorites Set via loadFavorites()
+     2. Add or remove from Set based on isFavorite value
+     3. Save modified Set to UserDefaults via saveFavorites()
 
-     Set 연산:
-     - insert(): 중복 자동 방지 (이미 있으면 무시)
-     - remove(): 없으면 무시 (에러 없음)
+     Set Operations:
+     - insert(): Auto-prevents duplicates (ignores if already exists)
+     - remove(): Ignores if not exists (no error)
 
-     사용 예시:
+     Usage Examples:
      ```swift
-     // 즐겨찾기 추가
+     // Add to favorites
      service.setFavorite(videoFile, isFavorite: true)
 
-     // 즐겨찾기 제거
+     // Remove from favorites
      service.setFavorite(videoFile, isFavorite: false)
 
-     // 토글
+     // Toggle
      let currentState = service.isFavorite(videoFile)
      service.setFavorite(videoFile, isFavorite: !currentState)
      ```
 
-     영속성:
-     - UserDefaults에 저장되므로 앱 종료 후에도 유지
-     - 자동 동기화 (변경 즉시 디스크에 기록)
+     Persistence:
+     - Saved to UserDefaults, persists after app termination
+     - Auto-synchronization (written to disk immediately upon change)
      */
     /// @brief Set favorite status for video file
     /// @param videoFile VideoFile to update
     /// @param isFavorite New favorite status
     func setFavorite(_ videoFile: VideoFile, isFavorite: Bool) {
-        var favorites = loadFavorites()  // 현재 즐겨찾기 Set 불러오기
+        var favorites = loadFavorites()  // Load current favorites Set
 
         if isFavorite {
-            // 즐겨찾기 추가: UUID를 String으로 변환하여 Set에 insert
+            // Add to favorites: Convert UUID to String and insert into Set
             favorites.insert(videoFile.id.uuidString)
         } else {
-            // 즐겨찾기 제거: Set에서 UUID String 제거
+            // Remove from favorites: Remove UUID String from Set
             favorites.remove(videoFile.id.uuidString)
         }
 
-        saveFavorites(favorites)  // 변경된 Set을 UserDefaults에 저장
+        saveFavorites(favorites)  // Save modified Set to UserDefaults
     }
 
     /*
-     【모든 즐겨찾기 조회 메서드】
+     【Get All Favorites Method】
 
-     현재 즐겨찾기에 등록된 모든 비디오 파일 ID를 반환합니다.
+     Returns all video file IDs currently marked as favorites.
 
-     반환값:
-     - Set<String>: 즐겨찾기된 비디오 파일의 UUID 문자열 Set
+     Return Value:
+     - Set<String>: Set of UUID strings for favorited video files
 
-     사용 예시:
+     Usage Examples:
      ```swift
      let favorites = service.getAllFavorites()
-     print("즐겨찾기 개수: \(favorites.count)")
+     print("Favorite count: \(favorites.count)")
 
-     // 특정 파일이 즐겨찾기인지 확인
+     // Check if specific file is favorited
      if favorites.contains("some-uuid-string") {
-     print("즐겨찾기에 있습니다")
+     print("This is in favorites")
      }
 
-     // 모든 즐겨찾기 파일 순회
+     // Iterate through all favorite files
      for uuid in favorites {
-     print("즐겨찾기 파일 ID: \(uuid)")
+     print("Favorite file ID: \(uuid)")
      }
      ```
 
-     왜 Set을 반환하는가?
-     - 중복 없음 보장
-     - contains() 연산이 빠름 (O(1))
-     - 순서가 중요하지 않음
+     Why return a Set?
+     - Guarantees no duplicates
+     - Fast contains() operation (O(1))
+     - Order is not important
      */
     /// @brief Get all favorited video file IDs
     /// @return Set of video file UUIDs
     func getAllFavorites() -> Set<String> {
-        return loadFavorites()  // UserDefaults에서 Set 불러오기
+        return loadFavorites()  // Load Set from UserDefaults
     }
 
     /*
-     【모든 즐겨찾기 삭제 메서드】
+     【Clear All Favorites Method】
 
-     저장된 모든 즐겨찾기 정보를 삭제합니다.
+     Deletes all saved favorite information.
 
-     동작:
-     - UserDefaults에서 favoritesKey에 해당하는 데이터 제거
-     - 디스크에서도 완전히 삭제됨
+     Operation:
+     - Removes data corresponding to favoritesKey from UserDefaults
+     - Completely deleted from disk as well
 
-     사용 예시:
+     Usage Example:
      ```swift
-     // 확인 다이얼로그 후 삭제
+     // Delete after confirmation dialog
      let alert = NSAlert()
-     alert.messageText = "모든 즐겨찾기를 삭제하시겠습니까?"
-     alert.addButton(withTitle: "삭제")
-     alert.addButton(withTitle: "취소")
+     alert.messageText = "Do you want to delete all favorites?"
+     alert.addButton(withTitle: "Delete")
+     alert.addButton(withTitle: "Cancel")
 
      if alert.runModal() == .alertFirstButtonReturn {
      service.clearAllFavorites()
-     print("즐겨찾기가 모두 삭제되었습니다")
+     print("All favorites have been deleted")
      }
      ```
 
-     주의:
-     - 복구 불가능한 작업
-     - 사용자에게 확인 받는 것이 좋음
-     - 앱 재설치나 데이터 초기화 기능에 유용
+     Caution:
+     - Irreversible operation
+     - Recommended to get user confirmation
+     - Useful for app reinstallation or data reset features
      */
     /// @brief Clear all favorites
     func clearAllFavorites() {
-        userDefaults.removeObject(forKey: favoritesKey)  // UserDefaults에서 키 제거
+        userDefaults.removeObject(forKey: favoritesKey)  // Remove key from UserDefaults
     }
 
     // MARK: - Notes
 
     /*
-     【메모 조회 메서드】
+     【Get Note Method】
 
-     특정 비디오 파일에 저장된 메모를 가져옵니다.
+     Retrieves the note saved for a specific video file.
 
-     매개변수:
-     - videoFile: 메모를 조회할 VideoFile 객체
+     Parameters:
+     - videoFile: VideoFile object to get note for
 
-     반환값:
-     - String?: 저장된 메모 텍스트 (없으면 nil)
+     Return Value:
+     - String?: Saved note text (nil if none)
 
-     동작 순서:
-     1. loadNotes()로 [UUID: String] Dictionary 불러오기
-     2. videoFile.id.uuidString을 키로 Dictionary 조회
-     3. 값이 있으면 반환, 없으면 nil
+     Operation Sequence:
+     1. Load [UUID: String] Dictionary via loadNotes()
+     2. Query Dictionary using videoFile.id.uuidString as key
+     3. Return value if exists, otherwise nil
 
-     Dictionary 조회:
-     - notes[key] 는 Optional<String>을 반환
-     - 키가 없으면 자동으로 nil 반환
+     Dictionary Query:
+     - notes[key] returns Optional<String>
+     - Automatically returns nil if key doesn't exist
 
-     사용 예시:
+     Usage Examples:
      ```swift
      if let note = service.getNote(for: videoFile) {
-     print("메모: \(note)")
+     print("Note: \(note)")
      } else {
-     print("메모가 없습니다")
+     print("No note")
      }
 
-     // nil 병합 연산자 사용
-     let displayNote = service.getNote(for: videoFile) ?? "메모 없음"
+     // Using nil coalescing operator
+     let displayNote = service.getNote(for: videoFile) ?? "No note"
      ```
      */
     /// @brief Get note for video file
     /// @param videoFile VideoFile to get note for
     /// @return Note text or nil if no note
     func getNote(for videoFile: VideoFile) -> String? {
-        let notes = loadNotes()  // UserDefaults에서 Dictionary 불러오기
-        return notes[videoFile.id.uuidString]  // Dictionary 조회 (없으면 nil)
+        let notes = loadNotes()  // Load Dictionary from UserDefaults
+        return notes[videoFile.id.uuidString]  // Query Dictionary (nil if not found)
     }
 
     /*
-     【메모 설정 메서드】
+     【Set Note Method】
 
-     비디오 파일에 메모를 저장하거나 삭제합니다.
+     Saves or deletes a note for a video file.
 
-     매개변수:
-     - videoFile: 대상 VideoFile 객체
-     - note: 저장할 메모 텍스트 (nil이면 메모 삭제)
+     Parameters:
+     - videoFile: Target VideoFile object
+     - note: Note text to save (deletes note if nil)
 
-     동작 순서:
-     1. loadNotes()로 현재 메모 Dictionary 불러오기
-     2. note가 있고 비어있지 않으면 Dictionary에 추가
-     3. note가 nil이거나 비어있으면 Dictionary에서 제거
-     4. saveNotes()로 변경된 Dictionary를 UserDefaults에 저장
+     Operation Sequence:
+     1. Load current notes Dictionary via loadNotes()
+     2. Add to Dictionary if note exists and is not empty
+     3. Remove from Dictionary if note is nil or empty
+     4. Save modified Dictionary to UserDefaults via saveNotes()
 
-     빈 문자열 체크:
-     - isEmpty: 길이가 0인지 확인
-     - 공백만 있는 경우는 isEmpty = false
-     - 공백 제거: note.trimmingCharacters(in: .whitespacesAndNewlines)
+     Empty String Check:
+     - isEmpty: Checks if length is 0
+     - isEmpty = false if only whitespace exists
+     - Remove whitespace: note.trimmingCharacters(in: .whitespacesAndNewlines)
 
-     사용 예시:
+     Usage Examples:
      ```swift
-     // 메모 추가
-     service.setNote(for: videoFile, note: "고속도로 사고 영상")
+     // Add note
+     service.setNote(for: videoFile, note: "Highway accident video")
 
-     // 메모 삭제 (nil)
+     // Delete note (nil)
      service.setNote(for: videoFile, note: nil)
 
-     // 메모 삭제 (빈 문자열)
+     // Delete note (empty string)
      service.setNote(for: videoFile, note: "")
 
-     // 사용자 입력으로 메모 설정
+     // Set note from user input
      let userInput = textField.stringValue
      service.setNote(for: videoFile, note: userInput.isEmpty ? nil : userInput)
      ```
@@ -641,196 +641,196 @@ class FileManagerService {
     /// @param videoFile VideoFile to set note for
     /// @param note Note text or nil to remove
     func setNote(for videoFile: VideoFile, note: String?) {
-        var notes = loadNotes()  // 현재 메모 Dictionary 불러오기
+        var notes = loadNotes()  // Load current notes Dictionary
 
         if let note = note, !note.isEmpty {
-            // 메모가 있고 비어있지 않으면 Dictionary에 추가
+            // Add to Dictionary if note exists and is not empty
             notes[videoFile.id.uuidString] = note
         } else {
-            // 메모가 nil이거나 빈 문자열이면 Dictionary에서 제거
+            // Remove from Dictionary if note is nil or empty string
             notes.removeValue(forKey: videoFile.id.uuidString)
         }
 
-        saveNotes(notes)  // 변경된 Dictionary를 UserDefaults에 저장
+        saveNotes(notes)  // Save modified Dictionary to UserDefaults
     }
 
     /*
-     【모든 메모 조회 메서드】
+     【Get All Notes Method】
 
-     저장된 모든 비디오 파일의 메모를 반환합니다.
+     Returns notes for all saved video files.
 
-     반환값:
-     - [String: String]: UUID → 메모 텍스트 Dictionary
+     Return Value:
+     - [String: String]: UUID → note text Dictionary
 
-     사용 예시:
+     Usage Examples:
      ```swift
      let allNotes = service.getAllNotes()
-     print("총 메모 개수: \(allNotes.count)")
+     print("Total notes: \(allNotes.count)")
 
-     // 모든 메모 순회
+     // Iterate through all notes
      for (uuid, note) in allNotes {
-     print("파일 \(uuid): \(note)")
+     print("File \(uuid): \(note)")
      }
 
-     // 특정 UUID의 메모 확인
+     // Check note for specific UUID
      if let note = allNotes["some-uuid-string"] {
-     print("메모: \(note)")
+     print("Note: \(note)")
      }
      ```
 
-     사용 사례:
-     - 메모가 있는 파일 필터링
-     - 메모 검색 기능
-     - 통계 표시 (메모가 있는 파일 개수)
+     Use Cases:
+     - Filter files with notes
+     - Note search functionality
+     - Display statistics (count of files with notes)
      */
     /// @brief Get all notes
     /// @return Dictionary of video file UUID to note
     func getAllNotes() -> [String: String] {
-        return loadNotes()  // UserDefaults에서 Dictionary 불러오기
+        return loadNotes()  // Load Dictionary from UserDefaults
     }
 
     /*
-     【모든 메모 삭제 메서드】
+     【Clear All Notes Method】
 
-     저장된 모든 메모를 삭제합니다.
+     Deletes all saved notes.
 
-     동작:
-     - UserDefaults에서 notesKey에 해당하는 데이터 제거
-     - 디스크에서도 완전히 삭제됨
+     Operation:
+     - Removes data corresponding to notesKey from UserDefaults
+     - Completely deleted from disk as well
 
-     사용 예시:
+     Usage Example:
      ```swift
-     // 확인 다이얼로그 후 삭제
+     // Delete after confirmation dialog
      let alert = NSAlert()
-     alert.messageText = "모든 메모를 삭제하시겠습니까?"
-     alert.addButton(withTitle: "삭제")
-     alert.addButton(withTitle: "취소")
+     alert.messageText = "Do you want to delete all notes?"
+     alert.addButton(withTitle: "Delete")
+     alert.addButton(withTitle: "Cancel")
 
      if alert.runModal() == .alertFirstButtonReturn {
      service.clearAllNotes()
-     print("메모가 모두 삭제되었습니다")
+     print("All notes have been deleted")
      }
      ```
 
-     주의:
-     - 복구 불가능한 작업
-     - 사용자에게 확인 받는 것이 좋음
-     - 앱 재설치나 데이터 초기화 기능에 유용
+     Caution:
+     - Irreversible operation
+     - Recommended to get user confirmation
+     - Useful for app reinstallation or data reset features
      */
     /// @brief Clear all notes
     func clearAllNotes() {
-        userDefaults.removeObject(forKey: notesKey)  // UserDefaults에서 키 제거
+        userDefaults.removeObject(forKey: notesKey)  // Remove key from UserDefaults
     }
 
     // MARK: - File Operations
 
     /*
-     【파일 삭제 메서드】
+     【Delete Video File Method】
 
-     비디오 파일의 모든 채널을 디스크에서 삭제하고, 관련 메타데이터(즐겨찾기, 메모)도 제거합니다.
+     Deletes all channels of a video file from disk and removes related metadata (favorites, notes).
 
-     매개변수:
-     - videoFile: 삭제할 VideoFile 객체
+     Parameters:
+     - videoFile: VideoFile object to delete
 
-     예외:
-     - Error: 파일 삭제 실패 시 throw
+     Throws:
+     - Error: Thrown if file deletion fails
 
-     동작 순서:
-     1. FileManager 인스턴스 획득
-     2. 모든 채널 파일 순회
-     3. 각 파일 존재 확인 후 삭제
-     4. 즐겨찾기에서 제거
-     5. 메모 제거
+     Operation Sequence:
+     1. Obtain FileManager instance
+     2. Iterate through all channel files
+     3. Check existence and delete each file
+     4. Remove from favorites
+     5. Remove notes
 
-     채널 파일 예시:
+     Channel File Example:
      ```
      videoFile.channels = [
-     ChannelInfo(filePath: "/videos/20250115_100000_F.mp4"),  // 전방
-     ChannelInfo(filePath: "/videos/20250115_100000_R.mp4"),  // 후방
+     ChannelInfo(filePath: "/videos/20250115_100000_F.mp4"),  // Front
+     ChannelInfo(filePath: "/videos/20250115_100000_R.mp4"),  // Rear
      ]
      ```
 
-     에러 처리:
+     Error Handling:
      ```swift
      do {
      try service.deleteVideoFile(videoFile)
-     print("파일이 삭제되었습니다")
+     print("File has been deleted")
      } catch {
-     print("삭제 실패: \(error.localizedDescription)")
+     print("Deletion failed: \(error.localizedDescription)")
      }
      ```
 
      FileManager.removeItem(atPath:):
-     - 파일 또는 디렉토리 삭제
-     - 파일이 없으면 에러 발생
-     - 디렉토리인 경우 내용물도 모두 삭제
+     - Deletes file or directory
+     - Throws error if file doesn't exist
+     - Deletes all contents if directory
      */
     /// @brief Delete video file and all its channels
     /// @param videoFile VideoFile to delete
     /// @throws Error if deletion fails
     func deleteVideoFile(_ videoFile: VideoFile) throws {
-        let fileManager = FileManager.default  // 파일 시스템 연산을 위한 FileManager
+        let fileManager = FileManager.default  // FileManager for file system operations
 
         // Delete all channel files
-        // 모든 채널 파일을 순회하며 삭제
+        // Iterate through and delete all channel files
         for channel in videoFile.channels {
-            let filePath = channel.filePath  // 채널 파일 경로 추출
+            let filePath = channel.filePath  // Extract channel file path
 
-            // 파일 존재 여부 확인
+            // Check if file exists
             if fileManager.fileExists(atPath: filePath) {
-                // 파일이 존재하면 삭제 (에러 발생 시 throw)
+                // Delete file if it exists (throws on error)
                 try fileManager.removeItem(atPath: filePath)
             }
         }
 
         // Remove from favorites and notes
-        // 즐겨찾기와 메모에서도 제거
-        setFavorite(videoFile, isFavorite: false)  // 즐겨찾기 해제
-        setNote(for: videoFile, note: nil)  // 메모 삭제
+        // Also remove from favorites and notes
+        setFavorite(videoFile, isFavorite: false)  // Unmark favorite
+        setNote(for: videoFile, note: nil)  // Delete note
     }
 
     /*
-     【파일 이동 메서드】
+     【Move Video File Method】
 
-     비디오 파일의 모든 채널을 다른 디렉토리로 이동하고, 새 경로로 업데이트된 VideoFile을 반환합니다.
+     Moves all channels of a video file to a different directory and returns the updated VideoFile with new paths.
 
-     매개변수:
-     - videoFile: 이동할 VideoFile 객체
-     - destinationURL: 대상 디렉토리 URL
+     Parameters:
+     - videoFile: VideoFile object to move
+     - destinationURL: Destination directory URL
 
-     반환값:
-     - VideoFile: 새 경로로 업데이트된 VideoFile 객체
+     Return Value:
+     - VideoFile: VideoFile object updated with new paths
 
-     예외:
-     - Error: 파일 이동 실패 시 throw
+     Throws:
+     - Error: Thrown if file move fails
 
-     동작 순서:
-     1. 대상 디렉토리가 없으면 생성
-     2. 각 채널 파일을 새 위치로 이동
-     3. 새 경로로 ChannelInfo 객체 생성
-     4. 새 채널 배열로 VideoFile 객체 생성
-     5. 업데이트된 VideoFile 반환
+     Operation Sequence:
+     1. Create destination directory if it doesn't exist
+     2. Move each channel file to new location
+     3. Create ChannelInfo objects with new paths
+     4. Create VideoFile object with new channel array
+     5. Return updated VideoFile
 
-     사용 예시:
+     Usage Example:
      ```swift
      let sourceFile = VideoFile(basePath: "/videos/event/")
      let destination = URL(fileURLWithPath: "/videos/archive/")
 
      do {
      let movedFile = try service.moveVideoFile(sourceFile, to: destination)
-     print("파일이 이동되었습니다: \(movedFile.basePath)")
+     print("File moved to: \(movedFile.basePath)")
      } catch {
-     print("이동 실패: \(error.localizedDescription)")
+     print("Move failed: \(error.localizedDescription)")
      }
      ```
 
-     이동 vs 복사:
-     - moveItem(): 원본 삭제, 빠름
-     - copyItem(): 원본 유지, 느림
+     Move vs Copy:
+     - moveItem(): Deletes original, fast
+     - copyItem(): Keeps original, slow
 
-     디렉토리 생성:
+     Directory Creation:
      - createDirectory(withIntermediateDirectories: true)
-     - 중간 디렉토리도 자동 생성 (/a/b/c 생성 시 /a, /a/b도 생성)
+     - Automatically creates intermediate directories (creates /a, /a/b when creating /a/b/c)
      */
     /// @brief Move video file to different directory
     /// @param videoFile VideoFile to move
@@ -838,36 +838,36 @@ class FileManagerService {
     /// @return Updated VideoFile with new paths
     /// @throws Error if move fails
     func moveVideoFile(_ videoFile: VideoFile, to destinationURL: URL) throws -> VideoFile {
-        let fileManager = FileManager.default  // 파일 시스템 연산을 위한 FileManager
+        let fileManager = FileManager.default  // FileManager for file system operations
 
         // Create destination directory if needed
-        // 대상 디렉토리가 없으면 생성
+        // Create destination directory if it doesn't exist
         if !fileManager.fileExists(atPath: destinationURL.path) {
             try fileManager.createDirectory(
                 at: destinationURL,
-                withIntermediateDirectories: true  // 중간 경로도 자동 생성
+                withIntermediateDirectories: true  // Auto-create intermediate paths
             )
         }
 
         // Move all channel files
-        // 모든 채널 파일을 새 위치로 이동하고, 새 ChannelInfo 배열 생성
+        // Move all channel files to new location and create new ChannelInfo array
         var newChannels: [ChannelInfo] = []
 
         for channel in videoFile.channels {
-            let sourceURL = URL(fileURLWithPath: channel.filePath)  // 현재 파일 경로
-            let filename = sourceURL.lastPathComponent  // 파일명 추출 (예: "20250115_100000_F.mp4")
-            let destinationFileURL = destinationURL.appendingPathComponent(filename)  // 새 경로 생성
+            let sourceURL = URL(fileURLWithPath: channel.filePath)  // Current file path
+            let filename = sourceURL.lastPathComponent  // Extract filename (e.g., "20250115_100000_F.mp4")
+            let destinationFileURL = destinationURL.appendingPathComponent(filename)  // Create new path
 
             // Move file
-            // 파일을 새 위치로 이동 (원본은 삭제됨)
+            // Move file to new location (original is deleted)
             try fileManager.moveItem(at: sourceURL, to: destinationFileURL)
 
             // Create new ChannelInfo with updated path
-            // 새 경로로 ChannelInfo 객체 생성
+            // Create ChannelInfo object with new path
             let newChannel = ChannelInfo(
                 id: channel.id,
                 position: channel.position,
-                filePath: destinationFileURL.path,  // 업데이트된 파일 경로
+                filePath: destinationFileURL.path,  // Updated file path
                 width: channel.width,
                 height: channel.height,
                 frameRate: channel.frameRate,
@@ -879,19 +879,19 @@ class FileManagerService {
                 duration: channel.duration
             )
 
-            newChannels.append(newChannel)  // 새 채널 배열에 추가
+            newChannels.append(newChannel)  // Add to new channel array
         }
 
         // Create new VideoFile with updated paths
-        // 새 채널 배열로 VideoFile 객체 생성하여 반환
+        // Create and return VideoFile object with new channel array
         return VideoFile(
             id: videoFile.id,
             timestamp: videoFile.timestamp,
             eventType: videoFile.eventType,
             duration: videoFile.duration,
-            channels: newChannels,  // 업데이트된 채널 배열
+            channels: newChannels,  // Updated channel array
             metadata: videoFile.metadata,
-            basePath: destinationURL.path,  // 업데이트된 기본 경로
+            basePath: destinationURL.path,  // Updated base path
             isFavorite: videoFile.isFavorite,
             notes: videoFile.notes,
             isCorrupted: videoFile.isCorrupted
@@ -899,50 +899,50 @@ class FileManagerService {
     }
 
     /*
-     【파일 내보내기 메서드】
+     【Export Video File Method】
 
-     비디오 파일의 모든 채널을 외부 위치로 복사합니다.
-     원본 파일은 그대로 유지됩니다.
+     Copies all channels of a video file to an external location.
+     Original files are kept intact.
 
-     매개변수:
-     - videoFile: 내보낼 VideoFile 객체
-     - destinationURL: 대상 디렉토리 URL
+     Parameters:
+     - videoFile: VideoFile object to export
+     - destinationURL: Destination directory URL
 
-     예외:
-     - Error: 파일 복사 실패 시 throw
+     Throws:
+     - Error: Thrown if file copy fails
 
-     동작 순서:
-     1. 대상 디렉토리가 없으면 생성
-     2. 각 채널 파일을 새 위치로 복사
-     3. 원본 파일은 그대로 유지
+     Operation Sequence:
+     1. Create destination directory if it doesn't exist
+     2. Copy each channel file to new location
+     3. Keep original files intact
 
-     사용 예시:
+     Usage Example:
      ```swift
      let videoFile = VideoFile(...)
      let exportPath = URL(fileURLWithPath: "/Users/user/Desktop/export/")
 
      do {
      try service.exportVideoFile(videoFile, to: exportPath)
-     print("파일이 내보내기되었습니다")
+     print("File has been exported")
      } catch {
-     print("내보내기 실패: \(error.localizedDescription)")
+     print("Export failed: \(error.localizedDescription)")
      }
      ```
 
-     이동(move) vs 내보내기(export):
-     - move: 원본 삭제, 빠름, 같은 볼륨 내에서만 가능
-     - export: 원본 유지, 느림, 다른 볼륨으로도 가능
+     Move vs Export:
+     - move: Deletes original, fast, only within same volume
+     - export: Keeps original, slow, can export to different volume
 
-     진행 상황 표시:
+     Progress Display:
      ```swift
      let totalFiles = videoFile.channels.count
      var completedFiles = 0
 
      for channel in videoFile.channels {
-     // 복사 작업...
+     // Copy operation...
      completedFiles += 1
      let progress = Double(completedFiles) / Double(totalFiles)
-     print("진행률: \(Int(progress * 100))%")
+     print("Progress: \(Int(progress * 100))%")
      }
      ```
      */
@@ -951,45 +951,45 @@ class FileManagerService {
     /// @param destinationURL Export destination URL
     /// @throws Error if export fails
     func exportVideoFile(_ videoFile: VideoFile, to destinationURL: URL) throws {
-        let fileManager = FileManager.default  // 파일 시스템 연산을 위한 FileManager
+        let fileManager = FileManager.default  // FileManager for file system operations
 
         // Create destination directory if needed
-        // 대상 디렉토리가 없으면 생성
+        // Create destination directory if it doesn't exist
         if !fileManager.fileExists(atPath: destinationURL.path) {
             try fileManager.createDirectory(
                 at: destinationURL,
-                withIntermediateDirectories: true  // 중간 경로도 자동 생성
+                withIntermediateDirectories: true  // Auto-create intermediate paths
             )
         }
 
         // Copy all channel files
-        // 모든 채널 파일을 새 위치로 복사 (원본 유지)
+        // Copy all channel files to new location (keep original)
         for channel in videoFile.channels {
-            let sourceURL = URL(fileURLWithPath: channel.filePath)  // 원본 파일 경로
-            let filename = sourceURL.lastPathComponent  // 파일명 추출
-            let destinationFileURL = destinationURL.appendingPathComponent(filename)  // 대상 파일 경로
+            let sourceURL = URL(fileURLWithPath: channel.filePath)  // Original file path
+            let filename = sourceURL.lastPathComponent  // Extract filename
+            let destinationFileURL = destinationURL.appendingPathComponent(filename)  // Destination file path
 
             // Copy file
-            // 파일 복사 (원본은 그대로 유지)
+            // Copy file (keep original intact)
             try fileManager.copyItem(at: sourceURL, to: destinationFileURL)
         }
     }
 
     /*
-     【총 파일 크기 계산 메서드】
+     【Get Total File Size Method】
 
-     여러 비디오 파일의 총 크기를 바이트 단위로 계산합니다.
+     Calculates the total size of multiple video files in bytes.
 
-     매개변수:
-     - videoFiles: VideoFile 객체 배열
+     Parameters:
+     - videoFiles: Array of VideoFile objects
 
-     반환값:
-     - UInt64: 총 파일 크기 (바이트)
+     Return Value:
+     - UInt64: Total file size (bytes)
 
-     동작:
-     - reduce() 함수로 모든 파일의 totalFileSize를 합산
+     Operation:
+     - Sums totalFileSize of all files using reduce() function
 
-     reduce() 함수 설명:
+     reduce() function explanation:
      ```swift
      let numbers = [1, 2, 3, 4, 5]
      let sum = numbers.reduce(0) { total, number in
@@ -998,91 +998,91 @@ class FileManagerService {
      // sum = 15
      ```
 
-     사용 예시:
+     Usage Example:
      ```swift
      let files = [videoFile1, videoFile2, videoFile3]
      let totalSize = service.getTotalSize(of: files)
 
-     // 바이트를 사람이 읽기 쉬운 형식으로 변환
+     // Convert bytes to human-readable format
      let formatter = ByteCountFormatter()
      formatter.countStyle = .file
      let readableSize = formatter.string(fromByteCount: Int64(totalSize))
-     print("총 크기: \(readableSize)")  // "총 크기: 1.5 GB"
+     print("Total size: \(readableSize)")  // "Total size: 1.5 GB"
      ```
 
-     UInt64란?
-     - 64비트 부호 없는 정수 (0 ~ 18,446,744,073,709,551,615)
-     - 최대 18 엑사바이트 (18,000,000 테라바이트) 표현 가능
-     - 파일 크기 표현에 적합
+     What is UInt64?
+     - 64-bit unsigned integer (0 ~ 18,446,744,073,709,551,615)
+     - Can represent up to 18 exabytes (18,000,000 terabytes)
+     - Suitable for representing file sizes
      */
     /// @brief Get total size of all video files
     /// @param videoFiles Array of video files
     /// @return Total size in bytes
     func getTotalSize(of videoFiles: [VideoFile]) -> UInt64 {
         return videoFiles.reduce(0) { total, file in
-            total + file.totalFileSize  // 각 파일의 크기를 누적 합산
+            total + file.totalFileSize  // Accumulate size of each file
         }
     }
 
     /*
-     【사용 가능한 디스크 공간 조회 메서드】
+     【Get Available Disk Space Method】
 
-     지정된 경로의 볼륨에서 사용 가능한 디스크 공간을 조회합니다.
+     Queries available disk space on the volume at the specified path.
 
-     매개변수:
-     - path: 확인할 경로 (파일 또는 디렉토리)
+     Parameters:
+     - path: Path to check (file or directory)
 
-     반환값:
-     - UInt64?: 사용 가능한 공간 (바이트) 또는 nil (실패 시)
+     Return Value:
+     - UInt64?: Available space (bytes) or nil (if failed)
 
-     동작 순서:
-     1. 경로를 URL로 변환
-     2. resourceValues(forKeys:)로 볼륨 정보 조회
-     3. volumeAvailableCapacityKey로 사용 가능 공간 추출
-     4. Int를 UInt64로 변환하여 반환
+     Operation Sequence:
+     1. Convert path to URL
+     2. Query volume info via resourceValues(forKeys:)
+     3. Extract available space using volumeAvailableCapacityKey
+     4. Convert Int to UInt64 and return
 
-     사용 예시:
+     Usage Example:
      ```swift
      if let availableSpace = service.getAvailableDiskSpace(at: "/videos") {
      let formatter = ByteCountFormatter()
      formatter.countStyle = .file
      let readable = formatter.string(fromByteCount: Int64(availableSpace))
-     print("사용 가능: \(readable)")
+     print("Available: \(readable)")
 
-     // 공간 부족 확인
+     // Check for insufficient space
      let requiredSpace: UInt64 = 1_000_000_000  // 1 GB
      if availableSpace < requiredSpace {
-     print("경고: 디스크 공간이 부족합니다")
+     print("Warning: Insufficient disk space")
      }
      } else {
-     print("디스크 공간을 확인할 수 없습니다")
+     print("Cannot determine disk space")
      }
      ```
 
-     resourceValues(forKeys:)란?
-     - URL의 메타데이터를 조회하는 메서드
-     - 파일 크기, 생성 날짜, 볼륨 정보 등
-     - throws 키워드로 에러 발생 가능
+     What is resourceValues(forKeys:)?
+     - Method to query URL metadata
+     - File size, creation date, volume info, etc.
+     - Can throw errors with throws keyword
 
      volumeAvailableCapacityKey:
-     - 사용자가 실제로 사용할 수 있는 공간
-     - 시스템 예약 공간 제외
-     - macOS: 일반적으로 전체 용량의 80-90%
+     - Space actually available for user
+     - Excludes system reserved space
+     - macOS: Typically 80-90% of total capacity
      */
     /// @brief Get available disk space at path
     /// @param path Path to check
     /// @return Available space in bytes or nil if cannot determine
     func getAvailableDiskSpace(at path: String) -> UInt64? {
         do {
-            let url = URL(fileURLWithPath: path)  // 경로를 URL로 변환
+            let url = URL(fileURLWithPath: path)  // Convert path to URL
 
-            // 볼륨 정보 조회
+            // Query volume info
             let values = try url.resourceValues(forKeys: [.volumeAvailableCapacityKey])
 
-            // 사용 가능 공간 추출 및 UInt64로 변환
+            // Extract available space and convert to UInt64
             return values.volumeAvailableCapacity.map { UInt64($0) }
         } catch {
-            // 에러 발생 시 nil 반환
+            // Return nil on error
             return nil
         }
     }
@@ -1090,43 +1090,43 @@ class FileManagerService {
     // MARK: - Batch Operations
 
     /*
-     【일괄 즐겨찾기 설정 메서드】
+     【Batch Set Favorite Method】
 
-     여러 비디오 파일에 대해 즐겨찾기 상태를 일괄 설정합니다.
+     Applies favorite status to multiple video files at once.
 
-     매개변수:
-     - videoFiles: VideoFile 객체 배열
-     - isFavorite: 설정할 즐겨찾기 상태
+     Parameters:
+     - videoFiles: Array of VideoFile objects
+     - isFavorite: Favorite status to apply
 
-     동작 순서:
-     1. 현재 즐겨찾기 Set 불러오기
-     2. 모든 파일을 순회하며 Set에 추가/제거
-     3. 한 번에 saveFavorites() 호출
+     Operation Sequence:
+     1. Load current favorites Set
+     2. Iterate through all files and add/remove from Set
+     3. Call saveFavorites() once
 
-     성능 최적화:
-     - 개별 호출 방식:
+     Performance Optimization:
+     - Individual call approach:
      ```swift
      for file in files {
-     service.setFavorite(file, isFavorite: true)  // 매번 저장
+     service.setFavorite(file, isFavorite: true)  // Save each time
      }
-     // UserDefaults 저장: 1000번 (파일 1000개인 경우)
+     // UserDefaults saves: 1000 times (for 1000 files)
      ```
 
-     - 일괄 호출 방식:
+     - Batch call approach:
      ```swift
      service.setFavorite(for: files, isFavorite: true)
-     // UserDefaults 저장: 1번
+     // UserDefaults saves: 1 time
      ```
 
-     사용 예시:
+     Usage Example:
      ```swift
      let selectedFiles = [videoFile1, videoFile2, videoFile3]
 
-     // 선택한 파일들을 모두 즐겨찾기에 추가
+     // Add all selected files to favorites
      service.setFavorite(for: selectedFiles, isFavorite: true)
-     print("\(selectedFiles.count)개 파일이 즐겨찾기에 추가되었습니다")
+     print("\(selectedFiles.count) files added to favorites")
 
-     // 선택한 파일들을 모두 즐겨찾기에서 제거
+     // Remove all selected files from favorites
      service.setFavorite(for: selectedFiles, isFavorite: false)
      ```
      */
@@ -1134,77 +1134,77 @@ class FileManagerService {
     /// @param videoFiles Array of video files
     /// @param isFavorite Favorite status to apply
     func setFavorite(for videoFiles: [VideoFile], isFavorite: Bool) {
-        var favorites = loadFavorites()  // 현재 즐겨찾기 Set 불러오기
+        var favorites = loadFavorites()  // Load current favorites Set
 
-        // 모든 파일을 순회하며 Set에 추가 또는 제거
+        // Iterate through all files and add or remove from Set
         for videoFile in videoFiles {
             if isFavorite {
-                favorites.insert(videoFile.id.uuidString)  // 즐겨찾기 추가
+                favorites.insert(videoFile.id.uuidString)  // Add to favorites
             } else {
-                favorites.remove(videoFile.id.uuidString)  // 즐겨찾기 제거
+                favorites.remove(videoFile.id.uuidString)  // Remove from favorites
             }
         }
 
-        saveFavorites(favorites)  // 한 번에 UserDefaults에 저장 (성능 최적화)
+        saveFavorites(favorites)  // Save to UserDefaults once (performance optimization)
     }
 
     /*
-     【일괄 파일 삭제 메서드】
+     【Batch Delete Files Method】
 
-     여러 비디오 파일을 삭제하고, 발생한 에러들을 수집하여 반환합니다.
+     Deletes multiple video files and returns collected errors.
 
-     매개변수:
-     - videoFiles: 삭제할 VideoFile 객체 배열
+     Parameters:
+     - videoFiles: Array of VideoFile objects to delete
 
-     반환값:
-     - [Error]: 발생한 에러 배열 (비어있으면 모두 성공)
+     Return Value:
+     - [Error]: Array of errors that occurred (empty if all successful)
 
-     동작 순서:
-     1. 에러 배열 초기화
-     2. 각 파일에 대해 deleteVideoFile() 호출
-     3. 에러 발생 시 배열에 추가
-     4. 모든 파일 처리 후 에러 배열 반환
+     Operation Sequence:
+     1. Initialize error array
+     2. Call deleteVideoFile() for each file
+     3. Add to array if error occurs
+     4. Return error array after processing all files
 
-     사용 예시:
+     Usage Example:
      ```swift
      let selectedFiles = [videoFile1, videoFile2, videoFile3]
      let errors = service.deleteVideoFiles(selectedFiles)
 
      if errors.isEmpty {
-     print("\(selectedFiles.count)개 파일이 모두 삭제되었습니다")
+     print("All \(selectedFiles.count) files deleted")
      } else {
-     print("삭제 완료: \(selectedFiles.count - errors.count)개")
-     print("실패: \(errors.count)개")
+     print("Completed: \(selectedFiles.count - errors.count) files")
+     print("Failed: \(errors.count) files")
 
      for error in errors {
-     print("에러: \(error.localizedDescription)")
+     print("Error: \(error.localizedDescription)")
      }
      }
      ```
 
-     에러 처리 전략:
-     - 하나의 파일 삭제 실패해도 나머지 파일 계속 삭제
-     - 모든 에러를 수집하여 사용자에게 알림
-     - 부분 성공 허용 (일부만 삭제 성공)
+     Error Handling Strategy:
+     - Continue deleting remaining files even if one deletion fails
+     - Collect all errors and inform user
+     - Allow partial success (some files deleted successfully)
 
      try-catch vs do-catch:
      ```swift
-     // 개별 에러 처리 (현재 방식)
+     // Individual error handling (current approach)
      for file in files {
      do {
      try deleteVideoFile(file)
      } catch {
-     errors.append(error)  // 에러 수집 후 계속 진행
+     errors.append(error)  // Collect error and continue
      }
      }
 
-     // 전체 에러 처리 (사용하지 않음)
+     // Global error handling (not used)
      do {
      for file in files {
-     try deleteVideoFile(file)  // 하나 실패 시 중단
+     try deleteVideoFile(file)  // Stops on first failure
      }
      } catch {
-     // 첫 번째 에러만 처리
+     // Handles only first error
      }
      ```
      */
@@ -1212,489 +1212,489 @@ class FileManagerService {
     /// @param videoFiles Array of video files to delete
     /// @return Array of errors (empty if all successful)
     func deleteVideoFiles(_ videoFiles: [VideoFile]) -> [Error] {
-        var errors: [Error] = []  // 발생한 에러를 저장할 배열
+        var errors: [Error] = []  // Array to store occurred errors
 
-        // 모든 파일을 순회하며 삭제 시도
+        // Iterate through all files and attempt deletion
         for videoFile in videoFiles {
             do {
-                try deleteVideoFile(videoFile)  // 파일 삭제
+                try deleteVideoFile(videoFile)  // Delete file
             } catch {
-                errors.append(error)  // 에러 발생 시 배열에 추가하고 계속 진행
+                errors.append(error)  // Add to array if error occurs and continue
             }
         }
 
-        return errors  // 발생한 모든 에러 반환 (비어있으면 모두 성공)
+        return errors  // Return all occurred errors (empty if all successful)
     }
 
     // MARK: - Private Methods
 
     /*
-     【즐겨찾기 불러오기 (Private)】
+     【Load Favorites (Private)】
 
-     UserDefaults에서 즐겨찾기 Set을 불러옵니다.
+     Loads favorites Set from UserDefaults.
 
-     반환값:
-     - Set<String>: 즐겨찾기된 비디오 파일 UUID Set (없으면 빈 Set)
+     Return Value:
+     - Set<String>: Favorited video file UUID Set (empty Set if none)
 
-     동작 순서:
-     1. userDefaults.array(forKey:)로 배열 조회
-     2. [String] 타입으로 캐스팅 시도
-     3. 성공하면 Set으로 변환하여 반환
-     4. 실패하면 빈 Set 반환
+     Operation Sequence:
+     1. Query array via userDefaults.array(forKey:)
+     2. Attempt to cast to [String] type
+     3. Convert to Set and return if successful
+     4. Return empty Set if failed
 
-     UserDefaults 저장 형식:
-     - Set은 직접 저장 불가능
-     - Array로 변환하여 저장: Array(favorites)
-     - 불러올 때 다시 Set으로 변환: Set(array)
+     UserDefaults Storage Format:
+     - Set cannot be stored directly
+     - Convert to Array for storage: Array(favorites)
+     - Convert back to Set when loading: Set(array)
 
-     as? [String] 캐스팅:
-     - 타입 안전성 보장
-     - 잘못된 타입이면 nil 반환
-     - nil이면 기본값(빈 Set) 사용
+     as? [String] Casting:
+     - Ensures type safety
+     - Returns nil if wrong type
+     - Uses default value (empty Set) if nil
 
-     왜 private인가?
-     - 내부 구현 세부사항 (UserDefaults 사용)
-     - 외부에서는 getAllFavorites() 사용
-     - 캡슐화: 구현 변경 시 public API 영향 없음
+     Why private?
+     - Internal implementation detail (UserDefaults usage)
+     - External code should use getAllFavorites()
+     - Encapsulation: Public API unaffected by implementation changes
      */
     private func loadFavorites() -> Set<String> {
-        // UserDefaults에서 배열로 불러온 후 Set으로 변환
+        // Load as array from UserDefaults then convert to Set
         if let array = userDefaults.array(forKey: favoritesKey) as? [String] {
-            return Set(array)  // 배열을 Set으로 변환
+            return Set(array)  // Convert array to Set
         }
-        return []  // 데이터가 없으면 빈 Set 반환
+        return []  // Return empty Set if no data
     }
 
     /*
-     【즐겨찾기 저장 (Private)】
+     【Save Favorites (Private)】
 
-     즐겨찾기 Set을 UserDefaults에 저장합니다.
+     Saves favorites Set to UserDefaults.
 
-     매개변수:
-     - favorites: 저장할 즐겨찾기 Set<String>
+     Parameters:
+     - favorites: Favorites Set<String> to save
 
-     동작:
-     1. Set을 Array로 변환: Array(favorites)
-     2. userDefaults.set()으로 저장
-     3. 자동으로 디스크에 동기화됨
+     Operation:
+     1. Convert Set to Array: Array(favorites)
+     2. Save via userDefaults.set()
+     3. Auto-synchronized to disk
 
-     Set → Array 변환 이유:
-     - UserDefaults는 Property List 타입만 저장 가능
-     - Property List 타입: Array, Dictionary, String, Number, Date, Data
-     - Set은 Property List 타입이 아님
-     - 따라서 Array로 변환 필요
+     Why Set → Array Conversion:
+     - UserDefaults can only store Property List types
+     - Property List types: Array, Dictionary, String, Number, Date, Data
+     - Set is not a Property List type
+     - Therefore Array conversion is necessary
 
-     자동 동기화:
-     - UserDefaults는 변경 사항을 자동으로 디스크에 저장
-     - synchronize() 호출 불필요 (iOS 7 이후)
-     - 앱 종료 시 자동으로 저장됨
+     Auto-synchronization:
+     - UserDefaults automatically saves changes to disk
+     - synchronize() call unnecessary (iOS 7+)
+     - Auto-saves on app termination
      */
     private func saveFavorites(_ favorites: Set<String>) {
-        // Set을 Array로 변환하여 UserDefaults에 저장
+        // Convert Set to Array and save to UserDefaults
         userDefaults.set(Array(favorites), forKey: favoritesKey)
     }
 
     /*
-     【메모 불러오기 (Private)】
+     【Load Notes (Private)】
 
-     UserDefaults에서 메모 Dictionary를 불러옵니다.
+     Loads notes Dictionary from UserDefaults.
 
-     반환값:
-     - [String: String]: UUID → 메모 텍스트 Dictionary (없으면 빈 Dictionary)
+     Return Value:
+     - [String: String]: UUID → note text Dictionary (empty Dictionary if none)
 
-     동작 순서:
-     1. userDefaults.dictionary(forKey:)로 Dictionary 조회
-     2. [String: String] 타입으로 캐스팅 시도
-     3. 성공하면 반환
-     4. 실패하면 빈 Dictionary 반환
+     Operation Sequence:
+     1. Query Dictionary via userDefaults.dictionary(forKey:)
+     2. Attempt to cast to [String: String] type
+     3. Return if successful
+     4. Return empty Dictionary if failed
 
      dictionary(forKey:) vs object(forKey:):
-     - dictionary(forKey:): [String: Any] 반환
-     - object(forKey:): Any? 반환
-     - dictionary는 타입이 보장되어 더 안전
+     - dictionary(forKey:): Returns [String: Any]
+     - object(forKey:): Returns Any?
+     - dictionary is safer with guaranteed type
 
-     as? [String: String] 캐스팅:
-     - Dictionary의 모든 값이 String인지 확인
-     - 하나라도 다른 타입이면 nil 반환
-     - 타입 안전성 보장
+     as? [String: String] Casting:
+     - Checks if all Dictionary values are String
+     - Returns nil if any value is different type
+     - Ensures type safety
      */
     private func loadNotes() -> [String: String] {
-        // UserDefaults에서 Dictionary 불러오기
+        // Load Dictionary from UserDefaults
         if let dictionary = userDefaults.dictionary(forKey: notesKey) as? [String: String] {
-            return dictionary  // Dictionary 반환
+            return dictionary  // Return Dictionary
         }
-        return [:]  // 데이터가 없으면 빈 Dictionary 반환
+        return [:]  // Return empty Dictionary if no data
     }
 
     /*
-     【메모 저장 (Private)】
+     【Save Notes (Private)】
 
-     메모 Dictionary를 UserDefaults에 저장합니다.
+     Saves notes Dictionary to UserDefaults.
 
-     매개변수:
-     - notes: 저장할 메모 Dictionary [UUID: 메모텍스트]
+     Parameters:
+     - notes: Notes Dictionary to save [UUID: note text]
 
-     동작:
-     - userDefaults.set()으로 Dictionary 저장
-     - 자동으로 디스크에 동기화됨
+     Operation:
+     - Save Dictionary via userDefaults.set()
+     - Auto-synchronized to disk
 
-     Dictionary 저장:
-     - Dictionary는 Property List 타입
-     - [String: String]은 직접 저장 가능
-     - 변환 없이 바로 저장
+     Dictionary Storage:
+     - Dictionary is a Property List type
+     - [String: String] can be stored directly
+     - Save directly without conversion
 
-     빈 Dictionary 저장:
-     - 모든 메모를 삭제해도 빈 Dictionary 저장됨
-     - 완전히 제거하려면 removeObject(forKey:) 사용
-     - 하지만 빈 Dictionary도 문제없음 (작은 크기)
+     Empty Dictionary Storage:
+     - Empty Dictionary saved even if all notes deleted
+     - Use removeObject(forKey:) to completely remove
+     - But empty Dictionary is fine (small size)
      */
     private func saveNotes(_ notes: [String: String]) {
-        // Dictionary를 UserDefaults에 저장
+        // Save Dictionary to UserDefaults
         userDefaults.set(notes, forKey: notesKey)
     }
 
     // MARK: - File Cache
 
     /*
-     【캐시된 파일 정보 조회 메서드】
+     【Get Cached File Info Method】
 
-     메모리 캐시에서 파일 정보를 조회합니다.
+     Queries file information from memory cache.
 
-     매개변수:
-     - filePath: 파일 경로 (캐시 키로 사용)
+     Parameters:
+     - filePath: File path (used as cache key)
 
-     반환값:
-     - VideoFile?: 캐시된 VideoFile (없거나 만료되면 nil)
+     Return Value:
+     - VideoFile?: Cached VideoFile (nil if not found or expired)
 
-     동작 순서:
-     1. NSLock으로 캐시 잠금
-     2. defer로 unlock() 보장
-     3. filePath로 캐시 조회
-     4. 캐시가 있으면 만료 여부 확인
-     5. 만료되지 않았으면 VideoFile 반환
-     6. 만료되었거나 없으면 nil 반환
+     Operation Sequence:
+     1. Lock cache with NSLock
+     2. Guarantee unlock() with defer
+     3. Query cache with filePath
+     4. Check expiration if cache exists
+     5. Return VideoFile if not expired
+     6. Return nil if expired or not found
 
-     캐시 만료 확인:
+     Cache Expiration Check:
      ```swift
      let cachedAt = Date(timeIntervalSince1970: 1641974400)  // 2022-01-12 10:00:00
      let now = Date(timeIntervalSince1970: 1641974700)       // 2022-01-12 10:05:00
-     let age = now.timeIntervalSince(cachedAt)               // 300초 (5분)
+     let age = now.timeIntervalSince(cachedAt)               // 300 seconds (5 minutes)
 
      if age < maxCacheAge {  // 300 < 300 (false)
-     // 만료됨, 캐시 제거
+     // Expired, remove cache
      }
      ```
 
-     사용 예시:
+     Usage Example:
      ```swift
      if let cachedVideo = service.getCachedFileInfo(for: "/videos/file.mp4") {
-     print("캐시 히트! 파일 정보: \(cachedVideo.timestamp)")
+     print("Cache hit! File info: \(cachedVideo.timestamp)")
      } else {
-     print("캐시 미스. 파일을 다시 읽어야 합니다")
+     print("Cache miss. Need to re-read file")
      }
      ```
 
-     스레드 안전성:
-     - NSLock으로 보호됨
-     - 여러 스레드에서 동시 호출 가능
-     - defer로 unlock() 보장 (return 시에도)
+     Thread Safety:
+     - Protected by NSLock
+     - Concurrent calls from multiple threads possible
+     - unlock() guaranteed by defer (even on return)
      */
     /// @brief Get cached file information
     /// @param filePath Path to file
     /// @return Cached file info or nil if not cached or expired
     func getCachedFileInfo(for filePath: String) -> VideoFile? {
-        cacheLock.lock()  // 캐시 잠금 (다른 스레드 대기)
-        defer { cacheLock.unlock() }  // 함수 종료 시 자동으로 잠금 해제
+        cacheLock.lock()  // Lock cache (other threads wait)
+        defer { cacheLock.unlock() }  // Auto-unlock on function exit
 
-        // 캐시에서 파일 정보 조회
+        // Query file info from cache
         guard let cached = fileCache[filePath] else {
-            return nil  // 캐시에 없으면 nil 반환
+            return nil  // Return nil if not in cache
         }
 
         // Check if cache is still valid
-        // 캐시 만료 여부 확인
-        let age = Date().timeIntervalSince(cached.cachedAt)  // 캐시 나이 계산 (초)
+        // Check cache expiration
+        let age = Date().timeIntervalSince(cached.cachedAt)  // Calculate cache age (seconds)
         guard age < maxCacheAge else {
             // Cache expired, remove it
-            // 캐시가 만료되었으면 제거하고 nil 반환
+            // Remove cache if expired and return nil
             fileCache.removeValue(forKey: filePath)
             return nil
         }
 
-        return cached.videoFile  // 유효한 캐시 반환
+        return cached.videoFile  // Return valid cache
     }
 
     /*
-     【파일 정보 캐싱 메서드】
+     【Cache File Info Method】
 
-     VideoFile 정보를 메모리 캐시에 저장합니다.
+     Saves VideoFile information to memory cache.
 
-     매개변수:
-     - videoFile: 캐시할 VideoFile 객체
-     - filePath: 캐시 키로 사용할 파일 경로
+     Parameters:
+     - videoFile: VideoFile object to cache
+     - filePath: File path to use as cache key
 
-     동작 순서:
-     1. NSLock으로 캐시 잠금
-     2. defer로 unlock() 보장
-     3. 캐시 크기 제한 확인 (1000개)
-     4. 제한 초과 시 가장 오래된 20% 제거
-     5. 새 항목 추가
+     Operation Sequence:
+     1. Lock cache with NSLock
+     2. Guarantee unlock() with defer
+     3. Check cache size limit (1000 items)
+     4. Remove oldest 20% if limit exceeded
+     5. Add new entry
 
-     LRU 캐시 전략 (Least Recently Used):
+     LRU Cache Strategy (Least Recently Used):
      ```
-     캐시 상태: 1000개 (제한 도달)
+     Cache State: 1000 items (limit reached)
 
-     1. cachedAt 기준으로 정렬
+     1. Sort by cachedAt
      oldest ──────────────────────────▶ newest
      [file1, file2, file3, ..., file1000]
 
-     2. 가장 오래된 20% (200개) 제거
-     [file201, file202, ..., file1000]  // 800개
+     2. Remove oldest 20% (200 items)
+     [file201, file202, ..., file1000]  // 800 items
 
-     3. 새 항목 추가
-     [file201, file202, ..., file1000, newFile]  // 801개
+     3. Add new entry
+     [file201, file202, ..., file1000, newFile]  // 801 items
      ```
 
-     왜 20%를 제거하는가?
-     - 한 번에 많이 제거하여 제거 빈도 감소
-     - 오버헤드 최소화 (정렬 비용)
-     - 메모리 여유 확보
+     Why remove 20%?
+     - Remove many at once to reduce removal frequency
+     - Minimize overhead (sorting cost)
+     - Secure memory headroom
 
-     사용 예시:
+     Usage Example:
      ```swift
-     // 파일을 읽고 캐시에 저장
+     // Read file and save to cache
      let videoFile = try metadataExtractor.extractMetadata(from: filePath)
      service.cacheFileInfo(videoFile, for: filePath)
 
-     // 다음 번 호출 시 캐시에서 즉시 반환
+     // Returns immediately from cache on next call
      let cached = service.getCachedFileInfo(for: filePath)
      ```
 
-     성능:
-     - 캐시 추가: O(1) (제거 없을 때)
-     - 캐시 제거: O(n log n) (정렬 비용, n=1000)
-     - 제거 빈도: 대략 801번 추가마다 1번
+     Performance:
+     - Cache addition: O(1) (when no removal)
+     - Cache removal: O(n log n) (sorting cost, n=1000)
+     - Removal frequency: Approximately once per 801 additions
      */
     /// @brief Cache file information
     /// @param videoFile VideoFile to cache
     /// @param filePath File path to use as cache key
     func cacheFileInfo(_ videoFile: VideoFile, for filePath: String) {
-        cacheLock.lock()  // 캐시 잠금 (다른 스레드 대기)
-        defer { cacheLock.unlock() }  // 함수 종료 시 자동으로 잠금 해제
+        cacheLock.lock()  // Lock cache (other threads wait)
+        defer { cacheLock.unlock() }  // Auto-unlock on function exit
 
         // Check cache size limit
-        // 캐시 크기 제한 확인
+        // Check cache size limit
         if fileCache.count >= maxCacheSize {
             // Remove oldest entries
-            // 가장 오래된 항목들 제거
+            // Remove oldest entries
 
-            // cachedAt 기준으로 키 정렬 (오래된 순)
+            // Sort keys by cachedAt (oldest first)
             let sortedKeys = fileCache.keys.sorted { key1, key2 in
                 fileCache[key1]!.cachedAt < fileCache[key2]!.cachedAt
             }
 
             // Remove oldest 20% of cache
-            // 캐시의 20% (200개) 제거
+            // Remove 20% (200 items) of cache
             let removeCount = maxCacheSize / 5  // 1000 / 5 = 200
-            for key in sortedKeys.prefix(removeCount) {  // 처음 200개
+            for key in sortedKeys.prefix(removeCount) {  // First 200 items
                 fileCache.removeValue(forKey: key)
             }
         }
 
         // Add to cache
-        // 캐시에 새 항목 추가
+        // Add new entry to cache
         fileCache[filePath] = CachedFileInfo(
             videoFile: videoFile,
-            cachedAt: Date()  // 현재 시간 기록
+            cachedAt: Date()  // Record current time
         )
     }
 
     /*
-     【캐시 무효화 메서드】
+     【Invalidate Cache Method】
 
-     특정 파일의 캐시를 제거합니다.
+     Removes cache for a specific file.
 
-     매개변수:
-     - filePath: 무효화할 파일 경로
+     Parameters:
+     - filePath: File path to invalidate
 
-     사용 예시:
+     Usage Examples:
      ```swift
-     // 파일이 수정되었을 때 캐시 무효화
+     // Invalidate cache when file is modified
      try service.moveVideoFile(videoFile, to: newPath)
      service.invalidateCache(for: oldPath)
 
-     // 파일을 삭제했을 때 캐시 무효화
+     // Invalidate cache when file is deleted
      try service.deleteVideoFile(videoFile)
      service.invalidateCache(for: videoFile.channels[0].filePath)
      ```
 
-     왜 필요한가?
-     - 파일이 이동/삭제/수정되면 캐시가 부정확해짐
-     - 부정확한 캐시는 버그 원인
-     - 명시적으로 무효화하여 다음 번 읽기 시 최신 정보 로드
+     Why is it needed?
+     - Cache becomes inaccurate when file is moved/deleted/modified
+     - Inaccurate cache causes bugs
+     - Explicitly invalidate to load latest info on next read
      */
     /// @brief Invalidate cache for specific file
     /// @param filePath File path to invalidate
     func invalidateCache(for filePath: String) {
-        cacheLock.lock()  // 캐시 잠금
-        defer { cacheLock.unlock() }  // 함수 종료 시 자동 해제
+        cacheLock.lock()  // Lock cache
+        defer { cacheLock.unlock() }  // Auto-release on function exit
 
-        fileCache.removeValue(forKey: filePath)  // 캐시에서 제거
+        fileCache.removeValue(forKey: filePath)  // Remove from cache
     }
 
     /*
-     【전체 캐시 삭제 메서드】
+     【Clear All Cache Method】
 
-     메모리 캐시를 완전히 비웁니다.
+     Completely empties memory cache.
 
-     사용 예시:
+     Usage Examples:
      ```swift
-     // 메모리 압박 시 캐시 정리
+     // Clear cache on memory pressure
      if lowMemoryWarning {
      service.clearCache()
-     print("캐시가 정리되었습니다")
+     print("Cache has been cleared")
      }
 
-     // 새로운 폴더 로드 시 캐시 정리
-     service.clearCache()  // 이전 폴더의 캐시 제거
+     // Clear cache when loading new folder
+     service.clearCache()  // Remove cache of previous folder
      fileScanner.scanVideoFiles(at: newFolderPath)
      ```
 
-     메모리 해제:
-     - removeAll()은 Dictionary의 모든 항목 제거
-     - 메모리 즉시 해제됨
-     - ARC(Automatic Reference Counting)에 의해 자동 관리
+     Memory Release:
+     - removeAll() removes all Dictionary entries
+     - Memory released immediately
+     - Automatically managed by ARC (Automatic Reference Counting)
      */
     /// @brief Clear entire file cache
     func clearCache() {
-        cacheLock.lock()  // 캐시 잠금
-        defer { cacheLock.unlock() }  // 함수 종료 시 자동 해제
+        cacheLock.lock()  // Lock cache
+        defer { cacheLock.unlock() }  // Auto-release on function exit
 
-        fileCache.removeAll()  // 모든 캐시 항목 제거
+        fileCache.removeAll()  // Remove all cache entries
     }
 
     /*
-     【캐시 통계 조회 메서드】
+     【Get Cache Statistics Method】
 
-     현재 캐시 상태의 통계를 반환합니다.
+     Returns statistics of current cache state.
 
-     반환값:
-     - count: 캐시된 파일 개수
-     - oldestAge: 가장 오래된 캐시의 나이 (초 단위, 없으면 nil)
+     Return Value:
+     - count: Number of cached files
+     - oldestAge: Age of oldest cache (in seconds, nil if none)
 
-     동작:
-     1. 캐시 개수 계산
-     2. 모든 캐시 항목의 나이 계산
-     3. 최대값(가장 오래된 것) 찾기
+     Operation:
+     1. Calculate cache count
+     2. Calculate age of all cache entries
+     3. Find maximum value (oldest)
 
-     사용 예시:
+     Usage Example:
      ```swift
      let (count, oldestAge) = service.getCacheStats()
-     print("캐시 항목: \(count)개")
+     print("Cache entries: \(count)")
 
      if let age = oldestAge {
      let minutes = Int(age / 60)
-     print("가장 오래된 캐시: \(minutes)분 전")
+     print("Oldest cache: \(minutes) minutes ago")
 
-     if age > 240 {  // 4분 초과
-     print("곧 만료될 캐시가 있습니다")
+     if age > 240 {  // Over 4 minutes
+     print("Some cache entries will expire soon")
      }
      }
 
-     // UI에 표시
+     // Display in UI
      cacheCountLabel.stringValue = "\(count) files cached"
      ```
 
-     map() 함수:
+     map() function:
      ```swift
      let values = [1, 2, 3]
      let doubled = values.map { $0 * 2 }  // [2, 4, 6]
 
-     // 여기서는:
+     // Here:
      let ages = fileCache.values.map { Date().timeIntervalSince($0.cachedAt) }
-     // CachedFileInfo → TimeInterval 변환
+     // Converts CachedFileInfo → TimeInterval
      ```
 
-     max() 함수:
-     - 배열에서 최대값 찾기
-     - 빈 배열이면 nil 반환
-     - 가장 오래된 캐시 = 나이가 가장 큰 캐시
+     max() function:
+     - Finds maximum value in array
+     - Returns nil for empty array
+     - Oldest cache = cache with largest age
      */
     /// @brief Get cache statistics
     /// @return Tuple of (cached files count, oldest cache age)
     func getCacheStats() -> (count: Int, oldestAge: TimeInterval?) {
-        cacheLock.lock()  // 캐시 잠금
-        defer { cacheLock.unlock() }  // 함수 종료 시 자동 해제
+        cacheLock.lock()  // Lock cache
+        defer { cacheLock.unlock() }  // Auto-release on function exit
 
-        let count = fileCache.count  // 캐시된 파일 개수
+        let count = fileCache.count  // Number of cached files
 
-        // 모든 캐시 항목의 나이를 계산하고 최대값 찾기
+        // Calculate age of all cache entries and find maximum
         let oldestAge = fileCache.values.map { Date().timeIntervalSince($0.cachedAt) }.max()
 
-        return (count, oldestAge)  // 튜플로 반환
+        return (count, oldestAge)  // Return as tuple
     }
 
     /*
-     【만료된 캐시 정리 메서드】
+     【Cleanup Expired Cache Method】
 
-     5분이 지난 만료된 캐시 항목들을 제거합니다.
+     Removes expired cache entries that are over 5 minutes old.
 
-     동작 순서:
-     1. 현재 시간 기록
-     2. 모든 캐시 항목을 순회하며 만료 여부 확인
-     3. 만료된 항목의 키 수집
-     4. 수집된 키로 캐시에서 제거
+     Operation Sequence:
+     1. Record current time
+     2. Iterate through all cache entries and check expiration
+     3. Collect keys of expired entries
+     4. Remove from cache using collected keys
 
-     filter() 함수:
+     filter() function:
      ```swift
      let numbers = [1, 2, 3, 4, 5]
      let evens = numbers.filter { $0 % 2 == 0 }  // [2, 4]
 
-     // 여기서는:
+     // Here:
      let expired = fileCache.filter { key, value in
      now.timeIntervalSince(value.cachedAt) >= maxCacheAge
      }
-     // 만료된 항목만 필터링
+     // Filters only expired entries
      ```
 
-     map() 함수:
+     map() function:
      ```swift
      let expired = [("key1", info1), ("key2", info2)]
      let keys = expired.map { $0.key }  // ["key1", "key2"]
      ```
 
-     사용 예시:
+     Usage Examples:
      ```swift
-     // 백그라운드 타이머로 주기적 정리
+     // Periodic cleanup with background timer
      Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { _ in
      service.cleanupExpiredCache()
-     print("만료된 캐시를 정리했습니다")
+     print("Cleaned up expired cache")
      }
 
-     // 앱이 백그라운드로 갈 때
+     // When app goes to background
      NotificationCenter.default.addObserver(forName: NSApplication.didResignActiveNotification) {
      service.cleanupExpiredCache()
      }
      ```
 
-     자동 정리 vs 수동 정리:
-     - getCachedFileInfo()는 조회 시 만료 확인 (자동)
-     - cleanupExpiredCache()는 명시적 정리 (수동)
-     - 주기적으로 호출하여 메모리 낭비 방지
+     Auto cleanup vs Manual cleanup:
+     - getCachedFileInfo() checks expiration on query (automatic)
+     - cleanupExpiredCache() explicitly cleans up (manual)
+     - Call periodically to prevent memory waste
      */
     /// @brief Cleanup expired cache entries
     func cleanupExpiredCache() {
-        cacheLock.lock()  // 캐시 잠금
-        defer { cacheLock.unlock() }  // 함수 종료 시 자동 해제
+        cacheLock.lock()  // Lock cache
+        defer { cacheLock.unlock() }  // Auto-release on function exit
 
-        let now = Date()  // 현재 시간
+        let now = Date()  // Current time
 
-        // 만료된 캐시 항목의 키 수집
+        // Collect keys of expired cache entries
         let expiredKeys = fileCache.filter { _, value in
-            now.timeIntervalSince(value.cachedAt) >= maxCacheAge  // 5분 이상 경과
-        }.map { $0.key }  // 키만 추출
+            now.timeIntervalSince(value.cachedAt) >= maxCacheAge  // 5+ minutes elapsed
+        }.map { $0.key }  // Extract only keys
 
-        // 만료된 항목들 제거
+        // Remove expired entries
         for key in expiredKeys {
             fileCache.removeValue(forKey: key)
         }
@@ -1704,27 +1704,27 @@ class FileManagerService {
 // MARK: - VideoFile Extension
 
 /*
- 【VideoFile 확장 (Extension)】
+ 【VideoFile Extension】
 
- Extension은 기존 타입에 새로운 기능을 추가하는 Swift의 강력한 기능입니다.
+ Extension is a powerful Swift feature for adding new functionality to existing types.
 
- 왜 Extension을 사용하는가?
- 1. 코드 분리: VideoFile 정의와 FileManagerService 관련 기능 분리
- 2. 편의성: videoFile.withUpdatedMetadata(from:) 형태로 호출 가능
- 3. 수정 없이 확장: VideoFile의 원본 코드를 수정하지 않고 기능 추가
+ Why use Extension?
+ 1. Code separation: Separates VideoFile definition from FileManagerService-related functionality
+ 2. Convenience: Can call as videoFile.withUpdatedMetadata(from:)
+ 3. Extend without modification: Add functionality without modifying VideoFile's original code
 
- Extension vs 서브클래싱:
- - Extension: 기존 타입에 기능 추가 (저장 프로퍼티 추가 불가)
- - Subclass: 새로운 타입 생성 (저장 프로퍼티 추가 가능)
+ Extension vs Subclassing:
+ - Extension: Adds functionality to existing type (cannot add stored properties)
+ - Subclass: Creates new type (can add stored properties)
 
- 사용 예시:
+ Usage Example:
  ```swift
  let videoFile = VideoFile(...)
 
- // Extension 메서드 호출
+ // Call Extension method
  let updated = videoFile.withUpdatedMetadata(from: service)
 
- // 체이닝
+ // Chaining
  let files = scanner.scanFiles()
  .map { $0.withUpdatedMetadata(from: service) }
  .filter { $0.isFavorite }
@@ -1732,58 +1732,58 @@ class FileManagerService {
  */
 extension VideoFile {
     /*
-     【메타데이터 업데이트 메서드】
+     【Update Metadata Method】
 
-     FileManagerService에서 즐겨찾기와 메모 정보를 가져와
-     새로운 VideoFile 인스턴스를 생성합니다.
+     Retrieves favorite and note information from FileManagerService and
+     creates a new VideoFile instance.
 
-     매개변수:
-     - service: FileManagerService 인스턴스
+     Parameters:
+     - service: FileManagerService instance
 
-     반환값:
-     - VideoFile: 업데이트된 메타데이터를 가진 새 VideoFile
+     Return Value:
+     - VideoFile: New VideoFile with updated metadata
 
-     불변성 (Immutability):
-     - Swift의 값 타입(struct)은 불변성 권장
-     - 기존 객체를 수정하지 않고 새 객체 생성
-     - 안전하고 예측 가능한 코드
+     Immutability:
+     - Swift's value types (struct) recommend immutability
+     - Create new object without modifying existing one
+     - Safe and predictable code
 
-     동작 순서:
-     1. service에서 즐겨찾기 상태 조회
-     2. service에서 메모 조회
-     3. 조회한 정보로 새 VideoFile 생성
-     4. 다른 프로퍼티는 기존 값 유지
+     Operation Sequence:
+     1. Query favorite status from service
+     2. Query notes from service
+     3. Create new VideoFile with queried information
+     4. Keep existing values for other properties
 
-     사용 예시:
+     Usage Examples:
      ```swift
-     // 파일 스캔 후 메타데이터 업데이트
+     // Update metadata after file scan
      let scannedFiles = fileScanner.scanVideoFiles(at: "/videos")
      let updatedFiles = scannedFiles.map { file in
      file.withUpdatedMetadata(from: fileManagerService)
      }
 
-     // 개별 파일 업데이트
+     // Update individual file
      let videoFile = VideoFile(isFavorite: false, notes: nil, ...)
      let updated = videoFile.withUpdatedMetadata(from: service)
-     // updated.isFavorite = service에 저장된 실제 값
-     // updated.notes = service에 저장된 실제 메모
+     // updated.isFavorite = actual value stored in service
+     // updated.notes = actual note stored in service
      ```
 
-     왜 이 패턴을 사용하는가?
-     - FileScanner는 파일 시스템에서 VideoFile 생성
-     - 이 시점에는 즐겨찾기/메모 정보 없음 (UserDefaults에 있음)
-     - 생성 후 이 메서드로 메타데이터 주입
-     - 관심사 분리: 파일 스캔 ≠ 메타데이터 관리
+     Why use this pattern?
+     - FileScanner creates VideoFile from file system
+     - No favorite/note information at this point (stored in UserDefaults)
+     - Inject metadata after creation using this method
+     - Separation of concerns: File scanning ≠ Metadata management
      */
     /// @brief Create updated VideoFile with favorite status
     /// @param service FileManagerService to use
     /// @return Updated VideoFile
     func withUpdatedMetadata(from service: FileManagerService) -> VideoFile {
-        // service에서 즐겨찾기와 메모 조회
+        // Query favorites and notes from service
         let isFavorite = service.isFavorite(self)
         let notes = service.getNote(for: self)
 
-        // 업데이트된 정보로 새 VideoFile 생성
+        // Create new VideoFile with updated information
         return VideoFile(
             id: id,
             timestamp: timestamp,
@@ -1792,8 +1792,8 @@ extension VideoFile {
             channels: channels,
             metadata: metadata,
             basePath: basePath,
-            isFavorite: isFavorite,  // 업데이트된 즐겨찾기 상태
-            notes: notes,  // 업데이트된 메모
+            isFavorite: isFavorite,  // Updated favorite status
+            notes: notes,  // Updated note
             isCorrupted: isCorrupted
         )
     }
@@ -1802,25 +1802,25 @@ extension VideoFile {
 // MARK: - Supporting Types
 
 /*
- 【CachedFileInfo 구조체】
+ 【CachedFileInfo Structure】
 
- 캐시에 저장되는 VideoFile과 캐시 시간을 담는 래퍼(Wrapper) 구조체입니다.
+ Wrapper structure that holds VideoFile and cache timestamp for storage in cache.
 
- 프로퍼티:
- - videoFile: 캐시할 VideoFile 객체
- - cachedAt: 캐시된 시간 (만료 확인에 사용)
+ Properties:
+ - videoFile: VideoFile object to cache
+ - cachedAt: Time when cached (used for expiration check)
 
- 왜 VideoFile만 저장하지 않는가?
- - 캐시 만료 확인을 위해 저장 시간 필요
+ Why not store just VideoFile?
+ - Need storage time to check cache expiration
  - TimeInterval age = Date().timeIntervalSince(cachedAt)
- - age >= maxCacheAge 이면 만료
+ - Expired if age >= maxCacheAge
 
- private 접근 제어:
- - FileManagerService 내부에서만 사용
- - 외부에 노출할 필요 없음
- - 캡슐화: 구현 세부사항 숨김
+ private access control:
+ - Used only internally within FileManagerService
+ - No need to expose externally
+ - Encapsulation: Hides implementation details
 
- 구조:
+ Structure:
  ┌─────────────────────────────────────────────┐
  │  fileCache: [String: CachedFileInfo]        │
  │  ┌───────────────────────────────────────┐  │
@@ -1832,19 +1832,19 @@ extension VideoFile {
  │  └───────────────────────────────────────┘  │
  └─────────────────────────────────────────────┘
 
- 사용 예시:
+ Usage Example:
  ```swift
- // 캐시에 저장
+ // Save to cache
  let cached = CachedFileInfo(
  videoFile: videoFile,
  cachedAt: Date()
  )
  fileCache[filePath] = cached
 
- // 캐시에서 조회
+ // Query from cache
  if let cached = fileCache[filePath] {
  let age = Date().timeIntervalSince(cached.cachedAt)
- if age < 300 {  // 5분 이내
+ if age < 300 {  // Within 5 minutes
  return cached.videoFile
  }
  }

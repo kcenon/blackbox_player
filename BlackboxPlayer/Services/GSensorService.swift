@@ -2,63 +2,63 @@
 /// @brief Service for managing and querying G-Sensor data synchronized with video playback
 /// @author BlackboxPlayer Development Team
 /// @details
-/// G-센서 데이터를 영상 재생 시간과 동기화하여 실시간 가속도, 충격 이벤트 정보를 제공합니다.
+/// Provides real-time acceleration and impact event information by synchronizing G-Sensor data with video playback time.
 
 /**
- # GSensorService - G-센서 데이터 관리 서비스
+ # GSensorService - G-Sensor Data Management Service
 
- ## 📱 G-센서(G-Sensor)란?
+ ## 📱 What is a G-Sensor?
 
- **G-센서**는 가속도를 측정하는 센서(가속도계, Accelerometer)입니다.
+ **G-Sensor** is a sensor that measures acceleration (accelerometer).
 
- ### G의 의미:
- - **G = 중력 가속도** (Gravity)
- - 1G = 9.8 m/s² (지구 중력 가속도)
- - 2G = 19.6 m/s² (중력의 2배 가속도)
+ ### Meaning of G:
+ - **G = Gravitational Acceleration** (Gravity)
+ - 1G = 9.8 m/s² (Earth's gravitational acceleration)
+ - 2G = 19.6 m/s² (2 times gravity)
 
- ### G-센서의 역할:
+ ### Role of G-Sensor:
  ```
- 차량 움직임 감지
+ Detect vehicle movement
  ↓
- 3축 가속도 측정 (X, Y, Z)
+ Measure 3-axis acceleration (X, Y, Z)
  ↓
- 충격/급정거/급가속 감지
+ Detect impact/sudden braking/rapid acceleration
  ```
 
- ## 🎯 블랙박스에서의 G-센서 활용
+ ## 🎯 G-Sensor Usage in Dashcams
 
- ### 1. 사고 감지
+ ### 1. Accident Detection
  ```
- 평상시:   0.5G ~ 1.5G (정상 주행)
- 급정거:   2.0G ~ 3.0G
- 경미 충격: 3.0G ~ 5.0G
- 심각 충격: 5.0G 이상
- ```
-
- ### 2. 이벤트 자동 기록
- - 충격 감지 → 자동으로 이벤트 영상 저장
- - 주차 중 충격 → 주차 감시 모드 활성화
-
- ### 3. 충격 방향 분석
- ```
- X축: 좌우 (Left ←→ Right)
- Y축: 전후 (Forward ↑↓ Backward)
- Z축: 상하 (Up ↑↓ Down)
-
- 예: 후방 추돌
- - Y축: -3.0G (후방에서 충격)
- - X축: 0.1G (좌우 흔들림 없음)
- - Z축: 0.2G (약간 위로 튐)
+ Normal:       0.5G ~ 1.5G  (Normal driving)
+ Hard Brake:   2.0G ~ 3.0G
+ Minor Impact: 3.0G ~ 5.0G
+ Severe Impact: > 5.0G
  ```
 
- ### 4. 운전 패턴 분석
- - 급가속/급정거 빈도
- - 급커브 빈도
- - 안전 운전 점수
+ ### 2. Automatic Event Recording
+ - Impact detected → Automatically save event video
+ - Impact while parked → Activate parking surveillance mode
 
- ## 💡 3축 가속도 측정
+ ### 3. Impact Direction Analysis
+ ```
+ X-axis: Left/Right (Left ←→ Right)
+ Y-axis: Front/Rear (Forward ↑↓ Backward)
+ Z-axis: Up/Down (Up ↑↓ Down)
 
- ### 좌표계:
+ Example: Rear-end collision
+ - Y-axis: -3.0G (Impact from rear)
+ - X-axis: 0.1G (No lateral movement)
+ - Z-axis: 0.2G (Slightly bounced up)
+ ```
+
+ ### 4. Driving Pattern Analysis
+ - Frequency of rapid acceleration/braking
+ - Frequency of sharp turns
+ - Safe driving score
+
+ ## 💡 3-Axis Acceleration Measurement
+
+ ### Coordinate System:
  ```
  Z (Up)
  ↑
@@ -70,77 +70,77 @@
  Y (Forward)
  ```
 
- ### 정지 상태:
+ ### Stationary State:
  ```
- X: 0G (좌우 움직임 없음)
- Y: 0G (전후 움직임 없음)
- Z: 1G (중력 영향)
- ```
-
- ### 가속 상태:
- ```
- 급가속:
- - Y: +2.0G (전방 가속)
-
- 급정거:
- - Y: -3.0G (후방으로 밀림)
-
- 우회전:
- - X: +1.5G (우측으로 쏠림)
+ X: 0G (No lateral movement)
+ Y: 0G (No forward/backward movement)
+ Z: 1G (Gravitational effect)
  ```
 
- ## 🔍 가속도 크기 계산
+ ### Acceleration State:
+ ```
+ Rapid acceleration:
+ - Y: +2.0G (Forward acceleration)
 
- ### 벡터 크기 (Magnitude):
+ Hard braking:
+ - Y: -3.0G (Pushed backward)
+
+ Right turn:
+ - X: +1.5G (Leaning right)
+ ```
+
+ ## 🔍 Acceleration Magnitude Calculation
+
+ ### Vector Magnitude:
  ```
  magnitude = √(X² + Y² + Z²)
 
- 예: X=2.0, Y=1.0, Z=0.5
+ Example: X=2.0, Y=1.0, Z=0.5
  magnitude = √(4 + 1 + 0.25)
  = √5.25
  = 2.29 G
  ```
 
- ### 유클리드 거리:
- 3차원 공간에서 원점(0,0,0)에서 점(X,Y,Z)까지의 직선 거리입니다.
+ ### Euclidean Distance:
+ The straight-line distance from the origin (0,0,0) to point (X,Y,Z) in 3D space.
 
- ## 📊 충격 심각도 분류
+ ## 📊 Impact Severity Classification
 
  ```
- None (없음):        < 1.5G  정상 주행
- Low (경미):    1.5G ~ 2.5G  과속방지턱
- Moderate (보통): 2.5G ~ 4.0G  급정거, 경미한 접촉
- High (높음):   4.0G ~ 6.0G  중간 충격
- Severe (심각):      > 6.0G  심각한 사고
+ None:        < 1.5G  Normal driving
+ Low:    1.5G ~ 2.5G  Speed bump
+ Moderate: 2.5G ~ 4.0G  Hard braking, minor contact
+ High:   4.0G ~ 6.0G  Medium impact
+ Severe:      > 6.0G  Serious accident
  ```
 
- ## 📚 사용 예제
+ ## 📚 Usage Examples
 
  ```swift
- // 1. 서비스 생성
+ // 1. Create service
  let gsensorService = GSensorService()
 
- // 2. 영상 로드 시 G-센서 데이터 로드
+ // 2. Load G-Sensor data when loading video
  gsensorService.loadAccelerationData(
  from: videoFile.metadata,
  startTime: videoFile.timestamp
  )
 
- // 3. 재생 중 현재 가속도 조회
+ // 3. Query current acceleration during playback
  if let accel = gsensorService.getCurrentAcceleration(at: currentTime) {
- print("현재 가속도: \(accel.magnitude) G")
- print("방향: \(accel.primaryDirection)")
+ print("Current acceleration: \(accel.magnitude) G")
+ print("Direction: \(accel.primaryDirection)")
  }
 
- // 4. 충격 이벤트 찾기
+ // 4. Find impact events
  let impacts = gsensorService.getImpacts(
  from: 0,
  to: videoDuration,
  minSeverity: .moderate
  )
- print("충격 이벤트: \(impacts.count)건")
+ print("Impact events: \(impacts.count)")
 
- // 5. 충격 지점으로 이동
+ // 5. Jump to impact point
  if let nearest = gsensorService.nearestImpact(to: currentTime) {
  seekToTime(nearest.impact.timestamp)
  }
@@ -148,7 +148,7 @@
 
  ---
 
- 이 서비스는 영상 재생과 G-센서 데이터를 동기화하여 실시간 충격 모니터링을 제공합니다.
+ This service provides real-time impact monitoring by synchronizing video playback with G-Sensor data.
  */
 
 import Foundation
@@ -157,95 +157,95 @@ import Combine
 // MARK: - G-Sensor Service
 
 /// @class GSensorService
-/// @brief G-센서 데이터 관리 서비스
+/// @brief G-Sensor data management service
 /// @details
-/// 영상 재생 시간과 G-센서 데이터를 동기화하여 실시간 가속도, 충격 이벤트 정보를 제공합니다.
+/// Provides real-time acceleration and impact event information by synchronizing G-Sensor data with video playback time.
 ///
-/// ### 주요 기능:
-/// 1. G-센서 데이터 로드 및 관리
-/// 2. 재생 시간 기반 가속도 조회
-/// 3. 충격 이벤트 감지 및 분류
-/// 4. 충격 심각도별/방향별 그룹화
-/// 5. 최대/평균 G-force 계산
+/// ### Key Features:
+/// 1. Load and manage G-Sensor data
+/// 2. Query acceleration based on playback time
+/// 3. Detect and classify impact events
+/// 4. Group impacts by severity/direction
+/// 5. Calculate max/average G-force
 ///
-/// ### ObservableObject란?
-/// - Combine 프레임워크의 프로토콜
-/// - @Published 프로퍼티가 변경되면 자동으로 알림
-/// - SwiftUI View가 자동으로 업데이트됨
+/// ### What is ObservableObject?
+/// - Protocol from the Combine framework
+/// - Automatically notifies when @Published properties change
+/// - SwiftUI Views automatically update
 class GSensorService: ObservableObject {
 
     // MARK: - Published Properties
 
     /// @var currentAcceleration
-    /// @brief 현재 가속도 데이터
+    /// @brief Current acceleration data
     /// @details
-    /// 영상 재생 시간에 해당하는 G-센서 측정값입니다.
+    /// G-Sensor measurement value corresponding to video playback time.
     ///
-    /// ### @Published private(set)이란?
-    /// - **@Published**: 값이 변경되면 자동으로 View 업데이트
-    /// - **private(set)**: 외부에서 읽기만 가능, 쓰기 불가 (이 클래스 내에서만 수정)
+    /// ### What is @Published private(set)?
+    /// - **@Published**: Automatically updates View when value changes
+    /// - **private(set)**: External read-only, writable only within this class
     ///
-    /// ### 이유:
+    /// ### Reason:
     /// ```swift
-    /// // 외부에서:
-    /// let accel = gsensorService.currentAcceleration  // OK (읽기)
-    /// gsensorService.currentAcceleration = ...        // 컴파일 에러 (쓰기 불가)
+    /// // From outside:
+    /// let accel = gsensorService.currentAcceleration  // OK (read)
+    /// gsensorService.currentAcceleration = ...        // Compile error (cannot write)
     ///
-    /// // 내부에서 (이 클래스):
-    /// self.currentAcceleration = newData              // OK (쓰기 가능)
+    /// // From inside (this class):
+    /// self.currentAcceleration = newData              // OK (can write)
     /// ```
     ///
-    /// ### AccelerationData란?
+    /// ### What is AccelerationData?
     /// ```swift
     /// struct AccelerationData {
-    ///     let x: Double              // X축 가속도 (좌우)
-    ///     let y: Double              // Y축 가속도 (전후)
-    ///     let z: Double              // Z축 가속도 (상하)
-    ///     let magnitude: Double      // 가속도 크기 (√(x²+y²+z²))
-    ///     let timestamp: Date        // 측정 시각
-    ///     let isImpact: Bool         // 충격 이벤트 여부
-    ///     let impactSeverity: ImpactSeverity    // 충격 심각도
-    ///     let primaryDirection: ImpactDirection  // 주요 충격 방향
+    ///     let x: Double              // X-axis acceleration (left/right)
+    ///     let y: Double              // Y-axis acceleration (front/back)
+    ///     let z: Double              // Z-axis acceleration (up/down)
+    ///     let magnitude: Double      // Acceleration magnitude (√(x²+y²+z²))
+    ///     let timestamp: Date        // Measurement time
+    ///     let isImpact: Bool         // Whether it's an impact event
+    ///     let impactSeverity: ImpactSeverity    // Impact severity
+    ///     let primaryDirection: ImpactDirection  // Primary impact direction
     /// }
     /// ```
     ///
-    /// ### 사용 예:
+    /// ### Usage Example:
     /// ```swift
     /// if let accel = gsensorService.currentAcceleration {
     ///     print("X: \(accel.x)G, Y: \(accel.y)G, Z: \(accel.z)G")
-    ///     print("크기: \(accel.magnitude)G")
+    ///     print("Magnitude: \(accel.magnitude)G")
     ///
     ///     if accel.isImpact {
-    ///         print("⚠️ 충격 감지! 심각도: \(accel.impactSeverity)")
+    ///         print("⚠️ Impact detected! Severity: \(accel.impactSeverity)")
     ///     }
     /// }
     /// ```
     @Published private(set) var currentAcceleration: AccelerationData?
 
     /// @var allData
-    /// @brief 전체 가속도 데이터
+    /// @brief All acceleration data
     /// @details
-    /// 영상에 포함된 모든 G-센서 측정값 배열입니다.
+    /// Array of all G-Sensor measurement values included in the video.
     ///
-    /// ### 용도:
-    /// - 전체 주행 패턴 분석
-    /// - 그래프 시각화 (가속도 vs 시간)
-    /// - 통계 계산 (최대/평균/표준편차)
+    /// ### Purpose:
+    /// - Analyze overall driving patterns
+    /// - Graph visualization (acceleration vs time)
+    /// - Calculate statistics (max/average/standard deviation)
     ///
-    /// ### 데이터 주기:
+    /// ### Data Rate:
     /// ```
-    /// 블랙박스 G-센서는 보통:
-    /// - 10Hz (0.1초마다 1번)
-    /// - 50Hz (0.02초마다 1번)
-    /// - 100Hz (0.01초마다 1번)
+    /// Dashcam G-Sensors typically:
+    /// - 10Hz (once per 0.1 seconds)
+    /// - 50Hz (once per 0.02 seconds)
+    /// - 100Hz (once per 0.01 seconds)
     ///
-    /// 1시간 영상 (10Hz):
-    /// - 3,600초 × 10 = 36,000 데이터 점
+    /// 1-hour video (10Hz):
+    /// - 3,600 seconds × 10 = 36,000 data points
     /// ```
     ///
-    /// ### 사용 예:
+    /// ### Usage Example:
     /// ```swift
-    /// // 그래프 그리기
+    /// // Draw graph
     /// for data in gsensorService.allData {
     ///     chartView.addPoint(
     ///         x: data.timestamp,
@@ -253,7 +253,7 @@ class GSensorService: ObservableObject {
     ///     )
     /// }
     ///
-    /// // 통계 계산
+    /// // Calculate statistics
     /// let magnitudes = gsensorService.allData.map { $0.magnitude }
     /// let average = magnitudes.reduce(0, +) / Double(magnitudes.count)
     /// let max = magnitudes.max() ?? 0
@@ -261,30 +261,30 @@ class GSensorService: ObservableObject {
     @Published private(set) var allData: [AccelerationData] = []
 
     /// @var impactEvents
-    /// @brief 충격 이벤트 목록
+    /// @brief Impact events list
     /// @details
-    /// 전체 데이터 중 충격으로 분류된 이벤트들입니다.
+    /// Events classified as impacts from all data.
     ///
-    /// ### 충격 판정 기준:
+    /// ### Impact Detection Criteria:
     /// ```
-    /// magnitude > 1.5G  →  충격으로 분류
+    /// magnitude > 1.5G  →  Classified as impact
     ///
-    /// 예:
-    /// - 1.0G: 정상 주행 → 충격 아님
-    /// - 2.0G: 과속방지턱 → 충격 (Low)
-    /// - 4.5G: 급정거 → 충격 (High)
+    /// Example:
+    /// - 1.0G: Normal driving → Not an impact
+    /// - 2.0G: Speed bump → Impact (Low)
+    /// - 4.5G: Hard braking → Impact (High)
     /// ```
     ///
-    /// ### 필터링 과정:
+    /// ### Filtering logic:
     /// ```swift
     /// allData.filter { $0.isImpact }
     ///
-    /// = allData 중 isImpact == true인 것만 추출
+    /// = Extract only data where isImpact == true from allData
     /// ```
     ///
-    /// ### 사용 예:
+    /// ### Usage Example:
     /// ```swift
-    /// // 충격 마커 표시
+    /// // Display impact markers
     /// for impact in gsensorService.impactEvents {
     ///     timelineView.addMarker(
     ///         at: impact.timestamp,
@@ -293,7 +293,7 @@ class GSensorService: ObservableObject {
     ///     )
     /// }
     ///
-    /// // 충격 목록 UI
+    /// // Impact list UI
     /// List(gsensorService.impactEvents) { impact in
     ///     HStack {
     ///         Image(systemName: "exclamationmark.triangle")
@@ -305,27 +305,27 @@ class GSensorService: ObservableObject {
     @Published private(set) var impactEvents: [AccelerationData] = []
 
     /// @var currentGForce
-    /// @brief 현재 G-force 크기
+    /// @brief Current G-force magnitude
     /// @details
-    /// 현재 시점의 가속도 크기(magnitude)입니다.
+    /// Acceleration magnitude at current time point.
     ///
-    /// ### G-force란?
-    /// - G-force = 중력 대비 가속도
-    /// - 1G = 지구 중력 (9.8 m/s²)
-    /// - 2G = 중력의 2배 가속도
+    /// ### What is G-force?
+    /// - G-force = Acceleration relative to gravity
+    /// - 1G = Earth's gravity (9.8 m/s²)
+    /// - 2G = 2 times gravity acceleration
     ///
-    /// ### 느낌:
+    /// ### How it feels:
     /// ```
-    /// 1.0G: 정상 (앉아있는 느낌)
-    /// 2.0G: 과속방지턱 (살짝 튐)
-    /// 3.0G: 급정거 (앞으로 쏠림)
-    /// 5.0G: 충돌 (강한 충격)
-    /// 10.0G: 심각한 사고 (생명 위협)
+    /// 1.0G: Normal (sitting still feeling)
+    /// 2.0G: Speed bump (slight jolt)
+    /// 3.0G: Hard braking (pushed forward)
+    /// 5.0G: Collision (strong impact)
+    /// 10.0G: Severe accident (life threatening)
     /// ```
     ///
-    /// ### 사용 예:
+    /// ### Usage Example:
     /// ```swift
-    /// // 실시간 게이지 표시
+    /// // Display real-time gauge
     /// CircularGauge(
     ///     value: gsensorService.currentGForce,
     ///     minimum: 0,
@@ -334,265 +334,265 @@ class GSensorService: ObservableObject {
     ///     dangerThreshold: 4.0
     /// )
     ///
-    /// // 색상 변경
+    /// // Color change
     /// let color = gsensorService.currentGForce > 3.0 ? .red :
     ///             gsensorService.currentGForce > 1.5 ? .orange : .green
     /// ```
     @Published private(set) var currentGForce: Double = 0.0
 
     /// @var peakGForce
-    /// @brief 최대 G-force (피크)
+    /// @brief Maximum G-force (peak)
     /// @details
-    /// 현재 세션에서 기록된 최대 가속도 크기입니다.
+    /// Maximum acceleration magnitude recorded during current session.
     ///
-    /// ### 계산 시점:
-    /// - 데이터 로드 시 전체 데이터에서 최대값 계산
-    /// - 영상 전체에서 가장 큰 충격의 크기
+    /// ### Calculation time:
+    /// - Calculate maximum value from all data when loading data
+    /// - Magnitude of largest impact in entire video
     ///
-    /// ### 용도:
+    /// ### Purpose:
     /// ```swift
-    /// // 요약 정보 표시
-    /// Text("최대 충격: \(gsensorService.peakGForce, specifier: "%.2f")G")
+    /// // Display summary information
+    /// Text("Maximum impact: \(gsensorService.peakGForce, specifier: "%.2f")G")
     ///
-    /// // 위험 경고
+    /// // Danger warning
     /// if gsensorService.peakGForce > 5.0 {
-    ///     Text("⚠️ 심각한 충격이 기록되었습니다")
+    ///     Text("⚠️ Severe impact recorded")
     ///         .foregroundColor(.red)
     /// }
     ///
-    /// // 게이지 범위 조정
+    /// // Adjust gauge range
     /// let maxScale = max(5.0, gsensorService.peakGForce + 1.0)
     /// CircularGauge(value: current, maximum: maxScale)
     /// ```
     ///
-    /// ### 예시:
+    /// ### Examples:
     /// ```
-    /// 영상 A: peakGForce = 2.1G (과속방지턱)
-    /// 영상 B: peakGForce = 6.5G (사고 발생)
+    /// Video A: peakGForce = 2.1G (Speed bump)
+    /// Video B: peakGForce = 6.5G (Accident occurred)
     /// ```
     @Published private(set) var peakGForce: Double = 0.0
 
     // MARK: - Private Properties
 
     /// @var metadata
-    /// @brief 영상 메타데이터
+    /// @brief Video metadata
     /// @details
-    /// G-센서 데이터를 포함한 영상의 모든 메타데이터입니다.
+    /// All metadata of the video containing G-Sensor data.
     ///
-    /// ### VideoMetadata란?
+    /// ### What is VideoMetadata?
     /// ```swift
     /// struct VideoMetadata {
-    ///     let accelerationData: [AccelerationData]  // G-센서 측정값들
-    ///     let gpsPoints: [GPSPoint]                 // GPS 좌표 배열
-    ///     let summary: MetadataSummary              // 요약 정보
+    ///     let accelerationData: [AccelerationData]  // G-Sensor measurements
+    ///     let gpsPoints: [GPSPoint]                 // GPS coordinate array
+    ///     let summary: MetadataSummary              // Summary information
     /// }
     /// ```
     ///
-    /// ### private이란?
-    /// - 이 클래스 내부에서만 접근 가능
-    /// - 외부에서는 이 변수를 직접 볼 수 없음
-    /// - 캡슐화 (Encapsulation)의 원칙
+    /// ### What is private?
+    /// - Accessible only from within this class
+    /// - Cannot be accessed directly from outside
+    /// - Principle of Encapsulation
     private var metadata: VideoMetadata?
 
     /// @var videoStartTime
-    /// @brief 영상 시작 시각
+    /// @brief Video start time
     /// @details
-    /// 영상이 녹화를 시작한 절대 시각입니다.
+    /// Absolute time when video recording started.
     ///
-    /// ### 용도:
-    /// 시간 오프셋 계산에 사용됩니다.
+    /// ### Purpose:
+    /// Used for calculating time offset.
     ///
     /// ```
-    /// 영상 시작: 2024-10-12 15:00:00
-    /// G-센서 측정: 2024-10-12 15:00:05
+    /// Video start: 2024-10-12 15:00:00
+    /// G-Sensor measurement: 2024-10-12 15:00:05
     ///
-    /// 오프셋 = G-센서 시각 - 영상 시작
+    /// Offset = G-Sensor time - video start
     ///        = 15:00:05 - 15:00:00
-    ///        = 5초
+    ///        = 5 seconds
     ///
-    /// → 영상 재생 5초 시점에 이 G-센서 데이터 표시
+    /// → Display G-Sensor data at 5 seconds of video playback
     /// ```
     ///
-    /// ### Date란?
-    /// - Foundation의 날짜/시간 타입
-    /// - 절대 시각을 표현 (Unix Epoch 1970-01-01 00:00:00 UTC 기준)
-    /// - timeIntervalSince(_:) 메서드로 시간 차이 계산
+    /// ### What is Date?
+    /// - Date/time type from Foundation
+    /// - Represents absolute time (based on Unix Epoch 1970-01-01 00:00:00 UTC)
+    /// - timeIntervalSince(_:) method calculates time difference
     private var videoStartTime: Date?
 
     // MARK: - Public Methods
 
-    /// @brief G-센서 데이터 로드
-    /// @param metadata G-센서 데이터를 포함한 영상 메타데이터
-    /// @param startTime 영상 녹화 시작 시각
+    /// @brief Load G-Sensor data
+    /// @param metadata Video metadata containing G-Sensor data
+    /// @param startTime Video recording start time
     /// @details
-    /// VideoMetadata에서 G-센서 데이터를 추출하여 서비스에 로드합니다.
+    /// Extract G-Sensor data from VideoMetadata and load it into the service.
     ///
-    /// ### 호출 시점:
+    /// ### When to Call:
     /// ```swift
-    /// // 영상 파일 로드 직후:
+    /// // Right after loading video file:
     /// func loadVideo(_ file: VideoFile) {
-    ///     // ... 영상 디코더 설정
+    ///     // ... video decoder setup
     ///
     ///     gsensorService.loadAccelerationData(
     ///         from: file.metadata,
     ///         startTime: file.timestamp
     ///     )
     ///
-    ///     // ... G-센서 UI 업데이트
+    ///     // ... G-Sensor UI update
     /// }
     /// ```
     ///
-    /// ### 처리 과정:
+    /// ### Processing Steps:
     /// ```
-    /// 1. metadata 저장 (G-센서 데이터 포함)
-    /// 2. videoStartTime 저장 (시간 오프셋 계산용)
-    /// 3. allData 설정 (@Published → UI 자동 업데이트)
-    /// 4. impactEvents 필터링 (충격만)
-    /// 5. peakGForce 계산 (최대값)
-    /// 6. 로그 기록
+    /// 1. Save metadata (containing G-Sensor data)
+    /// 2. Save videoStartTime (for time offset calculation)
+    /// 3. Set allData (@Published → UI automatically updates)
+    /// 4. Filter impactEvents (impacts only)
+    /// 5. Calculate peakGForce (maximum value)
+    /// 6. Log
     /// ```
     ///
-    /// ### 충격 필터링:
+    /// ### Impact filtering:
     /// ```swift
     /// metadata.accelerationData.filter { $0.isImpact }
     ///
-    /// = accelerationData 중 isImpact == true인 것만
+    /// = Extract only data where isImpact == true from accelerationData
     /// ```
     ///
-    /// ### 최대값 계산:
+    /// ### Maximum value calculation:
     /// ```swift
     /// metadata.accelerationData.map { $0.magnitude }.max() ?? 0.0
     ///
-    /// 단계:
-    /// 1. map { $0.magnitude }: 모든 데이터의 magnitude만 추출
+    /// Steps:
+    /// 1. map { $0.magnitude }: Extract only magnitudes from all data
     ///    → [1.0, 2.5, 3.2, 1.8, ...]
-    /// 2. .max(): 배열에서 최대값 찾기
+    /// 2. .max(): Find maximum value from array
     ///    → 3.2
-    /// 3. ?? 0.0: nil이면 0.0 (데이터 없을 때)
+    /// 3. ?? 0.0: Use 0.0 if nil (when no data)
     /// ```
     ///
-    /// ### 메모리 영향:
-    /// - 가속도 점 1개 ≈ 60 바이트
-    /// - 1시간 영상 (36000초, 10Hz G-센서) ≈ 2.2 MB
-    /// - 메모리에 안전하게 보관 가능
+    /// ### Memory Impact:
+    /// - 1 acceleration point ≈ 60 bytes
+    /// - 1 hour video (3600 seconds, 10Hz G-Sensor) ≈ 2.2 MB
+    /// - Can be safely stored in memory
     func loadAccelerationData(from metadata: VideoMetadata, startTime: Date) {
-        // ===== 1단계: 메타데이터 저장 =====
+        // ===== Step 1: Save metadata =====
         self.metadata = metadata
         self.videoStartTime = startTime
 
-        // ===== 2단계: 전체 데이터 설정 =====
+        // ===== Step 2: Set all data =====
         self.allData = metadata.accelerationData
 
-        // ===== 3단계: 충격 이벤트 필터링 =====
-        // isImpact == true인 데이터만 추출
+        // ===== Step 3: Filter impact events =====
+        // Extract only data where isImpact == true
         self.impactEvents = metadata.accelerationData.filter { $0.isImpact }
 
-        // ===== 4단계: 최대 G-force 계산 =====
-        // 모든 데이터 중 가장 큰 magnitude
+        // ===== Step 4: Calculate maximum G-force =====
+        // Largest magnitude among all data
         self.peakGForce = metadata.accelerationData.map { $0.magnitude }.max() ?? 0.0
 
-        // ===== 5단계: 로그 기록 =====
+        // ===== Step 5: Log =====
         infoLog("[GSensorService] Loaded G-Sensor data: \(metadata.accelerationData.count) points, \(impactEvents.count) impacts")
     }
 
-    /// @brief 특정 시간의 가속도 데이터 조회
-    /// @param time 영상 재생 시간 (초 단위, 영상 시작부터의 경과 시간)
-    /// @return 해당 시간의 가속도 데이터, 없으면 nil
+    /// @brief Query acceleration data at specific time
+    /// @param time Video playback time (in seconds, elapsed from video start)
+    /// @return Acceleration data at corresponding time, or nil if none
     /// @details
-    /// 영상 재생 시간에 해당하는 G-센서 측정값을 반환합니다.
+    /// Return G-Sensor measurement corresponding to video playback time.
     ///
-    /// ### 시간 매칭 방법:
+    /// ### Time Matching Method:
     ///
-    /// 1. **정확히 일치하는 G-센서 점이 있는 경우:**
+    /// 1. **When exact G-Sensor point exists:**
     /// ```
-    /// G-센서 데이터: [0.0s, 0.1s, 0.2s, 0.3s, ...]
-    /// 재생 시간: 0.2초
-    /// → 0.2s 시점의 G-센서 점 반환
+    /// G-Sensor data: [0.0s, 0.1s, 0.2s, 0.3s, ...]
+    /// Playback time: 0.2s
+    /// → Return G-Sensor point at 0.2s
     /// ```
     ///
-    /// 2. **중간 시간 (보간):**
+    /// 2. **Intermediate time (interpolation):**
     /// ```
-    /// G-센서 데이터: 0.2초(x=1.0, y=0.5), 0.3초(x=1.2, y=0.6)
-    /// 재생 시간: 0.25초
+    /// G-Sensor data: 0.2s(x=1.0, y=0.5), 0.3s(x=1.2, y=0.6)
+    /// Playback time: 0.25s
     ///
-    /// 선형 보간:
+    /// Linear interpolation:
     /// x = 1.0 + (1.2 - 1.0) × 0.5 = 1.1
     /// y = 0.5 + (0.6 - 0.5) × 0.5 = 0.55
     ///
     /// → AccelerationData(x=1.1, y=0.55, ...)
     /// ```
     ///
-    /// 3. **G-센서 데이터 없는 경우:**
+    /// 3. **When no G-Sensor data:**
     /// ```
-    /// metadata == nil → nil 반환
+    /// metadata == nil → Return nil
     /// ```
     ///
-    /// ### weak self란?
+    /// ### What is weak self?
     /// ```swift
     /// DispatchQueue.main.async { [weak self] in
     ///     self?.currentAcceleration = acceleration
     /// }
     /// ```
     ///
-    /// - **weak**: 약한 참조 (메모리 누수 방지)
-    /// - **self?**: self가 nil일 수 있음 (Optional)
+    /// - **weak**: Weak reference (prevents memory leak)
+    /// - **self?**: self can be nil (Optional)
     ///
-    /// **왜 필요한가?**
+    /// **Why is it needed?**
     /// ```
-    /// GSensorService가 해제됨
+    /// GSensorService is released
     ///   ↓
-    /// 하지만 클로저가 아직 실행 대기 중
+    /// But closure is still waiting to execute
     ///   ↓
-    /// weak self 덕분에 self는 nil
+    /// Thanks to weak self, self becomes nil
     ///   ↓
-    /// self?.currentAcceleration → 안전하게 무시
-    /// ```
-    ///
-    /// **strong 참조였다면:**
-    /// ```
-    /// GSensorService를 해제하려 함
-    ///   ↓
-    /// 클로저가 strong self를 붙잡고 있음
-    ///   ↓
-    /// GSensorService가 메모리에 남음 (메모리 누수!)
+    /// self?.currentAcceleration → safely ignored
     /// ```
     ///
-    /// ### DispatchQueue.main.async란?
-    /// - **DispatchQueue.main**: 메인 스레드의 작업 큐
-    /// - **async**: 비동기 실행 (바로 반환)
+    /// **If it were strong reference:**
+    /// ```
+    /// Attempting to release GSensorService
+    ///   ↓
+    /// Closure holds strong self
+    ///   ↓
+    /// GSensorService remains in memory (memory leak!)
+    /// ```
     ///
-    /// **왜 메인 스레드?**
-    /// - @Published 프로퍼티는 UI 업데이트 트리거
-    /// - SwiftUI/AppKit은 메인 스레드에서만 UI 업데이트 가능
+    /// ### What is DispatchQueue.main.async?
+    /// - **DispatchQueue.main**: Work queue on main thread
+    /// - **async**: Asynchronous execution (returns immediately)
+    ///
+    /// **Why main thread?**
+    /// - @Published properties trigger UI updates
+    /// - SwiftUI/AppKit can only update UI from main thread
     ///
     /// ```
-    /// 백그라운드 스레드 (이 메서드 호출)
+    /// Background thread (this method called)
     ///   ↓
     /// DispatchQueue.main.async
     ///   ↓
-    /// 메인 스레드 (UI 업데이트 안전)
+    /// Main thread (UI update safe)
     ///   ↓
-    /// currentAcceleration 변경
+    /// Change currentAcceleration
     ///   ↓
-    /// SwiftUI View 자동 업데이트
+    /// SwiftUI View automatically updates
     /// ```
     ///
-    /// ### 사용 예:
+    /// ### Usage Example:
     /// ```swift
-    /// // 재생 루프에서 호출
+    /// // Called from playback loop
     /// func updatePlayback() {
     ///     let time = syncController.currentTime
     ///
     ///     if let accel = gsensorService.getCurrentAcceleration(at: time) {
-    ///         // G-force 게이지 업데이트
+    ///         // Update G-force gauge
     ///         gforceGauge.value = accel.magnitude
     ///
-    ///         // 충격 경고
+    ///         // Impact warning
     ///         if accel.isImpact {
     ///             showImpactWarning(accel)
     ///         }
     ///
-    ///         // 3축 그래프 업데이트
+    ///         // Update 3-axis graph
     ///         xAxisChart.addPoint(accel.x)
     ///         yAxisChart.addPoint(accel.y)
     ///         zAxisChart.addPoint(accel.z)
@@ -600,16 +600,16 @@ class GSensorService: ObservableObject {
     /// }
     /// ```
     func getCurrentAcceleration(at time: TimeInterval) -> AccelerationData? {
-        // ===== 1단계: 메타데이터 확인 =====
+        // ===== Step 1: Check metadata =====
         guard let metadata = metadata else {
             return nil
         }
 
-        // ===== 2단계: 시간 기반 가속도 데이터 조회 =====
-        // VideoMetadata.accelerationData(at:)는 보간 처리
+        // ===== Step 2: Query acceleration data based on time =====
+        // VideoMetadata.accelerationData(at:) handles interpolation
         let acceleration = metadata.accelerationData(at: time)
 
-        // ===== 3단계: Published 프로퍼티 업데이트 (메인 스레드) =====
+        // ===== Step 3: Update Published properties (main thread) =====
         DispatchQueue.main.async { [weak self] in
             self?.currentAcceleration = acceleration
             self?.currentGForce = acceleration?.magnitude ?? 0.0
@@ -618,40 +618,40 @@ class GSensorService: ObservableObject {
         return acceleration
     }
 
-    /// @brief 시간 범위 내 가속도 데이터 조회
-    /// @param startTime 시작 시간 (초 단위)
-    /// @param endTime 종료 시간 (초 단위)
-    /// @return 해당 시간 범위의 가속도 데이터 배열
+    /// @brief Query acceleration data within time range
+    /// @param startTime Start time (in seconds)
+    /// @param endTime End time (in seconds)
+    /// @return Array of acceleration data in corresponding time range
     /// @details
-    /// 특정 시간 구간의 모든 G-센서 측정값을 반환합니다.
+    /// Return all G-Sensor measurements in a specific time range.
     ///
-    /// ### 사용 예시:
+    /// ### Usage Example:
     ///
-    /// 1. **구간 분석:**
+    /// 1. **Analyze segment:**
     /// ```swift
-    /// // 충격 전후 10초 데이터 분석
+    /// // Analyze 10 seconds before and after impact
     /// let impactTime = 30.0
     /// let data = gsensorService.getData(from: impactTime - 10, to: impactTime + 10)
     /// analyzeAccelerationPattern(data)
     /// ```
     ///
-    /// 2. **구간 그래프:**
+    /// 2. **Draw segment graph:**
     /// ```swift
-    /// // 특정 구간 그래프 그리기
+    /// // Draw graph for specific segment
     /// let data = gsensorService.getData(from: 60, to: 120)
     /// for point in data {
     ///     chart.addPoint(x: point.timestamp, y: point.magnitude)
     /// }
     /// ```
     ///
-    /// 3. **이벤트 검색:**
+    /// 3. **Event search:**
     /// ```swift
-    /// // 2분~3분 사이 최대 가속도
+    /// // Maximum acceleration between 2min~3min
     /// let data = gsensorService.getData(from: 120, to: 180)
     /// let maxAccel = data.map { $0.magnitude }.max() ?? 0
     /// ```
     ///
-    /// ### 필터링 로직:
+    /// ### Filtering logic:
     /// ```swift
     /// metadata.accelerationData.filter { data in
     ///     let offset = data.timestamp.timeIntervalSince(videoStart)
@@ -659,54 +659,54 @@ class GSensorService: ObservableObject {
     /// }
     /// ```
     ///
-    /// **단계별 설명:**
+    /// **Step-by-step explanation:**
     /// ```
-    /// 1. data.timestamp: G-센서 측정 절대 시각
-    ///    예: 2024-10-12 15:00:05
+    /// 1. data.timestamp: G-Sensor measurement absolute time
+    ///    Example: 2024-10-12 15:00:05
     ///
-    /// 2. videoStart: 영상 시작 절대 시각
-    ///    예: 2024-10-12 15:00:00
+    /// 2. videoStart: Video start absolute time
+    ///    Example: 2024-10-12 15:00:00
     ///
-    /// 3. timeIntervalSince: 시간 차이 계산
-    ///    offset = 15:00:05 - 15:00:00 = 5초
+    /// 3. timeIntervalSince: Calculate time difference
+    ///    offset = 15:00:05 - 15:00:00 = 5 seconds
     ///
-    /// 4. 범위 확인: offset >= 10 && offset <= 20
-    ///    → 10초~20초 범위면 포함
+    /// 4. Range check: offset >= 10 && offset <= 20
+    ///    → Include if in 10s~20s range
     /// ```
     ///
-    /// ### 성능:
-    /// - O(n) 시간 복잡도 (n = G-센서 점 개수)
-    /// - 1시간 영상 (36000 점) → 매우 빠름
-    /// - 필터링만 하므로 메모리 효율적
+    /// ### Performance:
+    /// - O(n) time complexity (n = number of G-Sensor points)
+    /// - 1 hour video (36000 points) → very fast
+    /// - Memory efficient (only filtering)
     func getData(from startTime: TimeInterval, to endTime: TimeInterval) -> [AccelerationData] {
-        // ===== 1단계: 데이터 확인 =====
+        // ===== Step 1: Check data =====
         guard let metadata = metadata,
               let videoStart = videoStartTime else {
             return []
         }
 
-        // ===== 2단계: 시간 범위로 필터링 =====
+        // ===== Step 2: Filter by time range =====
         return metadata.accelerationData.filter { data in
             let offset = data.timestamp.timeIntervalSince(videoStart)
             return offset >= startTime && offset <= endTime
         }
     }
 
-    /// @brief 시간 범위 내 충격 이벤트 조회
-    /// @param startTime 시작 시간 (초 단위)
-    /// @param endTime 종료 시간 (초 단위)
-    /// @param minSeverity 최소 심각도 (기본값: .moderate)
-    /// @return 필터링된 충격 이벤트 배열
+    /// @brief Query impact events within time range
+    /// @param startTime Start time (in seconds)
+    /// @param endTime End time (in seconds)
+    /// @param minSeverity Minimum severity (default: .moderate)
+    /// @return Array of filtered impact events
     /// @details
-    /// 특정 시간 구간의 충격 이벤트를 심각도로 필터링하여 반환합니다.
+    /// Return impact events in specific time range filtered by severity.
     ///
-    /// ### 필터링 로직:
+    /// ### Filtering logic:
     /// ```
-    /// 1. 시간 범위 필터링: startTime <= offset <= endTime
-    /// 2. 심각도 필터링: severityLevel >= minSeverity
+    /// 1. Time range filtering: startTime <= offset <= endTime
+    /// 2. Severity filtering: severityLevel >= minSeverity
     /// ```
     ///
-    /// ### severityLevel 함수:
+    /// ### severityLevel function:
     /// ```swift
     /// enum ImpactSeverity {
     ///     case none     // 0
@@ -718,30 +718,30 @@ class GSensorService: ObservableObject {
     ///
     /// severityLevel(impact.impactSeverity) >= severityLevel(minSeverity)
     ///
-    /// 예: minSeverity = .moderate (2)
-    /// - low (1) >= 2 → ❌ 제외
-    /// - moderate (2) >= 2 → ✅ 포함
-    /// - high (3) >= 2 → ✅ 포함
-    /// - severe (4) >= 2 → ✅ 포함
+    /// Example: minSeverity = .moderate (2)
+    /// - low (1) >= 2 → ❌ exclude
+    /// - moderate (2) >= 2 → ✅ include
+    /// - high (3) >= 2 → ✅ include
+    /// - severe (4) >= 2 → ✅ include
     /// ```
     ///
-    /// ### 사용 예:
+    /// ### Usage Example:
     /// ```swift
-    /// // 1. 전체 심각한 충격만 조회
+    /// // 1. Query only severe impacts
     /// let severeImpacts = gsensorService.getImpacts(
     ///     from: 0,
     ///     to: videoDuration,
     ///     minSeverity: .high
     /// )
     ///
-    /// // 2. 1분~2분 사이 모든 충격
+    /// // 2. All impacts between 1min~2min
     /// let impacts = gsensorService.getImpacts(
     ///     from: 60,
     ///     to: 120,
     ///     minSeverity: .low
     /// )
     ///
-    /// // 3. 충격 목록 UI
+    /// // 3. Impact list UI
     /// ForEach(impacts) { impact in
     ///     ImpactRow(
     ///         time: impact.timestamp,
@@ -756,78 +756,78 @@ class GSensorService: ObservableObject {
         to endTime: TimeInterval,
         minSeverity: ImpactSeverity = .moderate
     ) -> [AccelerationData] {
-        // ===== 1단계: 데이터 확인 =====
+        // ===== Step 1: Check data =====
         guard let videoStart = videoStartTime else {
             return []
         }
 
-        // ===== 2단계: 시간 및 심각도로 필터링 =====
+        // ===== Step 2: Filter by time and severity =====
         return impactEvents.filter { impact in
-            // 시간 오프셋 계산
+            // Calculate time offset
             let offset = impact.timestamp.timeIntervalSince(videoStart)
 
-            // 조건 확인:
-            // 1. 시간 범위 내
-            // 2. 심각도 >= minSeverity
+            // Check conditions:
+            // 1. Within time range
+            // 2. severity >= minSeverity
             return offset >= startTime && offset <= endTime &&
                 severityLevel(impact.impactSeverity) >= severityLevel(minSeverity)
         }
     }
 
-    /// @brief 시간 범위 내 최대 G-force
-    /// @param startTime 시작 시간 (초 단위)
-    /// @param endTime 종료 시간 (초 단위)
-    /// @return 최대 G-force 크기
+    /// @brief Maximum G-force within time range
+    /// @param startTime Start time (in seconds)
+    /// @param endTime End time (in seconds)
+    /// @return Maximum G-force magnitude
     /// @details
-    /// 특정 구간의 최대 가속도 크기를 반환합니다.
+    /// Return maximum acceleration magnitude in a specific segment.
     ///
-    /// ### 계산 과정:
+    /// ### Calculation Process:
     /// ```
-    /// 1. getData(from:to:) 호출 → 구간 데이터 가져오기
-    /// 2. map { $0.magnitude } → magnitude만 추출
-    /// 3. max() → 최대값 찾기
-    /// 4. ?? 0.0 → 데이터 없으면 0.0
+    /// 1. Call getData(from:to:) → Get segment data
+    /// 2. map { $0.magnitude } → Extract only magnitudes
+    /// 3. max() → Find maximum value
+    /// 4. ?? 0.0 → Use 0.0 if no data
     /// ```
     ///
-    /// ### 사용 예:
+    /// ### Usage Example:
     /// ```swift
-    /// // 1. 구간별 최대 가속도
+    /// // 1. Maximum acceleration by segment
     /// let max1min = gsensorService.maxGForce(from: 0, to: 60)
     /// let max2min = gsensorService.maxGForce(from: 60, to: 120)
     ///
-    /// // 2. 충격 전후 최대값 비교
+    /// // 2. Compare before and after impact
     /// let impactTime = 30.0
     /// let beforeMax = gsensorService.maxGForce(from: impactTime - 5, to: impactTime)
     /// let afterMax = gsensorService.maxGForce(from: impactTime, to: impactTime + 5)
     ///
-    /// // 3. 그래프 스케일 결정
+    /// // 3. Determine graph scale
     /// let maxInView = gsensorService.maxGForce(from: viewStartTime, to: viewEndTime)
     /// chart.yAxisMax = maxInView + 1.0
     /// ```
     func maxGForce(from startTime: TimeInterval, to endTime: TimeInterval) -> Double {
-        // 구간 데이터 가져오기
+        // Get segment data
         let data = getData(from: startTime, to: endTime)
 
-        // magnitude만 추출하고 최대값 반환
+        // Extract magnitudes and return maximum value
         return data.map { $0.magnitude }.max() ?? 0.0
     }
 
-    /// @brief 시간 범위 내 평균 G-force
-    /// @param startTime 시작 시간 (초 단위)
-    /// @param endTime 종료 시간 (초 단위)
-    /// @return 평균 G-force 크기
+    /// @brief Average G-force within time range
+    /// @param startTime Start time (in seconds)
+    /// @param endTime End time (in seconds)
+    /// @return Average G-force magnitude
     /// @details
-    /// 특정 구간의 평균 가속도 크기를 반환합니다.
+    /// Return average acceleration magnitude in a specific segment.
     ///
-    /// ### 계산 과정:
+    /// ### Calculation Process:
     /// ```
-    /// 1. getData(from:to:) → 구간 데이터
-    /// 2. map { $0.magnitude } → magnitude 배열
-    /// 3. reduce(0, +) → 모두 더하기
-    /// 4. / count → 개수로 나누기
+    /// 1. getData(from:to:) → Get segment data
+    /// 2. map { $0.magnitude } → magnitude array
+    /// 3. reduce(0, +) → Sum all
+    /// 4. / count → Divide by count
     /// ```
     ///
-    /// ### 예시 계산:
+    /// ### Example calculation:
     /// ```
     /// data magnitudes = [1.0, 2.0, 1.5, 3.0, 2.5]
     ///
@@ -835,9 +835,9 @@ class GSensorService: ObservableObject {
     /// average = 10.0 / 5 = 2.0G
     /// ```
     ///
-    /// ### reduce란?
+    /// ### What is reduce?
     ///
-    /// 배열의 모든 요소를 하나의 값으로 축약합니다.
+    /// Reduce all elements of array to a single value.
     ///
     /// ```swift
     /// magnitudes.reduce(0, +)
@@ -847,56 +847,56 @@ class GSensorService: ObservableObject {
     /// }
     /// ```
     ///
-    /// **단계별 실행:**
+    /// **Step-by-step execution:**
     /// ```
     /// magnitudes = [1.0, 2.0, 1.5]
     ///
-    /// 초기값 = 0
-    /// step 1: 0 + 1.0 = 1.0
-    /// step 2: 1.0 + 2.0 = 3.0
-    /// step 3: 3.0 + 1.5 = 4.5
-    /// 최종 = 4.5
+    /// Initial value = 0
+    /// Step 1: 0 + 1.0 = 1.0
+    /// Step 2: 1.0 + 2.0 = 3.0
+    /// Step 3: 3.0 + 1.5 = 4.5
+    /// Final = 4.5
     /// ```
     ///
-    /// ### 사용 예:
+    /// ### Usage Example:
     /// ```swift
-    /// // 1. 주행 구간 평균 가속도
-    /// let avgNormal = gsensorService.averageGForce(from: 0, to: 600)  // 10분
+    /// // 1. Average acceleration for traveled segment
+    /// let avgNormal = gsensorService.averageGForce(from: 0, to: 600)  // 10 minutes
     ///
-    /// // 2. 충격 전후 비교
+    /// // 2. Compare before and after impact
     /// let avgBefore = gsensorService.averageGForce(from: 20, to: 30)
     /// let avgImpact = gsensorService.averageGForce(from: 30, to: 40)
     ///
-    /// // 3. 안전 운전 점수
+    /// // 3. Safe driving score
     /// let avgGforce = gsensorService.averageGForce(from: 0, to: duration)
     /// let safetyScore = calculateSafetyScore(avgGforce)
-    /// // 낮을수록 안전 운전
+    /// // Lower is safer driving
     /// ```
     func averageGForce(from startTime: TimeInterval, to endTime: TimeInterval) -> Double {
-        // ===== 1단계: 구간 데이터 가져오기 =====
+        // ===== Step 1: Get segment data =====
         let data = getData(from: startTime, to: endTime)
 
-        // ===== 2단계: 데이터 없으면 0.0 반환 =====
+        // ===== Step 2: Return 0.0 if no data =====
         guard !data.isEmpty else { return 0.0 }
 
-        // ===== 3단계: 평균 계산 =====
-        // magnitude들을 모두 더함
+        // ===== Step 3: Calculate average =====
+        // Sum all magnitudes
         let total = data.map { $0.magnitude }.reduce(0, +)
 
-        // 개수로 나누어 평균 반환
+        // Divide by count and return average
         return total / Double(data.count)
     }
 
-    /// @brief 충격 이벤트를 심각도별로 그룹화
-    /// @return 심각도별로 그룹화된 충격 이벤트 딕셔너리
+    /// @brief Group impact events by severity
+    /// @return Dictionary of impact events grouped by severity
     /// @details
-    /// 모든 충격 이벤트를 심각도(ImpactSeverity)로 분류하여 딕셔너리로 반환합니다.
+    /// Return dictionary that classifies all impact events by severity (ImpactSeverity).
     ///
-    /// ### 반환 형식:
+    /// ### Return format:
     /// ```swift
     /// [ImpactSeverity: [AccelerationData]]
     ///
-    /// 예:
+    /// Example:
     /// {
     ///     .low: [impact1, impact2],
     ///     .moderate: [impact3, impact4, impact5],
@@ -905,30 +905,30 @@ class GSensorService: ObservableObject {
     /// }
     /// ```
     ///
-    /// ### 그룹화 과정:
+    /// ### Grouping logic:
     /// ```
     /// for impact in impactEvents {
     ///     severity = impact.impactSeverity
     ///
     ///     if grouped[severity] == nil {
-    ///         grouped[severity] = []  // 빈 배열 생성
+    ///         grouped[severity] = []  // Create empty array
     ///     }
     ///
-    ///     grouped[severity]?.append(impact)  // 추가
+    ///     grouped[severity]?.append(impact)  // Add
     /// }
     /// ```
     ///
-    /// ### 사용 예:
+    /// ### Usage Example:
     /// ```swift
-    /// // 1. 심각도별 카운트
+    /// // 1. Count by severity
     /// let grouped = gsensorService.impactsBySeverity()
     ///
-    /// print("경미: \(grouped[.low]?.count ?? 0)건")
-    /// print("보통: \(grouped[.moderate]?.count ?? 0)건")
-    /// print("높음: \(grouped[.high]?.count ?? 0)건")
-    /// print("심각: \(grouped[.severe]?.count ?? 0)건")
+    /// print("Minor: \(grouped[.low]?.count ?? 0) events")
+    /// print("Moderate: \(grouped[.moderate]?.count ?? 0) events")
+    /// print("High: \(grouped[.high]?.count ?? 0) events")
+    /// print("Severe: \(grouped[.severe]?.count ?? 0) events")
     ///
-    /// // 2. 섹션별 UI
+    /// // 2. UI by section
     /// ForEach(ImpactSeverity.allCases) { severity in
     ///     Section(header: Text(severity.displayName)) {
     ///         ForEach(grouped[severity] ?? []) { impact in
@@ -937,7 +937,7 @@ class GSensorService: ObservableObject {
     ///     }
     /// }
     ///
-    /// // 3. 통계 차트
+    /// // 3. Statistics chart
     /// PieChart(data: [
     ///     ("Low", grouped[.low]?.count ?? 0),
     ///     ("Moderate", grouped[.moderate]?.count ?? 0),
@@ -946,48 +946,48 @@ class GSensorService: ObservableObject {
     /// ])
     /// ```
     func impactsBySeverity() -> [ImpactSeverity: [AccelerationData]] {
-        // 빈 딕셔너리 생성
+        // Create empty dictionary
         var grouped: [ImpactSeverity: [AccelerationData]] = [:]
 
-        // 모든 충격 이벤트 순회
+        // Iterate all impact events
         for impact in impactEvents {
             let severity = impact.impactSeverity
 
-            // 해당 severity 키가 없으면 빈 배열 생성
+            // Create empty array if severity key doesn't exist
             if grouped[severity] == nil {
                 grouped[severity] = []
             }
 
-            // 충격 이벤트 추가
+            // Add impact event
             grouped[severity]?.append(impact)
         }
 
         return grouped
     }
 
-    /// @brief 충격 이벤트를 방향별로 그룹화
-    /// @return 방향별로 그룹화된 충격 이벤트 딕셔너리
+    /// @brief Group impact events by direction
+    /// @return Dictionary of impact events grouped by direction
     /// @details
-    /// 모든 충격 이벤트를 충격 방향(ImpactDirection)으로 분류하여 딕셔너리로 반환합니다.
+    /// Return dictionary that classifies all impact events by impact direction (ImpactDirection).
     ///
     /// ### ImpactDirection:
     /// ```swift
     /// enum ImpactDirection {
-    ///     case front      // 전방 충격 (급정거)
-    ///     case rear       // 후방 충격 (추돌)
-    ///     case left       // 좌측 충격
-    ///     case right      // 우측 충격
-    ///     case top        // 상단 충격 (위에서 낙하물)
-    ///     case bottom     // 하단 충격 (과속방지턱)
-    ///     case multiple   // 복합 방향
+    ///     case front      // Front impact (Hard braking)
+    ///     case rear       // Rear impact (Collision from behind)
+    ///     case left       // Left impact
+    ///     case right      // Right impact
+    ///     case top        // Top impact (Falling object from above)
+    ///     case bottom     // Bottom impact (Speed bump)
+    ///     case multiple   // Multiple directions
     /// }
     /// ```
     ///
-    /// ### 반환 형식:
+    /// ### Return format:
     /// ```swift
     /// [ImpactDirection: [AccelerationData]]
     ///
-    /// 예:
+    /// Example:
     /// {
     ///     .front: [impact1, impact2, impact3],
     ///     .rear: [impact4],
@@ -997,62 +997,62 @@ class GSensorService: ObservableObject {
     /// }
     /// ```
     ///
-    /// ### 사용 예:
+    /// ### Usage Example:
     /// ```swift
-    /// // 1. 방향별 카운트
+    /// // 1. Count by direction
     /// let grouped = gsensorService.impactsByDirection()
     ///
-    /// print("전방: \(grouped[.front]?.count ?? 0)건")
-    /// print("후방: \(grouped[.rear]?.count ?? 0)건")
-    /// print("좌측: \(grouped[.left]?.count ?? 0)건")
-    /// print("우측: \(grouped[.right]?.count ?? 0)건")
+    /// print("Front: \(grouped[.front]?.count ?? 0) events")
+    /// print("Rear: \(grouped[.rear]?.count ?? 0) events")
+    /// print("Left: \(grouped[.left]?.count ?? 0) events")
+    /// print("Right: \(grouped[.right]?.count ?? 0) events")
     ///
-    /// // 2. 방향별 화살표 표시
+    /// // 2. Display direction arrows
     /// for (direction, impacts) in grouped {
     ///     let arrow = directionArrow(direction)
-    ///     Text("\(arrow) \(impacts.count)건")
+    ///     Text("\(arrow) \(impacts.count) events")
     /// }
     ///
-    /// // 3. 사고 패턴 분석
+    /// // 3. Accident pattern analysis
     /// let rearImpacts = grouped[.rear]?.count ?? 0
     /// if rearImpacts > 0 {
-    ///     Text("⚠️ 후방 충격 감지: 추돌 사고 가능성")
+    ///     Text("⚠️ Rear impact detected: Possible rear-end collision")
     /// }
     /// ```
     func impactsByDirection() -> [ImpactDirection: [AccelerationData]] {
-        // 빈 딕셔너리 생성
+        // Create empty dictionary
         var grouped: [ImpactDirection: [AccelerationData]] = [:]
 
-        // 모든 충격 이벤트 순회
+        // Iterate all impact events
         for impact in impactEvents {
             let direction = impact.primaryDirection
 
-            // 해당 direction 키가 없으면 빈 배열 생성
+            // Create empty array if direction key doesn't exist
             if grouped[direction] == nil {
                 grouped[direction] = []
             }
 
-            // 충격 이벤트 추가
+            // Add impact event
             grouped[direction]?.append(impact)
         }
 
         return grouped
     }
 
-    /// @brief 현재 시간에 유의미한 가속도가 있는지 확인
-    /// @param time 재생 시간 (초 단위)
-    /// @return 유의미한 가속도 여부 (true/false)
+    /// @brief Check if significant acceleration exists at current time
+    /// @param time Playback time (in seconds)
+    /// @return Whether significant acceleration exists (true/false)
     /// @details
-    /// 현재 시점의 가속도가 임계값(1.5G)을 초과하는지 확인합니다.
+    /// Check if acceleration at current time point exceeds threshold (1.5G).
     ///
-    /// ### 판정 기준:
+    /// ### Determination criteria:
     /// ```
     /// isSignificant = magnitude > 1.5G
     ///
-    /// 예:
-    /// - 1.0G → false (정상)
-    /// - 1.8G → true (유의미)
-    /// - 3.0G → true (충격)
+    /// Example:
+    /// - 1.0G → false (normal)
+    /// - 1.8G → true (significant)
+    /// - 3.0G → true (impact)
     /// ```
     ///
     /// ### AccelerationData.isSignificant:
@@ -1062,141 +1062,141 @@ class GSensorService: ObservableObject {
     /// }
     /// ```
     ///
-    /// ### 사용 예:
+    /// ### Usage Example:
     /// ```swift
-    /// // 1. 경고 표시
+    /// // 1. Display warning
     /// if gsensorService.hasSignificantAcceleration(at: currentTime) {
     ///     warningIcon.isHidden = false
     ///     warningIcon.startAnimating()
     /// }
     ///
-    /// // 2. 이벤트 마커
+    /// // 2. Event marker
     /// if gsensorService.hasSignificantAcceleration(at: time) {
     ///     timeline.addMarker(at: time, color: .orange)
     /// }
     ///
-    /// // 3. 통계
+    /// // 3. Statistics
     /// var significantCount = 0
     /// for time in stride(from: 0, to: duration, by: 1.0) {
     ///     if gsensorService.hasSignificantAcceleration(at: time) {
     ///         significantCount += 1
     ///     }
     /// }
-    /// print("유의미한 가속도 지점: \(significantCount)초")
+    /// print("Significant acceleration points: \(significantCount) seconds")
     /// ```
     func hasSignificantAcceleration(at time: TimeInterval) -> Bool {
-        // 현재 시간의 가속도 데이터 가져오기
+        // Get acceleration data at current time
         guard let acceleration = getCurrentAcceleration(at: time) else {
             return false
         }
 
-        // isSignificant 프로퍼티 확인 (magnitude > 1.5G)
+        // Check isSignificant property (magnitude > 1.5G)
         return acceleration.isSignificant
     }
 
-    /// @brief 지정 시간에 가장 가까운 충격 이벤트 찾기
-    /// @param time 목표 시간 (초 단위)
-    /// @return (충격 이벤트, 시간 차이) 튜플, 충격 없으면 nil
+    /// @brief Find nearest impact event to specified time
+    /// @param time Target time (in seconds)
+    /// @return (impact event, time difference) tuple, or nil if no impacts
     /// @details
-    /// 주어진 시간에서 가장 가까운 충격 이벤트와 그 시간 차이를 반환합니다.
+    /// Return the nearest impact event from the given time and its time difference.
     ///
-    /// ### 알고리즘:
+    /// ### Algorithm:
     /// ```
-    /// 1. 모든 충격 이벤트의 시간 오프셋 계산
-    /// 2. 목표 시간과의 차이(절대값) 계산
-    /// 3. 차이가 가장 작은 것 선택
-    /// ```
-    ///
-    /// ### 예시:
-    /// ```
-    /// 충격 이벤트: [10초, 25초, 50초, 75초]
-    /// 목표 시간: 30초
-    ///
-    /// 차이 계산:
-    /// - 10초: |10 - 30| = 20초
-    /// - 25초: |25 - 30| = 5초  ← 최소
-    /// - 50초: |50 - 30| = 20초
-    /// - 75초: |75 - 30| = 45초
-    ///
-    /// 결과: 25초 충격 이벤트 (차이 5초)
+    /// 1. Calculate time offset for all impact events
+    /// 2. Calculate difference (absolute value) from target time
+    /// 3. Select one with smallest difference
     /// ```
     ///
-    /// ### map 사용:
+    /// ### Example:
+    /// ```
+    /// Impact events: [10s, 25s, 50s, 75s]
+    /// Target time: 30s
+    ///
+    /// Calculate differences:
+    /// - 10s: |10 - 30| = 20s
+    /// - 25s: |25 - 30| = 5s  ← minimum
+    /// - 50s: |50 - 30| = 20s
+    /// - 75s: |75 - 30| = 45s
+    ///
+    /// Result: 25s impact event (difference 5s)
+    /// ```
+    ///
+    /// ### Using map:
     /// ```swift
     /// impactEvents.map { impact -> (AccelerationData, TimeInterval) in
     ///     let offset = impact.timestamp.timeIntervalSince(videoStart)
     ///     return (impact, abs(offset - time))
     /// }
     ///
-    /// = 각 충격 이벤트를 (충격 데이터, 시간 차이) 튜플로 변환
+    /// = Convert each impact event to (impact data, time difference) tuple
     /// ```
     ///
-    /// ### min(by:) 사용:
+    /// ### Using min(by:):
     /// ```swift
     /// .min(by: { $0.1 < $1.1 })
     ///
-    /// = 튜플의 두 번째 요소($0.1, $1.1 = 시간 차이)를 비교하여 최소값 찾기
+    /// = Compare second element of tuple ($0.1, $1.1 = time difference) to find minimum value
     /// ```
     ///
-    /// ### 튜플이란?
+    /// ### What is tuple?
     /// ```swift
-    /// // 여러 값을 하나로 묶어서 반환
+    /// // Return multiple values bundled together
     /// let result = nearestImpact(to: 30)
     ///
-    /// // 접근 방법 1: 튜플 레이블
+    /// // Access method 1: tuple label
     /// let impact = result.impact
     /// let offset = result.offset
     ///
-    /// // 접근 방법 2: 분해 (Destructuring)
+    /// // Access method 2: Destructuring
     /// let (impact, offset) = nearestImpact(to: 30)
     /// ```
     ///
-    /// ### 사용 예:
+    /// ### Usage Example:
     /// ```swift
-    /// // 1. "가장 가까운 충격으로 이동" 버튼
-    /// Button("충격 지점으로 이동") {
+    /// // 1. "Jump to nearest impact" button
+    /// Button("Jump to impact point") {
     ///     if let (impact, offset) = gsensorService.nearestImpact(to: currentTime) {
     ///         let impactTime = impact.timestamp.timeIntervalSince(videoStart)
     ///         seekToTime(impactTime)
     ///     }
     /// }
     ///
-    /// // 2. 충격 시간 표시
+    /// // 2. Display impact time
     /// if let (impact, offset) = gsensorService.nearestImpact(to: currentTime) {
-    ///     Text("가장 가까운 충격: \(offset, specifier: "%.1f")초 \(offset > 0 ? "후" : "전")")
+    ///     Text("Nearest impact: \(offset, specifier: "%.1f")s \(offset > 0 ? "ahead" : "behind")")
     /// }
     ///
-    /// // 3. 자동 재생
+    /// // 3. Auto playback
     /// func autoPlayImpacts() {
     ///     if let (impact, _) = gsensorService.nearestImpact(to: currentTime) {
     ///         seekTo(impact.timestamp)
     ///         Timer.scheduledTimer(withTimeInterval: 10.0) { _ in
-    ///             autoPlayImpacts()  // 다음 충격으로
+    ///             autoPlayImpacts()  // Go to next impact
     ///         }
     ///     }
     /// }
     /// ```
     func nearestImpact(to time: TimeInterval) -> (impact: AccelerationData, offset: TimeInterval)? {
-        // ===== 1단계: 데이터 확인 =====
+        // ===== Step 1: Check data =====
         guard let videoStart = videoStartTime,
               !impactEvents.isEmpty else {
             return nil
         }
 
-        // ===== 2단계: 각 충격 이벤트와 목표 시간의 차이 계산 =====
+        // ===== Step 2: Calculate difference between each impact event and target time =====
         let impactsWithOffsets = impactEvents.map { impact -> (AccelerationData, TimeInterval) in
-            // 충격 발생 시간 (영상 시작부터의 오프셋)
+            // Impact occurrence time (offset from video start)
             let offset = impact.timestamp.timeIntervalSince(videoStart)
 
-            // 목표 시간과의 차이 (절대값)
+            // Difference from target time (absolute value)
             let difference = abs(offset - time)
 
             return (impact, difference)
         }
 
-        // ===== 3단계: 차이가 가장 작은 것 찾기 =====
-        // min(by:): 비교 함수로 최소값 선택
-        // $0.1, $1.1: 튜플의 두 번째 요소 (TimeInterval = 차이)
+        // ===== Step 3: Find one with smallest difference =====
+        // min(by:): Select minimum value using comparison function
+        // $0.1, $1.1: Second element of tuple (TimeInterval = difference)
         guard let nearest = impactsWithOffsets.min(by: { $0.1 < $1.1 }) else {
             return nil
         }
@@ -1204,13 +1204,13 @@ class GSensorService: ObservableObject {
         return nearest
     }
 
-    /// @brief G-센서 데이터 제거
+    /// @brief Clear G-Sensor data
     /// @details
-    /// 모든 G-센서 데이터를 메모리에서 제거하고 초기 상태로 되돌립니다.
+    /// Remove all G-Sensor data from memory and return to initial state.
     ///
-    /// ### 호출 시점:
+    /// ### When to Call:
     ///
-    /// 1. **영상 종료 시:**
+    /// 1. **When stopping video:**
     /// ```swift
     /// func stopPlayback() {
     ///     syncController.stop()
@@ -1219,15 +1219,15 @@ class GSensorService: ObservableObject {
     /// }
     /// ```
     ///
-    /// 2. **새 영상 로드 전:**
+    /// 2. **Before loading new video:**
     /// ```swift
     /// func loadNewVideo(_ file: VideoFile) {
-    ///     gsensorService.clear()  // 이전 데이터 제거
+    ///     gsensorService.clear()  // Remove previous data
     ///     gsensorService.loadAccelerationData(from: file.metadata, startTime: file.timestamp)
     /// }
     /// ```
     ///
-    /// 3. **메모리 정리:**
+    /// 3. **Memory cleanup:**
     /// ```swift
     /// func didReceiveMemoryWarning() {
     ///     if !isPlaying {
@@ -1236,158 +1236,158 @@ class GSensorService: ObservableObject {
     /// }
     /// ```
     ///
-    /// ### 제거되는 것:
-    /// - metadata: 전체 메타데이터 (nil)
-    /// - videoStartTime: 시작 시각 (nil)
-    /// - allData: 전체 가속도 데이터 (빈 배열)
-    /// - impactEvents: 충격 이벤트 목록 (빈 배열)
-    /// - currentAcceleration: 현재 가속도 (nil)
-    /// - currentGForce: 현재 G-force (0.0)
-    /// - peakGForce: 최대 G-force (0.0)
+    /// ### What is cleared:
+    /// - metadata: All metadata (nil)
+    /// - videoStartTime: Start time (nil)
+    /// - allData: All acceleration data (empty array)
+    /// - impactEvents: Impact events list (empty array)
+    /// - currentAcceleration: Current acceleration (nil)
+    /// - currentGForce: Current G-force (0.0)
+    /// - peakGForce: Maximum G-force (0.0)
     ///
-    /// ### @Published 프로퍼티 효과:
+    /// ### Effect on @Published properties:
     /// ```
-    /// clear() 호출
+    /// clear() called
     ///   ↓
     /// allData = []
     ///   ↓
-    /// @Published가 감지
+    /// @Published detected
     ///   ↓
-    /// SwiftUI View 자동 업데이트
+    /// SwiftUI View automatically updates
     ///   ↓
-    /// 그래프/게이지에서 데이터 사라짐
+    /// Data disappears from graph/gauge
     /// ```
     func clear() {
-        // ===== 모든 데이터 초기화 =====
+        // ===== Reset all data =====
         metadata = nil
         videoStartTime = nil
-        allData = []                  // @Published → UI 업데이트
-        impactEvents = []             // @Published → UI 업데이트
-        currentAcceleration = nil     // @Published → UI 업데이트
-        currentGForce = 0.0           // @Published → UI 업데이트
-        peakGForce = 0.0              // @Published → UI 업데이트
+        allData = []                  // @Published → UI update
+        impactEvents = []             // @Published → UI update
+        currentAcceleration = nil     // @Published → UI update
+        currentGForce = 0.0           // @Published → UI update
+        peakGForce = 0.0              // @Published → UI update
 
-        // ===== 로그 기록 =====
+        // ===== Log =====
         debugLog("[GSensorService] G-Sensor data cleared")
     }
 
     // MARK: - Computed Properties
 
     /// @var hasData
-    /// @brief G-센서 데이터 존재 여부
-    /// @return G-센서 데이터가 있으면 true, 없으면 false
+    /// @brief Whether G-Sensor data exists
+    /// @return true if G-Sensor data exists, false if none
     /// @details
-    /// G-센서 데이터가 로드되어 있고, 최소 1개 이상의 측정값이 있는지 확인합니다.
+    /// Check if G-Sensor data is loaded and has at least 1 measurement.
     ///
-    /// ### 계산 로직:
+    /// ### Calculation logic:
     /// ```swift
     /// metadata?.accelerationData.isEmpty ?? true
     ///
     /// = if let metadata = metadata {
     ///     return metadata.accelerationData.isEmpty
     /// } else {
-    ///     return true  // metadata가 nil이면 "비어있음"으로 간주
+    ///     return true  // If metadata is nil, consider "empty"
     /// }
     ///
-    /// hasData = !isEmpty  // 비어있지 않으면 데이터 있음
+    /// hasData = !isEmpty  // If not empty, data exists
     /// ```
     ///
     /// ### nil-coalescing operator (??):
     /// ```swift
     /// optional ?? defaultValue
     ///
-    /// 예:
+    /// Example:
     /// metadata?.accelerationData.isEmpty ?? true
     ///
-    /// metadata가 nil이면:     true 반환
-    /// metadata가 있으면:       isEmpty 값 반환
+    /// If metadata is nil:     Return true
+    /// If metadata exists:     Return isEmpty value
     /// ```
     ///
-    /// ### 사용 예:
+    /// ### Usage Example:
     /// ```swift
     /// if gsensorService.hasData {
-    ///     // G-센서 그래프 표시
+    ///     // Display G-Sensor graph
     ///     chartView.isHidden = false
     ///     chartView.showGraph()
     /// } else {
-    ///     // "G-센서 데이터 없음" 메시지
+    ///     // "No G-Sensor data" message
     ///     chartView.isHidden = true
-    ///     showAlert("이 영상에는 G-센서 데이터가 없습니다")
+    ///     showAlert("This video has no G-Sensor data")
     /// }
     /// ```
     var hasData: Bool {
-        // metadata가 nil이거나 accelerationData가 비어있으면 false
+        // Return false if metadata is nil or accelerationData is empty
         return !(metadata?.accelerationData.isEmpty ?? true)
     }
 
     /// @var dataPointCount
-    /// @brief 데이터 점 개수
-    /// @return 로드된 G-센서 데이터의 총 점 개수
+    /// @brief Number of data points
+    /// @return Total count of loaded G-Sensor data points
     /// @details
-    /// 로드된 G-센서 측정값의 총 개수를 반환합니다.
+    /// Return total count of loaded G-Sensor measurements.
     ///
-    /// ### 계산 로직:
+    /// ### Calculation logic:
     /// ```swift
     /// metadata?.accelerationData.count ?? 0
     ///
     /// = if let metadata = metadata {
     ///     return metadata.accelerationData.count
     /// } else {
-    ///     return 0  // metadata가 nil이면 0개
+    ///     return 0  // If metadata is nil, 0 points
     /// }
     /// ```
     ///
-    /// ### 사용 예:
+    /// ### Usage Example:
     /// ```swift
-    /// // 정보 표시
-    /// Text("G-센서 데이터: \(gsensorService.dataPointCount)개 점")
+    /// // Display info
+    /// Text("G-Sensor data: \(gsensorService.dataPointCount) points")
     ///
-    /// // 샘플링 레이트 계산
+    /// // Calculate sampling rate
     /// if let duration = videoDuration {
     ///     let sampleRate = Double(gsensorService.dataPointCount) / duration
-    ///     print("G-센서 샘플링: \(sampleRate) Hz")
-    ///     // 예: 36000 점 / 3600 초 = 10 Hz (0.1초에 1번)
+    ///     print("G-Sensor sampling: \(sampleRate) Hz")
+    ///     // Example: 36000 points / 3600 seconds = 10 Hz (once per 0.1 seconds)
     /// }
     ///
-    /// // 메모리 사용량 추정
-    /// let memoryUsage = gsensorService.dataPointCount * 60  // 점당 ~60 바이트
-    /// print("G-센서 메모리: \(memoryUsage / 1024) KB")
+    /// // Estimate memory usage
+    /// let memoryUsage = gsensorService.dataPointCount * 60  // ~60 bytes per point
+    /// print("G-Sensor memory: \(memoryUsage / 1024) KB")
     /// ```
     ///
-    /// ### 샘플링 레이트 예시:
+    /// ### Sampling rate examples:
     /// ```
-    /// 1시간 영상:
-    /// - 36000 점 → 10 Hz (0.1초마다 1번)
-    /// - 180000 점 → 50 Hz (0.02초마다 1번)
-    /// - 360000 점 → 100 Hz (0.01초마다 1번)
+    /// 1 hour video:
+    /// - 36000 points → 10 Hz (once per 0.1 seconds)
+    /// - 180000 points → 50 Hz (once per 0.02 seconds)
+    /// - 360000 points → 100 Hz (once per 0.01 seconds)
     /// ```
     var dataPointCount: Int {
-        // metadata가 nil이면 0 반환
+        // Return 0 if metadata is nil
         return metadata?.accelerationData.count ?? 0
     }
 
     /// @var impactCount
-    /// @brief 충격 이벤트 개수
-    /// @return 감지된 충격 이벤트의 총 개수
+    /// @brief Number of impact events
+    /// @return Total count of detected impact events
     /// @details
-    /// 감지된 충격 이벤트의 총 개수를 반환합니다.
+    /// Return total count of detected impact events.
     ///
-    /// ### 사용 예:
+    /// ### Usage Example:
     /// ```swift
-    /// // 충격 카운트 표시
-    /// Text("충격 감지: \(gsensorService.impactCount)건")
+    /// // Display impact count
+    /// Text("Impacts detected: \(gsensorService.impactCount) events")
     ///
-    /// // 조건부 UI
+    /// // Conditional UI
     /// if gsensorService.impactCount > 0 {
     ///     ImpactListView(impacts: gsensorService.impactEvents)
     /// } else {
-    ///     Text("충격 이벤트 없음")
+    ///     Text("No impact events")
     ///         .foregroundColor(.gray)
     /// }
     ///
-    /// // 위험도 평가
-    /// let riskLevel = gsensorService.impactCount > 10 ? "높음" :
-    ///                 gsensorService.impactCount > 5 ? "보통" : "낮음"
+    /// // Risk level
+    /// let riskLevel = gsensorService.impactCount > 10 ? "High" :
+    ///                 gsensorService.impactCount > 5 ? "Medium" : "Low"
     /// ```
     var impactCount: Int {
         return impactEvents.count
@@ -1395,13 +1395,13 @@ class GSensorService: ObservableObject {
 
     // MARK: - Private Helpers
 
-    /// @brief 심각도를 비교 가능한 수준으로 변환
-    /// @param severity 심각도 enum
-    /// @return 정수 레벨 (0~4)
+    /// @brief Convert severity to comparable level
+    /// @param severity Severity enum
+    /// @return Integer level (0~4)
     /// @details
-    /// ImpactSeverity enum을 정수로 변환하여 크기 비교를 가능하게 합니다.
+    /// Convert ImpactSeverity enum to integer for magnitude comparison.
     ///
-    /// ### 변환 표:
+    /// ### Conversion table:
     /// ```
     /// .none     → 0
     /// .low      → 1
@@ -1410,7 +1410,7 @@ class GSensorService: ObservableObject {
     /// .severe   → 4
     /// ```
     ///
-    /// ### 사용 예:
+    /// ### Usage Example:
     /// ```swift
     /// severityLevel(.high) >= severityLevel(.moderate)
     /// → 3 >= 2
@@ -1421,12 +1421,12 @@ class GSensorService: ObservableObject {
     /// → false
     /// ```
     ///
-    /// ### 왜 필요한가?
+    /// ### Why is it needed?
     /// ```swift
-    /// // enum은 직접 비교 불가
-    /// if impact.impactSeverity >= .moderate  // 컴파일 에러!
+    /// // Cannot compare enum directly
+    /// if impact.impactSeverity >= .moderate  // Compile error!
     ///
-    /// // 정수로 변환하면 비교 가능
+    /// // Can compare when converted to integer
     /// if severityLevel(impact.impactSeverity) >= severityLevel(.moderate)  // OK
     /// ```
     private func severityLevel(_ severity: ImpactSeverity) -> Int {
@@ -1441,23 +1441,23 @@ class GSensorService: ObservableObject {
 }
 
 /**
- # GSensorService 통합 가이드
+ # GSensorService Integration Guide
 
- ## 충격 감지 알고리즘:
+ ## Impact Detection Algorithm:
 
  ```swift
  extension AccelerationData {
- // 가속도 크기 계산 (벡터 크기)
+ // Calculate acceleration magnitude (vector magnitude)
  var magnitude: Double {
  return sqrt(x * x + y * y + z * z)
  }
 
- // 충격 여부 판정
+ // Determine if impact
  var isImpact: Bool {
- return magnitude > 1.5  // 1.5G 초과 → 충격
+ return magnitude > 1.5  // Exceeds 1.5G → impact
  }
 
- // 심각도 분류
+ // Classify severity
  var impactSeverity: ImpactSeverity {
  if magnitude < 1.5 {
  return .none
@@ -1472,13 +1472,13 @@ class GSensorService: ObservableObject {
  }
  }
 
- // 주요 충격 방향 결정
+ // Determine primary impact direction
  var primaryDirection: ImpactDirection {
  let absX = abs(x)
  let absY = abs(y)
  let absZ = abs(z)
 
- // 가장 큰 축 찾기
+ // Find largest axis
  let maxAxis = max(absX, absY, absZ)
 
  if maxAxis == absX {
@@ -1492,7 +1492,7 @@ class GSensorService: ObservableObject {
  }
  ```
 
- ## 실시간 G-force 게이지 UI:
+ ## Real-time G-force Gauge UI:
 
  ```swift
  struct GForceGaugeView: View {
@@ -1500,13 +1500,13 @@ class GSensorService: ObservableObject {
 
  var body: some View {
  VStack {
- // 원형 게이지
+ // Circular gauge
  ZStack {
- // 배경 원
+ // Background circle
  Circle()
  .stroke(Color.gray.opacity(0.3), lineWidth: 20)
 
- // G-force 게이지
+ // G-force gauge
  Circle()
  .trim(from: 0, to: CGFloat(min(gsensorService.currentGForce / 5.0, 1.0)))
  .stroke(
@@ -1515,7 +1515,7 @@ class GSensorService: ObservableObject {
  )
  .rotationEffect(.degrees(-90))
 
- // 수치 표시
+ // Numeric display
  VStack {
  Text(String(format: "%.2f", gsensorService.currentGForce))
  .font(.system(size: 48, weight: .bold))
@@ -1526,7 +1526,7 @@ class GSensorService: ObservableObject {
  }
  .frame(width: 200, height: 200)
 
- // 최대값
+ // Maximum value
  Text("Peak: \(String(format: "%.2f", gsensorService.peakGForce))G")
  .font(.caption)
  .foregroundColor(.secondary)
@@ -1545,7 +1545,7 @@ class GSensorService: ObservableObject {
  }
  ```
 
- ## 3축 가속도 그래프:
+ ## 3-axis Acceleration Graph:
 
  ```swift
  struct AccelerationChartView: View {
@@ -1554,7 +1554,7 @@ class GSensorService: ObservableObject {
 
  var body: some View {
  Chart {
- // X축 (좌우)
+ // X-axis (Left/Right)
  ForEach(gsensorService.allData) { data in
  LineMark(
  x: .value("Time", data.timestamp),
@@ -1563,7 +1563,7 @@ class GSensorService: ObservableObject {
  .foregroundStyle(.red)
  }
 
- // Y축 (전후)
+ // Y-axis (Forward/Backward)
  ForEach(gsensorService.allData) { data in
  LineMark(
  x: .value("Time", data.timestamp),
@@ -1572,7 +1572,7 @@ class GSensorService: ObservableObject {
  .foregroundStyle(.green)
  }
 
- // Z축 (상하)
+ // Z-axis (Up/Down)
  ForEach(gsensorService.allData) { data in
  LineMark(
  x: .value("Time", data.timestamp),
@@ -1581,7 +1581,7 @@ class GSensorService: ObservableObject {
  .foregroundStyle(.blue)
  }
 
- // 충격 이벤트 마커
+ // Impact event markers
  ForEach(gsensorService.impactEvents) { impact in
  RuleMark(x: .value("Impact", impact.timestamp))
  .foregroundStyle(.red.opacity(0.5))
@@ -1607,7 +1607,7 @@ class GSensorService: ObservableObject {
  }
  ```
 
- ## 충격 이벤트 목록 UI:
+ ## Impact Events List UI:
 
  ```swift
  struct ImpactEventsListView: View {
@@ -1616,7 +1616,7 @@ class GSensorService: ObservableObject {
 
  var body: some View {
  List {
- // 심각도별 섹션
+ // Section by severity
  ForEach(ImpactSeverity.allCases, id: \.self) { severity in
  let impacts = gsensorService.impactsBySeverity()[severity] ?? []
 
@@ -1632,7 +1632,7 @@ class GSensorService: ObservableObject {
  }
  }
  }
- .navigationTitle("충격 이벤트 (\(gsensorService.impactCount))")
+ .navigationTitle("Impact Events (\(gsensorService.impactCount))")
  }
  }
 
@@ -1641,16 +1641,16 @@ class GSensorService: ObservableObject {
 
  var body: some View {
  HStack {
- // 심각도 아이콘
+ // severity icon
  Image(systemName: severityIcon(impact.impactSeverity))
  .foregroundColor(severityColor(impact.impactSeverity))
 
  VStack(alignment: .leading) {
- // 시간
+ // hours
  Text(formatTime(impact.timestamp))
  .font(.headline)
 
- // 방향
+ // direction
  Text(directionText(impact.primaryDirection))
  .font(.caption)
  .foregroundColor(.secondary)
@@ -1692,19 +1692,19 @@ class GSensorService: ObservableObject {
 
  func directionText(_ direction: ImpactDirection) -> String {
  switch direction {
- case .front: return "↑ 전방 충격"
- case .rear: return "↓ 후방 충격"
- case .left: return "← 좌측 충격"
- case .right: return "→ 우측 충격"
- case .top: return "⬆ 상단 충격"
- case .bottom: return "⬇ 하단 충격"
- case .multiple: return "⊕ 복합 충격"
+ case .front: return "↑ Front impact"
+ case .rear: return "↓ Rear impact"
+ case .left: return "← Left impact"
+ case .right: return "→ Right impact"
+ case .top: return "⬆ Top impact"
+ case .bottom: return "⬇ Bottom impact"
+ case .multiple: return "⊕ Multiple impact"
  }
  }
  }
  ```
 
- ## 타임라인 충격 마커:
+ ## Timeline impact markers:
 
  ```swift
  struct TimelineWithImpactsView: View {
@@ -1715,12 +1715,12 @@ class GSensorService: ObservableObject {
  var body: some View {
  GeometryReader { geometry in
  ZStack(alignment: .leading) {
- // 타임라인 배경
+ // Timeline background
  Rectangle()
  .fill(Color.gray.opacity(0.3))
  .frame(height: 40)
 
- // 충격 마커
+ // impact marker
  ForEach(gsensorService.impactEvents) { impact in
  let offset = impact.timestamp.timeIntervalSince(videoStart)
  let x = (offset / duration) * geometry.size.width
@@ -1731,7 +1731,7 @@ class GSensorService: ObservableObject {
  .offset(x: x)
  }
 
- // 재생 헤드
+ // Playback head
  Rectangle()
  .fill(Color.white)
  .frame(width: 2, height: 50)

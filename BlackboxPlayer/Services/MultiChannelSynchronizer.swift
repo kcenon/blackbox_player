@@ -2,14 +2,14 @@
 /// @brief Multi-channel video synchronization coordinator
 /// @author BlackboxPlayer Development Team
 /// @details
-/// 이 파일은 블랙박스의 여러 카메라 채널을 동기화하는 클래스를 정의합니다.
-/// 블랙박스는 보통 전면/후면/좌측/우측 카메라를 동시에 녹화하므로,
-/// 재생 시 모든 채널이 같은 시간을 표시해야 합니다.
+/// This file defines a class that synchronizes multiple camera channels of a dashcam.
+/// Since dashcams typically record simultaneously from front/rear/left/right cameras,
+/// all channels must display the same time during playback.
 
 import Foundation
 
 /// @enum SyncError
-/// @brief 동기화 관련 에러
+/// @brief Synchronization errors
 enum SyncError: Error {
     case channelNotFound(String)
     case decoderNotInitialized(String)
@@ -18,25 +18,25 @@ enum SyncError: Error {
 }
 
 /// @class MultiChannelSynchronizer
-/// @brief 여러 비디오 채널을 동기화하는 클래스입니다.
+/// @brief Class that synchronizes multiple video channels.
 ///
 /// @details
-/// ## 주요 기능:
-/// - 여러 VideoDecoder 인스턴스 관리
-/// - 마스터 타임라인 유지
-/// - 모든 채널을 동일한 타임스탬프로 동기화
-/// - 재생/일시정지/seek를 모든 채널에 동시 적용
+/// ## Key features:
+/// - Manage multiple VideoDecoder instances
+/// - Maintain master timeline
+/// - Synchronize all channels to the same timestamp
+/// - Apply play/pause/seek to all channels simultaneously
 ///
-/// ## 사용 예:
+/// ## Usage example:
 /// ```swift
 /// let sync = MultiChannelSynchronizer()
 /// sync.addChannel(id: "front", decoder: frontDecoder)
 /// sync.addChannel(id: "rear", decoder: rearDecoder)
 ///
-/// // 모든 채널을 30초로 이동
+/// // Move all channels to 30 seconds
 /// try sync.seekAll(to: 30.0)
 ///
-/// // 모든 채널의 다음 프레임 가져오기
+/// // Get next frame from all channels
 /// let frames = try sync.stepForwardAll()
 /// ```
 class MultiChannelSynchronizer {
@@ -44,116 +44,116 @@ class MultiChannelSynchronizer {
     // MARK: - Properties
 
     /// @var channels
-    /// @brief 채널별 VideoDecoder 딕셔너리
+    /// @brief Dictionary of VideoDecoder by channel
     /// @details
-    /// - Key: 채널 ID (예: "front", "rear", "left", "right", "interior")
-    /// - Value: VideoDecoder 인스턴스
+    /// - Key: Channel ID (e.g. "front", "rear", "left", "right", "interior")
+    /// - Value: VideoDecoder instance
     private var channels: [String: VideoDecoder] = [:]
 
     /// @var masterTimestamp
-    /// @brief 마스터 타임라인의 현재 타임스탬프
+    /// @brief Current timestamp of master timeline
     /// @details
-    /// - 모든 채널이 이 시간에 맞춰 동기화됨
-    /// - 재생/seek 시 이 값을 기준으로 동작
+    /// - All channels synchronized to this time
+    /// - Operates based on this value during play/seek
     private(set) var masterTimestamp: TimeInterval = 0
 
     /// @var isPlaying
-    /// @brief 재생 중 여부
+    /// @brief Whether playing
     private(set) var isPlaying: Bool = false
 
     /// @var tolerance
-    /// @brief 동기화 허용 오차 (초 단위)
+    /// @brief Synchronization tolerance (in seconds)
     /// @details
-    /// - 채널 간 타임스탬프 차이가 이 값 이하면 동기화된 것으로 간주
-    /// - 기본값: 0.033초 (약 1프레임, 30fps 기준)
+    /// - Considered synchronized if timestamp difference between channels is below this value
+    /// - Default value: 0.033s (Approximately 1 frame at 30fps)
     private let tolerance: TimeInterval = 0.033
 
     /// @var autoCorrectionThreshold
-    /// @brief 자동 수정 임계값 (초 단위)
+    /// @brief Auto-correction threshold (in seconds)
     /// @details
-    /// - 드리프트가 이 값을 초과하면 자동으로 수정
-    /// - 기본값: 0.050초 (50ms, 약 1.5프레임)
+    /// - Automatically correct when drift exceeds this value
+    /// - Default value: 0.050s (50ms, Approximately 1.5 frames)
     private let autoCorrectionThreshold: TimeInterval = 0.050
 
     /// @var monitoringEnabled
-    /// @brief 드리프트 모니터링 활성화 여부
+    /// @brief Whether drift monitoring is enabled
     private var monitoringEnabled: Bool = false
 
     /// @var monitoringTimer
-    /// @brief 드리프트 모니터링 타이머
+    /// @brief Drift monitoring timer
     private var monitoringTimer: Timer?
 
     /// @var driftHistory
-    /// @brief 드리프트 히스토리 (통계용)
+    /// @brief Drift history (for statistics)
     /// @details
-    /// - 최근 100개의 드리프트 값 저장
-    /// - 평균, 최대값 계산에 사용
+    /// - Store last 100 drift values
+    /// - Used for average and maximum calculations
     private var driftHistory: [TimeInterval] = []
 
     /// @var maxDriftHistorySize
-    /// @brief 드리프트 히스토리 최대 크기
+    /// @brief Maximum drift history size
     private let maxDriftHistorySize = 100
 
     // MARK: - Initialization
 
-    /// @brief 동기화 객체를 생성합니다.
+    /// @brief Create synchronization object.
     init() {
-        // 초기화 로직 없음
+        // No initialization logic
     }
 
     // MARK: - Channel Management
 
-    /// @brief 채널을 추가합니다.
+    /// @brief Add channel.
     ///
-    /// @param id 채널 ID (예: "front", "rear")
-    /// @param decoder VideoDecoder 인스턴스
+    /// @param id Channel ID (e.g. "front", "rear")
+    /// @param decoder VideoDecoder instance
     ///
     /// @details
-    /// 동일한 ID로 여러 번 호출하면 기존 채널을 덮어씁니다.
+    /// Calling multiple times with same ID overwrites existing channel.
     func addChannel(id: String, decoder: VideoDecoder) {
         channels[id] = decoder
     }
 
-    /// @brief 채널을 제거합니다.
+    /// @brief Remove channel.
     ///
-    /// @param id 제거할 채널 ID
+    /// @param id Channel ID to remove
     func removeChannel(id: String) {
         channels.removeValue(forKey: id)
     }
 
-    /// @brief 모든 채널을 제거합니다.
+    /// @brief Remove all channels.
     func removeAllChannels() {
         channels.removeAll()
     }
 
-    /// @brief 등록된 채널 ID 목록을 반환합니다.
+    /// @brief Return list of registered channel IDs.
     ///
-    /// @return 채널 ID 배열
+    /// @return Array of channel IDs
     func getChannelIDs() -> [String] {
         return Array(channels.keys)
     }
 
-    /// @brief 특정 채널의 디코더를 가져옵니다.
+    /// @brief Get decoder for specific channel.
     ///
-    /// @param id 채널 ID
-    /// @return VideoDecoder 인스턴스, 없으면 nil
+    /// @param id Channel ID
+    /// @return VideoDecoder instance, nil if none
     func getDecoder(for id: String) -> VideoDecoder? {
         return channels[id]
     }
 
     // MARK: - Synchronization
 
-    /// @brief 모든 채널을 특정 시간으로 이동합니다.
+    /// @brief Move all channels to specific time.
     ///
-    /// @param timestamp 이동할 시간 (초 단위)
+    /// @param timestamp Time to move to (in seconds)
     ///
     /// @throws SyncError
     ///
     /// @details
-    /// 모든 채널을 동시에 같은 타임스탬프로 seek합니다.
-    /// 하나라도 실패하면 에러를 throw합니다.
+    /// Seek all channels simultaneously to same timestamp.
+    /// Throws error if any fails.
     func seekAll(to timestamp: TimeInterval) throws {
-        // 모든 채널을 지정된 시간으로 seek
+        // Seek all channels to specified time
         for (channelID, decoder) in channels {
             do {
                 try decoder.seek(to: timestamp)
@@ -162,21 +162,21 @@ class MultiChannelSynchronizer {
             }
         }
 
-        // 마스터 타임스탬프 업데이트
+        // Update master timestamp
         masterTimestamp = timestamp
     }
 
-    /// @brief 모든 채널을 특정 프레임 번호로 이동합니다.
+    /// @brief Move all channels to specific frame number.
     ///
-    /// @param frameNumber 이동할 프레임 번호
+    /// @param frameNumber Frame number to move to
     ///
     /// @throws SyncError
     ///
     /// @details
-    /// 각 채널의 프레임레이트가 다를 수 있으므로,
-    /// 프레임 번호를 타임스탬프로 변환하여 동기화합니다.
+    /// Since each channel may have different frame rate,
+    /// convert frame number to timestamp for synchronization.
     func seekAllToFrame(_ frameNumber: Int) throws {
-        // 첫 번째 채널의 프레임레이트를 기준으로 타임스탬프 계산
+        // Calculate timestamp based on first channel's frame rate
         guard let firstDecoder = channels.values.first,
               let videoInfo = firstDecoder.videoInfo else {
             throw SyncError.decoderNotInitialized("No initialized decoder found")
@@ -186,20 +186,20 @@ class MultiChannelSynchronizer {
         try seekAll(to: timestamp)
     }
 
-    /// @brief 모든 채널의 다음 프레임으로 이동합니다.
+    /// @brief Move to next frame of all channels.
     ///
-    /// @return 채널별 비디오 프레임 딕셔너리
+    /// @return Dictionary of video frames by channel
     ///
     /// @throws SyncError
     ///
     /// @details
-    /// 각 채널에서 다음 비디오 프레임을 디코딩하여 반환합니다.
-    /// 마스터 타임스탬프는 가장 빠른 채널 기준으로 업데이트됩니다.
+    /// Decode and return next video frame from each channel.
+    /// Master timestamp is updated based on fastest channel.
     func stepForwardAll() throws -> [String: VideoFrame] {
         var frames: [String: VideoFrame] = [:]
         var maxTimestamp: TimeInterval = masterTimestamp
 
-        // 각 채널에서 다음 프레임 가져오기
+        // Get next frame from each channel
         for (channelID, decoder) in channels {
             if let frame = try decoder.stepForward() {
                 frames[channelID] = frame
@@ -207,21 +207,21 @@ class MultiChannelSynchronizer {
             }
         }
 
-        // 마스터 타임스탬프 업데이트
+        // Update master timestamp
         masterTimestamp = maxTimestamp
 
         return frames
     }
 
-    /// @brief 모든 채널의 이전 프레임으로 이동합니다.
+    /// @brief Move to previous frame of all channels.
     ///
     /// @throws SyncError
     ///
     /// @details
-    /// 각 채널을 이전 프레임으로 이동시킵니다.
-    /// seek 기반이므로 정확히 1프레임 뒤로 가지 않을 수 있습니다.
+    /// Move each channel to previous frame.
+    /// May not go back exactly 1 frame since it's seek-based.
     func stepBackwardAll() throws {
-        // 모든 채널을 이전 프레임으로 이동
+        // Move all channels to previous frame
         for (channelID, decoder) in channels {
             do {
                 try decoder.stepBackward()
@@ -230,26 +230,26 @@ class MultiChannelSynchronizer {
             }
         }
 
-        // 마스터 타임스탬프 업데이트 (첫 번째 채널 기준)
+        // Update master timestamp (based on first channel)
         if let firstDecoder = channels.values.first {
             masterTimestamp = firstDecoder.getCurrentTimestamp()
         }
     }
 
-    /// @brief 현재 마스터 타임스탬프를 반환합니다.
+    /// @brief Return current master timestamp.
     ///
-    /// @return 현재 타임스탬프 (초 단위)
+    /// @return Current timestamp (in seconds)
     func getCurrentTimestamp() -> TimeInterval {
         return masterTimestamp
     }
 
-    /// @brief 모든 채널이 동기화되어 있는지 확인합니다.
+    /// @brief Check if all channels are synchronized.
     ///
-    /// @return 모든 채널의 타임스탬프 차이가 허용 오차 이내면 true
+    /// @return True if timestamp difference of all channels is within tolerance
     ///
     /// @details
-    /// 각 채널의 currentTimestamp를 비교하여
-    /// 최대 차이가 tolerance 이내인지 확인합니다.
+    /// By comparing currentTimestamp of each channel
+    /// check if maximum difference is within tolerance.
     func isSynchronized() -> Bool {
         guard !channels.isEmpty else { return true }
 
@@ -265,21 +265,21 @@ class MultiChannelSynchronizer {
 
     // MARK: - Playback Control
 
-    /// @brief 재생을 시작합니다.
+    /// @brief Start playback.
     ///
     /// @details
-    /// 실제 프레임 디코딩은 외부 타이머나 루프에서 수행해야 합니다.
-    /// 이 메서드는 재생 상태만 변경합니다.
+    /// Actual frame decoding must be performed in external timer or loop.
+    /// This method only changes playback state.
     func play() {
         isPlaying = true
     }
 
-    /// @brief 재생을 일시정지합니다.
+    /// @brief Pause playback.
     func pause() {
         isPlaying = false
     }
 
-    /// @brief 재생을 중지하고 처음으로 돌아갑니다.
+    /// @brief Stop playback and return to beginning.
     ///
     /// @throws SyncError
     func stop() throws {
@@ -289,12 +289,12 @@ class MultiChannelSynchronizer {
 
     // MARK: - Information
 
-    /// @brief 모든 채널의 상태를 문자열로 반환합니다.
+    /// @brief Return status of all channels as string.
     ///
-    /// @return 채널별 타임스탬프 정보
+    /// @return Timestamp information by channel
     ///
     /// @details
-    /// 디버깅 용도로 각 채널의 현재 타임스탬프를 출력합니다.
+    /// Output current timestamp of each channel for debugging.
     func getStatusString() -> String {
         var status = "Master: \(String(format: "%.3f", masterTimestamp))s\n"
         status += "Channels:\n"
@@ -307,7 +307,7 @@ class MultiChannelSynchronizer {
 
         status += "Synchronized: \(isSynchronized())"
 
-        // 드리프트 통계 추가
+        // Add drift statistics
         if !driftHistory.isEmpty {
             let avgDrift = driftHistory.reduce(0, +) / Double(driftHistory.count)
             let maxDrift = driftHistory.max() ?? 0
@@ -319,67 +319,67 @@ class MultiChannelSynchronizer {
 
     // MARK: - Drift Monitoring
 
-    /// @brief 드리프트 모니터링을 시작합니다.
+    /// @brief Start drift monitoring.
     ///
-    /// @param interval 모니터링 간격 (초 단위), 기본값 0.1초 (100ms)
+    /// @param interval Monitoring interval (in seconds), default 0.1s (100ms)
     ///
     /// @details
-    /// 주기적으로 채널 간 동기화 상태를 확인하고,
-    /// 드리프트가 임계값을 초과하면 자동으로 수정합니다.
+    /// Periodically check synchronization status between channels,
+    /// automatically correct when drift exceeds threshold.
     ///
-    /// 동작 방식:
-    /// 1. 지정된 간격마다 타이머 실행
-    /// 2. 모든 채널의 타임스탬프 확인
-    /// 3. 최대 드리프트 계산
-    /// 4. 임계값 초과 시 자동 수정
-    /// 5. 드리프트 히스토리에 기록
+    /// How it works:
+    /// 1. Execute timer at specified intervals
+    /// 2. Check timestamps of all channels
+    /// 3. Calculate maximum drift
+    /// 4. Auto-correct when exceeding threshold
+    /// 5. Record in drift history
     func startMonitoring(interval: TimeInterval = 0.1) {
         guard !monitoringEnabled else { return }
 
         monitoringEnabled = true
 
-        // 메인 스레드에서 타이머 실행 (UI 업데이트 가능)
+        // Execute timer on main thread (allows UI updates)
         monitoringTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
             self?.monitorSync()
         }
     }
 
-    /// @brief 드리프트 모니터링을 중지합니다.
+    /// @brief Stop drift monitoring.
     func stopMonitoring() {
         monitoringEnabled = false
         monitoringTimer?.invalidate()
         monitoringTimer = nil
     }
 
-    /// @brief 동기화 상태를 모니터링하고 필요 시 수정합니다.
+    /// @brief Monitor synchronization status and correct if needed.
     ///
     /// @details
-    /// 모니터링 프로세스:
-    /// 1. 각 채널의 현재 타임스탬프 수집
-    /// 2. 마스터 타임스탬프와의 차이 계산
-    /// 3. 최대 드리프트 확인
-    /// 4. 임계값 초과 시 correctDrift() 호출
-    /// 5. 드리프트 히스토리에 기록
+    /// Monitoring process:
+    /// 1. Collect current timestamp of each channel
+    /// 2. Calculate difference from master timestamp
+    /// 3. Check maximum drift
+    /// 4. threshold sand when correctDrift() Call
+    /// 5. Record in drift history
     func monitorSync() {
         guard !channels.isEmpty else { return }
 
-        // 모든 채널의 타임스탬프 수집
+        // Collect timestamps of all channels
         let timestamps = channels.values.map { $0.getCurrentTimestamp() }
         guard let minTimestamp = timestamps.min(),
               let maxTimestamp = timestamps.max() else {
             return
         }
 
-        // 최대 드리프트 계산
+        // Calculate maximum drift
         let maxDrift = maxTimestamp - minTimestamp
 
-        // 드리프트 히스토리에 기록
+        // Record in drift history
         driftHistory.append(maxDrift)
         if driftHistory.count > maxDriftHistorySize {
             driftHistory.removeFirst()
         }
 
-        // 임계값 초과 시 자동 수정
+        // Auto-correct when exceeding threshold
         if maxDrift > autoCorrectionThreshold {
             do {
                 try correctDrift(maxDrift: maxDrift)
@@ -389,34 +389,34 @@ class MultiChannelSynchronizer {
         }
     }
 
-    /// @brief 드리프트를 자동으로 수정합니다.
+    /// @brief Automatically correct drift.
     ///
-    /// @param maxDrift 현재 최대 드리프트
+    /// @param maxDrift Current maximum drift
     ///
     /// @throws SyncError
     ///
     /// @details
-    /// 수정 전략:
-    /// 1. 가장 느린 채널 찾기 (타임스탬프가 가장 작은 채널)
-    /// 2. 가장 빠른 채널 찾기 (타임스탬프가 가장 큰 채널)
-    /// 3. 중간값을 목표 타임스탬프로 설정
-    /// 4. 모든 채널을 목표 타임스탬프로 seek
+    /// Correction strategy:
+    /// 1. Find slowest channel (channel with smallest timestamp)
+    /// 2. Find fastest channel (channel with largest timestamp)
+    /// 3. Set median value as target timestamp
+    /// 4. Seek all channels to target timestamp
     ///
-    /// 중간값 사용 이유:
-    /// - 모든 채널을 같은 양만큼 이동
-    /// - seek 횟수 최소화
-    /// - 재생 끊김 최소화
+    /// Reason for using median:
+    /// - Move all channels by same amount
+    /// - Minimize number of seeks
+    /// - Minimize playback interruptions
     func correctDrift(maxDrift: TimeInterval) throws {
         guard !channels.isEmpty else { return }
 
-        // 모든 채널의 타임스탬프 수집
+        // Collect timestamps of all channels
         var channelTimestamps: [(id: String, timestamp: TimeInterval)] = []
         for (id, decoder) in channels {
             let timestamp = decoder.getCurrentTimestamp()
             channelTimestamps.append((id: id, timestamp: timestamp))
         }
 
-        // 정렬
+        // Sort
         channelTimestamps.sort { $0.timestamp < $1.timestamp }
 
         guard let slowest = channelTimestamps.first,
@@ -424,17 +424,17 @@ class MultiChannelSynchronizer {
             return
         }
 
-        // 중간값 계산
+        // Calculate median
         let targetTimestamp = (slowest.timestamp + fastest.timestamp) / 2.0
 
         print("Correcting drift: \(String(format: "%.3f", maxDrift * 1000))ms -> Seeking to \(String(format: "%.3f", targetTimestamp))s")
 
-        // 모든 채널을 목표 타임스탬프로 이동
+        // Move all channels to target timestamp
         for (id, decoder) in channels {
             let currentTimestamp = decoder.getCurrentTimestamp()
             let diff = abs(currentTimestamp - targetTimestamp)
 
-            // 드리프트가 큰 채널만 수정 (작은 드리프트는 무시)
+            // Correct only channels with large drift (ignore small drift)
             if diff > tolerance {
                 do {
                     try decoder.seek(to: targetTimestamp)
@@ -444,19 +444,19 @@ class MultiChannelSynchronizer {
             }
         }
 
-        // 마스터 타임스탬프 업데이트
+        // Update master timestamp
         masterTimestamp = targetTimestamp
     }
 
-    /// @brief 드리프트 통계를 반환합니다.
+    /// @brief Return drift statistics.
     ///
-    /// @return (평균 드리프트, 최대 드리프트, 히스토리 개수)
+    /// @return (Average drift, maximum drift, history count)
     ///
     /// @details
-    /// 통계 정보:
-    /// - average: 평균 드리프트 (초 단위)
-    /// - maximum: 최대 드리프트 (초 단위)
-    /// - count: 히스토리에 기록된 샘플 개수
+    /// Statistics information:
+    /// - average: Average drift (in seconds)
+    /// - maximum: Maximum drift (in seconds)
+    /// - count: Number of samples recorded in history
     func getDriftStatistics() -> (average: TimeInterval, maximum: TimeInterval, count: Int) {
         guard !driftHistory.isEmpty else {
             return (0, 0, 0)
@@ -468,7 +468,7 @@ class MultiChannelSynchronizer {
         return (average, maximum, driftHistory.count)
     }
 
-    /// @brief 드리프트 히스토리를 초기화합니다.
+    /// @brief Initialize drift history.
     func clearDriftHistory() {
         driftHistory.removeAll()
     }

@@ -2,50 +2,50 @@
 /// @brief Video transformation parameters for brightness, flip, and zoom effects
 /// @author BlackboxPlayer Development Team
 /// @details
-/// 이 파일은 재생 중인 영상에 실시간으로 적용할 수 있는 시각적 효과들을 정의합니다.
-/// GPU 셰이더에서 밝기 조절, 반전, 디지털 줌 등의 변환을 수행할 파라미터를 제공합니다.
+/// This file defines visual effects that can be applied to video in real-time during playback.
+/// Provides parameters for GPU shaders to perform transformations such as brightness adjustment, flipping, and digital zoom.
 
 /**
- # VideoTransformations - 영상 변환 효과
+ # VideoTransformations - Video Transformation Effects
 
- ## 🎨 영상 변환이란?
+ ## 🎨 What are Video Transformations?
 
- 재생 중인 영상에 실시간으로 적용할 수 있는 시각적 효과들입니다.
+ Visual effects that can be applied to video in real-time during playback.
 
- ### 지원하는 변환 효과:
+ ### Supported transformation effects:
 
- 1. **밝기 조절 (Brightness)**
- - 영상을 더 밝게 또는 어둡게 만듦
- - 야간 영상 개선에 유용
+ 1. **Brightness Adjustment**
+ - Make video brighter or darker
+ - Useful for improving night footage
 
- 2. **좌우 반전 (Horizontal Flip)**
- - 영상을 좌우로 뒤집음
- - 백미러 영상에 유용
+ 2. **Horizontal Flip**
+ - Flip video left-to-right
+ - Useful for rear-view mirror footage
 
- 3. **상하 반전 (Vertical Flip)**
- - 영상을 상하로 뒤집음
- - 거꾸로 설치된 카메라 보정
+ 3. **Vertical Flip**
+ - Flip video upside-down
+ - Correct for upside-down camera installation
 
- 4. **디지털 줌 (Digital Zoom)**
- - 영상의 특정 부분 확대
- - 번호판 확인 등에 유용
+ 4. **Digital Zoom**
+ - Magnify specific portions of video
+ - Useful for examining license plates, etc.
 
- ## 🎯 작동 원리
+ ## 🎯 How It Works
 
- ### GPU 셰이더에서 처리:
+ ### Processing in GPU Shader:
  ```
- 원본 프레임
+ Original Frame
  ↓
  Fragment Shader (GPU)
- ↓ 변환 파라미터 적용
- - brightness: 픽셀 밝기 조정
- - flip: 좌표 반전
- - zoom: 좌표 확대
+ ↓ Apply transformation parameters
+ - brightness: Adjust pixel brightness
+ - flip: Invert coordinates
+ - zoom: Magnify coordinates
  ↓
- 변환된 프레임
+ Transformed Frame
  ```
 
- ### 셰이더 코드 예시:
+ ### Shader Code Example:
  ```metal
  // Metal Shader
  fragment float4 videoFragmentShader(
@@ -53,78 +53,78 @@
  texture2d<float> texture [[texture(0)]],
  constant Transforms &transforms [[buffer(0)]]
  ) {
- // 1. 좌표 변환 (줌, 반전)
+ // 1. Coordinate transformation (zoom, flip)
  float2 coord = in.texCoord;
 
- // 좌우 반전
+ // Horizontal flip
  if (transforms.flipH) {
  coord.x = 1.0 - coord.x;
  }
 
- // 줌 적용
+ // Apply zoom
  coord = (coord - transforms.zoomCenter) / transforms.zoomLevel + transforms.zoomCenter;
 
- // 2. 텍스처 샘플링
+ // 2. Texture sampling
  float4 color = texture.sample(sampler, coord);
 
- // 3. 밝기 조정
+ // 3. Brightness adjustment
  color.rgb += transforms.brightness;
 
  return color;
  }
  ```
 
- ## 💡 실시간 처리
+ ## 💡 Real-time Processing
 
- ### 왜 GPU에서 처리하나?
- - CPU: 1920×1080 = 2,073,600 픽셀을 순차 처리 (느림)
- - GPU: 모든 픽셀을 병렬 처리 (빠름, 60fps 유지)
+ ### Why process on GPU?
+ - CPU: Sequential processing of 1920×1080 = 2,073,600 pixels (slow)
+ - GPU: Parallel processing of all pixels (fast, maintains 60fps)
 
- ### 성능 영향:
- - 변환 효과는 GPU에서 처리되므로 성능 영향 최소
- - 모든 효과를 동시에 적용해도 프레임 드롭 없음
+ ### Performance Impact:
+ - Transformation effects are processed on GPU, minimal performance impact
+ - No frame drops even with all effects applied simultaneously
 
- ## 📚 사용 예제
+ ## 📚 Usage Examples
 
  ```swift
- // 1. 서비스 접근 (싱글톤)
+ // 1. Access service (singleton)
  let service = VideoTransformationService.shared
 
- // 2. 밝기 조절 (+30%)
+ // 2. Adjust brightness (+30%)
  service.setBrightness(0.3)
 
- // 3. 좌우 반전 토글
+ // 3. Toggle horizontal flip
  service.toggleFlipHorizontal()
 
- // 4. 디지털 줌 (2배 확대)
+ // 4. Digital zoom (2x magnification)
  service.setZoomLevel(2.0)
- service.setZoomCenter(x: 0.7, y: 0.3)  // 우상단 확대
+ service.setZoomCenter(x: 0.7, y: 0.3)  // Magnify upper-right
 
- // 5. 모든 효과 리셋
+ // 5. Reset all effects
  service.resetTransformations()
  ```
 
- ## 🔄 영속성 (Persistence)
+ ## 🔄 Persistence
 
- 설정은 UserDefaults에 자동 저장되며, 앱을 다시 시작해도 유지됩니다.
+ Settings are automatically saved to UserDefaults and persisted across app restarts.
 
  ```
- 앱 시작
+ App Launch
  ↓
- UserDefaults에서 설정 로드
+ Load settings from UserDefaults
  ↓
- 사용자가 밝기 조절
+ User adjusts brightness
  ↓
- UserDefaults에 즉시 저장
+ Immediately save to UserDefaults
  ↓
- 앱 종료
+ App Quit
  ↓
- 설정 유지됨
+ Settings persisted
  ```
 
  ---
 
- 이 모듈은 사용자가 영상을 더 명확하게 볼 수 있도록 실시간 변환 효과를 제공합니다.
+ This module provides real-time transformation effects to help users view video more clearly.
  */
 
 import Foundation
@@ -133,20 +133,20 @@ import Combine
 // MARK: - Video Transformations Struct
 
 /// @struct VideoTransformations
-/// @brief GPU 셰이더에 전달할 영상 변환 파라미터들을 담는 구조체
+/// @brief Structure containing video transformation parameters to pass to GPU shader
 ///
 /// @details
-/// ## 특징:
-/// - **Codable**: JSON으로 직렬화/역직렬화 가능 (저장/로드)
-/// - **Equatable**: 두 설정이 같은지 비교 가능
-/// - **값 타입 (struct)**: 복사 시 독립적인 사본 생성
+/// ## Features:
+/// - **Codable**: Can be serialized/deserialized to/from JSON (save/load)
+/// - **Equatable**: Can compare if two settings are the same
+/// - **Value type (struct)**: Independent copy created when copied
 ///
-/// ## GPU 셰이더와 연동:
+/// ## Integration with GPU Shader:
 /// ```swift
-/// // Swift 측:
+/// // Swift side:
 /// let transforms = VideoTransformations(brightness: 0.3)
 ///
-/// // GPU 측 (Metal Shader):
+/// // GPU side (Metal Shader):
 /// struct Transforms {
 ///     float brightness;
 ///     bool flipHorizontal;
@@ -156,7 +156,7 @@ import Combine
 /// };
 /// ```
 ///
-/// ## 메모리 레이아웃:
+/// ## Memory Layout:
 /// ```
 /// Swift struct → 24 bytes → GPU Uniform Buffer
 /// ┌──────────────┬──────────┬──────────┬──────────┬────────────┐
@@ -169,207 +169,207 @@ struct VideoTransformations: Codable, Equatable {
     // MARK: - Properties
 
     /// @var brightness
-    /// @brief 밝기 조절 (-1.0 ~ +1.0)
+    /// @brief Brightness adjustment (-1.0 ~ +1.0)
     /// @details
-    /// 값의 의미:
-    /// - **-1.0**: 완전히 어둡게 (검은색)
-    /// - **-0.5**: 50% 어둡게
-    /// - **0.0**: 변화 없음 (기본값)
-    /// - **+0.5**: 50% 밝게
-    /// - **+1.0**: 완전히 밝게 (흰색)
+    /// Value meanings:
+    /// - **-1.0**: Completely dark (black)
+    /// - **-0.5**: 50% darker
+    /// - **0.0**: No change (default)
+    /// - **+0.5**: 50% brighter
+    /// - **+1.0**: Completely bright (white)
     ///
-    /// 작동 방식:
+    /// How it works:
     /// ```
-    /// 셰이더에서:
+    /// In shader:
     /// outputColor.rgb = originalColor.rgb + brightness
     ///
-    /// 예: 회색 픽셀 (0.5, 0.5, 0.5)
-    /// - brightness = +0.3 → (0.8, 0.8, 0.8) 밝아짐
-    /// - brightness = -0.3 → (0.2, 0.2, 0.2) 어두워짐
+    /// Example: Gray pixel (0.5, 0.5, 0.5)
+    /// - brightness = +0.3 → (0.8, 0.8, 0.8) brighter
+    /// - brightness = -0.3 → (0.2, 0.2, 0.2) darker
     /// ```
     ///
-    /// 주의사항:
-    /// - 너무 높은 값: 과다 노출 (하얗게 날림)
-    /// - 너무 낮은 값: 과다 노출 (검게 뭉개짐)
-    /// - 권장 범위: -0.5 ~ +0.5
+    /// Cautions:
+    /// - Too high value: Overexposure (washed out white)
+    /// - Too low value: Underexposure (crushed blacks)
+    /// - Recommended range: -0.5 ~ +0.5
     var brightness: Float = 0.0
 
     /// @var flipHorizontal
-    /// @brief 좌우 반전 (Horizontal Flip)
+    /// @brief Horizontal flip
     /// @details
-    /// 영상을 좌우로 뒤집습니다. 거울처럼 보입니다.
+    /// Flips the video left-to-right. Appears like a mirror image.
     ///
-    /// 사용 예:
+    /// Usage example:
     /// ```
-    /// 원본:                반전 후:
+    /// Original:            After flip:
     /// ┌──────────┐         ┌──────────┐
     /// │  ←  Car  │    →    │  Car  →  │
     /// └──────────┘         └──────────┘
     /// ```
     ///
-    /// 작동 방식:
+    /// How it works:
     /// ```
-    /// 셰이더에서:
+    /// In shader:
     /// if (flipHorizontal) {
     ///     texCoord.x = 1.0 - texCoord.x;
     /// }
     ///
-    /// 예: texCoord.x = 0.2 (좌측 20% 지점)
-    ///      → 1.0 - 0.2 = 0.8 (우측 80% 지점)
+    /// Example: texCoord.x = 0.2 (20% from left)
+    ///      → 1.0 - 0.2 = 0.8 (80% from left)
     /// ```
     ///
-    /// 활용 사례:
-    /// - 백미러 영상 보정
-    /// - 좌우가 바뀐 카메라 보정
+    /// Use cases:
+    /// - Correcting rear-view mirror footage
+    /// - Correcting left-right reversed camera
     var flipHorizontal: Bool = false
 
     /// @var flipVertical
-    /// @brief 상하 반전 (Vertical Flip)
+    /// @brief Vertical flip
     /// @details
-    /// 영상을 상하로 뒤집습니다.
+    /// Flips the video upside-down.
     ///
-    /// 사용 예:
+    /// Usage example:
     /// ```
-    /// 원본:                반전 후:
+    /// Original:            After flip:
     /// ┌──────────┐         ┌──────────┐
     /// │   Sky    │         │   Road   │
     /// │   Road   │    →    │   Sky    │
     /// └──────────┘         └──────────┘
     /// ```
     ///
-    /// 작동 방식:
+    /// How it works:
     /// ```
-    /// 셰이더에서:
+    /// In shader:
     /// if (flipVertical) {
     ///     texCoord.y = 1.0 - texCoord.y;
     /// }
     /// ```
     ///
-    /// 활용 사례:
-    /// - 거꾸로 설치된 카메라 보정
-    /// - 천장 장착 카메라
+    /// Use cases:
+    /// - Correcting upside-down camera installation
+    /// - Ceiling-mounted cameras
     var flipVertical: Bool = false
 
     /// @var zoomLevel
-    /// @brief 디지털 줌 레벨 (1.0 ~ 5.0)
+    /// @brief Digital zoom level (1.0 ~ 5.0)
     /// @details
-    /// 영상의 확대 배율입니다.
+    /// Magnification factor for the video.
     ///
-    /// 값의 의미:
-    /// - **1.0**: 확대 없음 (원본 크기) - 기본값
-    /// - **1.5**: 1.5배 확대
-    /// - **2.0**: 2배 확대
-    /// - **3.0**: 3배 확대
-    /// - **5.0**: 5배 확대 (최대)
+    /// Value meanings:
+    /// - **1.0**: No magnification (original size) - default
+    /// - **1.5**: 1.5x magnification
+    /// - **2.0**: 2x magnification
+    /// - **3.0**: 3x magnification
+    /// - **5.0**: 5x magnification (maximum)
     ///
-    /// 줌 원리:
+    /// Zoom principle:
     /// ```
-    /// 줌 레벨 = 2.0 (2배 확대):
+    /// Zoom level = 2.0 (2x magnification):
     ///
-    /// 원본 영상 영역:          화면에 표시:
+    /// Original video area:     Displayed on screen:
     /// ┌─────────────────┐      ┌─────────────────┐
     /// │ ┌─────────────┐ │      │                 │
-    /// │ │  이 부분만   │ │  →   │  2배로 확대해서  │
-    /// │ │  잘라서      │ │      │  전체 화면 표시  │
+    /// │ │  Crop this   │ │  →   │  Magnify 2x to  │
+    /// │ │  portion     │ │      │  fill screen    │
     /// │ └─────────────┘ │      │                 │
     /// └─────────────────┘      └─────────────────┘
-    ///  (50% 영역)              (100% 화면)
+    ///  (50% area)              (100% screen)
     /// ```
     ///
-    /// 셰이더 수식:
+    /// Shader formula:
     /// ```
     /// newCoord = (originalCoord - zoomCenter) / zoomLevel + zoomCenter
     ///
-    /// 예: zoomLevel = 2.0, zoomCenter = (0.5, 0.5)
-    /// - (0.0, 0.0) → (0.25, 0.25)  좌상단 → 중심 근처
-    /// - (1.0, 1.0) → (0.75, 0.75)  우하단 → 중심 근처
-    /// - (0.5, 0.5) → (0.5, 0.5)    중심 → 중심 (고정)
+    /// Example: zoomLevel = 2.0, zoomCenter = (0.5, 0.5)
+    /// - (0.0, 0.0) → (0.25, 0.25)  top-left → near center
+    /// - (1.0, 1.0) → (0.75, 0.75)  bottom-right → near center
+    /// - (0.5, 0.5) → (0.5, 0.5)    center → center (fixed)
     /// ```
     ///
-    /// 화질 손실:
-    /// - 디지털 줌은 원본 픽셀을 확대하는 것
-    /// - 배율이 높을수록 화질 저하 (픽셀이 보임)
-    /// - 광학 줌(렌즈)과 다름
+    /// Quality loss:
+    /// - Digital zoom magnifies original pixels
+    /// - Higher magnification = more quality degradation (pixels become visible)
+    /// - Different from optical zoom (lens)
     var zoomLevel: Float = 1.0
 
     /// @var zoomCenterX
-    /// @brief 줌 중심 X 좌표 (0.0 ~ 1.0)
+    /// @brief Zoom center X coordinate (0.0 ~ 1.0)
     /// @details
-    /// 확대할 때 중심으로 삼을 가로 위치입니다.
+    /// Horizontal position to use as the center when magnifying.
     ///
-    /// 정규화 좌표 (Normalized Coordinates):
-    /// - **0.0**: 좌측 끝
-    /// - **0.5**: 가운데 (기본값)
-    /// - **1.0**: 우측 끝
+    /// Normalized Coordinates:
+    /// - **0.0**: Left edge
+    /// - **0.5**: Center (default)
+    /// - **1.0**: Right edge
     ///
-    /// 시각적 예:
+    /// Visual example:
     /// ```
     /// 0.0              0.5              1.0
     ///  ↓                ↓                ↓
     /// ┌────────────────┬────────────────┐
-    /// │ 좌측            │ 가운데  │ 우측 │
+    /// │ Left           │ Center │ Right │
     /// └────────────────┴────────────────┘
     /// ```
     ///
-    /// 사용 예:
+    /// Usage examples:
     /// ```swift
-    /// // 우측 번호판 확대
+    /// // Magnify right license plate
     /// service.setZoomCenter(x: 0.8, y: 0.5)
     /// service.setZoomLevel(3.0)
     ///
-    /// // 좌측 사이드미러 확대
+    /// // Magnify left side mirror
     /// service.setZoomCenter(x: 0.2, y: 0.6)
     /// service.setZoomLevel(2.5)
     /// ```
     var zoomCenterX: Float = 0.5
 
     /// @var zoomCenterY
-    /// @brief 줌 중심 Y 좌표 (0.0 ~ 1.0)
+    /// @brief Zoom center Y coordinate (0.0 ~ 1.0)
     /// @details
-    /// 확대할 때 중심으로 삼을 세로 위치입니다.
+    /// Vertical position to use as the center when magnifying.
     ///
-    /// 정규화 좌표:
-    /// - **0.0**: 하단 (Metal 좌표계는 좌하단이 원점)
-    /// - **0.5**: 가운데 (기본값)
-    /// - **1.0**: 상단
+    /// Normalized coordinates:
+    /// - **0.0**: Bottom (Metal coordinate system has origin at bottom-left)
+    /// - **0.5**: Center (default)
+    /// - **1.0**: Top
     ///
-    /// Metal 좌표계:
+    /// Metal coordinate system:
     /// ```
     /// (0.0, 1.0) ────────── (1.0, 1.0)
     ///    │                      │
-    ///    │      화면             │
+    ///    │      Screen          │
     ///    │                      │
     /// (0.0, 0.0) ────────── (1.0, 0.0)
     /// ```
     ///
-    /// 주의:
-    /// - 일반적인 화면 좌표 (좌상단 원점)와 반대
-    /// - Metal/OpenGL은 좌하단 원점 사용
+    /// Note:
+    /// - Opposite of typical screen coordinates (top-left origin)
+    /// - Metal/OpenGL use bottom-left origin
     var zoomCenterY: Float = 0.5
 
     // MARK: - Methods
 
-    /// @brief 모든 변환 리셋
+    /// @brief Reset all transformations
     ///
     /// @details
-    /// 모든 파라미터를 기본값으로 되돌립니다.
+    /// Resets all parameters to their default values.
     ///
-    /// 리셋되는 값:
+    /// Reset values:
     /// ```
-    /// brightness    → 0.0   (밝기 조절 없음)
-    /// flipHorizontal → false (반전 없음)
-    /// flipVertical   → false (반전 없음)
-    /// zoomLevel      → 1.0   (확대 없음)
-    /// zoomCenterX    → 0.5   (중앙)
-    /// zoomCenterY    → 0.5   (중앙)
+    /// brightness    → 0.0   (no brightness adjustment)
+    /// flipHorizontal → false (no flipping)
+    /// flipVertical   → false (no flipping)
+    /// zoomLevel      → 1.0   (no magnification)
+    /// zoomCenterX    → 0.5   (center)
+    /// zoomCenterY    → 0.5   (center)
     /// ```
     ///
-    /// mutating이란?
-    /// - struct는 기본적으로 불변(immutable)
-    /// - 자신의 프로퍼티를 변경하는 메서드는 mutating 필요
-    /// - class는 mutating 불필요 (참조 타입)
+    /// What is mutating?
+    /// - structs are immutable by default
+    /// - Methods that modify their own properties need mutating keyword
+    /// - classes don't need mutating (reference type)
     ///
-    /// 사용 예:
+    /// Usage example:
     /// ```swift
     /// var transforms = VideoTransformations()
     /// transforms.brightness = 0.5
@@ -388,34 +388,34 @@ struct VideoTransformations: Codable, Equatable {
     }
 
     /// @var hasActiveTransformations
-    /// @brief 활성 변환 확인
-    /// @return true면 하나 이상의 변환이 활성화됨, false면 모든 값이 기본값
+    /// @brief Check for active transformations
+    /// @return true if one or more transformations are active, false if all values are at defaults
     /// @details
-    /// 현재 어떤 변환이라도 적용되어 있는지 확인합니다.
+    /// Checks if any transformation is currently applied.
     ///
-    /// 활용 예:
+    /// Usage examples:
     /// ```swift
-    /// // 1. UI에서 "리셋" 버튼 표시/숨김
+    /// // 1. Show/hide "Reset" button in UI
     /// if transforms.hasActiveTransformations {
-    ///     showResetButton()  // 변환이 있으면 버튼 표시
+    ///     showResetButton()  // Show button if transformations exist
     /// }
     ///
-    /// // 2. 성능 최적화 (불필요한 셰이더 처리 스킵)
+    /// // 2. Performance optimization (skip unnecessary shader processing)
     /// if !transforms.hasActiveTransformations {
-    ///     // 변환 없으면 원본 그대로 렌더링 (빠름)
+    ///     // No transformations - render original (fast)
     ///     renderOriginal()
     /// } else {
-    ///     // 변환 있으면 셰이더 적용 (느림)
+    ///     // Transformations exist - apply shader (slower)
     ///     renderWithTransformations()
     /// }
     /// ```
     ///
-    /// 확인하는 조건:
+    /// Checked conditions:
     /// ```
-    /// brightness != 0.0      → 밝기 조절 있음
-    /// flipHorizontal == true → 좌우 반전 있음
-    /// flipVertical == true   → 상하 반전 있음
-    /// zoomLevel != 1.0       → 줌 있음
+    /// brightness != 0.0      → Brightness adjustment active
+    /// flipHorizontal == true → Horizontal flip active
+    /// flipVertical == true   → Vertical flip active
+    /// zoomLevel != 1.0       → Zoom active
     /// ```
     var hasActiveTransformations: Bool {
         return brightness != 0.0 ||
@@ -428,30 +428,30 @@ struct VideoTransformations: Codable, Equatable {
 // MARK: - Video Transformation Service
 
 /// @class VideoTransformationService
-/// @brief 영상 변환 설정을 관리하고 UserDefaults에 영속적으로 저장하는 서비스
+/// @brief Service that manages video transformation settings and persistently saves them to UserDefaults
 ///
 /// @details
-/// ## 주요 책임:
-/// 1. 변환 파라미터 관리 (brightness, flip, zoom)
-/// 2. UserDefaults에 자동 저장/로드
-/// 3. 값 검증 (범위 clamping)
-/// 4. SwiftUI와 연동 (@Published, ObservableObject)
+/// ## Main Responsibilities:
+/// 1. Manage transformation parameters (brightness, flip, zoom)
+/// 2. Automatically save/load to/from UserDefaults
+/// 3. Value validation (range clamping)
+/// 4. SwiftUI integration (@Published, ObservableObject)
 ///
-/// ## 싱글톤 패턴:
+/// ## Singleton Pattern:
 /// ```
-/// 앱 전체에서 하나의 인스턴스만 사용
-/// → 모든 화면에서 동일한 설정 공유
-/// → 메모리 효율적
+/// Only one instance used throughout the app
+/// → All screens share the same settings
+/// → Memory efficient
 /// ```
 ///
-/// ## SwiftUI 연동:
+/// ## SwiftUI Integration:
 /// ```swift
 /// struct SettingsView: View {
 ///     @ObservedObject var service = VideoTransformationService.shared
 ///
 ///     var body: some View {
 ///         Slider(value: $service.transformations.brightness)
-///         // ↑ transformations가 변경되면 자동으로 UI 업데이트
+///         // ↑ UI automatically updates when transformations change
 ///     }
 /// }
 /// ```
@@ -460,26 +460,26 @@ class VideoTransformationService: ObservableObject {
     // MARK: - Singleton
 
     /// @var shared
-    /// @brief 싱글톤 인스턴스
+    /// @brief Singleton instance
     /// @details
-    /// 싱글톤 패턴이란?
-    /// 클래스의 인스턴스를 앱 전체에서 하나만 생성하는 패턴입니다.
+    /// What is the Singleton Pattern?
+    /// A pattern that creates only one instance of a class throughout the entire app.
     ///
-    /// 장점:
-    /// - 전역 접근 가능
-    /// - 메모리 절약 (하나만 존재)
-    /// - 상태 공유 용이
+    /// Advantages:
+    /// - Global access
+    /// - Memory savings (only one exists)
+    /// - Easy state sharing
     ///
-    /// 단점:
-    /// - 테스트 어려움
-    /// - 의존성 숨김
+    /// Disadvantages:
+    /// - Difficult to test
+    /// - Hidden dependencies
     ///
-    /// 사용 예:
+    /// Usage example:
     /// ```swift
-    /// // 어디서든 접근 가능:
+    /// // Accessible from anywhere:
     /// VideoTransformationService.shared.setBrightness(0.5)
     ///
-    /// // 여러 곳에서 접근해도 같은 인스턴스:
+    /// // Same instance even when accessed from multiple places:
     /// let service1 = VideoTransformationService.shared
     /// let service2 = VideoTransformationService.shared
     /// // service1 === service2 (true)
@@ -489,30 +489,30 @@ class VideoTransformationService: ObservableObject {
     // MARK: - Properties
 
     /// @var userDefaults
-    /// @brief UserDefaults 인스턴스
+    /// @brief UserDefaults instance
     /// @details
-    /// UserDefaults란?
-    /// 앱의 간단한 설정을 저장하는 key-value 저장소입니다.
+    /// What is UserDefaults?
+    /// A key-value store for saving simple app settings.
     ///
-    /// 특징:
-    /// - 앱 종료 후에도 데이터 유지
-    /// - 작은 데이터만 저장 (설정, 옵션 등)
-    /// - 자동 암호화 (iOS/macOS)
+    /// Features:
+    /// - Data persists after app termination
+    /// - Only stores small data (settings, options, etc.)
+    /// - Automatic encryption (iOS/macOS)
     ///
-    /// 저장 위치:
+    /// Storage location:
     /// - macOS: ~/Library/Preferences/com.yourapp.plist
     /// - iOS: /Library/Preferences/
     ///
-    /// 비유:
-    /// - UserDefaults = "메모장"
-    /// - 간단한 것만 적음 (밝기, 줌 등)
-    /// - 큰 데이터는 파일/데이터베이스 사용
+    /// Analogy:
+    /// - UserDefaults = "Notepad"
+    /// - Only write simple things (brightness, zoom, etc.)
+    /// - Use files/databases for large data
     private let userDefaults = UserDefaults.standard
 
     /// @var transformationsKey
-    /// @brief UserDefaults 키
+    /// @brief UserDefaults key
     /// @details
-    /// 이 키로 설정을 저장/로드합니다.
+    /// Settings are saved/loaded using this key.
     /// ```
     /// UserDefaults:
     /// {
@@ -529,29 +529,29 @@ class VideoTransformationService: ObservableObject {
     private let transformationsKey = "VideoTransformations"
 
     /// @var transformations
-    /// @brief 현재 변환 설정
+    /// @brief Current transformation settings
     /// @details
-    /// @Published란?
-    /// - Combine 프레임워크의 property wrapper
-    /// - 값이 변경되면 자동으로 알림 발송
-    /// - SwiftUI View가 자동으로 업데이트됨
+    /// What is @Published?
+    /// - Property wrapper from Combine framework
+    /// - Automatically sends notification when value changes
+    /// - SwiftUI Views update automatically
     ///
-    /// 작동 방식:
+    /// How it works:
     /// ```
-    /// transformations.brightness = 0.5  (값 변경)
+    /// transformations.brightness = 0.5  (value changed)
     ///      ↓
-    /// @Published가 감지
+    /// @Published detects change
     ///      ↓
-    /// objectWillChange.send()  (알림 발송)
+    /// objectWillChange.send()  (send notification)
     ///      ↓
-    /// SwiftUI View 자동 재렌더링
+    /// SwiftUI View automatically re-renders
     /// ```
     ///
-    /// 구독 예제:
+    /// Subscription example:
     /// ```swift
     /// service.$transformations
     ///     .sink { newValue in
-    ///         print("변환 설정 변경: \(newValue)")
+    ///         print("Transformation settings changed: \(newValue)")
     ///     }
     ///     .store(in: &cancellables)
     /// ```
@@ -559,54 +559,54 @@ class VideoTransformationService: ObservableObject {
 
     // MARK: - Initialization
 
-    /// @brief 프라이빗 초기화
+    /// @brief Private initialization
     ///
     /// @details
-    /// private init()이란?
-    /// - 외부에서 인스턴스 생성 불가
-    /// - 싱글톤 패턴 강제
+    /// What is private init()?
+    /// - Cannot create instance from outside
+    /// - Enforces singleton pattern
     ///
-    /// 사용 불가:
+    /// Not allowed:
     /// ```swift
-    /// let service = VideoTransformationService()  // 컴파일 에러!
+    /// let service = VideoTransformationService()  // Compile error!
     /// ```
     ///
-    /// 사용 가능:
+    /// Allowed:
     /// ```swift
     /// let service = VideoTransformationService.shared  // OK
     /// ```
     ///
-    /// 초기화 시 동작:
-    /// 1. UserDefaults에서 저장된 설정 로드
-    /// 2. 없으면 기본값 사용
+    /// Initialization behavior:
+    /// 1. Load saved settings from UserDefaults
+    /// 2. Use defaults if none exist
     private init() {
         loadTransformations()
     }
 
     // MARK: - Persistence Methods
 
-    /// @brief UserDefaults에서 설정 로드
+    /// @brief Load settings from UserDefaults
     ///
     /// @details
-    /// 앱 시작 시 호출되어 이전에 저장된 설정을 복원합니다.
+    /// Called at app launch to restore previously saved settings.
     ///
-    /// 처리 흐름:
+    /// Processing flow:
     /// ```
-    /// 1. UserDefaults에서 Data 가져오기
+    /// 1. Get Data from UserDefaults
     ///    ↓
-    /// 2. JSON → VideoTransformations 디코딩
+    /// 2. Decode JSON → VideoTransformations
     ///    ↓
-    /// 3. transformations 프로퍼티 설정
+    /// 3. Set transformations property
     ///    ↓
-    /// 4. 성공 로그 기록
+    /// 4. Log success
     ///
-    /// 실패 시:
-    ///    → 기본값 사용 (reset 상태)
-    ///    → 정보 로그 기록
+    /// On failure:
+    ///    → Use defaults (reset state)
+    ///    → Log info
     /// ```
     ///
-    /// JSONDecoder란?
-    /// JSON 데이터를 Swift 객체로 변환하는 도구입니다.
+    /// What is JSONDecoder?
+    /// A tool that converts JSON data into Swift objects.
     ///
     /// ```
     /// JSON Data (UserDefaults):
@@ -623,49 +623,49 @@ class VideoTransformationService: ObservableObject {
     /// )
     /// ```
     ///
-    /// 예외 처리:
-    /// - 저장된 데이터 없음 → 기본값
-    /// - JSON 파싱 실패 → 기본값
-    /// - 데이터 손상 → 기본값
+    /// Exception handling:
+    /// - No saved data → use defaults
+    /// - JSON parsing failed → use defaults
+    /// - Data corrupted → use defaults
     func loadTransformations() {
-        // ===== 1단계: UserDefaults에서 Data 가져오기 =====
+        // ===== Step 1: Get Data from UserDefaults =====
         guard let data = userDefaults.data(forKey: transformationsKey),
-              // ===== 2단계: JSON 디코딩 =====
+              // ===== Step 2: JSON decoding =====
               let loaded = try? JSONDecoder().decode(VideoTransformations.self, from: data) else {
-            // 로드 실패 → 기본값 사용
+            // Load failed → use defaults
             infoLog("[VideoTransformationService] No saved transformations found, using defaults")
             return
         }
 
-        // ===== 3단계: 설정 적용 =====
+        // ===== Step 3: Apply settings =====
         transformations = loaded
 
-        // ===== 4단계: 로그 기록 =====
+        // ===== Step 4: Log =====
         infoLog("[VideoTransformationService] Loaded transformations: brightness=\(loaded.brightness), flipH=\(loaded.flipHorizontal), flipV=\(loaded.flipVertical), zoom=\(loaded.zoomLevel)")
     }
 
-    /// @brief UserDefaults에 설정 저장
+    /// @brief Save settings to UserDefaults
     ///
     /// @details
-    /// 변환 설정이 변경될 때마다 호출되어 설정을 영속화합니다.
+    /// Called whenever transformation settings change to persist them.
     ///
-    /// 처리 흐름:
+    /// Processing flow:
     /// ```
-    /// 1. VideoTransformations → JSON 인코딩
+    /// 1. Encode VideoTransformations → JSON
     ///    ↓
-    /// 2. UserDefaults에 Data 저장
+    /// 2. Save Data to UserDefaults
     ///    ↓
-    /// 3. 디스크에 자동 동기화
+    /// 3. Automatically sync to disk
     ///    ↓
-    /// 4. 로그 기록
+    /// 4. Log
     ///
-    /// 실패 시:
-    ///    → 에러 로그만 기록
-    ///    → 설정은 메모리에 유지 (다음 저장 시도)
+    /// On failure:
+    ///    → Only log error
+    ///    → Settings remain in memory (retry on next save)
     /// ```
     ///
-    /// JSONEncoder란?
-    /// Swift 객체를 JSON 데이터로 변환하는 도구입니다.
+    /// What is JSONEncoder?
+    /// A tool that converts Swift objects into JSON data.
     ///
     /// ```
     /// VideoTransformations(
@@ -682,86 +682,86 @@ class VideoTransformationService: ObservableObject {
     /// }
     /// ```
     ///
-    /// 자동 호출:
-    /// 모든 변환 메서드 (setBrightness, toggleFlip 등)가
-    /// 이 메서드를 자동으로 호출합니다.
+    /// Automatic invocation:
+    /// All transformation methods (setBrightness, toggleFlip, etc.)
+    /// automatically call this method.
     ///
     /// ```swift
     /// service.setBrightness(0.5)
-    ///   ↓ 내부에서 호출
+    ///   ↓ internally calls
     /// saveTransformations()
     ///   ↓
-    /// UserDefaults에 저장됨
+    /// Saved to UserDefaults
     /// ```
     func saveTransformations() {
-        // ===== 1단계: JSON 인코딩 =====
+        // ===== Step 1: JSON encoding =====
         guard let data = try? JSONEncoder().encode(transformations) else {
             errorLog("[VideoTransformationService] Failed to encode transformations")
             return
         }
 
-        // ===== 2단계: UserDefaults에 저장 =====
-        // set(_:forKey:)는 즉시 반환하고, 백그라운드에서 디스크 동기화
+        // ===== Step 2: Save to UserDefaults =====
+        // set(_:forKey:) returns immediately, syncs to disk in background
         userDefaults.set(data, forKey: transformationsKey)
 
-        // ===== 3단계: 로그 기록 =====
+        // ===== Step 3: Log =====
         debugLog("[VideoTransformationService] Saved transformations: brightness=\(transformations.brightness), flipH=\(transformations.flipHorizontal), flipV=\(transformations.flipVertical), zoom=\(transformations.zoomLevel)")
     }
 
     // MARK: - Transformation Methods
 
-    /// @brief 밝기 설정
+    /// @brief Set brightness
     ///
-    /// @param value 밝기 값 (-1.0 ~ +1.0)
+    /// @param value Brightness value (-1.0 ~ +1.0)
     ///
     /// @details
-    /// 밝기 값을 설정하고, 범위를 검증한 후 저장합니다.
+    /// Sets brightness value, validates range, then saves.
     ///
-    /// 값 검증 (Clamping):
+    /// Value validation (Clamping):
     /// ```
-    /// 입력값 범위: -∞ ~ +∞
+    /// Input range: -∞ ~ +∞
     ///      ↓ max(-1.0, ...)
     /// -1.0 ~ +∞
     ///      ↓ min(1.0, ...)
-    /// -1.0 ~ +1.0 (최종)
+    /// -1.0 ~ +1.0 (final)
     /// ```
     ///
-    /// max, min 함수:
+    /// max, min functions:
     /// ```swift
-    /// max(-1.0, value)  // -1.0보다 작으면 -1.0로 제한
-    /// min(1.0, value)   // 1.0보다 크면 1.0로 제한
+    /// max(-1.0, value)  // Limit to -1.0 if smaller
+    /// min(1.0, value)   // Limit to 1.0 if larger
     ///
-    /// 예:
-    /// - setBrightness(1.5)  → 1.0 (상한)
-    /// - setBrightness(-2.0) → -1.0 (하한)
-    /// - setBrightness(0.5)  → 0.5 (그대로)
+    /// Examples:
+    /// - setBrightness(1.5)  → 1.0 (upper limit)
+    /// - setBrightness(-2.0) → -1.0 (lower limit)
+    /// - setBrightness(0.5)  → 0.5 (as is)
     /// ```
     ///
-    /// 사용 예:
+    /// Usage example:
     /// ```swift
-    /// // Slider에서 호출
+    /// // Called from Slider
     /// Slider(value: $brightness, in: -1.0...1.0)
     ///     .onChange(of: brightness) { newValue in
     ///         service.setBrightness(newValue)
     ///     }
     /// ```
     func setBrightness(_ value: Float) {
-        // ===== 값 검증 (Clamping) =====
+        // ===== Value validation (Clamping) =====
         let clamped = max(-1.0, min(1.0, value))
 
-        // ===== 설정 적용 =====
+        // ===== Apply setting =====
         transformations.brightness = clamped
 
-        // ===== 자동 저장 =====
+        // ===== Auto save =====
         saveTransformations()
     }
 
-    /// @brief 좌우 반전 토글
+    /// @brief Toggle horizontal flip
     ///
     /// @details
-    /// 현재 상태를 반대로 전환합니다.
+    /// Switches current state to opposite.
     ///
-    /// toggle()이란?
+    /// What is toggle()?
     /// ```swift
     /// var flag = false
     /// flag.toggle()  // flag = true
@@ -769,189 +769,189 @@ class VideoTransformationService: ObservableObject {
     /// flag.toggle()  // flag = false
     /// ```
     ///
-    /// 사용 예:
+    /// Usage example:
     /// ```swift
-    /// // 버튼 클릭 시
-    /// Button("좌우 반전") {
+    /// // On button click
+    /// Button("Horizontal Flip") {
     ///     service.toggleFlipHorizontal()
     /// }
     ///
-    /// // 키보드 단축키
+    /// // Keyboard shortcut
     /// .keyboardShortcut("h", modifiers: .command)
     /// ```
     ///
-    /// 상태 변화:
+    /// State changes:
     /// ```
     /// false → toggle() → true  → toggle() → false
-    /// (반전 없음)        (좌우 반전)        (반전 없음)
+    /// (no flip)        (flipped)        (no flip)
     /// ```
     func toggleFlipHorizontal() {
-        // ===== 상태 토글 =====
+        // ===== Toggle state =====
         transformations.flipHorizontal.toggle()
 
-        // ===== 자동 저장 =====
+        // ===== Auto save =====
         saveTransformations()
     }
 
-    /// @brief 상하 반전 토글
+    /// @brief Toggle vertical flip
     ///
     /// @details
-    /// 현재 상태를 반대로 전환합니다.
+    /// Switches current state to opposite.
     ///
-    /// 사용 예:
+    /// Usage example:
     /// ```swift
-    /// Button("상하 반전") {
+    /// Button("Vertical Flip") {
     ///     service.toggleFlipVertical()
     /// }
     /// ```
     func toggleFlipVertical() {
-        // ===== 상태 토글 =====
+        // ===== Toggle state =====
         transformations.flipVertical.toggle()
 
-        // ===== 자동 저장 =====
+        // ===== Auto save =====
         saveTransformations()
     }
 
-    /// @brief 줌 레벨 설정
+    /// @brief Set zoom level
     ///
-    /// @param level 줌 배율 (1.0 ~ 5.0)
+    /// @param level Zoom magnification (1.0 ~ 5.0)
     ///
     /// @details
-    /// 줌 배율을 설정하고, 범위를 검증한 후 저장합니다.
+    /// Sets zoom magnification, validates range, then saves.
     ///
-    /// 값 검증:
+    /// Value validation:
     /// ```
-    /// 최소: 1.0 (원본 크기)
-    /// 최대: 5.0 (5배 확대)
+    /// Minimum: 1.0 (original size)
+    /// Maximum: 5.0 (5x magnification)
     ///
-    /// 예:
-    /// - setZoomLevel(0.5)  → 1.0 (하한)
-    /// - setZoomLevel(10.0) → 5.0 (상한)
-    /// - setZoomLevel(2.5)  → 2.5 (그대로)
+    /// Examples:
+    /// - setZoomLevel(0.5)  → 1.0 (lower limit)
+    /// - setZoomLevel(10.0) → 5.0 (upper limit)
+    /// - setZoomLevel(2.5)  → 2.5 (as is)
     /// ```
     ///
-    /// 사용 예:
+    /// Usage example:
     /// ```swift
-    /// // Slider로 줌 조절
+    /// // Zoom control with Slider
     /// Slider(value: $zoomLevel, in: 1.0...5.0, step: 0.1)
     ///     .onChange(of: zoomLevel) { newValue in
     ///         service.setZoomLevel(newValue)
     ///     }
     ///
-    /// // 버튼으로 고정 배율
-    /// Button("2배 확대") { service.setZoomLevel(2.0) }
-    /// Button("리셋") { service.setZoomLevel(1.0) }
+    /// // Fixed magnification with buttons
+    /// Button("2x Zoom") { service.setZoomLevel(2.0) }
+    /// Button("Reset") { service.setZoomLevel(1.0) }
     /// ```
     ///
-    /// 화질 손실:
-    /// - 1.0 ~ 2.0: 화질 양호
-    /// - 2.0 ~ 3.0: 약간 픽셀 보임
-    /// - 3.0 ~ 5.0: 확실히 픽셀 보임
+    /// Quality loss:
+    /// - 1.0 ~ 2.0: Good quality
+    /// - 2.0 ~ 3.0: Slightly pixelated
+    /// - 3.0 ~ 5.0: Clearly pixelated
     func setZoomLevel(_ level: Float) {
-        // ===== 값 검증 (1.0 ~ 5.0) =====
+        // ===== Value validation (1.0 ~ 5.0) =====
         let clamped = max(1.0, min(5.0, level))
 
-        // ===== 설정 적용 =====
+        // ===== Apply setting =====
         transformations.zoomLevel = clamped
 
-        // ===== 자동 저장 =====
+        // ===== Auto save =====
         saveTransformations()
     }
 
-    /// @brief 줌 중심점 설정
+    /// @brief Set zoom center point
     ///
-    /// @param x 가로 중심 (0.0 ~ 1.0)
-    /// @param y 세로 중심 (0.0 ~ 1.0)
+    /// @param x Horizontal center (0.0 ~ 1.0)
+    /// @param y Vertical center (0.0 ~ 1.0)
     ///
     /// @details
-    /// 확대할 영역의 중심 좌표를 설정합니다.
+    /// Sets the center coordinates of the area to magnify.
     ///
-    /// 값 검증:
+    /// Value validation:
     /// ```
-    /// x, y 모두 0.0 ~ 1.0 범위로 제한
+    /// Both x and y limited to 0.0 ~ 1.0 range
     ///
-    /// 예:
-    /// - x = -0.5 → 0.0 (좌측 끝)
-    /// - x = 1.5  → 1.0 (우측 끝)
-    /// - x = 0.7  → 0.7 (우측 70% 지점)
+    /// Examples:
+    /// - x = -0.5 → 0.0 (left edge)
+    /// - x = 1.5  → 1.0 (right edge)
+    /// - x = 0.7  → 0.7 (70% from left)
     /// ```
     ///
-    /// 사용 예:
+    /// Usage examples:
     /// ```swift
-    /// // 마우스 클릭으로 줌 중심 이동
+    /// // Move zoom center with mouse click
     /// .onTapGesture { location in
     ///     let x = Float(location.x / viewWidth)
     ///     let y = Float(location.y / viewHeight)
     ///     service.setZoomCenter(x: x, y: y)
     /// }
     ///
-    /// // 고정 위치로 이동
-    /// Button("좌상단") { service.setZoomCenter(x: 0.25, y: 0.75) }
-    /// Button("중앙") { service.setZoomCenter(x: 0.5, y: 0.5) }
-    /// Button("우하단") { service.setZoomCenter(x: 0.75, y: 0.25) }
+    /// // Move to fixed positions
+    /// Button("Top-left") { service.setZoomCenter(x: 0.25, y: 0.75) }
+    /// Button("Center") { service.setZoomCenter(x: 0.5, y: 0.5) }
+    /// Button("Bottom-right") { service.setZoomCenter(x: 0.75, y: 0.25) }
     /// ```
     ///
-    /// 좌표계 주의:
-    /// - x: 0.0(좌) ~ 1.0(우)
-    /// - y: 0.0(하) ~ 1.0(상) ← Metal 좌표계!
+    /// Coordinate system note:
+    /// - x: 0.0(left) ~ 1.0(right)
+    /// - y: 0.0(bottom) ~ 1.0(top) ← Metal coordinate system!
     func setZoomCenter(x: Float, y: Float) {
-        // ===== 값 검증 (0.0 ~ 1.0) =====
+        // ===== Value validation (0.0 ~ 1.0) =====
         transformations.zoomCenterX = max(0.0, min(1.0, x))
         transformations.zoomCenterY = max(0.0, min(1.0, y))
 
-        // ===== 자동 저장 =====
+        // ===== Auto save =====
         saveTransformations()
     }
 
-    /// @brief 모든 변환 리셋
+    /// @brief Reset all transformations
     ///
     /// @details
-    /// 모든 변환 효과를 기본값으로 되돌립니다.
+    /// Resets all transformation effects to default values.
     ///
-    /// 리셋되는 것:
-    /// - 밝기 → 0.0
-    /// - 좌우 반전 → off
-    /// - 상하 반전 → off
-    /// - 줌 → 1.0 (원본)
-    /// - 줌 중심 → 화면 중앙
+    /// What gets reset:
+    /// - Brightness → 0.0
+    /// - Horizontal flip → off
+    /// - Vertical flip → off
+    /// - Zoom → 1.0 (original)
+    /// - Zoom center → screen center
     ///
-    /// 사용 예:
+    /// Usage examples:
     /// ```swift
-    /// // "리셋" 버튼
-    /// Button("모두 리셋") {
+    /// // "Reset" button
+    /// Button("Reset All") {
     ///     service.resetTransformations()
     /// }
     ///
-    /// // 새 영상 로드 시 자동 리셋
+    /// // Auto reset when loading new video
     /// func loadNewVideo() {
     ///     service.resetTransformations()
-    ///     // ... 영상 로드
+    ///     // ... load video
     /// }
     /// ```
     ///
-    /// 효과:
-    /// - 즉시 원본 영상으로 복원
-    /// - UserDefaults에 저장 (다음 실행 시도 리셋 상태)
+    /// Effects:
+    /// - Immediately restore to original video
+    /// - Save to UserDefaults (reset state persists across launches)
     func resetTransformations() {
-        // ===== VideoTransformations.reset() 호출 =====
+        // ===== Call VideoTransformations.reset() =====
         transformations.reset()
 
-        // ===== 자동 저장 =====
+        // ===== Auto save =====
         saveTransformations()
 
-        // ===== 로그 기록 =====
+        // ===== Log =====
         infoLog("[VideoTransformationService] Reset all transformations to default")
     }
 }
 
 /**
- # VideoTransformations 통합 가이드
+ # VideoTransformations Integration Guide
 
- ## GPU 셰이더에서 사용:
+ ## Usage in GPU Shader:
 
- ### 1. Uniform Buffer 생성:
+ ### 1. Create Uniform Buffer:
  ```swift
- // Swift 측:
+ // Swift side:
  let transforms = service.transformations
  let uniformBuffer = device.makeBuffer(
  bytes: &transforms,
@@ -960,7 +960,7 @@ class VideoTransformationService: ObservableObject {
  )
  ```
 
- ### 2. Metal Shader에서 접근:
+ ### 2. Access in Metal Shader:
  ```metal
  // Shaders.metal
  struct Transforms {
@@ -978,7 +978,7 @@ class VideoTransformationService: ObservableObject {
  ) {
  float2 coord = in.texCoord;
 
- // 반전 적용
+ // Apply flipping
  if (transforms.flipHorizontal) {
  coord.x = 1.0 - coord.x;
  }
@@ -986,13 +986,13 @@ class VideoTransformationService: ObservableObject {
  coord.y = 1.0 - coord.y;
  }
 
- // 줌 적용
+ // Apply zoom
  coord = (coord - transforms.zoomCenter) / transforms.zoomLevel + transforms.zoomCenter;
 
- // 텍스처 샘플링
+ // Texture sampling
  float4 color = texture.sample(sampler, coord);
 
- // 밝기 적용
+ // Apply brightness
  color.rgb += transforms.brightness;
  color.rgb = clamp(color.rgb, 0.0, 1.0);
 
@@ -1000,7 +1000,7 @@ class VideoTransformationService: ObservableObject {
  }
  ```
 
- ## SwiftUI에서 UI 구성:
+ ## Building UI in SwiftUI:
 
  ```swift
  struct TransformationControlView: View {
@@ -1008,9 +1008,9 @@ class VideoTransformationService: ObservableObject {
 
  var body: some View {
  VStack {
- // 밝기 슬라이더
+ // Brightness slider
  HStack {
- Text("밝기")
+ Text("Brightness")
  Slider(value: $service.transformations.brightness,
  in: -1.0...1.0)
  .onChange(of: service.transformations.brightness) { value in
@@ -1019,15 +1019,15 @@ class VideoTransformationService: ObservableObject {
  Text(String(format: "%.2f", service.transformations.brightness))
  }
 
- // 반전 토글
- Toggle("좌우 반전", isOn: Binding(
+ // Flip toggle
+ Toggle("Horizontal Flip", isOn: Binding(
  get: { service.transformations.flipHorizontal },
  set: { _ in service.toggleFlipHorizontal() }
  ))
 
- // 줌 컨트롤
+ // Zoom control
  HStack {
- Text("줌")
+ Text("Zoom")
  Slider(value: Binding(
  get: { service.transformations.zoomLevel },
  set: { service.setZoomLevel($0) }
@@ -1035,9 +1035,9 @@ class VideoTransformationService: ObservableObject {
  Text(String(format: "%.1fx", service.transformations.zoomLevel))
  }
 
- // 리셋 버튼
+ // Reset button
  if service.transformations.hasActiveTransformations {
- Button("모두 리셋") {
+ Button("Reset All") {
  service.resetTransformations()
  }
  }
@@ -1047,38 +1047,38 @@ class VideoTransformationService: ObservableObject {
  }
  ```
 
- ## 성능 최적화 팁:
+ ## Performance Optimization Tips:
 
- 1. **불필요한 셰이더 처리 스킵**
+ 1. **Skip unnecessary shader processing**
  ```swift
  if !transforms.hasActiveTransformations {
- // 원본 그대로 렌더링 (빠름)
+ // Render original as-is (fast)
  renderPassDescriptor.colorAttachments[0].texture = sourceTexture
  } else {
- // 셰이더 적용 (느림)
+ // Apply shader (slower)
  applyTransformationsShader()
  }
  ```
 
- 2. **변환 캐싱**
+ 2. **Cache transformations**
  ```swift
  private var cachedTransforms: VideoTransformations?
  private var cachedUniformBuffer: MTLBuffer?
 
  func updateUniformBuffer() {
  if cachedTransforms == service.transformations {
- return  // 변경 없으면 스킵
+ return  // Skip if no changes
  }
- // ... buffer 업데이트
+ // ... update buffer
  }
  ```
 
- 3. **UserDefaults 저장 빈도 제한**
+ 3. **Limit UserDefaults save frequency**
  ```swift
- // Slider 드래그 중에는 저장 안 함 (성능)
+ // Don't save during Slider dragging (performance)
  Slider(value: $brightness)
  .onDragEnded { _ in
- service.setBrightness(brightness)  // 드래그 끝날 때만 저장
+ service.setBrightness(brightness)  // Only save when dragging ends
  }
  ```
  */

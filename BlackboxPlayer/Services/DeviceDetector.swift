@@ -1,30 +1,30 @@
 /// @file DeviceDetector.swift
 /// @brief Service for detecting USB devices and SD card connections
 /// @author BlackboxPlayer Development Team
-/// @details IOKit과 NSWorkspace를 사용하여 SD 카드 연결/분리를 감지하는 서비스입니다.
+/// @details Service using IOKit and NSWorkspace for detecting SD card connection/disconnection.
 
 /*
- ═══════════════════════════════════════════════════════════════════════════
- 장치 감지 서비스
- ═══════════════════════════════════════════════════════════════════════════
+ 
+ Device Detection Service
+ 
 
- 【이 파일의 목적】
- macOS의 IOKit과 NSWorkspace를 사용하여 SD 카드의 연결/분리를 실시간으로 감지합니다.
+ [Purpose of this File]
+ Uses macOS IOKit and NSWorkspace to detect SD card connection/disconnection in real-time.
 
- 【주요 기능】
- 1. SD 카드 장치 목록 조회 (detectSDCards)
- 2. 실시간 장치 연결/분리 모니터링 (monitorDeviceChanges)
+ [Key Features]
+ 1. Retrieve list of SD card devices (detectSDCards)
+ 2. Real-time device connection/disconnection monitoring (monitorDeviceChanges)
 
- 【사용 기술】
- - FileManager: 마운트된 볼륨 조회
- - URL Resource Values: 볼륨 속성 확인 (isRemovable, isEjectable)
- - NSWorkspace Notifications: 마운트/언마운트 이벤트 감지
+ [Technologies Used]
+ - FileManager: Query mounted volumes
+ - URL Resource Values: Check volume attributes (isRemovable, isEjectable)
+ - NSWorkspace Notifications: Detect mount/unmount events
 
- 【통합 위치】
- - ContentViewModel: SD 카드 연결 시 자동 파일 로드
- - SettingsView: 연결된 장치 목록 표시
+ [Integration Points]
+ - ContentViewModel: automatic file loading on SD card connection
+ - SettingsView: display list of connected devices
 
- ═══════════════════════════════════════════════════════════════════════════
+ 
  */
 
 import Foundation
@@ -33,676 +33,676 @@ import AppKit
 // MARK: - Device Detector
 
 /*
- ───────────────────────────────────────────────────────────────────────────
- DeviceDetector 클래스
- ───────────────────────────────────────────────────────────────────────────
+ 
+ DeviceDetector Class
+ 
 
- 【역할】
- SD 카드와 같은 이동식 저장 장치의 연결 상태를 모니터링합니다.
+ [Role]
+ Monitors the connection status of removable storage devices such as SD cards.
 
- 【감지 메커니즘】
- 1. FileManager.mountedVolumeURLs: 현재 마운트된 모든 볼륨 조회
- 2. URL.resourceValues: 볼륨 속성 확인
-    - .volumeIsRemovableKey: 이동식 장치 여부
-    - .volumeIsEjectableKey: 꺼내기 가능 여부
- 3. NSWorkspace.didMountNotification: 새 볼륨 마운트 이벤트
- 4. NSWorkspace.didUnmountNotification: 볼륨 언마운트 이벤트
+ [Detection Mechanism]
+ 1. FileManager.mountedVolumeURLs: query all currently mounted volumes
+ 2. URL.resourceValues: check volume attributes
+ -.volumeIsRemovableKey: whether removable device
+ -.volumeIsEjectableKey: whether ejectable
+ 3. NSWorkspace.didMountNotification: new volume mount event
+ 4. NSWorkspace.didUnmountNotification: volume unmount event
 
- 【SD 카드 판별 기준】
- - isRemovable = true: 이동식 미디어
- - isEjectable = true: 사용자가 꺼낼 수 있음
- - 두 조건을 모두 만족하는 장치 = SD 카드 또는 USB 드라이브
+ [SD Card Identification Criteria]
+ - isRemovable = true: removable media
+ - isEjectable = true: za has
+ - satisfies both conditions device = SD card also USB drive
 
- 【장치 타입】
- macOS에서 이동식 장치로 인식되는 것들:
- - SD 카드
- - USB 드라이브
- - 외장 하드 드라이브
- - iPhone/iPad (제한적)
+ [Device Types]
+ macOS removable device:
+ - SD card
+ - USB drive
+ - ha drive
+ - iPhone/iPad (remove)
 
- 제외되는 것들:
- - 내장 디스크 (isRemovable = false)
- - 네트워크 드라이브 (isEjectable = false)
- - Time Machine 백업 볼륨
+ remove:
+ - internal disk (isRemovable = false)
+ - network drive (isEjectable = false)
+ - Time Machine volume
 
- 【스레드 안전성】
- - detectSDCards(): 스레드 안전 (FileManager 읽기만 수행)
- - monitorDeviceChanges(): 콜백은 main 큐에서 실행
- ───────────────────────────────────────────────────────────────────────────
+ [Thread Safety]
+ - detectSDCards(): before (FileManager only )
+ - monitorDeviceChanges(): main queue 
+ 
  */
 
 /// @class DeviceDetector
-/// @brief SD 카드 및 USB 장치 감지 서비스
+/// @brief SD card USB Device Detection Service
 ///
-/// FileManager와 NSWorkspace를 사용하여 이동식 저장 장치를 감지하고
-/// 실시간으로 연결/분리 이벤트를 모니터링합니다.
+/// Detects removable storage devices using FileManager and NSWorkspace
+/// and monitors connection/disconnection events in real-time.
 class DeviceDetector {
-    // MARK: - Properties
+ // MARK: - Properties
 
-    /// @var observers
-    /// @brief Notification observer 참조 배열
-    ///
-    /// monitorDeviceChanges()로 등록한 observer를 추적하여
-    /// 나중에 정리할 수 있도록 합니다.
-    ///
-    /// 메모리 누수 방지:
-    /// ```swift
-    /// deinit {
-    ///     for observer in observers {
-    ///         NotificationCenter.default.removeObserver(observer)
-    ///     }
-    /// }
-    /// ```
-    private var observers: [NSObjectProtocol] = []
+ /// @var observers
+ /// @brief Array of notification observer references
+ ///
+ /// monitorDeviceChanges() etc.registerone observer ha
+ /// for later cleanup.
+ ///
+ /// Prevent memory leaks:
+ /// ```swift
+ /// deinit {
+ /// for observer in observers {
+ /// NotificationCenter.default.removeObserver(observer)
+ /// }
+ /// }
+ /// ```
+ private var observers: [NSObjectProtocol] = []
 
-    // MARK: - Initialization
+ // MARK: - Initialization
 
-    /// @brief DeviceDetector 초기화
-    init() {
-        // 추가 초기화 작업 없음
-    }
+ /// @brief DeviceDetector Initialization
+ init() {
+ // Initialization no
+ }
 
-    // MARK: - Deinitialization
+ // MARK: - Deinitialization
 
-    /*
-     ───────────────────────────────────────────────────────────────────────
-     deinit
-     ───────────────────────────────────────────────────────────────────────
+ /*
+ 
+ deinit
+ 
 
-     【목적】
-     인스턴스 해제 시 notification observer 정리
+ [Purpose]
+ Cleanup notification observers when instance is deallocated
 
-     【중요성】
-     observer를 제거하지 않으면:
-     - 메모리 누수 발생
-     - 해제된 객체에 notification 전달 시 크래시
+ [Importance]
+ If observers are not removed:
+ - Memory leak occurs
+ - Crash when notification delivered to deallocated object
 
-     【정리 방법】
-     ```swift
-     NotificationCenter.default.removeObserver(observer)
-     ```
-     ───────────────────────────────────────────────────────────────────────
-     */
+ [Cleanup Method]
+ ```swift
+ NotificationCenter.default.removeObserver(observer)
+ ```
+ 
+ */
 
-    /// @brief 인스턴스 해제 시 observer 정리
-    deinit {
-        // 모든 observer 제거
-        for observer in observers {
-            NotificationCenter.default.removeObserver(observer)
-        }
-    }
+ /// @brief Cleanup observers when instance is deallocated
+ deinit {
+ // Remove all observers
+ for observer in observers {
+ NotificationCenter.default.removeObserver(observer)
+ }
+ }
 
-    // MARK: - Public Methods
+ // MARK: - Public Methods
 
-    /*
-     ───────────────────────────────────────────────────────────────────────
-     메서드 1: detectSDCards
-     ───────────────────────────────────────────────────────────────────────
+ /*
+ 
+ Method 1: detectSDCards
+ 
 
-     【목적】
-     현재 마운트된 모든 이동식 저장 장치(SD 카드) 조회
+ [Purpose]
+ Retrieve all currently mounted removable storage devices (SD cards)
 
-     【알고리즘】
-     1. FileManager.mountedVolumeURLs로 모든 마운트된 볼륨 조회
-     2. 각 볼륨의 resource values 읽기
-     3. isRemovable && isEjectable 조건 확인
-     4. 조건 만족 시 배열에 추가
-     5. URL 배열 반환
+ [Algorithm]
+ 1. FileManager.mountedVolumeURLs Retrieve all mounted volumes
+ 2. Read resource values of each volume
+ 3. Check isRemovable && isEjectable condition
+ 4. Add to array if condition satisfied
+ 5. Return URL array
 
-     【Resource Values】
-     ```swift
-     let resourceValues = try url.resourceValues(
-         forKeys: [.volumeIsRemovableKey, .volumeIsEjectableKey]
-     )
-     ```
+ [Resource Values]
+ ```swift
+ let resourceValues = try url.resourceValues(
+ forKeys: [.volumeIsRemovableKey,.volumeIsEjectableKey]
+ )
+ ```
 
-     【반환 예시】
-     ```
-     [
-         file:///Volumes/BLACKBOX_SD/,
-         file:///Volumes/USB_DRIVE/
-     ]
-     ```
+ [Return Example]
+ ```
+ [
+ file:///Volumes/BLACKBOX_SD/,
+ file:///Volumes/USB_DRIVE/
+ ]
+ ```
 
-     【성능】
-     - 시간 복잡도: O(N) - N은 마운트된 볼륨 수
-     - 일반적으로 3-5개 정도 (빠름)
+ [Performance]
+ - Time complexity: O(N) - N mounted volume 
+ - 3-5 also ()
 
-     【사용 시나리오】
-     1. 앱 시작 시 초기 스캔
-     2. 수동 새로고침 버튼
-     3. 자동 재스캔 (주기적)
-     ───────────────────────────────────────────────────────────────────────
-     */
+ [Usage Scenarios]
+ 1. when when sec 
+ 2. Refresh 
+ 3. automatic ()
+ 
+ */
 
-    /// @brief 현재 마운트된 SD 카드 목록 조회
-    ///
-    /// FileManager.mountedVolumeURLs를 사용하여 모든 마운트된 볼륨을 조회하고,
-    /// 이동식/꺼내기 가능한 장치만 필터링합니다.
-    ///
-    /// @return SD 카드 볼륨 URL 배열
-    ///
-    /// 사용 예시:
-    /// ```swift
-    /// let detector = DeviceDetector()
-    /// let sdCards = detector.detectSDCards()
-    ///
-    /// if sdCards.isEmpty {
-    ///     print("SD 카드가 연결되지 않았습니다")
-    /// } else {
-    ///     for sdCard in sdCards {
-    ///         print("발견: \(sdCard.path)")
-    ///     }
-    /// }
-    /// ```
-    ///
-    /// 판별 기준:
-    /// - isRemovable = true (이동식 미디어)
-    /// - isEjectable = true (꺼내기 가능)
-    ///
-    /// 참고:
-    /// - 내장 디스크는 제외됨
-    /// - 네트워크 드라이브는 제외됨
-    /// - USB 드라이브도 포함됨 (동일한 특성)
-    func detectSDCards() -> [URL] {
-        var mountedSDCards: [URL] = []
+ /// @brief Retrieve list of currently mounted SD cards
+ ///
+ /// Uses FileManager.mountedVolumeURLs to retrieve all mounted volumes
+ /// and filters only removable/ejectable devices.
+ ///
+ /// @return SD card volume URL 
+ ///
+ /// Usage example:
+ /// ```swift
+ /// let detector = DeviceDetector()
+ /// let sdCards = detector.detectSDCards()
+ ///
+ /// if sdCards.isEmpty {
+ /// print("SD card connectionnot found")
+ /// } else {
+ /// for sdCard in sdCards {
+ /// print(": \(sdCard.path)")
+ /// }
+ /// }
+ /// ```
+ ///
+ ///:
+ /// - isRemovable = true (removable media)
+ /// - isEjectable = true (ejectable)
+ ///
+ /// Note:
+ /// - Internal disks excluded
+ /// - Network drives excluded
+ /// - USB drives also included (same characteristics)
+ func detectSDCards() -> [URL] {
+ var mountedSDCards: [URL] = []
 
-        // 1단계: 모든 마운트된 볼륨 조회
-        // includingResourceValuesForKeys: 미리 로드할 속성 지정 (성능 향상)
-        // options: .skipHiddenVolumes - 숨김 볼륨 제외
-        guard let urls = FileManager.default.mountedVolumeURLs(
-            includingResourceValuesForKeys: [.volumeIsRemovableKey, .volumeIsEjectableKey],
-            options: [.skipHiddenVolumes]
-        ) else {
-            return []
-        }
+ // 1step: Retrieve all mounted volumes
+ // includingResourceValuesForKeys: properties to preload (performance improvement)
+ // options:.skipHiddenVolumes - exclude hidden volumes
+ guard let urls = FileManager.default.mountedVolumeURLs(
+ includingResourceValuesForKeys: [.volumeIsRemovableKey,.volumeIsEjectableKey],
+ options: [.skipHiddenVolumes]
+ ) else {
+ return []
+ }
 
-        // 2단계: 각 볼륨의 속성 확인
-        for url in urls {
-            do {
-                // Resource values 읽기
-                let resourceValues = try url.resourceValues(forKeys: [.volumeIsRemovableKey, .volumeIsEjectableKey])
+ // Step 2: Check attributes of each volume
+ for url in urls {
+ do {
+ // Read resource values
+ let resourceValues = try url.resourceValues(forKeys: [.volumeIsRemovableKey,.volumeIsEjectableKey])
 
-                // 이동식 && 꺼내기 가능한 장치만 필터링
-                if let isRemovable = resourceValues.volumeIsRemovable,
-                   let isEjectable = resourceValues.volumeIsEjectable,
-                   isRemovable && isEjectable {
-                    mountedSDCards.append(url)
-                }
-            } catch {
-                // 속성 읽기 실패 시 스킵 (권한 문제 등)
-                print("Error checking volume properties for \(url): \(error)")
-            }
-        }
+ // removable && ejectableone device only Filtering
+ if let isRemovable = resourceValues.volumeIsRemovable,
+ let isEjectable = resourceValues.volumeIsEjectable,
+ isRemovable && isEjectable {
+ mountedSDCards.append(url)
+ }
+ } catch {
+ // Skip if attribute reading fails (permission issues etc.)
+ print("Error checking volume properties for \(url): \(error)")
+ }
+ }
 
-        return mountedSDCards
-    }
+ return mountedSDCards
+ }
 
-    /*
-     ───────────────────────────────────────────────────────────────────────
-     메서드 2: monitorDeviceChanges
-     ───────────────────────────────────────────────────────────────────────
+ /*
+ 
+ Method 2: monitorDeviceChanges
+ 
 
-     【목적】
-     SD 카드 연결/분리 이벤트를 실시간으로 감지
+ [Purpose]
+ Detect SD card connection/disconnection events in real-time
 
-     【Notification 사용】
-     NSWorkspace는 볼륨 마운트/언마운트 시 notification 발송:
-     - NSWorkspace.didMountNotification: 새 볼륨 마운트
-     - NSWorkspace.didUnmountNotification: 볼륨 언마운트
+ [Using Notifications]
+ NSWorkspace volume mount/unmount when notification:
+ - NSWorkspace.didMountNotification: new volume mount
+ - NSWorkspace.didUnmountNotification: volume unmount
 
-     【userInfo 구조】
-     ```swift
-     notification.userInfo = [
-         NSWorkspace.volumeURLUserInfoKey: URL  // 볼륨 URL
-     ]
-     ```
+ [userInfo Structure]
+ ```swift
+ notification.userInfo = [
+ NSWorkspace.volumeURLUserInfoKey: URL // volume URL
+ ]
+ ```
 
-     【콜백 실행 큐】
-     queue: .main으로 지정하여 UI 업데이트 가능:
-     ```swift
-     NotificationCenter.default.addObserver(
-         forName: NSWorkspace.didMountNotification,
-         object: nil,
-         queue: .main  // 메인 스레드에서 실행
-     ) { notification in
-         // UI 업데이트 가능
-     }
-     ```
+ [Callback Execution Queue]
+ queue:.main UI updates possible:
+ ```swift
+ NotificationCenter.default.addObserver(
+ forName: NSWorkspace.didMountNotification,
+ object: nil,
+ queue:.main // main thread 
+ ) { notification in
+ // UI updates possible
+ }
+ ```
 
-     【Observer 관리】
-     반환된 observer 객체를 저장하여 나중에 제거:
-     ```swift
-     let observer = NotificationCenter.default.addObserver(...)
-     observers.append(observer)
-     ```
+ [Observer Management]
+ observer stores objects for later removal:
+ ```swift
+ let observer = NotificationCenter.default.addObserver(...)
+ observers.append(observer)
+ ```
 
-     【메모리 관리】
-     - 클로저가 self를 캡처하므로 [weak self] 사용
-     - retain cycle 방지
+ [Memory Management]
+ - closure self ha [weak self] 
+ - retain cycle 
 
-     【사용 패턴】
-     ```swift
-     detector.monitorDeviceChanges(
-         onConnect: { url in
-             print("SD 카드 연결: \(url)")
-             // 파일 로드 시작
-         },
-         onDisconnect: { url in
-             print("SD 카드 분리: \(url)")
-             // 파일 목록 초기화
-         }
-     )
-     ```
-     ───────────────────────────────────────────────────────────────────────
-     */
+ [Usage Pattern]
+ ```swift
+ detector.monitorDeviceChanges(
+ onConnect: { url in
+ print("SD card connection: \(url)")
+ // file load when
+ },
+ onDisconnect: { url in
+ print("SD card: \(url)")
+ // file list Initialization
+ }
+ )
+ ```
+ 
+ */
 
-    /// @brief SD 카드 연결/분리 이벤트 모니터링
-    ///
-    /// NSWorkspace.didMountNotification과 didUnmountNotification을 사용하여
-    /// 볼륨 마운트/언마운트 이벤트를 감지하고 콜백을 호출합니다.
-    ///
-    /// @param onConnect 볼륨 마운트 시 호출될 콜백 (메인 스레드)
-    /// @param onDisconnect 볼륨 언마운트 시 호출될 콜백 (메인 스레드)
-    ///
-    /// 사용 예시:
-    /// ```swift
-    /// let detector = DeviceDetector()
-    ///
-    /// detector.monitorDeviceChanges(
-    ///     onConnect: { [weak self] volumeURL in
-    ///         print("SD 카드 연결: \(volumeURL.path)")
-    ///         self?.loadFilesFrom(volumeURL)
-    ///     },
-    ///     onDisconnect: { [weak self] volumeURL in
-    ///         print("SD 카드 분리: \(volumeURL.path)")
-    ///         self?.clearFileList()
-    ///     }
-    /// )
-    /// ```
-    ///
-    /// 참고:
-    /// - 콜백은 메인 스레드에서 실행됨 (UI 업데이트 가능)
-    /// - 인스턴스 해제 시 observer 자동 정리 (deinit)
-    /// - 모든 볼륨 마운트/언마운트가 감지됨 (SD 카드뿐만 아니라)
-    func monitorDeviceChanges(onConnect: @escaping (URL) -> Void, onDisconnect: @escaping (URL) -> Void) {
-        /*
-         ───────────────────────────────────────────────────────────────────
-         마운트 이벤트 모니터링
-         ───────────────────────────────────────────────────────────────────
+ /// @brief Monitor SD card connection/disconnection events
+ ///
+ /// Uses NSWorkspace.didMountNotification and didUnmountNotification
+ /// to detect volume mount/unmount events and invoke callbacks.
+ ///
+ /// @param onConnect Callback to invoke on volume mount (main thread)
+ /// @param onDisconnect Callback to invoke on volume unmount (main thread)
+ ///
+ /// Usage example:
+ /// ```swift
+ /// let detector = DeviceDetector()
+ ///
+ /// detector.monitorDeviceChanges(
+ /// onConnect: { [weak self] volumeURL in
+ /// print("SD card connection: \(volumeURL.path)")
+ /// self?.loadFilesFrom(volumeURL)
+ /// },
+ /// onDisconnect: { [weak self] volumeURL in
+ /// print("SD card: \(volumeURL.path)")
+ /// self?.clearFileList()
+ /// }
+ /// )
+ /// ```
+ ///
+ /// Note:
+ /// - main thread (UI updates possible)
+ /// - Automatic observer cleanup when instance deallocated (deinit)
+ /// - All volume mounts/unmounts detected (not just SD cards)
+ func monitorDeviceChanges(onConnect: @escaping (URL) -> Void, onDisconnect: @escaping (URL) -> Void) {
+ /*
+ 
+ Mount event monitoring
+ 
 
-         【NSWorkspace.didMountNotification】
-         새 볼륨이 마운트될 때 발송되는 notification:
-         - SD 카드 삽입
-         - USB 드라이브 연결
-         - 네트워크 드라이브 마운트
-         - DMG 파일 마운트
+ [NSWorkspace.didMountNotification]
+ Notification sent when new volume is mounted:
+ - SD card insertion
+ - USB drive connection
+ - Network drive mount
+ - DMG file mount
 
-         【userInfo】
-         volumeURLUserInfoKey로 볼륨 URL 추출:
-         ```swift
-         if let url = notification.userInfo?[NSWorkspace.volumeURLUserInfoKey] as? URL {
-             // 볼륨 URL 사용
-         }
-         ```
+ [userInfo]
+ Extract volume URL with volumeURLUserInfoKey:
+ ```swift
+ if let url = notification.userInfo?[NSWorkspace.volumeURLUserInfoKey] as? URL {
+ // Use volume URL
+ }
+ ```
 
-         【queue: .main】
-         콜백을 메인 스레드에서 실행:
-         - SwiftUI/AppKit UI 업데이트 가능
-         - @MainActor 함수 호출 가능
-         ───────────────────────────────────────────────────────────────────
-         */
+ [queue:.main]
+ main thread:
+ - SwiftUI/AppKit UI updates possible
+ - @MainActor function calls possible
+ 
+ */
 
-        // 마운트 이벤트 observer 등록
-        let mountObserver = NotificationCenter.default.addObserver(
-            forName: NSWorkspace.didMountNotification,
-            object: nil,
-            queue: .main
-        ) { notification in
-            // userInfo에서 볼륨 URL 추출
-            if let volume = notification.userInfo?[NSWorkspace.volumeURLUserInfoKey] as? URL {
-                onConnect(volume)
-            }
-        }
-        observers.append(mountObserver)
+ // mount event observer etc.register
+ let mountObserver = NotificationCenter.default.addObserver(
+ forName: NSWorkspace.didMountNotification,
+ object: nil,
+ queue:.main
+ ) { notification in
+ // Extract volume URL from userInfo
+ if let volume = notification.userInfo?[NSWorkspace.volumeURLUserInfoKey] as? URL {
+ onConnect(volume)
+ }
+ }
+ observers.append(mountObserver)
 
-        /*
-         ───────────────────────────────────────────────────────────────────
-         언마운트 이벤트 모니터링
-         ───────────────────────────────────────────────────────────────────
+ /*
+ 
+ Mount event monitoring
+ 
 
-         【NSWorkspace.didUnmountNotification】
-         볼륨이 언마운트될 때 발송되는 notification:
-         - SD 카드 꺼내기
-         - USB 드라이브 분리
-         - 네트워크 드라이브 끊기
-         - DMG 파일 배출
+ [NSWorkspace.didUnmountNotification]
+ Notification sent when volume is unmounted:
+ - SD card ejection
+ - USB drive disconnection
+ - Network drive disconnection
+ - DMG file ejection
 
-         【주의사항】
-         언마운트 후에는 해당 경로에 접근 불가:
-         - 파일 읽기 실패
-         - 디렉토리 존재하지 않음
-         - FileSystemError.deviceNotFound
+ [Precautions]
+ Cannot access path after unmount:
+ - file 
+ - directory does not exist
+ - FileSystemError.deviceNotFound
 
-         따라서 콜백에서:
-         1. UI 업데이트 (파일 목록 초기화)
-         2. 진행 중인 작업 취소
-         3. 리소스 정리
-         ───────────────────────────────────────────────────────────────────
-         */
+ Therefore in callback:
+ 1. UI update (file list Initialization)
+ 2. Cancel ongoing operations
+ 3. Cleanup resources
+ 
+ */
 
-        // 언마운트 이벤트 observer 등록
-        let unmountObserver = NotificationCenter.default.addObserver(
-            forName: NSWorkspace.didUnmountNotification,
-            object: nil,
-            queue: .main
-        ) { notification in
-            // userInfo에서 볼륨 URL 추출
-            if let volume = notification.userInfo?[NSWorkspace.volumeURLUserInfoKey] as? URL {
-                onDisconnect(volume)
-            }
-        }
-        observers.append(unmountObserver)
-    }
+ // unmount event observer etc.register
+ let unmountObserver = NotificationCenter.default.addObserver(
+ forName: NSWorkspace.didUnmountNotification,
+ object: nil,
+ queue:.main
+ ) { notification in
+ // Extract volume URL from userInfo
+ if let volume = notification.userInfo?[NSWorkspace.volumeURLUserInfoKey] as? URL {
+ onDisconnect(volume)
+ }
+ }
+ observers.append(unmountObserver)
+ }
 
-    /*
-     ───────────────────────────────────────────────────────────────────────
-     메서드 3: stopMonitoring (선택적 구현)
-     ───────────────────────────────────────────────────────────────────────
+ /*
+ 
+ Method 3: stopMonitoring (Optional Implementation)
+ 
 
-     【목적】
-     모니터링을 수동으로 중지
+ [Purpose]
+ Manually stop monitoring
 
-     【사용 시나리오】
-     - 특정 뷰가 사라질 때
-     - 앱이 백그라운드로 전환될 때
-     - 리소스 절약이 필요할 때
+ [Usage Scenarios]
+ - When specific view disappears
+ - When app transitions to background
+ - resource approximately to 
 
-     【현재 구현】
-     deinit에서 자동으로 정리되므로 별도 메서드 불필요.
-     필요시 추가 구현 가능:
+ [Current Implementation]
+ No separate method needed as automatically cleaned up in deinit.
+ Can implement additionally if needed:
 
-     ```swift
-     func stopMonitoring() {
-         for observer in observers {
-             NotificationCenter.default.removeObserver(observer)
-         }
-         observers.removeAll()
-     }
-     ```
-     ───────────────────────────────────────────────────────────────────────
-     */
+ ```swift
+ func stopMonitoring() {
+ for observer in observers {
+ NotificationCenter.default.removeObserver(observer)
+ }
+ observers.removeAll()
+ }
+ ```
+ 
+ */
 }
 
 /*
- ═══════════════════════════════════════════════════════════════════════════
- 통합 가이드
- ═══════════════════════════════════════════════════════════════════════════
+ 
+ 
+ 
 
- 【1. 기본 사용법】
+ [1. Basic Usage]
 
  ```swift
  class ContentViewModel: ObservableObject {
-     @Published var connectedSDCards: [URL] = []
+ @Published var connectedSDCards: [URL] = []
 
-     private let deviceDetector = DeviceDetector()
+ private let deviceDetector = DeviceDetector()
 
-     init() {
-         // 초기 스캔
-         connectedSDCards = deviceDetector.detectSDCards()
+ init() {
+ // sec 
+ connectedSDCards = deviceDetector.detectSDCards()
 
-         // 실시간 모니터링 시작
-         deviceDetector.monitorDeviceChanges(
-             onConnect: { [weak self] volumeURL in
-                 print("SD 카드 연결: \(volumeURL.path)")
-                 self?.handleSDCardConnected(volumeURL)
-             },
-             onDisconnect: { [weak self] volumeURL in
-                 print("SD 카드 분리: \(volumeURL.path)")
-                 self?.handleSDCardDisconnected(volumeURL)
-             }
-         )
-     }
+ // whenmonitoring when
+ deviceDetector.monitorDeviceChanges(
+ onConnect: { [weak self] volumeURL in
+ print("SD card connection: \(volumeURL.path)")
+ self?.handleSDCardConnected(volumeURL)
+ },
+ onDisconnect: { [weak self] volumeURL in
+ print("SD card: \(volumeURL.path)")
+ self?.handleSDCardDisconnected(volumeURL)
+ }
+ )
+ }
 
-     private func handleSDCardConnected(_ volumeURL: URL) {
-         // 연결된 SD 카드를 목록에 추가
-         if !connectedSDCards.contains(volumeURL) {
-             connectedSDCards.append(volumeURL)
-         }
+ private func handleSDCardConnected(_ volumeURL: URL) {
+ // Add connected SD card to list
+ if !connectedSDCards.contains(volumeURL) {
+ connectedSDCards.append(volumeURL)
+ }
 
-         // FileSystemService로 파일 로드
-         Task {
-             do {
-                 let fileSystemService = FileSystemService()
-                 let videoFiles = try fileSystemService.listVideoFiles(at: volumeURL)
-                 print("비디오 파일 \(videoFiles.count)개 발견")
-             } catch {
-                 print("파일 로드 실패: \(error)")
-             }
-         }
-     }
+ // Load files with FileSystemService
+ Task {
+ do {
+ let fileSystemService = FileSystemService()
+ let videoFiles = try fileSystemService.listVideoFiles(at: volumeURL)
+ print("video files \(videoFiles.count) ")
+ } catch {
+ print("Failed to load files: \(error)")
+ }
+ }
+ }
 
-     private func handleSDCardDisconnected(_ volumeURL: URL) {
-         // 목록에서 제거
-         connectedSDCards.removeAll { $0 == volumeURL }
+ private func handleSDCardDisconnected(_ volumeURL: URL) {
+ // Remove from list
+ connectedSDCards.removeAll { $0 == volumeURL }
 
-         // 관련 파일 정리
-         // ...
-     }
+ // Cleanup related files
+ //...
+ }
  }
  ```
 
- 【2. SwiftUI 통합】
+ 2. SwiftUI 
 
  ```swift
  struct ContentView: View {
-     @StateObject private var viewModel = ContentViewModel()
+ @StateObject private var viewModel = ContentViewModel()
 
-     var body: some View {
-         VStack {
-             if viewModel.connectedSDCards.isEmpty {
-                 Text("SD 카드를 연결해주세요")
-                     .foregroundColor(.secondary)
-             } else {
-                 List(viewModel.connectedSDCards, id: \.self) { sdCard in
-                     HStack {
-                         Image(systemName: "sdcard.fill")
-                         Text(sdCard.lastPathComponent)
-                         Spacer()
-                         Button("열기") {
-                             viewModel.openSDCard(sdCard)
-                         }
-                     }
-                 }
-             }
-         }
-     }
+ var body: some View {
+ VStack {
+ if viewModel.connectedSDCards.isEmpty {
+ Text("Please insert SD card")
+.foregroundColor(.secondary)
+ } else {
+ List(viewModel.connectedSDCards, id: \.self) { sdCard in
+ HStack {
+ Image(systemName: "sdcard.fill")
+ Text(sdCard.lastPathComponent)
+ Spacer()
+ Button("Open") {
+ viewModel.openSDCard(sdCard)
+ }
+ }
+ }
+ }
+ }
+ }
  }
  ```
 
- 【3. 자동 파일 로드】
+ 3. automatic file load
 
  ```swift
  class FileListViewModel: ObservableObject {
-     @Published var videoFiles: [URL] = []
+ @Published var videoFiles: [URL] = []
 
-     private let deviceDetector = DeviceDetector()
-     private let fileSystemService = FileSystemService()
+ private let deviceDetector = DeviceDetector()
+ private let fileSystemService = FileSystemService()
 
-     func startAutoDetection() {
-         // 현재 연결된 SD 카드 스캔
-         let sdCards = deviceDetector.detectSDCards()
-         if let firstCard = sdCards.first {
-             loadFiles(from: firstCard)
-         }
+ func startAutoDetection() {
+ // Scan currently connected SD cards
+ let sdCards = deviceDetector.detectSDCards()
+ if let firstCard = sdCards.first {
+ loadFiles(from: firstCard)
+ }
 
-         // 새 SD 카드 연결 시 자동 로드
-         deviceDetector.monitorDeviceChanges(
-             onConnect: { [weak self] volumeURL in
-                 self?.loadFiles(from: volumeURL)
-             },
-             onDisconnect: { [weak self] _ in
-                 self?.videoFiles = []
-             }
-         )
-     }
+ // Auto-load on new SD card connection
+ deviceDetector.monitorDeviceChanges(
+ onConnect: { [weak self] volumeURL in
+ self?.loadFiles(from: volumeURL)
+ },
+ onDisconnect: { [weak self] _ in
+ self?.videoFiles = []
+ }
+ )
+ }
 
-     private func loadFiles(from volumeURL: URL) {
-         Task { @MainActor in
-             do {
-                 let files = try fileSystemService.listVideoFiles(at: volumeURL)
-                 self.videoFiles = files
-             } catch {
-                 print("파일 로드 실패: \(error)")
-             }
-         }
-     }
+ private func loadFiles(from volumeURL: URL) {
+ Task { @MainActor in
+ do {
+ let files = try fileSystemService.listVideoFiles(at: volumeURL)
+ self.videoFiles = files
+ } catch {
+ print("Failed to load files: \(error)")
+ }
+ }
+ }
  }
  ```
 
- 【4. 수동 스캔 버튼】
+ 4. 
 
  ```swift
  struct DeviceListView: View {
-     @State private var sdCards: [URL] = []
+ @State private var sdCards: [URL] = []
 
-     private let deviceDetector = DeviceDetector()
+ private let deviceDetector = DeviceDetector()
 
-     var body: some View {
-         VStack {
-             List(sdCards, id: \.self) { sdCard in
-                 Text(sdCard.lastPathComponent)
-             }
+ var body: some View {
+ VStack {
+ List(sdCards, id: \.self) { sdCard in
+ Text(sdCard.lastPathComponent)
+ }
 
-             Button("새로고침") {
-                 refreshDevices()
-             }
-         }
-         .onAppear {
-             refreshDevices()
-         }
-     }
+ Button("Refresh") {
+ refreshDevices()
+ }
+ }
+.onAppear {
+ refreshDevices()
+ }
+ }
 
-     private func refreshDevices() {
-         sdCards = deviceDetector.detectSDCards()
-     }
+ private func refreshDevices() {
+ sdCards = deviceDetector.detectSDCards()
+ }
  }
  ```
 
- 【5. 필터링 예시】
+ 5. Filtering when
 
  ```swift
  class SmartDeviceDetector {
-     private let deviceDetector = DeviceDetector()
-     private let fileSystemService = FileSystemService()
+ private let deviceDetector = DeviceDetector()
+ private let fileSystemService = FileSystemService()
 
-     /// 블랙박스 SD 카드만 필터링 (비디오 파일이 있는 경우)
-     func detectBlackboxSDCards() -> [URL] {
-         let allSDCards = deviceDetector.detectSDCards()
+ /// SD card only Filtering (video files has )
+ func detectBlackboxSDCards() -> [URL] {
+ let allSDCards = deviceDetector.detectSDCards()
 
-         return allSDCards.filter { url in
-             do {
-                 let videoFiles = try fileSystemService.listVideoFiles(at: url)
-                 return !videoFiles.isEmpty
-             } catch {
-                 return false
-             }
-         }
-     }
+ return allSDCards.filter { url in
+ do {
+ let videoFiles = try fileSystemService.listVideoFiles(at: url)
+ return !videoFiles.isEmpty
+ } catch {
+ return false
+ }
+ }
+ }
 
-     /// 특정 디렉토리 구조를 가진 SD 카드 찾기
-     func detectBlackboxWithStructure() -> URL? {
-         let sdCards = deviceDetector.detectSDCards()
+ /// Find SD card with specific directory structure
+ func detectBlackboxWithStructure() -> URL? {
+ let sdCards = deviceDetector.detectSDCards()
 
-         for sdCard in sdCards {
-             // Normal, Event, Parking 디렉토리가 있는지 확인
-             let normalDir = sdCard.appendingPathComponent("Normal")
-             let eventDir = sdCard.appendingPathComponent("Event")
+ for sdCard in sdCards {
+ // Normal, Event, Parking Check if directories exist
+ let normalDir = sdCard.appendingPathComponent("Normal")
+ let eventDir = sdCard.appendingPathComponent("Event")
 
-             if FileManager.default.fileExists(atPath: normalDir.path) &&
-                FileManager.default.fileExists(atPath: eventDir.path) {
-                 return sdCard
-             }
-         }
+ if FileManager.default.fileExists(atPath: normalDir.path) &&
+ FileManager.default.fileExists(atPath: eventDir.path) {
+ return sdCard
+ }
+ }
 
-         return nil
-     }
+ return nil
+ }
  }
  ```
 
- 【6. 에러 처리】
+ 6. handling
 
  ```swift
  class RobustDeviceDetector: ObservableObject {
-     @Published var errorMessage: String?
+ @Published var errorMessage: String?
 
-     private let deviceDetector = DeviceDetector()
+ private let deviceDetector = DeviceDetector()
 
-     func startMonitoring() {
-         deviceDetector.monitorDeviceChanges(
-             onConnect: { [weak self] volumeURL in
-                 self?.handleConnect(volumeURL)
-             },
-             onDisconnect: { [weak self] volumeURL in
-                 self?.handleDisconnect(volumeURL)
-             }
-         )
-     }
+ func startMonitoring() {
+ deviceDetector.monitorDeviceChanges(
+ onConnect: { [weak self] volumeURL in
+ self?.handleConnect(volumeURL)
+ },
+ onDisconnect: { [weak self] volumeURL in
+ self?.handleDisconnect(volumeURL)
+ }
+ )
+ }
 
-     private func handleConnect(_ volumeURL: URL) {
-         // 접근 권한 확인
-         guard FileManager.default.isReadableFile(atPath: volumeURL.path) else {
-             errorMessage = "SD 카드 접근 권한이 없습니다"
-             return
-         }
+ private func handleConnect(_ volumeURL: URL) {
+ // Check permissions
+ guard FileManager.default.isReadableFile(atPath: volumeURL.path) else {
+ errorMessage = "No permission to access SD card"
+ return
+ }
 
-         // 파일 시스템 타입 확인 (선택적)
-         do {
-             let resourceValues = try volumeURL.resourceValues(forKeys: [.volumeNameKey])
-             if let volumeName = resourceValues.volumeName {
-                 print("볼륨 이름: \(volumeName)")
-             }
-         } catch {
-             errorMessage = "볼륨 정보를 읽을 수 없습니다"
-         }
-     }
+ // Check file system type (optional)
+ do {
+ let resourceValues = try volumeURL.resourceValues(forKeys: [.volumeNameKey])
+ if let volumeName = resourceValues.volumeName {
+ print("Volume name: \(volumeName)")
+ }
+ } catch {
+ errorMessage = "Cannot read volume information"
+ }
+ }
 
-     private func handleDisconnect(_ volumeURL: URL) {
-         // 진행 중인 작업 취소
-         // 파일 핸들 정리
-         // UI 업데이트
-     }
+ private func handleDisconnect(_ volumeURL: URL) {
+ // Cancel ongoing operations
+ // Cleanup file handles
+ // UI update
+ }
  }
  ```
 
- 【7. 테스트 시나리오】
+ 7. whennario
 
  ```swift
- // 1. SD 카드 연결 전
+ // 1. SD card connection before
  let detector = DeviceDetector()
  let cards = detector.detectSDCards()
- print("연결된 SD 카드: \(cards.count)개")  // 0개
+ print("Connected SD cards: \(cards.count) ") // 0 
 
- // 2. SD 카드 연결 (물리적으로 삽입 또는 DMG 마운트)
- // → didMountNotification 발송
- // → onConnect 콜백 호출
+ // 2. SD card connection (physical insertion or DMG mount)
+ // didMountNotification sent
+ // onConnect callback invoked
 
- // 3. SD 카드 꺼내기
- // → didUnmountNotification 발송
- // → onDisconnect 콜백 호출
+ // 3. SD card ejection
+ // didUnmountNotification sent
+ // onDisconnect callback invoked
 
- // 4. 테스트용 DMG 생성
+ // 4. DMG 
  /*
- # 100MB DMG 파일 생성
+ # Create 100MB DMG file
  hdiutil create -size 100m -fs FAT32 -volname "TEST_SD" test_sd.dmg
 
- # 마운트
+ # Mount
  hdiutil attach test_sd.dmg
 
- # 언마운트
+ # Unmount
  hdiutil detach /Volumes/TEST_SD
  */
  ```
 
- ═══════════════════════════════════════════════════════════════════════════
+ 
  */

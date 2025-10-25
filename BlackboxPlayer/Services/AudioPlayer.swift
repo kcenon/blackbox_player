@@ -1,260 +1,260 @@
 /// @file AudioPlayer.swift
-/// @brief AVAudioEngine 기반 오디오 재생 서비스
+/// @brief AVAudioEngine-based audio playback service
 /// @author BlackboxPlayer Development Team
 /// @details
-/// FFmpeg에서 디코딩된 AudioFrame을 실제 스피커로 재생하는 서비스입니다.
-/// Apple의 AVAudioEngine를 사용하여 PCM 오디오 데이터를 실시간으로 재생합니다.
+/// This service plays AudioFrames decoded by FFmpeg through the actual speaker.
+/// It uses Apple's AVAudioEngine to play PCM audio data in real-time.
 ///
-/// ## AVAudioEngine란?
-/// macOS/iOS에서 저수준 오디오 처리를 위한 Apple의 프레임워크입니다.
-/// 여러 오디오 "노드"를 연결하여 복잡한 오디오 파이프라인을 구성할 수 있습니다.
+/// ## What is AVAudioEngine?
+/// Apple's framework for low-level audio processing on macOS/iOS.
+/// You can build complex audio pipelines by connecting multiple audio "nodes".
 ///
-/// ## AVAudioEngine의 노드 기반 아키텍처:
+/// ## AVAudioEngine's Node-Based Architecture:
 /// ```
 /// ┌──────────────┐      ┌──────────────┐      ┌──────────────┐
 /// │ PlayerNode   │ ───▶ │  MixerNode   │ ───▶ │ Output (🔊) │
-/// │ (재생)       │      │  (믹싱/볼륨)  │      │ (스피커)     │
+/// │ (Playback)   │      │  (Mix/Volume) │      │ (Speaker)    │
 /// └──────────────┘      └──────────────┘      └──────────────┘
 ///      ↑
-/// PCM 버퍼 입력
+/// PCM buffer input
 /// ```
 ///
-/// ## 데이터 흐름:
-/// 1. VideoDecoder가 AudioFrame 생성 (FFmpeg 디코딩)
-/// 2. AudioPlayer.enqueue(frame) 호출
-/// 3. frame.toAudioBuffer() → AVAudioPCMBuffer 변환
-/// 4. playerNode.scheduleBuffer() → 재생 큐에 추가
-/// 5. AVAudioEngine가 자동으로 버퍼 재생
-/// 6. 스피커로 출력 🔊
+/// ## Data Flow:
+/// 1. VideoDecoder creates AudioFrame (FFmpeg decoding)
+/// 2. Call AudioPlayer.enqueue(frame)
+/// 3. frame.toAudioBuffer() → Convert to AVAudioPCMBuffer
+/// 4. playerNode.scheduleBuffer() → Add to playback queue
+/// 5. AVAudioEngine automatically plays buffers
+/// 6. Output to speaker 🔊
 ///
-/// ## 버퍼링 전략:
-/// 이 플레이어는 최대 30개의 오디오 프레임을 큐에 보관합니다.
-/// - 각 프레임 ≈ 21ms (1024 샘플 / 48kHz)
-/// - 30프레임 = 약 630ms (0.63초) 버퍼
-/// - 네트워크 지연이나 디코딩 지연을 흡수할 수 있는 충분한 버퍼
+/// ## Buffering Strategy:
+/// This player maintains up to 30 audio frames in the queue.
+/// - Each frame ≈ 21ms (1024 samples / 48kHz)
+/// - 30 frames = approximately 630ms (0.63 seconds) buffer
+/// - Sufficient buffer to absorb network latency or decoding delays
 ///
-/// ## 스레드 안전성:
-/// 여러 스레드에서 동시에 접근할 수 있으므로:
-/// - frameQueue 접근 시 NSLock 사용
-/// - 콜백에서 [weak self] 사용 (메모리 순환 참조 방지)
+/// ## Thread Safety:
+/// Since multiple threads can access concurrently:
+/// - Use NSLock for frameQueue access
+/// - Use [weak self] in callbacks (to prevent memory retain cycles)
 
 import Foundation
 import AVFoundation
 
-// MARK: - AudioPlayer 클래스
+// MARK: - AudioPlayer Class
 
 /// @class AudioPlayer
-/// @brief AVAudioEngine 기반 오디오 재생기
+/// @brief AVAudioEngine-based audio player
 ///
 /// @details
-/// FFmpeg에서 디코딩된 AudioFrame을 AVAudioEngine를 통해 실시간 재생합니다.
-/// 비디오 재생 시 오디오 트랙을 담당하는 핵심 컴포넌트입니다.
+/// Plays AudioFrames decoded by FFmpeg in real-time through AVAudioEngine.
+/// Core component responsible for the audio track during video playback.
 ///
-/// ## 아키텍처
+/// ## Architecture
 /// ```
-/// AudioPlayer (이 클래스)
+/// AudioPlayer (this class)
 ///     │
-///     ├─ AVAudioEngine: 전체 오디오 시스템 관리
+///     ├─ AVAudioEngine: Manages entire audio system
 ///     │     │
-///     │     ├─ AVAudioPlayerNode: PCM 버퍼 재생
-///     │     │     └─ scheduleBuffer() → 큐에 버퍼 추가
+///     │     ├─ AVAudioPlayerNode: PCM buffer playback
+///     │     │     └─ scheduleBuffer() → Add buffer to queue
 ///     │     │
-///     │     ├─ AVAudioMixerNode: 볼륨 조절 및 믹싱
+///     │     ├─ AVAudioMixerNode: Volume control and mixing
 ///     │     │     └─ outputVolume = 0.0 ~ 1.0
 ///     │     │
-///     │     └─ Output Device: 시스템 스피커
+///     │     └─ Output Device: System speaker
 ///     │
-///     └─ frameQueue: 재생 대기 중인 프레임들
-///           └─ NSLock: 스레드 안전 보장
+///     └─ frameQueue: Frames waiting for playback
+///           └─ NSLock: Thread safety guarantee
 /// ```
 ///
-/// ## 오디오 재생 파이프라인
+/// ## Audio Playback Pipeline
 /// ```
-/// VideoDecoder (디코딩 스레드)
+/// VideoDecoder (decoding thread)
 ///     │
 ///     │ enqueue(AudioFrame)
 ///     ↓
-/// [frameQueue] ← NSLock으로 보호
+/// [frameQueue] ← Protected by NSLock
 ///     │
 ///     │ scheduleBuffer()
 ///     ↓
 /// AVAudioPlayerNode
 ///     │
-///     │ 자동 재생
+///     │ Automatic playback
 ///     ↓
-/// AVAudioMixerNode (볼륨 적용)
+/// AVAudioMixerNode (apply volume)
 ///     │
 ///     ↓
-/// 🔊 스피커
+/// 🔊 Speaker
 /// ```
 ///
-/// ## 버퍼링 메커니즘
+/// ## Buffering Mechanism
 /// ```
-/// maxQueueSize = 30 프레임
+/// maxQueueSize = 30 frames
 ///
 /// [Frame1][Frame2][Frame3]...[Frame30]
 ///   21ms   21ms    21ms  ...   21ms
 ///
-/// 총 버퍼: 30 × 21ms = 630ms (0.63초)
+/// Total buffer: 30 × 21ms = 630ms (0.63 seconds)
 ///
-/// 버퍼가 부족하면: 소리 끊김 (underrun)
-/// 버퍼가 과도하면: 지연 증가, 메모리 낭비
-/// 30프레임 = 적절한 균형
+/// If buffer insufficient: Audio stuttering (underrun)
+/// If buffer excessive: Increased latency, memory waste
+/// 30 frames = optimal balance
 /// ```
 ///
-/// ## 스레드 안전성
+/// ## Thread Safety
 /// ```
-/// 디코딩 스레드 ──┐
-///                 ├─▶ [NSLock] ──▶ frameQueue ──┐
-/// 콜백 스레드 ────┘                              ├─▶ 안전한 접근
-/// 메인 스레드 ───────────────────────────────────┘
+/// Decoding thread ──┐
+///                   ├─▶ [NSLock] ──▶ frameQueue ──┐
+/// Callback thread ──┘                              ├─▶ Safe access
+/// Main thread ─────────────────────────────────────┘
 /// ```
 class AudioPlayer {
     // MARK: - Properties
 
     /// @var audioEngine
-    /// @brief AVAudioEngine 인스턴스
+    /// @brief AVAudioEngine instance
     ///
     /// @details
-    /// Apple의 저수준 오디오 프레임워크의 핵심 클래스입니다.
-    /// 여러 오디오 노드(PlayerNode, MixerNode, EffectNode 등)를 연결하여
-    /// 복잡한 오디오 파이프라인을 구성할 수 있습니다.
+    /// Core class of Apple's low-level audio framework.
+    /// You can build complex audio pipelines by connecting multiple audio nodes
+    /// (PlayerNode, MixerNode, EffectNode, etc.).
     ///
-    /// 주요 역할:
-    /// - 오디오 그래프 관리: 노드들의 연결 관계 유지
-    /// - 오디오 스트림 제어: start(), stop()
-    /// - 하드웨어 추상화: 다양한 오디오 장치 지원
+    /// Key roles:
+    /// - Audio graph management: Maintain node connection relationships
+    /// - Audio stream control: start(), stop()
+    /// - Hardware abstraction: Support various audio devices
     ///
-    /// 라이프사이클:
+    /// Lifecycle:
     /// ```
-    /// 1. 초기화: AVAudioEngine()
-    /// 2. 노드 연결: connect(playerNode, to: mixer, format: format)
-    /// 3. 시작: try engine.start()
-    /// 4. 실행: 자동으로 오디오 처리
-    /// 5. 종료: engine.stop()
+    /// 1. Initialize: AVAudioEngine()
+    /// 2. Connect nodes: connect(playerNode, to: mixer, format: format)
+    /// 3. Start: try engine.start()
+    /// 4. Run: Automatically process audio
+    /// 5. Stop: engine.stop()
     /// ```
     private let audioEngine: AVAudioEngine
 
     /// @var playerNode
-    /// @brief AVAudioPlayerNode 인스턴스
+    /// @brief AVAudioPlayerNode instance
     ///
     /// @details
-    /// PCM 오디오 버퍼를 재생하는 노드입니다.
-    /// 여러 버퍼를 큐에 추가하면 자동으로 순서대로 재생합니다.
+    /// Node that plays PCM audio buffers.
+    /// When multiple buffers are added to the queue, they play automatically in sequence.
     ///
-    /// 주요 기능:
-    /// - `scheduleBuffer()`: 버퍼를 재생 큐에 추가
-    /// - `play()`: 재생 시작
-    /// - `pause()`: 일시정지 (큐는 유지)
-    /// - `stop()`: 정지 (큐 비우기)
+    /// Key features:
+    /// - `scheduleBuffer()`: Add buffer to playback queue
+    /// - `play()`: Start playback
+    /// - `pause()`: Pause (queue retained)
+    /// - `stop()`: Stop (clear queue)
     ///
-    /// 버퍼 스케줄링 방식:
+    /// Buffer scheduling method:
     /// ```
-    /// playerNode.scheduleBuffer(buffer1)  ← 첫 번째 버퍼
-    /// playerNode.scheduleBuffer(buffer2)  ← 두 번째 버퍼
-    /// playerNode.scheduleBuffer(buffer3)  ← 세 번째 버퍼
+    /// playerNode.scheduleBuffer(buffer1)  ← First buffer
+    /// playerNode.scheduleBuffer(buffer2)  ← Second buffer
+    /// playerNode.scheduleBuffer(buffer3)  ← Third buffer
     ///
-    /// 재생 순서: buffer1 → buffer2 → buffer3 → (끝)
+    /// Playback order: buffer1 → buffer2 → buffer3 → (end)
     ///
-    /// 각 버퍼 재생 완료 시 completion 핸들러 호출:
-    /// scheduleBuffer(buffer1) { print("buffer1 완료!") }
+    /// Completion handler called when each buffer finishes:
+    /// scheduleBuffer(buffer1) { print("buffer1 complete!") }
     /// ```
     ///
-    /// 동작 원리:
+    /// How it works:
     /// ```
     /// [Internal Queue]
     /// ┌───────┬───────┬───────┬───────┐
     /// │ Buf1  │ Buf2  │ Buf3  │ Buf4  │
     /// └───────┴───────┴───────┴───────┘
-    ///    ↑ 현재 재생 중
+    ///    ↑ Currently playing
     ///
-    /// 재생 완료 → 자동으로 다음 버퍼로 이동
-    /// Buf1 완료 → Buf2 재생 시작
+    /// Playback complete → Automatically move to next buffer
+    /// Buf1 complete → Buf2 playback starts
     /// ```
     ///
-    /// Underrun (버퍼 부족) 방지:
+    /// Preventing Underrun (buffer starvation):
     /// ```
-    /// 큐가 비면 → 소리 끊김!
+    /// Queue empty → Audio stuttering!
     ///
-    /// 해결책: 항상 충분한 버퍼 유지
-    /// 권장: 최소 3~5개 버퍼 (약 100~200ms)
-    /// 현재 구현: 최대 30개 버퍼 (약 630ms)
+    /// Solution: Always maintain sufficient buffers
+    /// Recommended: Minimum 3~5 buffers (approximately 100~200ms)
+    /// Current implementation: Maximum 30 buffers (approximately 630ms)
     /// ```
     private let playerNode: AVAudioPlayerNode
 
     /// @var mixer
-    /// @brief AVAudioMixerNode 인스턴스
+    /// @brief AVAudioMixerNode instance
     ///
     /// @details
-    /// 여러 오디오 스트림을 믹싱하고 볼륨을 조절하는 노드입니다.
-    /// AVAudioEngine는 기본적으로 mainMixerNode를 제공합니다.
+    /// Node that mixes multiple audio streams and controls volume.
+    /// AVAudioEngine provides mainMixerNode by default.
     ///
-    /// 주요 기능:
-    /// - 볼륨 조절: `outputVolume = 0.0 ~ 1.0`
-    /// - 여러 입력 믹싱: 여러 PlayerNode를 하나로 합침
-    /// - 최종 출력: 스피커 또는 다른 노드로 전송
+    /// Key features:
+    /// - Volume control: `outputVolume = 0.0 ~ 1.0`
+    /// - Multiple input mixing: Combines multiple PlayerNodes into one
+    /// - Final output: Send to speaker or other nodes
     ///
-    /// 볼륨 스케일:
+    /// Volume scale:
     /// ```
-    /// outputVolume = 0.0  → 무음 (mute)
-    /// outputVolume = 0.5  → 50% 볼륨
-    /// outputVolume = 1.0  → 100% 볼륨 (원본)
-    /// outputVolume > 1.0  → 증폭 (클리핑 가능)
+    /// outputVolume = 0.0  → Silence (mute)
+    /// outputVolume = 0.5  → 50% volume
+    /// outputVolume = 1.0  → 100% volume (original)
+    /// outputVolume > 1.0  → Amplification (clipping possible)
     /// ```
     ///
-    /// 믹싱 예시:
+    /// Mixing example:
     /// ```
-    /// PlayerNode1 (음악)  ──┐
+    /// PlayerNode1 (music)  ──┐
     ///                        ├─▶ MixerNode ──▶ 🔊
-    /// PlayerNode2 (효과음) ──┘     ↑
+    /// PlayerNode2 (effects) ──┘     ↑
     ///                           outputVolume
     /// ```
     private let mixer: AVAudioMixerNode
 
     /// @var volume
-    /// @brief 현재 볼륨 레벨 (0.0 ~ 1.0)
+    /// @brief Current volume level (0.0 ~ 1.0)
     ///
     /// @details
-    /// 외부에서 읽기 가능하지만, 쓰기는 `setVolume()` 메서드를 통해서만 가능합니다.
-    /// 이는 볼륨 값의 유효성을 보장하기 위함입니다.
+    /// Readable from outside, but writing is only possible through `setVolume()` method.
+    /// This ensures the validity of volume values.
     ///
-    /// 범위 제한:
+    /// Range constraints:
     /// ```
-    /// 입력: -5.0 → 실제 적용: 0.0 (최소값)
-    /// 입력:  0.5 → 실제 적용: 0.5
-    /// 입력:  2.0 → 실제 적용: 1.0 (최대값)
+    /// Input: -5.0 → Actually applied: 0.0 (minimum value)
+    /// Input:  0.5 → Actually applied: 0.5
+    /// Input:  2.0 → Actually applied: 1.0 (maximum value)
     /// ```
     ///
-    /// dB(데시벨) 변환:
+    /// dB (decibel) conversion:
     /// ```
-    /// 볼륨 0.0  = -∞ dB (무음)
-    /// 볼륨 0.1  = -20 dB
-    /// 볼륨 0.5  = -6 dB (절반 크기)
-    /// 볼륨 1.0  = 0 dB (원본)
+    /// Volume 0.0  = -∞ dB (silence)
+    /// Volume 0.1  = -20 dB
+    /// Volume 0.5  = -6 dB (half size)
+    /// Volume 1.0  = 0 dB (original)
     ///
     /// dB = 20 × log₁₀(volume)
     /// ```
     ///
-    /// private(set)의 의미:
+    /// Meaning of private(set):
     /// ```swift
-    /// // 클래스 내부: 읽기/쓰기 가능
+    /// // Inside class: Read/write possible
     /// self.volume = 0.8  // ✅ OK
     ///
-    /// // 클래스 외부: 읽기만 가능
-    /// let vol = player.volume     // ✅ OK (읽기)
-    /// player.volume = 0.8         // ❌ Error (직접 쓰기 불가)
-    /// player.setVolume(0.8)       // ✅ OK (메서드를 통한 쓰기)
+    /// // Outside class: Read only
+    /// let vol = player.volume     // ✅ OK (read)
+    /// player.volume = 0.8         // ❌ Error (direct write not allowed)
+    /// player.setVolume(0.8)       // ✅ OK (write through method)
     /// ```
     private(set) var volume: Float = 1.0
 
     /// @var isPlaying
-    /// @brief 오디오 엔진 실행 중 여부
+    /// @brief Whether audio engine is running
     ///
     /// @details
-    /// 엔진이 start()된 상태인지 확인하는 플래그입니다.
-    /// 이 값에 따라 pause/resume 동작이 달라집니다.
+    /// Flag to check if the engine has been start()ed.
+    /// Pause/resume behavior varies depending on this value.
     ///
-    /// 상태 전이:
+    /// State transition:
     /// ```
     /// [Stopped] ──start()──▶ [Playing]
     ///              ↑              │
@@ -269,471 +269,471 @@ class AudioPlayer {
     private(set) var isPlaying: Bool = false
 
     /// @var currentFormat
-    /// @brief 현재 세션의 오디오 포맷
+    /// @brief Audio format for the current session
     ///
     /// @details
-    /// 첫 번째 프레임이 큐잉될 때 설정되며, 이후 모든 프레임은 같은 포맷이어야 합니다.
-    /// 포맷이 다른 프레임이 들어오면 `formatMismatch` 에러가 발생합니다.
+    /// Set when the first frame is queued, and all subsequent frames must have the same format.
+    /// If a frame with a different format arrives, a `formatMismatch` error occurs.
     ///
-    /// 포맷 구성 요소:
+    /// Format components:
     /// ```
     /// AVAudioFormat {
     ///     sampleRate: 48000.0 Hz
-    ///     channels: 2 (스테레오)
+    ///     channels: 2 (stereo)
     ///     commonFormat: .pcmFormatFloat32
     ///     interleaved: false (planar)
     /// }
     /// ```
     ///
-    /// 포맷 검증:
+    /// Format verification:
     /// ```swift
-    /// // 첫 번째 프레임
+    /// // First frame
     /// currentFormat = nil
-    /// enqueue(frame1)  // currentFormat 설정
+    /// enqueue(frame1)  // Set currentFormat
     ///
-    /// // 이후 프레임
-    /// enqueue(frame2)  // currentFormat과 비교
-    /// - 포맷 일치: ✅ 재생
-    /// - 포맷 불일치: ❌ formatMismatch 에러
+    /// // Subsequent frames
+    /// enqueue(frame2)  // Compare with currentFormat
+    /// - Format matches: ✅ Play
+    /// - Format mismatch: ❌ formatMismatch error
     /// ```
     ///
-    /// 포맷 변경이 필요한 경우:
+    /// When format change is needed:
     /// ```swift
-    /// // 비디오 파일 변경 시
+    /// // When changing video file
     /// player.stop()           // currentFormat = nil
-    /// player.start()          // 새 포맷으로 재설정
+    /// player.start()          // Reset with new format
     /// ```
     ///
-    /// nil인 경우:
-    /// - 초기화 직후
-    /// - stop() 호출 후
-    /// - 아직 프레임이 큐잉되지 않음
+    /// nil cases:
+    /// - Right after initialization
+    /// - After stop() is called
+    /// - No frames queued yet
     private var currentFormat: AVAudioFormat?
 
     /// @var frameQueue
-    /// @brief 재생 대기 중인 프레임 큐
+    /// @brief Queue of frames waiting for playback
     ///
     /// @details
-    /// enqueue()로 추가된 프레임들을 추적합니다.
-    /// 프레임 재생 완료 시 onBufferFinished()에서 제거됩니다.
+    /// Tracks frames added by enqueue().
+    /// Removed in onBufferFinished() when frame playback completes.
     ///
-    /// 큐의 역할:
-    /// 1. 버퍼 추적: 현재 몇 개의 프레임이 재생 대기 중인가?
-    /// 2. 메모리 관리: 재생 완료된 프레임 정리
-    /// 3. 오버플로우 방지: maxQueueSize 체크
+    /// Role of the queue:
+    /// 1. Buffer tracking: How many frames are currently waiting for playback?
+    /// 2. Memory management: Clean up completed frames
+    /// 3. Overflow prevention: Check maxQueueSize
     ///
-    /// 큐 동작 예시:
+    /// Queue operation example:
     /// ```
-    /// 초기: frameQueue = []
+    /// Initial: frameQueue = []
     ///
     /// enqueue(frame1) → frameQueue = [frame1]
     /// enqueue(frame2) → frameQueue = [frame1, frame2]
     /// enqueue(frame3) → frameQueue = [frame1, frame2, frame3]
     ///
-    /// frame1 재생 완료 → frameQueue = [frame2, frame3]
-    /// frame2 재생 완료 → frameQueue = [frame3]
-    /// frame3 재생 완료 → frameQueue = []
+    /// frame1 playback complete → frameQueue = [frame2, frame3]
+    /// frame2 playback complete → frameQueue = [frame3]
+    /// frame3 playback complete → frameQueue = []
     /// ```
     ///
-    /// 주의사항:
-    /// - 이 큐는 추적용입니다. 실제 재생은 AVAudioPlayerNode 내부 큐에서 발생합니다.
-    /// - frameQueue.count != playerNode의 실제 버퍼 개수 (약간의 차이 가능)
+    /// Notes:
+    /// - This queue is for tracking. Actual playback occurs in AVAudioPlayerNode's internal queue.
+    /// - frameQueue.count != actual buffer count in playerNode (slight difference possible)
     private var frameQueue: [AudioFrame] = []
 
     /// @var queueLock
-    /// @brief frameQueue 접근용 락 (Lock)
+    /// @brief Lock for frameQueue access
     ///
     /// @details
-    /// 여러 스레드에서 frameQueue에 동시 접근하는 것을 방지합니다.
+    /// Prevents simultaneous access to frameQueue from multiple threads.
     ///
-    /// 왜 Lock이 필요한가?
+    /// Why is Lock needed?
     /// ```
-    /// 스레드 A (디코딩 스레드):
+    /// Thread A (decoding thread):
     ///     enqueue() → frameQueue.append()
     ///
-    /// 스레드 B (콜백 스레드):
+    /// Thread B (callback thread):
     ///     onBufferFinished() → frameQueue.remove()
     ///
-    /// 스레드 C (메인 스레드):
+    /// Thread C (main thread):
     ///     queueSize() → frameQueue.count
     ///
-    /// Lock 없으면: Race Condition! (데이터 손상, 크래시)
-    /// Lock 있으면: 한 번에 한 스레드만 접근 ✅
+    /// Without Lock: Race Condition! (data corruption, crash)
+    /// With Lock: Only one thread accesses at a time ✅
     /// ```
     ///
-    /// NSLock 사용법:
+    /// NSLock usage:
     /// ```swift
-    /// queueLock.lock()         // 🔒 잠금 (다른 스레드는 대기)
-    /// frameQueue.append(frame) // 안전한 수정
-    /// queueLock.unlock()       // 🔓 해제 (다른 스레드 진입 가능)
+    /// queueLock.lock()         // 🔒 Lock (other threads wait)
+    /// frameQueue.append(frame) // Safe modification
+    /// queueLock.unlock()       // 🔓 Unlock (other threads can enter)
     /// ```
     ///
-    /// defer를 사용한 안전한 패턴:
+    /// Safe pattern using defer:
     /// ```swift
     /// func queueSize() -> Int {
     ///     queueLock.lock()
-    ///     defer { queueLock.unlock() }  // 함수 종료 시 자동 해제
+    ///     defer { queueLock.unlock() }  // Auto-release on function exit
     ///     return frameQueue.count
-    ///     // defer 덕분에 return 전에 unlock 보장
+    ///     // defer ensures unlock before return
     /// }
     /// ```
     ///
     /// Lock vs DispatchQueue:
     /// ```
     /// NSLock:
-    /// ✅ 빠름 (저수준 락)
-    /// ✅ 간단한 사용법
-    /// ❌ 데드락 주의 필요
+    /// ✅ Fast (low-level lock)
+    /// ✅ Simple usage
+    /// ❌ Deadlock caution needed
     ///
     /// DispatchQueue (Serial):
-    /// ✅ 데드락 위험 적음
-    /// ✅ GCD 통합
-    /// ❌ 약간 느림 (컨텍스트 스위칭)
+    /// ✅ Less deadlock risk
+    /// ✅ GCD integration
+    /// ❌ Slightly slower (context switching)
     ///
-    /// 여기서는 성능상 NSLock 선택
+    /// NSLock chosen here for performance
     /// ```
     private let queueLock = NSLock()
 
     /// @var maxQueueSize
-    /// @brief 최대 큐 크기 (프레임 개수)
+    /// @brief Maximum queue size (number of frames)
     ///
     /// @details
-    /// 큐에 보관할 수 있는 최대 프레임 수입니다.
-    /// 이 값을 초과하면 새 프레임은 조용히 버려집니다 (스킵).
+    /// Maximum number of frames that can be stored in the queue.
+    /// If this value is exceeded, new frames are silently discarded (skipped).
     ///
-    /// 왜 30개인가?
+    /// Why 30?
     /// ```
-    /// 1개 프레임 = 1024 샘플 / 48000 Hz ≈ 21ms
-    /// 30개 프레임 = 30 × 21ms = 630ms (0.63초)
+    /// 1 frame = 1024 samples / 48000 Hz ≈ 21ms
+    /// 30 frames = 30 × 21ms = 630ms (0.63 seconds)
     ///
-    /// 장점:
-    /// - 충분한 버퍼: 디코딩 지연 흡수
-    /// - 부드러운 재생: underrun 방지
+    /// Advantages:
+    /// - Sufficient buffer: Absorbs decoding delays
+    /// - Smooth playback: Prevents underrun
     ///
-    /// 단점:
-    /// - 메모리 사용: 30 × 8KB = 240KB (괜찮은 수준)
-    /// - 지연 증가: 최대 630ms (비디오 동기화에 영향)
-    /// ```
-    ///
-    /// 버퍼 크기 조정 가이드:
-    /// ```
-    /// 작은 값 (예: 5):
-    /// ✅ 낮은 지연 (105ms)
-    /// ❌ 소리 끊김 위험 (underrun)
-    ///
-    /// 큰 값 (예: 100):
-    /// ✅ 매우 안정적
-    /// ❌ 높은 지연 (2100ms = 2.1초)
-    /// ❌ 메모리 낭비 (800KB)
-    ///
-    /// 중간 값 (30):
-    /// ✅ 균형잡힌 선택 ⭐
+    /// Disadvantages:
+    /// - Memory usage: 30 × 8KB = 240KB (acceptable level)
+    /// - Increased latency: Maximum 630ms (affects video sync)
     /// ```
     ///
-    /// 오버플로우 동작:
+    /// Buffer size tuning guide:
+    /// ```
+    /// Small value (e.g., 5):
+    /// ✅ Low latency (105ms)
+    /// ❌ Risk of audio stuttering (underrun)
+    ///
+    /// Large value (e.g., 100):
+    /// ✅ Very stable
+    /// ❌ High latency (2100ms = 2.1 seconds)
+    /// ❌ Memory waste (800KB)
+    ///
+    /// Medium value (30):
+    /// ✅ Balanced choice ⭐
+    /// ```
+    ///
+    /// Overflow behavior:
     /// ```swift
-    /// enqueue(frame31)  // 큐가 가득 찬 상태
+    /// enqueue(frame31)  // Queue is full
     /// → guard queueSize < maxQueueSize else { return }
-    /// → 프레임 버려짐 (조용히 스킵)
-    /// → 에러 없음, 로그 없음
+    /// → Frame discarded (silently skipped)
+    /// → No error, no log
     ///
-    /// 결과: 오디오 일부 누락 (하지만 크래시는 방지)
+    /// Result: Some audio missing (but crash prevented)
     /// ```
     private let maxQueueSize = 30
 
     // MARK: - Initialization
 
-    /// @brief AudioPlayer 초기화
+    /// @brief Initialize AudioPlayer
     ///
     /// @details
-    /// AVAudioEngine, AVAudioPlayerNode, AVAudioMixerNode를 설정하고
-    /// 노드를 엔진에 연결합니다.
+    /// Sets up AVAudioEngine, AVAudioPlayerNode, AVAudioMixerNode and
+    /// connects nodes to the engine.
     ///
-    /// 초기화 단계:
+    /// Initialization steps:
     /// ```
-    /// 1. AVAudioEngine 생성
-    /// 2. AVAudioPlayerNode 생성
-    /// 3. MixerNode 가져오기 (engine.mainMixerNode)
-    /// 4. PlayerNode를 Engine에 연결 (attach)
+    /// 1. Create AVAudioEngine
+    /// 2. Create AVAudioPlayerNode
+    /// 3. Get MixerNode (engine.mainMixerNode)
+    /// 4. Connect PlayerNode to Engine (attach)
     /// ```
     ///
-    /// 주의: 이 단계에서는 노드 간 연결이 이루어지지 않습니다!
-    /// 실제 연결은 첫 번째 프레임 큐잉 시 setupAudioSession()에서 발생합니다.
+    /// Note: Node connections are NOT made at this stage!
+    /// Actual connections occur in setupAudioSession() when the first frame is queued.
     ///
-    /// ## 초기화 후 상태
+    /// ## State after initialization
     /// ```
-    /// AudioEngine: 생성됨, 정지 상태
-    /// PlayerNode: 생성됨, 연결 안 됨
-    /// MixerNode: 준비됨
+    /// AudioEngine: Created, stopped state
+    /// PlayerNode: Created, not connected
+    /// MixerNode: Ready
     /// currentFormat: nil
     /// frameQueue: []
     /// isPlaying: false
     /// ```
     init() {
-        // AVAudioEngine 생성
+        // Create AVAudioEngine
         audioEngine = AVAudioEngine()
 
-        // PlayerNode 생성 (PCM 버퍼 재생용)
+        // Create PlayerNode (for PCM buffer playback)
         playerNode = AVAudioPlayerNode()
 
-        // MixerNode 가져오기 (볼륨 조절용)
-        // mainMixerNode는 AVAudioEngine가 자동으로 제공
+        // Get MixerNode (for volume control)
+        // mainMixerNode is automatically provided by AVAudioEngine
         mixer = audioEngine.mainMixerNode
 
-        // PlayerNode를 Engine에 추가
-        // 주의: 아직 mixer와 연결하지 않음!
-        // 연결은 setupAudioSession()에서 발생
+        // Add PlayerNode to Engine
+        // Note: Not yet connected to mixer!
+        // Connection happens in setupAudioSession()
         audioEngine.attach(playerNode)
 
-        // 이유: 오디오 포맷을 알아야 연결 가능
-        // 포맷은 첫 프레임 큐잉 시 결정됨
+        // Reason: Need to know audio format to connect
+        // Format is determined when first frame is queued
     }
 
-    /// @brief 소멸자 (메모리 해제 시 호출)
+    /// @brief Destructor (called when memory is released)
     ///
     /// @details
-    /// AudioPlayer 객체가 메모리에서 제거될 때 자동으로 호출됩니다.
-    /// 오디오 엔진을 정리하여 리소스 누수를 방지합니다.
+    /// Automatically called when AudioPlayer object is removed from memory.
+    /// Cleans up audio engine to prevent resource leaks.
     ///
-    /// 정리 순서:
+    /// Cleanup sequence:
     /// ```
-    /// 1. playerNode.stop() → 재생 중단
-    /// 2. audioEngine.stop() → 엔진 종료
-    /// 3. frameQueue.removeAll() → 큐 비우기
-    /// 4. currentFormat = nil → 포맷 리셋
+    /// 1. playerNode.stop() → Stop playback
+    /// 2. audioEngine.stop() → Terminate engine
+    /// 3. frameQueue.removeAll() → Clear queue
+    /// 4. currentFormat = nil → Reset format
     /// ```
     ///
-    /// 왜 필요한가?
+    /// Why is this needed?
     /// ```swift
     /// // ARC (Automatic Reference Counting):
     /// var player: AudioPlayer? = AudioPlayer()
     /// try player?.start()
-    /// player = nil  // ← deinit 호출!
+    /// player = nil  // ← deinit called!
     ///
-    /// deinit 없으면:
-    /// → audioEngine.stop() 호출 안 됨
-    /// → 백그라운드에서 계속 실행
-    /// → CPU/메모리 낭비
+    /// Without deinit:
+    /// → audioEngine.stop() not called
+    /// → Continues running in background
+    /// → CPU/memory waste
     /// ```
     ///
-    /// 자동 호출 시점:
+    /// Auto-call timing:
     /// ```swift
     /// class VideoPlayer {
     ///     let audioPlayer = AudioPlayer()
     ///     // ...
-    /// }  // ← VideoPlayer 소멸 시 audioPlayer.deinit 자동 호출
+    /// }  // ← audioPlayer.deinit automatically called when VideoPlayer is destroyed
     /// ```
     deinit {
-        stop()  // 모든 정리 작업 수행
+        stop()  // Perform all cleanup operations
     }
 
     // MARK: - Public Methods
 
-    /// @brief 오디오 엔진 시작
+    /// @brief Start audio engine
     ///
-    /// @throws AudioPlayerError.engineStartFailed 엔진 시작 실패
+    /// @throws AudioPlayerError.engineStartFailed Engine start failed
     ///
     /// @details
-    /// AVAudioEngine를 가동하여 오디오 재생 준비를 완료합니다.
-    /// 이 메서드를 호출하지 않으면 프레임을 큐잉해도 소리가 나지 않습니다!
+    /// Starts AVAudioEngine to complete audio playback preparation.
+    /// If this method is not called, no sound will be produced even if frames are queued!
     ///
-    /// 동작:
+    /// Operation:
     /// ```
-    /// 1. 엔진이 이미 실행 중이면 early return (중복 시작 방지)
-    /// 2. audioEngine.start() → 엔진 가동
-    /// 3. playerNode.play() → PlayerNode 재생 모드 전환
-    /// 4. isPlaying = true → 상태 업데이트
+    /// 1. If engine already running, early return (prevent duplicate start)
+    /// 2. audioEngine.start() → Start engine
+    /// 3. playerNode.play() → Switch PlayerNode to playback mode
+    /// 4. isPlaying = true → Update state
     /// ```
     ///
-    /// 엔진 시작 프로세스:
+    /// Engine start process:
     /// ```
     /// audioEngine.start():
-    /// - 오디오 하드웨어 초기화
-    /// - 버퍼 크기 설정 (기본: ~512 샘플)
-    /// - 샘플레이트 협상 (일반적으로 48kHz)
-    /// - Audio Unit 초기화
+    /// - Initialize audio hardware
+    /// - Set buffer size (default: ~512 samples)
+    /// - Negotiate sample rate (typically 48kHz)
+    /// - Initialize Audio Unit
     ///
-    /// 소요 시간: 일반적으로 10~50ms
+    /// Time taken: Typically 10~50ms
     /// ```
     ///
-    /// ## 에러 발생 케이스
+    /// ## Error cases
     /// ```
-    /// 1. 오디오 장치 없음 (headless 서버)
-    /// 2. 오디오 장치 사용 중 (다른 앱이 독점)
-    /// 3. 권한 없음 (샌드박스 제약)
-    /// 4. 시스템 리소스 부족
+    /// 1. No audio device (headless server)
+    /// 2. Audio device in use (monopolized by other app)
+    /// 3. No permission (sandbox constraints)
+    /// 4. Insufficient system resources
     /// ```
     func start() throws {
-        // 중복 시작 방지
+        // Prevent duplicate start
         guard !audioEngine.isRunning else { return }
 
         do {
-            // AVAudioEngine 시작
-            // - 오디오 하드웨어 초기화
-            // - 버퍼 할당
-            // - 샘플레이트 설정
+            // Start AVAudioEngine
+            // - Initialize audio hardware
+            // - Allocate buffers
+            // - Set sample rate
             try audioEngine.start()
 
-            // PlayerNode 재생 시작
-            // 주의: 실제로 소리가 나려면 scheduleBuffer()로 버퍼 추가 필요
+            // Start PlayerNode playback
+            // Note: Actual sound requires adding buffers with scheduleBuffer()
             playerNode.play()
 
-            // 상태 업데이트
+            // Update state
             isPlaying = true
 
         } catch {
-            // 시작 실패 시 우리만의 에러로 래핑
+            // Wrap with our own error on start failure
             throw AudioPlayerError.engineStartFailed(error)
         }
     }
 
-    /// @brief 오디오 엔진 정지 및 정리
+    /// @brief Stop and clean up audio engine
     ///
     /// @details
-    /// 재생을 완전히 중단하고 모든 큐를 비웁니다.
-    /// 다시 재생하려면 start()를 호출해야 합니다.
+    /// Completely stops playback and clears all queues.
+    /// Must call start() to play again.
     ///
-    /// 정지 순서:
+    /// Stop sequence:
     /// ```
-    /// 1. playerNode.stop() → 재생 중단, 내부 큐 비우기
-    /// 2. audioEngine.stop() → 엔진 종료, 하드웨어 해제
-    /// 3. isPlaying = false → 상태 업데이트
-    /// 4. currentFormat = nil → 포맷 리셋
-    /// 5. frameQueue.removeAll() → 추적 큐 비우기
+    /// 1. playerNode.stop() → Stop playback, clear internal queue
+    /// 2. audioEngine.stop() → Terminate engine, release hardware
+    /// 3. isPlaying = false → Update state
+    /// 4. currentFormat = nil → Reset format
+    /// 5. frameQueue.removeAll() → Clear tracking queue
     /// ```
     ///
-    /// pause() vs stop() 차이:
+    /// pause() vs stop() difference:
     /// ```
     /// pause():
-    /// - 엔진 계속 실행
-    /// - 큐 유지
-    /// - resume()으로 즉시 재개 가능
+    /// - Engine continues running
+    /// - Queue retained
+    /// - Can resume immediately with resume()
     ///
     /// stop():
-    /// - 엔진 완전 종료
-    /// - 큐 비우기
-    /// - start() 후 다시 큐잉 필요
+    /// - Engine completely terminated
+    /// - Queue cleared
+    /// - Need to queue again after start()
     /// ```
     ///
-    /// 메모리 정리:
+    /// Memory cleanup:
     /// ```
-    /// stop() 전:
+    /// Before stop():
     /// - frameQueue: [frame1, frame2, ..., frame30] (240KB)
-    /// - playerNode 내부 큐: 수 MB
+    /// - playerNode internal queue: Several MB
     ///
-    /// stop() 후:
-    /// - frameQueue: [] (거의 0KB)
-    /// - playerNode 내부 큐: 해제됨
+    /// After stop():
+    /// - frameQueue: [] (nearly 0KB)
+    /// - playerNode internal queue: Released
     /// ```
     func stop() {
-        // PlayerNode 정지 (내부 큐도 비워짐)
+        // Stop PlayerNode (internal queue also cleared)
         playerNode.stop()
 
-        // AudioEngine 종료 (하드웨어 해제)
+        // Stop AudioEngine (release hardware)
         audioEngine.stop()
 
-        // 상태 업데이트
+        // Update state
         isPlaying = false
 
-        // 포맷 리셋 (다음 start 시 새 포맷 허용)
+        // Reset format (allow new format on next start)
         currentFormat = nil
 
-        // 추적 큐 비우기 (thread-safe)
+        // Clear tracking queue (thread-safe)
         queueLock.lock()
         frameQueue.removeAll()
         queueLock.unlock()
     }
 
-    /// @brief 오디오 재생 일시정지
+    /// @brief Pause audio playback
     ///
     /// @details
-    /// 현재 재생 위치와 큐를 유지한 채 일시정지합니다.
-    /// resume()을 호출하면 정확히 멈춘 위치부터 재개됩니다.
+    /// Pauses while maintaining current playback position and queue.
+    /// Calling resume() will resume from exactly where it paused.
     ///
-    /// 동작:
+    /// Operation:
     /// ```
     /// playerNode.pause():
-    /// - 현재 버퍼의 재생 위치 기억
-    /// - 큐에 있는 나머지 버퍼 유지
-    /// - 오디오 출력만 중단
+    /// - Remember current buffer playback position
+    /// - Retain remaining buffers in queue
+    /// - Only stop audio output
     ///
-    /// 엔진은 계속 실행 중!
+    /// Engine continues running!
     /// ```
     ///
-    /// 내부 상태:
+    /// Internal state:
     /// ```
-    /// pause() 전:
+    /// Before pause():
     /// [Buf1▶][Buf2][Buf3][Buf4]
-    ///   ↑ 재생 중 (50% 위치)
+    ///   ↑ Playing (50% position)
     ///
-    /// pause() 후:
+    /// After pause():
     /// [Buf1⏸][Buf2][Buf3][Buf4]
-    ///   ↑ 일시정지 (50% 위치 기억)
+    ///   ↑ Paused (remembers 50% position)
     ///
-    /// resume() 후:
+    /// After resume():
     /// [Buf1▶][Buf2][Buf3][Buf4]
-    ///   ↑ 50%부터 재개
+    ///   ↑ Resume from 50%
     /// ```
     func pause() {
-        // PlayerNode 일시정지
-        // 주의: 엔진은 계속 실행 중
+        // Pause PlayerNode
+        // Note: Engine continues running
         playerNode.pause()
 
-        // 상태 업데이트
+        // Update state
         isPlaying = false
     }
 
-    /// @brief 일시정지된 오디오 재생 재개
+    /// @brief Resume paused audio playback
     ///
     /// @details
-    /// pause()로 멈춘 재생을 정확히 멈춘 위치부터 계속합니다.
+    /// Continues playback paused by pause() from exactly where it stopped.
     ///
-    /// 동작:
+    /// Operation:
     /// ```
     /// playerNode.play():
-    /// - 기억한 재생 위치부터 재개
-    /// - 큐에 있는 버퍼들 순서대로 재생
+    /// - Resume from remembered playback position
+    /// - Play buffers in queue in order
     /// ```
     ///
-    /// 주의: 엔진이 stop()된 상태라면 아무 효과 없음!
+    /// Note: No effect if engine has been stop()ped!
     /// ```swift
-    /// player.stop()    // 엔진 종료
-    /// player.resume()  // ❌ 효과 없음! start() 필요
+    /// player.stop()    // Terminate engine
+    /// player.resume()  // ❌ No effect! Need start()
     /// ```
     func resume() {
-        // PlayerNode 재생 재개
+        // Resume PlayerNode playback
         playerNode.play()
 
-        // 상태 업데이트
+        // Update state
         isPlaying = true
     }
 
-    /// @brief 오디오 프레임을 재생 큐에 추가
+    /// @brief Add audio frame to playback queue
     ///
-    /// @param frame 재생할 오디오 프레임
+    /// @param frame Audio frame to play
     ///
-    /// @throws AudioPlayerError.bufferConversionFailed 버퍼 변환 실패
-    /// @throws AudioPlayerError.formatMismatch 오디오 포맷 불일치
+    /// @throws AudioPlayerError.bufferConversionFailed Buffer conversion failed
+    /// @throws AudioPlayerError.formatMismatch Audio format mismatch
     ///
     /// @details
-    /// FFmpeg에서 디코딩된 AudioFrame을 AVAudioPCMBuffer로 변환하여
-    /// PlayerNode의 재생 큐에 추가합니다. 이 메서드는 스레드 안전합니다.
+    /// Converts AudioFrame decoded by FFmpeg to AVAudioPCMBuffer and
+    /// adds it to PlayerNode's playback queue. This method is thread-safe.
     ///
-    /// 처리 흐름:
+    /// Processing flow:
     /// ```
-    /// 1. 큐 크기 체크 (최대 30개)
-    /// 2. AudioFrame → AVAudioPCMBuffer 변환
-    /// 3. 첫 프레임이면 setupAudioSession() 호출
-    /// 4. 포맷 일치 확인
-    /// 5. playerNode.scheduleBuffer() 호출
-    /// 6. frameQueue에 추가 (추적용)
+    /// 1. Check queue size (max 30)
+    /// 2. Convert AudioFrame → AVAudioPCMBuffer
+    /// 3. If first frame, call setupAudioSession()
+    /// 4. Verify format match
+    /// 5. Call playerNode.scheduleBuffer()
+    /// 6. Add to frameQueue (for tracking)
     /// ```
     ///
-    /// 버퍼 변환 과정:
+    /// Buffer conversion process:
     /// ```
     /// AudioFrame (FFmpeg):
     /// - format: .floatPlanar
-    /// - data: Data (원시 바이트)
+    /// - data: Data (raw bytes)
     /// - sampleCount: 1024
     ///
     ///      ↓ frame.toAudioBuffer()
@@ -744,379 +744,379 @@ class AudioPlayer {
     /// - frameLength: 1024
     /// ```
     ///
-    /// 스케줄링:
+    /// Scheduling:
     /// ```
     /// playerNode.scheduleBuffer(buffer) { [weak self] in
-    ///     // 이 버퍼 재생 완료 시 호출됨
+    ///     // Called when this buffer playback completes
     ///     self?.onBufferFinished(frame)
     /// }
     ///
-    /// 호출 스레드: AVAudioEngine 내부 스레드
-    /// 호출 시점: 버퍼의 마지막 샘플 재생 직후
+    /// Calling thread: AVAudioEngine internal thread
+    /// Calling time: Right after last sample of buffer is played
     /// ```
     ///
-    /// [weak self]의 이유:
+    /// Reason for [weak self]:
     /// ```
-    /// strong reference cycle 방지:
+    /// Prevent strong reference cycle:
     ///
     /// AudioPlayer → scheduleBuffer → closure → self (strong) → AudioPlayer
     /// └───────────────────────────────────────────────────────────────┘
-    ///                     ↑ 순환 참조! 메모리 누수!
+    ///                     ↑ Retain cycle! Memory leak!
     ///
-    /// [weak self] 사용:
+    /// Using [weak self]:
     /// AudioPlayer → scheduleBuffer → closure → self (weak) → AudioPlayer
     ///                                               ↓
-    ///                                              nil (AudioPlayer 해제 시)
+    ///                                              nil (when AudioPlayer released)
     /// ```
     func enqueue(_ frame: AudioFrame) throws {
-        // 1단계: 큐 크기 확인 (thread-safe)
+        // Step 1: Check queue size (thread-safe)
         queueLock.lock()
         let queueSize = frameQueue.count
         queueLock.unlock()
 
-        // 오버플로우 방지: 큐가 가득 차면 스킵
+        // Prevent overflow: Skip if queue is full
         guard queueSize < maxQueueSize else {
-            // 조용히 리턴 (프레임 버려짐)
+            // Return silently (frame discarded)
             return
         }
 
-        // 2단계: AVAudioPCMBuffer로 변환
+        // Step 2: Convert to AVAudioPCMBuffer
         guard let buffer = frame.toAudioBuffer() else {
-            // 변환 실패 (잘못된 포맷, 메모리 부족 등)
+            // Conversion failed (invalid format, out of memory, etc.)
             throw AudioPlayerError.bufferConversionFailed
         }
 
-        // 3단계: 첫 프레임이면 오디오 세션 설정
+        // Step 3: If first frame, set up audio session
         if currentFormat == nil {
-            // 포맷 기억 (이후 프레임들과 비교용)
+            // Remember format (for comparison with subsequent frames)
             currentFormat = buffer.format
 
-            // 노드 연결: playerNode → mixer
+            // Connect nodes: playerNode → mixer
             setupAudioSession(format: buffer.format)
         }
 
-        // 4단계: 포맷 일치 확인
+        // Step 4: Verify format match
         guard buffer.format == currentFormat else {
-            // 포맷이 다르면 에러
-            // 예: 첫 프레임 48kHz, 두 번째 프레임 44.1kHz
+            // Error if format differs
+            // Example: First frame 48kHz, second frame 44.1kHz
             throw AudioPlayerError.formatMismatch
         }
 
-        // 5단계: PlayerNode에 버퍼 스케줄링
+        // Step 5: Schedule buffer to PlayerNode
         playerNode.scheduleBuffer(buffer) { [weak self] in
-            // 이 클로저는 버퍼 재생 완료 시 호출됨
-            // 호출 스레드: AVAudioEngine 내부 스레드
+            // This closure is called when buffer playback completes
+            // Calling thread: AVAudioEngine internal thread
 
-            // [weak self]: AudioPlayer가 이미 해제되었을 수 있음
+            // [weak self]: AudioPlayer may already be released
             self?.onBufferFinished(frame)
         }
 
-        // 6단계: 추적 큐에 추가 (thread-safe)
+        // Step 6: Add to tracking queue (thread-safe)
         queueLock.lock()
         frameQueue.append(frame)
         queueLock.unlock()
     }
 
-    /// @brief 볼륨 설정
+    /// @brief Set volume
     ///
-    /// @param volume 볼륨 레벨 (0.0 ~ 1.0)
+    /// @param volume Volume level (0.0 ~ 1.0)
     ///
     /// @details
-    /// 오디오 출력 볼륨을 0.0 (무음) ~ 1.0 (최대) 범위로 조절합니다.
-    /// 범위를 벗어난 값은 자동으로 클램핑됩니다.
+    /// Adjusts audio output volume in range 0.0 (silence) ~ 1.0 (maximum).
+    /// Values outside the range are automatically clamped.
     ///
-    /// 클램핑 (Clamping):
+    /// Clamping:
     /// ```
-    /// 입력 → 실제 적용
-    /// -5.0 → 0.0 (최소값)
-    ///  0.3 → 0.3 (그대로)
-    ///  2.0 → 1.0 (최대값)
-    /// ```
-    ///
-    /// 볼륨 스케일:
-    /// ```
-    /// 0.0 = 무음 (mute)
-    /// 0.5 = 50% 볼륨 (약 -6dB)
-    /// 1.0 = 100% 볼륨 (원본, 0dB)
+    /// Input → Actually applied
+    /// -5.0 → 0.0 (minimum value)
+    ///  0.3 → 0.3 (as is)
+    ///  2.0 → 1.0 (maximum value)
     /// ```
     ///
-    /// 즉시 적용:
+    /// Volume scale:
+    /// ```
+    /// 0.0 = Silence (mute)
+    /// 0.5 = 50% volume (approximately -6dB)
+    /// 1.0 = 100% volume (original, 0dB)
+    /// ```
+    ///
+    /// Immediate application:
     /// ```
     /// setVolume(0.8)
     /// → self.volume = 0.8
     /// → mixer.outputVolume = 0.8
-    /// → 재생 중인 오디오에 즉시 반영 (부드럽게)
+    /// → Immediately reflected in playing audio (smoothly)
     /// ```
     func setVolume(_ volume: Float) {
-        // 값 검증 및 클램핑
+        // Validate and clamp value
         // max(0.0, min(1.0, volume)):
-        // 1. min(1.0, volume) → 1.0보다 크면 1.0
-        // 2. max(0.0, ...) → 0.0보다 작으면 0.0
+        // 1. min(1.0, volume) → 1.0 if greater than 1.0
+        // 2. max(0.0, ...) → 0.0 if less than 0.0
         self.volume = max(0.0, min(1.0, volume))
 
-        // MixerNode에 즉시 적용
+        // Apply immediately to MixerNode
         mixer.outputVolume = self.volume
     }
 
-    /// @brief 큐에 있는 모든 프레임 제거
+    /// @brief Remove all frames in queue
     ///
     /// @details
-    /// PlayerNode의 재생 큐와 추적 큐를 모두 비웁니다.
-    /// Seek 동작 시 호출하여 이전 오디오를 정리합니다.
+    /// Clears both PlayerNode's playback queue and tracking queue.
+    /// Called during seek operation to clean up previous audio.
     ///
-    /// 동작:
+    /// Operation:
     /// ```
-    /// 1. playerNode.stop() → 재생 중단, 내부 큐 비우기
-    /// 2. frameQueue.removeAll() → 추적 큐 비우기
-    /// 3. 재생 중이었다면 playerNode.play() → 재생 모드 복원
+    /// 1. playerNode.stop() → Stop playback, clear internal queue
+    /// 2. frameQueue.removeAll() → Clear tracking queue
+    /// 3. If was playing, playerNode.play() → Restore playback mode
     /// ```
     ///
-    /// 재생 중단 없이 큐만 비우기:
+    /// Clear queue without stopping playback:
     /// ```
-    /// flush() 전:
-    /// [재생중▶][Buf2][Buf3]...[Buf30]
+    /// Before flush():
+    /// [Playing▶][Buf2][Buf3]...[Buf30]
     ///
-    /// flush() 중:
-    /// playerNode.stop() → 모두 제거
+    /// During flush():
+    /// playerNode.stop() → Remove all
     /// frameQueue.removeAll()
     ///
-    /// flush() 후:
-    /// [] ← 빈 큐
-    /// playerNode.play() ← 재생 모드 (버퍼 없음)
+    /// After flush():
+    /// [] ← Empty queue
+    /// playerNode.play() ← Playback mode (no buffers)
     /// ```
     func flush() {
-        // PlayerNode 정지 (내부 큐도 비워짐)
+        // Stop PlayerNode (internal queue also cleared)
         playerNode.stop()
 
-        // 추적 큐 비우기 (thread-safe)
+        // Clear tracking queue (thread-safe)
         queueLock.lock()
         frameQueue.removeAll()
         queueLock.unlock()
 
-        // 재생 중이었다면 재생 모드 복원
+        // Restore playback mode if was playing
         if isPlaying {
             playerNode.play()
         }
 
-        // 주의: 새 프레임을 enqueue()하지 않으면 소리 없음
+        // Note: No sound unless new frames are enqueue()d
     }
 
-    /// @brief 현재 큐 크기 조회
+    /// @brief Query current queue size
     ///
-    /// @return 큐에 있는 프레임 개수 (0 ~ maxQueueSize)
+    /// @return Number of frames in queue (0 ~ maxQueueSize)
     ///
     /// @details
-    /// 재생 대기 중인 프레임 개수를 반환합니다.
-    /// 이 값은 버퍼링 상태를 모니터링하는 데 유용합니다.
+    /// Returns the number of frames waiting for playback.
+    /// This value is useful for monitoring buffering status.
     ///
-    /// defer를 사용한 안전한 unlock:
+    /// Safe unlock using defer:
     /// ```swift
     /// func queueSize() -> Int {
     ///     queueLock.lock()
-    ///     defer { queueLock.unlock() }  // 함수 종료 시 자동 해제
+    ///     defer { queueLock.unlock() }  // Auto-release on function exit
     ///
     ///     return frameQueue.count
-    ///     // return 전에 defer 블록 실행 → unlock 보장
+    ///     // defer block executes before return → unlock guaranteed
     /// }
     /// ```
     ///
-    /// defer 없이 구현하면?
+    /// Implementation without defer?
     /// ```swift
-    /// // ❌ 위험한 코드
+    /// // ❌ Risky code
     /// func queueSize() -> Int {
     ///     queueLock.lock()
     ///     let count = frameQueue.count
-    ///     queueLock.unlock()  // 까먹으면 데드락!
+    ///     queueLock.unlock()  // Deadlock if forgotten!
     ///     return count
     /// }
     /// ```
     func queueSize() -> Int {
         queueLock.lock()
-        defer { queueLock.unlock() }  // 자동 해제 보장
+        defer { queueLock.unlock() }  // Guarantee auto-release
         return frameQueue.count
     }
 
     // MARK: - Private Methods
 
-    /// @brief 오디오 세션 설정 (노드 연결)
+    /// @brief Set up audio session (connect nodes)
     ///
-    /// @param format 오디오 포맷 (샘플레이트, 채널, 비트 깊이)
+    /// @param format Audio format (sample rate, channels, bit depth)
     ///
     /// @details
-    /// PlayerNode와 MixerNode를 연결하여 오디오 파이프라인을 완성합니다.
-    /// 이 메서드는 첫 번째 프레임이 큐잉될 때 자동으로 호출됩니다.
+    /// Completes audio pipeline by connecting PlayerNode and MixerNode.
+    /// This method is automatically called when the first frame is queued.
     ///
-    /// 연결 과정:
+    /// Connection process:
     /// ```
     /// audioEngine.connect(
-    ///     source: playerNode,    // PCM 버퍼 재생
-    ///     destination: mixer,    // 볼륨 조절
-    ///     format: audioFormat    // 48kHz 스테레오 등
+    ///     source: playerNode,    // PCM buffer playback
+    ///     destination: mixer,    // Volume control
+    ///     format: audioFormat    // 48kHz stereo, etc.
     /// )
     ///
-    /// 결과:
+    /// Result:
     /// [PlayerNode] ───format──▶ [MixerNode] ───▶ 🔊
     /// ```
     ///
-    /// 포맷의 역할:
+    /// Role of format:
     /// ```
-    /// format 지정:
-    /// - PlayerNode와 MixerNode가 같은 포맷으로 통신
-    /// - 샘플레이트 일치 (48kHz)
-    /// - 채널 수 일치 (2채널)
-    /// - 비트 깊이 일치 (Float32)
+    /// format specified:
+    /// - PlayerNode and MixerNode communicate with same format
+    /// - Sample rate match (48kHz)
+    /// - Channel count match (2 channels)
+    /// - Bit depth match (Float32)
     ///
     /// format = nil:
-    /// - 자동 포맷 협상 (권장하지 않음)
+    /// - Automatic format negotiation (not recommended)
     /// ```
     ///
-    /// 볼륨 초기화:
+    /// Volume initialization:
     /// ```
     /// mixer.outputVolume = self.volume
-    /// → 사용자가 start() 전에 setVolume()을 호출했을 수 있음
-    /// → 저장된 볼륨 값 적용
+    /// → User may have called setVolume() before start()
+    /// → Apply saved volume value
     /// ```
     private func setupAudioSession(format: AVAudioFormat) {
-        // PlayerNode를 Mixer에 연결
-        // 이제 playerNode.scheduleBuffer()로 추가한 버퍼가
-        // mixer를 거쳐 스피커로 출력됩니다.
+        // Connect PlayerNode to Mixer
+        // Now buffers added with playerNode.scheduleBuffer()
+        // will be output to speaker through mixer.
         audioEngine.connect(playerNode, to: mixer, format: format)
 
-        // 초기 볼륨 적용
-        // (사용자가 start() 전에 setVolume()을 호출했을 수 있음)
+        // Apply initial volume
+        // (user may have called setVolume() before start())
         mixer.outputVolume = volume
     }
 
-    /// @brief 버퍼 재생 완료 콜백
+    /// @brief Buffer playback completion callback
     ///
-    /// @param frame 재생이 완료된 프레임
+    /// @param frame Frame whose playback completed
     ///
     /// @details
-    /// playerNode.scheduleBuffer()의 completion 핸들러로 호출됩니다.
-    /// 재생이 완료된 프레임을 추적 큐에서 제거합니다.
+    /// Called as completion handler of playerNode.scheduleBuffer().
+    /// Removes completed frame from tracking queue.
     ///
-    /// 호출 시점:
+    /// Call timing:
     /// ```
-    /// 버퍼의 마지막 샘플이 스피커로 출력된 직후
+    /// Right after last sample of buffer is output to speaker
     ///
-    /// 타임라인:
-    /// [Frame1 재생] ─────▶ 마지막 샘플 ─▶ onBufferFinished(Frame1) 호출
+    /// Timeline:
+    /// [Frame1 playback] ─────▶ Last sample ─▶ onBufferFinished(Frame1) called
     /// ```
     ///
-    /// 호출 스레드: AVAudioEngine 내부 스레드 (not main thread!)
+    /// Calling thread: AVAudioEngine internal thread (not main thread!)
     ///
-    /// 큐 정리:
+    /// Queue cleanup:
     /// ```
     /// frameQueue = [Frame1, Frame2, Frame3]
-    ///                 ↑ 재생 완료
+    ///                 ↑ Playback complete
     ///
-    /// onBufferFinished(Frame1) 호출
+    /// onBufferFinished(Frame1) called
     /// → firstIndex(where: { $0 == Frame1 }) → 0
     /// → frameQueue.remove(at: 0)
     ///
     /// frameQueue = [Frame2, Frame3]
     /// ```
     ///
-    /// defer를 사용한 안전한 unlock:
+    /// Safe unlock using defer:
     /// ```swift
     /// queueLock.lock()
-    /// defer { queueLock.unlock() }  // 함수 종료 시 자동 해제
+    /// defer { queueLock.unlock() }  // Auto-release on function exit
     ///
-    /// // 복잡한 로직...
-    /// if condition { return }  // ← defer가 unlock 보장
+    /// // Complex logic...
+    /// if condition { return }  // ← defer guarantees unlock
     /// // ...
-    /// // 함수 끝 ← defer가 unlock 보장
+    /// // End of function ← defer guarantees unlock
     /// ```
     private func onBufferFinished(_ frame: AudioFrame) {
         queueLock.lock()
         defer { queueLock.unlock() }
 
-        // 완료된 프레임을 큐에서 찾아 제거
+        // Find and remove completed frame from queue
         if let index = frameQueue.firstIndex(where: { $0 == frame }) {
             frameQueue.remove(at: index)
         }
 
-        // 주의: index를 못 찾을 수도 있음 (flush() 호출 시)
-        // 이 경우 조용히 무시 (에러 없음)
+        // Note: May not find index (when flush() is called)
+        // In this case, silently ignore (no error)
     }
 }
 
 // MARK: - Error Types
 
 /// @enum AudioPlayerError
-/// @brief AudioPlayer 에러 타입
+/// @brief AudioPlayer error type
 ///
 /// @details
-/// AudioPlayer에서 발생할 수 있는 에러들을 정의합니다.
-/// LocalizedError 프로토콜을 구현하여 사용자 친화적인 에러 메시지를 제공합니다.
+/// Defines errors that can occur in AudioPlayer.
+/// Implements LocalizedError protocol to provide user-friendly error messages.
 ///
-/// ## 에러 종류
+/// ## Error types
 /// ```
-/// 1. engineStartFailed: 엔진 시작 실패
-///    - 원인: 오디오 장치 없음, 권한 없음, 리소스 부족
+/// 1. engineStartFailed: Engine start failed
+///    - Cause: No audio device, no permission, insufficient resources
 ///
-/// 2. bufferConversionFailed: 버퍼 변환 실패
-///    - 원인: 잘못된 AudioFrame 포맷, 메모리 부족
+/// 2. bufferConversionFailed: Buffer conversion failed
+///    - Cause: Invalid AudioFrame format, out of memory
 ///
-/// 3. formatMismatch: 오디오 포맷 불일치
-///    - 원인: 첫 프레임과 다른 포맷의 프레임 큐잉
+/// 3. formatMismatch: Audio format mismatch
+///    - Cause: Queuing frame with different format than first frame
 /// ```
 enum AudioPlayerError: LocalizedError {
     /// @var engineStartFailed
-    /// @brief 오디오 엔진 시작 실패
+    /// @brief Audio engine start failure
     ///
-    /// @param error 원본 에러
+    /// @param error Original error
     ///
     /// @details
-    /// AVAudioEngine.start() 호출 시 발생한 에러를 래핑합니다.
+    /// Wraps error that occurred when calling AVAudioEngine.start().
     ///
-    /// 일반적인 원인:
-    /// - 오디오 출력 장치 없음 (headless 서버)
-    /// - 다른 앱이 오디오 장치 독점 중
-    /// - 샌드박스 권한 부족
-    /// - 시스템 리소스 부족
+    /// Common causes:
+    /// - No audio output device (headless server)
+    /// - Audio device monopolized by another app
+    /// - Insufficient sandbox permissions
+    /// - Insufficient system resources
     case engineStartFailed(Error)
 
     /// @var bufferConversionFailed
-    /// @brief 오디오 버퍼 변환 실패
+    /// @brief Audio buffer conversion failure
     ///
     /// @details
-    /// AudioFrame을 AVAudioPCMBuffer로 변환하는 중 발생한 에러입니다.
+    /// Error that occurred while converting AudioFrame to AVAudioPCMBuffer.
     ///
-    /// 일반적인 원인:
-    /// - AudioFrame의 포맷이 잘못됨 (지원하지 않는 포맷)
-    /// - 메모리 부족 (버퍼 할당 실패)
-    /// - AudioFrame.data가 손상됨
+    /// Common causes:
+    /// - AudioFrame format is invalid (unsupported format)
+    /// - Out of memory (buffer allocation failed)
+    /// - AudioFrame.data is corrupted
     case bufferConversionFailed
 
     /// @var formatMismatch
-    /// @brief 오디오 포맷 불일치
+    /// @brief Audio format mismatch
     ///
     /// @details
-    /// 큐잉하려는 프레임의 포맷이 currentFormat과 다를 때 발생합니다.
+    /// Occurs when format of frame being queued differs from currentFormat.
     ///
-    /// 예시:
+    /// Example:
     /// ```
-    /// Frame1: 48000 Hz, 2채널, Float32 ✅
-    /// Frame2: 44100 Hz, 2채널, Float32 ❌ formatMismatch!
+    /// Frame1: 48000 Hz, 2 channels, Float32 ✅
+    /// Frame2: 44100 Hz, 2 channels, Float32 ❌ formatMismatch!
     /// ```
     ///
-    /// 해결 방법:
+    /// Solution:
     /// ```swift
-    /// // 포맷이 변경되면 플레이어 재시작
+    /// // Restart player when format changes
     /// audioPlayer.stop()
     /// try audioPlayer.start()
     /// try audioPlayer.enqueue(newFormatFrame)
     /// ```
     case formatMismatch
 
-    /// @brief 사용자 친화적인 에러 설명
+    /// @brief User-friendly error description
     ///
-    /// @return 에러 설명 문자열
+    /// @return Error description string
     ///
     /// @details
-    /// 각 에러 케이스에 대한 설명 문자열을 반환합니다.
-    /// UI에서 사용자에게 보여줄 메시지를 제공합니다.
+    /// Returns description string for each error case.
+    /// Provides message to display to user in UI.
     var errorDescription: String? {
         switch self {
         case .engineStartFailed(let error):
@@ -1130,41 +1130,41 @@ enum AudioPlayerError: LocalizedError {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 통합 가이드: AudioPlayer 사용 플로우
+// Integration Guide: AudioPlayer Usage Flow
 // ═══════════════════════════════════════════════════════════════════════════
 //
-// 1️⃣ 초기화 및 시작
+// 1️⃣ Initialize and start
 // ────────────────────────────────────────────────
 // let audioPlayer = AudioPlayer()
-// try audioPlayer.start()  // 엔진 가동
+// try audioPlayer.start()  // Start engine
 //
-// 2️⃣ 프레임 큐잉 (디코딩 루프)
+// 2️⃣ Frame queuing (decoding loop)
 // ────────────────────────────────────────────────
 // for frame in decoder.decodeAudio() {
 //     try audioPlayer.enqueue(frame)
-//     // 자동으로 스피커로 재생됨
+//     // Automatically played through speaker
 // }
 //
-// 3️⃣ 재생 제어 (사용자 입력)
+// 3️⃣ Playback control (user input)
 // ────────────────────────────────────────────────
-// // 일시정지
+// // Pause
 // audioPlayer.pause()
 //
-// // 재개
+// // Resume
 // audioPlayer.resume()
 //
-// // 볼륨 조절
+// // Volume control
 // audioPlayer.setVolume(0.7)  // 70%
 //
-// 4️⃣ Seek 처리
+// 4️⃣ Seek handling
 // ────────────────────────────────────────────────
-// // 사용자가 타임라인 이동
-// decoder.seek(to: 60.0)       // 60초로 이동
-// audioPlayer.flush()          // 이전 오디오 제거
-// // 새로운 60초 구간 프레임 큐잉 시작
+// // User moves timeline
+// decoder.seek(to: 60.0)       // Move to 60 seconds
+// audioPlayer.flush()          // Remove previous audio
+// // Start queuing frames from new 60-second position
 //
-// 5️⃣ 종료 및 정리
+// 5️⃣ Shutdown and cleanup
 // ────────────────────────────────────────────────
-// audioPlayer.stop()  // 엔진 종료, 큐 비우기
+// audioPlayer.stop()  // Terminate engine, clear queue
 //
 // ═══════════════════════════════════════════════════════════════════════════

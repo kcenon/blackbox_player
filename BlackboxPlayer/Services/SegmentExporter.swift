@@ -1,34 +1,34 @@
 /// @file SegmentExporter.swift
-/// @brief 비디오 구간 추출 서비스
+/// @brief Video segment extraction service
 /// @author BlackboxPlayer Development Team
 /// @details
-/// 선택된 구간을 별도의 비디오 파일로 추출하는 서비스입니다.
-/// FFmpeg을 사용하여 효율적으로 구간을 추출하고 진행률을 추적합니다.
+/// Service to extract selected segments as separate video files.
+/// Uses FFmpeg to efficiently extract segments and track progress.
 
 import Foundation
 
 /// @class SegmentExporter
-/// @brief 비디오 구간 추출 서비스
+/// @brief Video segment extraction service
 ///
 /// @details
-/// ## 기능
-/// - In Point ~ Out Point 구간을 새 파일로 추출
-/// - 진행률 추적 및 콜백
-/// - 다중 채널 동시 추출
-/// - GPS 메타데이터 보존
+/// ## Features
+/// - Extract segment from In Point to Out Point as new file
+/// - Progress tracking and callbacks
+/// - Simultaneous multi-channel extraction
+/// - Preserve GPS metadata
 ///
-/// ## 추출 방식
+/// ## Extraction Method
 /// ```
-/// FFmpeg 명령:
+/// FFmpeg command:
 /// ffmpeg -ss <start_time> -i <input> -t <duration> -c copy <output>
 ///
-/// 옵션:
-/// - -ss: 시작 시간 (In Point)
-/// - -t: 지속 시간 (duration = Out Point - In Point)
-/// - -c copy: 코덱 복사 (빠른 처리, 재인코딩 없음)
+/// Options:
+/// - -ss: Start time (In Point)
+/// - -t: Duration (duration = Out Point - In Point)
+/// - -c copy: Copy codec (fast processing, no re-encoding)
 /// ```
 ///
-/// ## 사용 예제
+/// ## Usage Example
 /// ```swift
 /// let exporter = SegmentExporter()
 ///
@@ -52,24 +52,24 @@ class SegmentExporter {
     // MARK: - Types
 
     /// @enum ExportError
-    /// @brief 추출 에러 유형
+    /// @brief Export error types
     enum ExportError: LocalizedError {
-        /// 입력 파일 없음
+        /// Input file not found
         case inputFileNotFound
 
-        /// 출력 경로 무효
+        /// Invalid output path
         case invalidOutputPath
 
-        /// 시간 범위 무효
+        /// Invalid time range
         case invalidTimeRange
 
-        /// FFmpeg 실행 실패
+        /// FFmpeg execution failed
         case ffmpegExecutionFailed(String)
 
-        /// 사용자 취소
+        /// Cancelled by user
         case cancelled
 
-        /// 에러 설명
+        /// Error description
         var errorDescription: String? {
             switch self {
             case .inputFileNotFound:
@@ -87,24 +87,24 @@ class SegmentExporter {
     }
 
     /// @struct ExportOptions
-    /// @brief 추출 옵션
+    /// @brief Export options
     struct ExportOptions {
-        /// 비디오 코덱 (nil = 복사)
+        /// Video codec (nil = copy)
         var videoCodec: String?
 
-        /// 오디오 코덱 (nil = 복사)
+        /// Audio codec (nil = copy)
         var audioCodec: String?
 
-        /// 비트레이트 (nil = 원본 유지)
+        /// Video bitrate (nil = keep original)
         var videoBitrate: Int?
 
-        /// 오디오 비트레이트 (nil = 원본 유지)
+        /// Audio bitrate (nil = keep original)
         var audioBitrate: Int?
 
-        /// 품질 프리셋 (ultrafast, fast, medium, slow 등)
+        /// Quality preset (ultrafast, fast, medium, slow, etc.)
         var preset: String?
 
-        /// 기본 옵션 (코덱 복사)
+        /// Default options (codec copy)
         static var `default`: ExportOptions {
             return ExportOptions(
                 videoCodec: "copy",
@@ -118,34 +118,34 @@ class SegmentExporter {
 
     // MARK: - Properties
 
-    /// 취소 플래그
+    /// Cancellation flag
     private var isCancelled: Bool = false
 
-    /// 현재 실행 중인 프로세스
+    /// Currently running process
     private var currentProcess: Process?
 
     // MARK: - Public Methods
 
-    /// 비디오 구간 추출
+    /// Export video segment
     ///
-    /// ## 추출 프로세스
+    /// ## Export Process
     /// ```
-    /// 1. 입력 파일 존재 확인
-    /// 2. 출력 경로 유효성 확인
-    /// 3. FFmpeg 명령 생성
-    /// 4. 프로세스 실행 (백그라운드)
-    /// 5. 진행률 추적
-    /// 6. 완료 콜백 호출
+    /// 1. Check input file exists
+    /// 2. Validate output path
+    /// 3. Generate FFmpeg command
+    /// 4. Execute process (background)
+    /// 5. Track progress
+    /// 6. Call completion callback
     /// ```
     ///
     /// - Parameters:
-    ///   - inputPath: 입력 비디오 파일 경로
-    ///   - outputPath: 출력 비디오 파일 경로
-    ///   - startTime: 시작 시간 (초)
-    ///   - duration: 지속 시간 (초)
-    ///   - options: 추출 옵션 (기본값: .default)
-    ///   - progressHandler: 진행률 콜백 (0.0 ~ 1.0)
-    ///   - completion: 완료 콜백
+    ///   - inputPath: Input video file path
+    ///   - outputPath: Output video file path
+    ///   - startTime: Start time (seconds)
+    ///   - duration: Duration (seconds)
+    ///   - options: Export options (default: .default)
+    ///   - progressHandler: Progress callback (0.0 ~ 1.0)
+    ///   - completion: Completion callback
     func exportSegment(
         inputPath: String,
         outputPath: String,
@@ -155,14 +155,14 @@ class SegmentExporter {
         progressHandler: @escaping (Double) -> Void = { _ in },
         completion: @escaping (Result<URL, Error>) -> Void
     ) {
-        // 백그라운드 큐에서 실행
+        // Execute in background queue
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             guard let self = self else { return }
 
-            // 취소 플래그 초기화
+            // Initialize cancellation flag
             self.isCancelled = false
 
-            // 1. 입력 파일 확인
+            // 1. Check input file
             guard FileManager.default.fileExists(atPath: inputPath) else {
                 DispatchQueue.main.async {
                     completion(.failure(ExportError.inputFileNotFound))
@@ -170,7 +170,7 @@ class SegmentExporter {
                 return
             }
 
-            // 2. 시간 범위 확인
+            // 2. Check time range
             guard startTime >= 0 && duration > 0 else {
                 DispatchQueue.main.async {
                     completion(.failure(ExportError.invalidTimeRange))
@@ -178,7 +178,7 @@ class SegmentExporter {
                 return
             }
 
-            // 3. 출력 디렉토리 생성
+            // 3. Create output directory
             let outputURL = URL(fileURLWithPath: outputPath)
             let outputDirectory = outputURL.deletingLastPathComponent()
             do {
@@ -194,7 +194,7 @@ class SegmentExporter {
                 return
             }
 
-            // 4. FFmpeg 명령 실행
+            // 4. Execute FFmpeg command
             do {
                 try self.runFFmpegExport(
                     inputPath: inputPath,
@@ -205,13 +205,13 @@ class SegmentExporter {
                     progressHandler: progressHandler
                 )
 
-                // 성공
+                // Success
                 DispatchQueue.main.async {
                     completion(.success(outputURL))
                 }
 
             } catch {
-                // 실패
+                // Failure
                 DispatchQueue.main.async {
                     completion(.failure(error))
                 }
@@ -219,20 +219,20 @@ class SegmentExporter {
         }
     }
 
-    /// 다중 채널 동시 추출
+    /// Export multiple channels simultaneously
     ///
-    /// ## 다중 채널 처리
-    /// - 모든 채널을 동시에 추출
-    /// - 각 채널별 진행률 추적
-    /// - 모든 채널 완료 후 콜백
+    /// ## Multi-channel Processing
+    /// - Extract all channels simultaneously
+    /// - Track progress for each channel
+    /// - Call callback after all channels complete
     ///
     /// - Parameters:
-    ///   - channels: 채널 정보 배열 (inputPath 포함)
-    ///   - outputDirectory: 출력 디렉토리
-    ///   - startTime: 시작 시간 (초)
-    ///   - duration: 지속 시간 (초)
-    ///   - progressHandler: 전체 진행률 콜백 (0.0 ~ 1.0)
-    ///   - completion: 완료 콜백 (성공: 출력 파일 URL 배열)
+    ///   - channels: Array of channel info (with inputPath)
+    ///   - outputDirectory: Output directory
+    ///   - startTime: Start time (seconds)
+    ///   - duration: Duration (seconds)
+    ///   - progressHandler: Overall progress callback (0.0 ~ 1.0)
+    ///   - completion: Completion callback (success: array of output file URLs)
     func exportMultipleChannels(
         channels: [(position: ChannelPosition, inputPath: String)],
         outputDirectory: String,
@@ -248,21 +248,21 @@ class SegmentExporter {
         for (index, channel) in channels.enumerated() {
             group.enter()
 
-            // 출력 파일 이름 생성
+            // Generate output file name
             let outputFileName = "segment_\(channel.position.rawValue).mp4"
             let outputPath = (outputDirectory as NSString).appendingPathComponent(outputFileName)
 
-            // 각 채널 추출
+            // Extract each channel
             exportSegment(
                 inputPath: channel.inputPath,
                 outputPath: outputPath,
                 startTime: startTime,
                 duration: duration
             ) { progress in
-                // 개별 채널 진행률 업데이트
+                // Update individual channel progress
                 channelProgress[index] = progress
 
-                // 전체 진행률 계산 (평균)
+                // Calculate overall progress (average)
                 let totalProgress = channelProgress.reduce(0, +) / Double(channels.count)
                 progressHandler(totalProgress)
 
@@ -272,32 +272,32 @@ class SegmentExporter {
             }
         }
 
-        // 모든 채널 완료 대기
+        // Wait for all channels to complete
         group.notify(queue: .main) {
-            // 모든 결과 확인
+            // Check all results
             var successURLs: [URL] = []
             for result in results {
                 switch result {
                 case .success(let url):
                     successURLs.append(url)
                 case .failure(let error):
-                    // 하나라도 실패하면 전체 실패
+                    // If any fails, entire operation fails
                     completion(.failure(error))
                     return
                 }
             }
 
-            // 모두 성공
+            // All succeeded
             completion(.success(successURLs))
         }
     }
 
-    /// 추출 취소
+    /// Cancel export
     ///
-    /// ## 취소 처리
-    /// - 현재 실행 중인 프로세스 종료
-    /// - isCancelled 플래그 설정
-    /// - 진행 중인 모든 추출 작업 중단
+    /// ## Cancellation Handling
+    /// - Terminate currently running process
+    /// - Set isCancelled flag
+    /// - Abort all ongoing export operations
     func cancel() {
         isCancelled = true
         currentProcess?.terminate()
@@ -306,20 +306,20 @@ class SegmentExporter {
 
     // MARK: - Private Methods
 
-    /// FFmpeg 명령 실행
+    /// Execute FFmpeg command
     ///
-    /// ## 명령 형식
+    /// ## Command Format
     /// ```bash
     /// ffmpeg -ss <start> -i <input> -t <duration> -c copy <output>
     /// ```
     ///
     /// - Parameters:
-    ///   - inputPath: 입력 파일 경로
-    ///   - outputPath: 출력 파일 경로
-    ///   - startTime: 시작 시간 (초)
-    ///   - duration: 지속 시간 (초)
-    ///   - options: 추출 옵션
-    ///   - progressHandler: 진행률 콜백
+    ///   - inputPath: Input file path
+    ///   - outputPath: Output file path
+    ///   - startTime: Start time (seconds)
+    ///   - duration: Duration (seconds)
+    ///   - options: Export options
+    ///   - progressHandler: Progress callback
     private func runFFmpegExport(
         inputPath: String,
         outputPath: String,
@@ -328,24 +328,24 @@ class SegmentExporter {
         options: ExportOptions,
         progressHandler: @escaping (Double) -> Void
     ) throws {
-        // FFmpeg 실행 파일 경로 찾기
+        // Find FFmpeg executable path
         guard let ffmpegPath = findFFmpegPath() else {
             throw ExportError.ffmpegExecutionFailed("FFmpeg not found")
         }
 
-        // 프로세스 생성
+        // Create process
         let process = Process()
         process.executableURL = URL(fileURLWithPath: ffmpegPath)
 
-        // 명령 인자 구성
+        // Build command arguments
         var arguments: [String] = [
-            "-y",  // 덮어쓰기 확인 없이
-            "-ss", String(format: "%.3f", startTime),  // 시작 시간
-            "-i", inputPath,  // 입력 파일
-            "-t", String(format: "%.3f", duration)  // 지속 시간
+            "-y",  // Overwrite without asking
+            "-ss", String(format: "%.3f", startTime),  // Start time
+            "-i", inputPath,  // Input file
+            "-t", String(format: "%.3f", duration)  // Duration
         ]
 
-        // 코덱 옵션
+        // Codec options
         if let videoCodec = options.videoCodec {
             arguments.append(contentsOf: ["-c:v", videoCodec])
         }
@@ -353,7 +353,7 @@ class SegmentExporter {
             arguments.append(contentsOf: ["-c:a", audioCodec])
         }
 
-        // 비트레이트 옵션
+        // Bitrate options
         if let videoBitrate = options.videoBitrate {
             arguments.append(contentsOf: ["-b:v", "\(videoBitrate)k"])
         }
@@ -361,29 +361,29 @@ class SegmentExporter {
             arguments.append(contentsOf: ["-b:a", "\(audioBitrate)k"])
         }
 
-        // 프리셋 옵션
+        // Preset option
         if let preset = options.preset {
             arguments.append(contentsOf: ["-preset", preset])
         }
 
-        // 출력 파일
+        // Output file
         arguments.append(outputPath)
 
         process.arguments = arguments
 
-        // 표준 출력/에러 파이프 (진행률 추적용)
+        // Standard output/error pipes (for progress tracking)
         let outputPipe = Pipe()
         let errorPipe = Pipe()
         process.standardOutput = outputPipe
         process.standardError = errorPipe
 
-        // 에러 출력 읽기 (FFmpeg는 진행률을 stderr로 출력)
+        // Read error output (FFmpeg outputs progress to stderr)
         errorPipe.fileHandleForReading.readabilityHandler = { [weak self] handle in
             guard let self = self, !self.isCancelled else { return }
 
             let data = handle.availableData
             if let output = String(data: data, encoding: .utf8) {
-                // FFmpeg 진행률 파싱 (time=00:00:05.00)
+                // Parse FFmpeg progress (time=00:00:05.00)
                 if let progress = self.parseFFmpegProgress(output: output, totalDuration: duration) {
                     DispatchQueue.main.async {
                         progressHandler(progress)
@@ -392,33 +392,33 @@ class SegmentExporter {
             }
         }
 
-        // 프로세스 실행
+        // Execute process
         currentProcess = process
 
         try process.run()
         process.waitUntilExit()
 
-        // 취소 확인
+        // Check for cancellation
         if isCancelled {
             throw ExportError.cancelled
         }
 
-        // 종료 상태 확인
+        // Check termination status
         if process.terminationStatus != 0 {
             throw ExportError.ffmpegExecutionFailed("Exit code: \(process.terminationStatus)")
         }
     }
 
-    /// FFmpeg 실행 파일 경로 찾기
+    /// Find FFmpeg executable path
     ///
-    /// ## 검색 우선순위
-    /// 1. /usr/local/bin/ffmpeg (Homebrew 기본 경로)
+    /// ## Search Priority
+    /// 1. /usr/local/bin/ffmpeg (Homebrew default path)
     /// 2. /opt/homebrew/bin/ffmpeg (Apple Silicon Homebrew)
-    /// 3. which ffmpeg (PATH 환경 변수)
+    /// 3. which ffmpeg (PATH environment variable)
     ///
-    /// - Returns: FFmpeg 경로 또는 nil
+    /// - Returns: FFmpeg path or nil
     private func findFFmpegPath() -> String? {
-        // 일반적인 경로 확인
+        // Check common paths
         let commonPaths = [
             "/usr/local/bin/ffmpeg",
             "/opt/homebrew/bin/ffmpeg",
@@ -431,7 +431,7 @@ class SegmentExporter {
             }
         }
 
-        // which 명령으로 찾기
+        // Find using which command
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/which")
         process.arguments = ["ffmpeg"]
@@ -457,29 +457,29 @@ class SegmentExporter {
         return nil
     }
 
-    /// FFmpeg 진행률 파싱
+    /// Parse FFmpeg progress
     ///
-    /// ## FFmpeg 출력 형식
+    /// ## FFmpeg Output Format
     /// ```
     /// frame=   75 fps= 25 q=-1.0 size=    1024kB time=00:00:03.00 bitrate=2793.5kbits/s speed=1.0x
     /// ```
     ///
     /// - Parameters:
-    ///   - output: FFmpeg stderr 출력
-    ///   - totalDuration: 전체 지속 시간 (초)
-    /// - Returns: 진행률 (0.0 ~ 1.0) 또는 nil
+    ///   - output: FFmpeg stderr output
+    ///   - totalDuration: Total duration (seconds)
+    /// - Returns: Progress (0.0 ~ 1.0) or nil
     private func parseFFmpegProgress(output: String, totalDuration: TimeInterval) -> Double? {
-        // "time=" 패턴 찾기
+        // Find "time=" pattern
         guard let timeRange = output.range(of: "time=") else {
             return nil
         }
 
-        // 시간 문자열 추출 (00:00:05.00 형식)
+        // Extract time string (00:00:05.00 format)
         let timeStart = output.index(timeRange.upperBound, offsetBy: 0)
         let timeEnd = output.index(timeStart, offsetBy: 11, limitedBy: output.endIndex) ?? output.endIndex
         let timeString = output[timeStart..<timeEnd]
 
-        // 시간 파싱 (HH:MM:SS.MS)
+        // Parse time (HH:MM:SS.MS)
         let components = timeString.split(separator: ":")
         guard components.count == 3 else { return nil }
 
@@ -489,7 +489,7 @@ class SegmentExporter {
 
         let currentTime = hours * 3600 + minutes * 60 + seconds
 
-        // 진행률 계산
+        // Calculate progress
         return min(1.0, currentTime / totalDuration)
     }
 }
@@ -497,13 +497,13 @@ class SegmentExporter {
 // MARK: - Supporting Types
 
 /// @enum ChannelPosition
-/// @brief 카메라 채널 위치
+/// @brief Camera channel position
 ///
-/// ## 채널 종류
-/// - front: 전면 카메라
-/// - rear: 후면 카메라
-/// - left: 좌측 카메라
-/// - right: 우측 카메라
+/// ## Channel Types
+/// - front: Front camera
+/// - rear: Rear camera
+/// - left: Left camera
+/// - right: Right camera
 enum ChannelPosition: String, Codable {
     case front = "front"
     case rear = "rear"

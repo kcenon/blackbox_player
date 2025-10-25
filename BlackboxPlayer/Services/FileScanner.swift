@@ -1,1041 +1,1041 @@
 /// @file FileScanner.swift
 /// @brief Service for scanning and discovering dashcam video files
 /// @author BlackboxPlayer Development Team
-/// @details 블랙박스 SD 카드의 디렉토리를 재귀적으로 스캔하여 비디오 파일을 발견하고,
-/// 멀티채널 그룹으로 조직화하는 서비스입니다.
+/// @details Service that recursively scans directories on dashcam SD cards to discover video files
+/// and organizes them into multi-channel groups.
 
 /*
- ═══════════════════════════════════════════════════════════════════════════
- 파일 스캐너 서비스
- ═══════════════════════════════════════════════════════════════════════════
+ 
+ File Scanner Service
+ 
 
- 【이 파일의 목적】
- 블랙박스 SD 카드의 디렉토리를 재귀적으로 스캔하여 비디오 파일을 발견하고,
- 멀티채널 그룹으로 조직화합니다.
+ [Purpose of this File]
+ Recursively scans directories on dashcam SD cards to discover video files
+ and organizes them into multi-channel groups.
 
- 【블랙박스 파일 구조】
- 일반적인 블랙박스 SD 카드의 디렉토리 구조:
+ [Dashcam File Structure]
+ Typical directory structure on dashcam SD cards:
 
  ```
  /SD_CARD/
- ├── Normal/              ← 일반 녹화
- │   ├── 20240115_143025_F.mp4    (전방 카메라)
- │   ├── 20240115_143025_R.mp4    (후방 카메라)
- │   ├── 20240115_143125_F.mp4
- │   └── 20240115_143125_R.mp4
- ├── Event/               ← 이벤트 녹화 (충격 감지)
- │   ├── 20240115_150230_F.mp4
- │   └── 20240115_150230_R.mp4
- ├── Parking/             ← 주차 모드
- │   └── ...
- └── GPS/                 ← 별도 GPS 로그 (선택적)
- └── 20240115.nmea
+ Normal/ Normal recordings
+ 20240115_143025_F.mp4 (Front camera)
+ 20240115_143025_R.mp4 (Rear camera)
+ 20240115_143125_F.mp4
+ 20240115_143125_R.mp4
+ Event/ Event recordings (impact detection)
+ 20240115_150230_F.mp4
+ 20240115_150230_R.mp4
+ Parking/ Parking mode
+...
+ GPS/ Separate GPS logs (optional)
+ 20240115.nmea
  ```
 
- 【스캔 프로세스】
- 1. FileManager.enumerator로 재귀적 디렉토리 탐색
- 2. 비디오 확장자 필터링 (.mp4, .mov, .avi, .mkv)
- 3. 정규식으로 파일명 파싱 (날짜, 시간, 카메라 위치)
- 4. VideoFileInfo 구조체 생성
- 5. baseFilename으로 멀티채널 그룹화
- 6. VideoFileGroup 배열 반환 (최신순 정렬)
+ [Scan Process]
+ 1. with FileManager.enumerator for Recursive directory traversal
+ 2. Video extension filtering (.mp4,.mov,.avi,.mkv)
+ 3. Filename parsing with regex (date, time, camera position)
+ 4. VideoFileInfo structure creation
+ 5. Multi-channel grouping by baseFilename
+ 6. Return VideoFileGroup array (sorted newest first)
 
- 【멀티채널 그룹화】
- 같은 시각에 녹화된 전방/후방 영상을 하나의 그룹으로 통합:
+ [Multi-Channel Grouping]
+ Combines front/rear videos recorded at the same time into one group:
 
- 입력 (개별 파일):
- - 20240115_143025_F.mp4  (전방)
- - 20240115_143025_R.mp4  (후방)
- - 20240115_143125_F.mp4  (전방)
+ Input (individual files):
+ - 20240115_143025_F.mp4 (Front)
+ - 20240115_143025_R.mp4 (Rear)
+ - 20240115_143125_F.mp4 (Front)
 
- 출력 (그룹):
- - Group 1: [Front, Rear]  (2024-01-15 14:30:25)
- - Group 2: [Front]        (2024-01-15 14:31:25)
+ Output (groups):
+ - Group 1: [Front, Rear] (2024-01-15 14:30:25)
+ - Group 2: [Front] (2024-01-15 14:31:25)
 
- 【통합 위치】
- - FileManagerService: 이 서비스를 사용하여 SD 카드 스캔
- - ContentView: 스캔 결과를 UI에 표시
+ [Integration Points]
+ - FileManagerService: Uses this service to scan SD cards
+ - ContentView: Displays scan results in UI
 
- ═══════════════════════════════════════════════════════════════════════════
+ 
  */
 
 import Foundation
 
 /*
- ───────────────────────────────────────────────────────────────────────────
- FileScanner 클래스
- ───────────────────────────────────────────────────────────────────────────
+ 
+ FileScanner Class
+ 
 
- 【역할】
- 블랙박스 비디오 파일을 발견하고 조직화하는 중앙 서비스입니다.
+ [Role]
+ Central service for discovering and organizing dashcam video files.
 
- 【주요 기능】
- 1. 재귀적 디렉토리 스캔
- 2. 파일명 패턴 매칭 (정규식)
- 3. 메타데이터 추출 (날짜, 시간, 카메라 위치, 이벤트 타입)
- 4. 멀티채널 그룹화
- 5. 빠른 파일 카운트
+ [Key Features]
+ 1. Recursive directory scanning
+ 2. Filename pattern matching (regex)
+ 3. Metadata extraction (date, time, camera position, event type)
+ 4. Multi-channel grouping
+ 5. Fast file counting
 
- 【사용 시나리오】
+ [Usage Scenarios]
 
- 시나리오 1: 기본 스캔
+ Scenario 1: Basic Scanning
  ```swift
  let scanner = FileScanner()
  let sdCardURL = URL(fileURLWithPath: "/Volumes/BlackboxSD")
 
  do {
  let groups = try scanner.scanDirectory(sdCardURL)
- print("\(groups.count)개 녹화 그룹 발견")
+ print("\(groups.count) recording groups found")
 
  for group in groups {
- print("[\(group.timestamp)] \(group.channelCount)채널, \(group.totalFileSize) bytes")
+ print("[\(group.timestamp)] \(group.channelCount)channels, \(group.totalFileSize) bytes")
  if group.hasChannel(.front) {
- print("  - 전방 카메라: \(group.file(for: .front)!.lastPathComponent)")
+ print(" - Front camera: \(group.file(for:.front)!.lastPathComponent)")
  }
  if group.hasChannel(.rear) {
- print("  - 후방 카메라: \(group.file(for: .rear)!.lastPathComponent)")
+ print(" - Rear camera: \(group.file(for:.rear)!.lastPathComponent)")
  }
  }
  } catch {
- print("스캔 실패: \(error)")
+ print("Scan failed: \(error)")
  }
  ```
 
- 시나리오 2: 빠른 카운트
+ Scenario 2: Quick Count
  ```swift
  let scanner = FileScanner()
  let count = scanner.countVideoFiles(in: sdCardURL)
- print("\(count)개 비디오 파일 발견")
+ print("\(count) video files found")
  ```
 
- 시나리오 3: 필터링
+ Scenario 3: Filtering
  ```swift
  let groups = try scanner.scanDirectory(sdCardURL)
 
- // 이벤트 녹화만 필터링
- let eventGroups = groups.filter { $0.eventType == .event }
+ // Event recordings only Filtering
+ let eventGroups = groups.filter { $0.eventType ==.event }
 
- // 특정 날짜 필터링
+ // Filter by specific date
  let calendar = Calendar.current
  let todayGroups = groups.filter {
  calendar.isDateInToday($0.timestamp)
  }
 
- // 2채널 녹화만 필터링
+ // 2channel recordings only Filtering
  let twoChannelGroups = groups.filter { $0.channelCount == 2 }
  ```
 
- 【성능 특성】
- - 재귀 스캔: O(N) - N은 전체 파일 수
- - 파일명 파싱: O(M) - M은 비디오 파일 수
- - 그룹화: O(M log M) - 정렬 포함
+ [Performance Characteristics]
+ - Recursive scan: O(N) - N is total file count
+ - Filename parsing: O(M) - M is video file count
+ - Grouping: O(M log M) - including sorting
 
- 일반적인 SD 카드 (1000개 파일):
- - 스캔 시간: 약 100-200ms
- - 메모리 사용: 약 1-2 MB
- ───────────────────────────────────────────────────────────────────────────
+ Typical SD card (1000 files):
+ - Scan time: approximately 100-200ms
+ - Memory usage: approximately 1-2 MB
+ 
  */
 
 /// @class FileScanner
-/// @brief 디렉토리를 스캔하여 블랙박스 비디오 파일을 발견하고 조직화하는 서비스
+/// @brief Service for scanning directories to discover and organize dashcam video files
 ///
-/// FileSystemService를 사용하여 파일 시스템에 접근하고,
-/// VendorDetector로 제조사를 자동 감지하여 파일명을 파싱합니다.
+/// Accesses file system using FileSystemService,
+/// and parses filenames by auto-detecting vendor with VendorDetector.
 class FileScanner {
-    // MARK: - Properties
+ // MARK: - Properties
 
-    /// @var fileSystemService
-    /// @brief 파일 시스템 접근을 담당하는 서비스
-    ///
-    /// 파일 목록 조회, 파일 정보 읽기 등 저수준 파일 작업을 수행합니다.
-    /// 의존성 주입을 통해 테스트 용이성을 향상시킵니다.
-    private let fileSystemService: FileSystemService
+ /// @var fileSystemService
+ /// @brief Service responsible for file system access
+ ///
+ /// Performs low-level file operations such as listing files and reading file information.
+ /// Enhances testability through dependency injection.
+ private let fileSystemService: FileSystemService
 
-    /// @var vendorDetector
-    /// @brief 블랙박스 제조사 자동 감지
-    ///
-    /// 파일명 패턴을 분석하여 적절한 파서를 선택합니다.
-    private let vendorDetector: VendorDetector
+ /// @var vendorDetector
+ /// @brief Automatic dashcam vendor detection
+ ///
+ /// Analyzes filename patterns to select appropriate parser.
+ private let vendorDetector: VendorDetector
 
-    /// @var currentParser
-    /// @brief 현재 사용 중인 파서
-    ///
-    /// 감지된 제조사의 파서를 캐싱합니다.
-    private var currentParser: VendorParserProtocol?
-
-
-    // MARK: - Initialization
-
-    /*
-     ───────────────────────────────────────────────────────────────────────
-     초기화
-     ───────────────────────────────────────────────────────────────────────
-
-     【VendorDetector 초기화】
-     VendorDetector는 등록된 파서들(BlackVue, CR2000Omega 등)을 관리하며,
-     파일명 패턴을 분석하여 자동으로 제조사를 감지합니다.
-
-     초기화 시 모든 파서가 자동 등록됩니다:
-     - BlackVueParser: YYYYMMDD_HHMMSS_X.mp4
-     - CR2000OmegaParser: YYYY-MM-DD-HHh-MMm-SSs_X_type.mp4
-     ───────────────────────────────────────────────────────────────────────
-     */
-
-    /// @brief FileScanner 초기화
-    ///
-    /// @param fileSystemService 파일 시스템 접근 서비스 (기본값: 새 인스턴스)
-    ///
-    /// VendorDetector를 초기화하여 제조사별 파서를 등록합니다.
-    ///
-    /// 의존성 주입 패턴:
-    /// - 프로덕션: FileScanner() - 기본 FileSystemService 사용
-    /// - 테스트: FileScanner(fileSystemService: mockService) - 모킹된 서비스 사용
-    init(fileSystemService: FileSystemService = FileSystemService()) {
-        self.fileSystemService = fileSystemService
-        self.vendorDetector = VendorDetector()
-    }
-
-    // MARK: - Public Methods
-
-    /*
-     ───────────────────────────────────────────────────────────────────────
-     메서드 1: scanDirectory
-     ───────────────────────────────────────────────────────────────────────
-
-     【목적】
-     디렉토리를 재귀적으로 스캔하여 모든 비디오 파일을 발견하고 그룹화합니다.
-
-     【FileManager.enumerator】
-     재귀적 디렉토리 탐색을 위한 Apple의 표준 API:
-
-     ```swift
-     let enumerator = fileManager.enumerator(
-     at: directoryURL,
-     includingPropertiesForKeys: [.isRegularFileKey, ...],
-     options: [.skipsHiddenFiles]
-     )
-     ```
-
-     동작:
-     1. 디렉토리의 모든 항목 순회 (재귀적)
-     2. includingPropertiesForKeys: 미리 로드할 속성 지정
-     3. options: 숨김 파일 제외
-
-     【includingPropertiesForKeys】
-     파일 속성을 미리 로드하여 성능 향상:
-     - .isRegularFileKey: 일반 파일 여부 (디렉토리/심볼릭 링크 제외)
-     - .fileSizeKey: 파일 크기
-     - .contentModificationDateKey: 수정 날짜
-
-     미리 로드하지 않으면:
-     - 각 파일마다 별도의 시스템 콜 필요
-     - 성능 저하 (특히 많은 파일)
-
-     【options: .skipsHiddenFiles】
-     숨김 파일/디렉토리 제외:
-     - .DS_Store (macOS 메타데이터)
-     - .Trash (휴지통)
-     - ._ 로 시작하는 파일 (macOS 리소스 포크)
-
-     【반환 타입: [VideoFileGroup]】
-     개별 파일이 아닌 그룹 단위로 반환:
-     - 같은 시각의 전방/후방 영상을 하나의 그룹으로 통합
-     - 최신순 정렬 (가장 최근 녹화가 먼저)
-
-     【throws】
-     디렉토리 접근 실패 시 오류 던짐:
-     - directoryNotFound: 디렉토리 없음
-     - cannotEnumerateDirectory: 권한 부족 등
-     ───────────────────────────────────────────────────────────────────────
-     */
-
-    /// @brief 디렉토리를 스캔하여 블랙박스 비디오 파일 발견
-    ///
-    /// FileManager.enumerator를 사용하여 재귀적으로 모든 하위 디렉토리를 탐색하고,
-    /// 비디오 파일을 파싱하여 멀티채널 그룹으로 조직화합니다.
-    ///
-    /// @param directoryURL 스캔할 디렉토리의 URL
-    /// @return VideoFileGroup 배열 (최신순 정렬)
-    /// @throws FileScannerError
-    ///   - .directoryNotFound: 디렉토리가 존재하지 않음
-    ///   - .cannotEnumerateDirectory: 디렉토리 열기 실패
-    ///
-    /// 스캔 과정:
-    /// 1. 디렉토리 존재 여부 확인
-    /// 2. FileManager.enumerator로 재귀 탐색
-    /// 3. 각 파일의 확장자 확인 (.mp4, .mov 등)
-    /// 4. 정규식으로 파일명 파싱 (날짜, 시간, 카메라 위치)
-    /// 5. VideoFileInfo 구조체 생성
-    /// 6. baseFilename으로 그룹화
-    /// 7. 최신순 정렬하여 반환
-    ///
-    /// 사용 예시:
-    /// ```swift
-    /// let scanner = FileScanner()
-    /// let sdCardURL = URL(fileURLWithPath: "/Volumes/BlackboxSD")
-    ///
-    /// do {
-    ///     let groups = try scanner.scanDirectory(sdCardURL)
-    ///     print("\(groups.count)개 녹화 그룹 발견")
-    ///
-    ///     for group in groups {
-    ///         print("[\(group.timestamp)]")
-    ///         print("  채널: \(group.channelCount)")
-    ///         print("  타입: \(group.eventType)")
-    ///         print("  크기: \(group.totalFileSize) bytes")
-    ///     }
-    /// } catch FileScannerError.directoryNotFound(let path) {
-    ///     print("디렉토리를 찾을 수 없습니다: \(path)")
-    /// } catch {
-    ///     print("스캔 실패: \(error)")
-    /// }
-    /// ```
-    ///
-    /// 성능:
-    /// - 시간: O(N) - N은 전체 파일 수
-    /// - 메모리: O(M) - M은 비디오 파일 수
-    /// - 일반적인 SD 카드 (1000개 파일): 약 100-200ms
-    func scanDirectory(_ directoryURL: URL) throws -> [VideoFileGroup] {
-        // 1단계: 제조사 자동 감지
-        guard let parser = vendorDetector.detectVendor(in: directoryURL) else {
-            throw FileScannerError.unsupportedVendor("Could not identify blackbox vendor from file patterns")
-        }
-        currentParser = parser
-
-        // 2단계: FileSystemService를 사용하여 비디오 파일 목록 가져오기
-        let videoFileURLs: [URL]
-        do {
-            videoFileURLs = try fileSystemService.listVideoFiles(at: directoryURL)
-        } catch FileSystemError.fileNotFound {
-            throw FileScannerError.directoryNotFound(directoryURL.path)
-        } catch FileSystemError.accessDenied {
-            throw FileScannerError.cannotEnumerateDirectory(directoryURL.path)
-        }
-
-        // 3단계: 감지된 파서로 각 파일 파싱하여 VideoFileInfo 생성
-        var videoFiles: [VideoFileInfo] = []
-        for fileURL in videoFileURLs {
-            if let fileInfo = parser.parseVideoFile(fileURL) {
-                videoFiles.append(fileInfo)
-            }
-        }
-
-        // 4단계: 멀티채널 그룹화
-        let groups = groupVideoFiles(videoFiles)
-
-        return groups
-    }
-
-    /*
-     ───────────────────────────────────────────────────────────────────────
-     메서드 2: countVideoFiles
-     ───────────────────────────────────────────────────────────────────────
-
-     【목적】
-     파일명 파싱 없이 빠르게 비디오 파일 개수만 세기
-
-     【사용 시나리오】
-     1. 진행률 표시:
-     "전체 파일 개수: 1000개"
-     "스캔 중... (500/1000)"
-
-     2. 빠른 확인:
-     "SD 카드에 비디오 파일이 있나요?"
-
-     3. 메모리 절약:
-     개수만 필요하고 상세 정보는 불필요할 때
-
-     【scanDirectory()와의 차이】
-     scanDirectory():
-     - 파일명 정규식 매칭
-     - VideoFileInfo 생성
-     - 그룹화
-     - 메모리: O(M) - M은 비디오 파일 수
-     - 시간: 약 100-200ms
-
-     countVideoFiles():
-     - 확장자만 확인
-     - 메모리: O(1) - count 변수만
-     - 시간: 약 50-100ms (2배 빠름)
-
-     【반환 타입: Int】
-     오류 발생 시 0 반환 (throws 아님):
-     - 디렉토리 없음 → 0
-     - 권한 부족 → 0
-     - 파일 없음 → 0
-
-     사용자 친화적 처리:
-     ```swift
-     let count = scanner.countVideoFiles(in: url)
-     if count == 0 {
-     print("비디오 파일을 찾을 수 없습니다")
-     } else {
-     print("\(count)개 파일 발견")
-     }
-     ```
-     ───────────────────────────────────────────────────────────────────────
-     */
-
-    /// @brief 디렉토리의 비디오 파일 개수를 빠르게 계산
-    ///
-    /// 파일명 파싱 없이 확장자만 확인하여 빠른 카운트를 수행합니다.
-    /// scanDirectory()보다 약 2배 빠르며 메모리를 거의 사용하지 않습니다.
-    ///
-    /// @param directoryURL 스캔할 디렉토리의 URL
-    /// @return 비디오 파일 개수, 오류 발생 시 0
-    ///
-    /// 사용 예시:
-    /// ```swift
-    /// let scanner = FileScanner()
-    /// let count = scanner.countVideoFiles(in: sdCardURL)
-    ///
-    /// if count == 0 {
-    ///     print("비디오 파일을 찾을 수 없습니다")
-    /// } else {
-    ///     print("\(count)개 파일 발견")
-    ///     // 이제 전체 스캔 시작
-    ///     let groups = try scanner.scanDirectory(sdCardURL)
-    /// }
-    /// ```
-    ///
-    /// 진행률 표시 예시:
-    /// ```swift
-    /// let totalCount = scanner.countVideoFiles(in: sdCardURL)
-    /// var scannedCount = 0
-    ///
-    /// // 스캔하면서 진행률 업데이트
-    /// for group in groups {
-    ///     scannedCount += group.channelCount
-    ///     let progress = Double(scannedCount) / Double(totalCount)
-    ///     updateProgressBar(progress)
-    /// }
-    /// ```
-    ///
-    /// 참고:
-    /// - 오류 발생 시 0 반환 (throws 아님)
-    /// - 파일명 파싱 생략으로 scanDirectory()보다 빠름
-    /// - 메모리 사용: O(1) - count 변수만
-    func countVideoFiles(in directoryURL: URL) -> Int {
-        // FileSystemService를 사용하여 비디오 파일 목록 가져오기
-        // 오류 발생 시 0 반환 (파일이 없거나 접근 불가)
-        guard let videoFileURLs = try? fileSystemService.listVideoFiles(at: directoryURL) else {
-            return 0
-        }
-
-        return videoFileURLs.count
-    }
-
-    // MARK: - Private Methods
+ /// @var currentParser
+ /// @brief Currently active parser
+ ///
+ /// Caches parser for detected vendor.
+ private var currentParser: VendorParserProtocol?
 
 
-    /*
-     ───────────────────────────────────────────────────────────────────────
-     메서드 4: groupVideoFiles (Private)
-     ───────────────────────────────────────────────────────────────────────
+ // MARK: - Initialization
 
-     【목적】
-     개별 비디오 파일을 멀티채널 그룹으로 통합
+ /*
+ 
+ Initialization
+ 
 
-     【그룹화 기준】
-     - baseFilename: "20240115_143025" (시각)
-     - eventType: .normal, .event, .parking
+ [VendorDetector Initialization]
+ VendorDetector manages registered parsers (BlackVue, CR2000Omega, etc.),
+ and automatically detects the vendor by analyzing filename patterns.
 
-     같은 시각 + 같은 이벤트 타입 = 하나의 그룹
+ Initialization all parsers are automatically registered:
+ - BlackVueParser: YYYYMMDD_HHMMSS_X.mp4
+ - CR2000OmegaParser: YYYY-MM-DD-HHh-MMm-SSs_X_type.mp4
+ 
+ */
 
-     【그룹화 예시】
-     입력 (개별 파일):
-     ```
-     [
-     VideoFileInfo(baseFilename: "20240115_143025", position: .front, eventType: .normal),
-     VideoFileInfo(baseFilename: "20240115_143025", position: .rear, eventType: .normal),
-     VideoFileInfo(baseFilename: "20240115_143125", position: .front, eventType: .event),
-     ]
-     ```
+ /// @brief FileScanner Initialization
+ ///
+ /// @param fileSystemService File system access service (default: new instance)
+ ///
+ /// VendorDetector to register vendor-specific parsers.
+ ///
+ /// Dependency injection pattern:
+ /// - Production: FileScanner() - uses default FileSystemService
+ /// - Testing: FileScanner(fileSystemService: mockService) - uses mocked service
+ init(fileSystemService: FileSystemService = FileSystemService()) {
+ self.fileSystemService = fileSystemService
+ self.vendorDetector = VendorDetector()
+ }
 
-     Dictionary 그룹화:
-     ```
-     {
-     "20240115_143025_normal": [Front, Rear],
-     "20240115_143125_event": [Front]
-     }
-     ```
+ // MARK: - Public Methods
 
-     출력 (그룹):
-     ```
-     [
-     VideoFileGroup(files: [Front, Rear], timestamp: 2024-01-15 14:30:25),
-     VideoFileGroup(files: [Front], timestamp: 2024-01-15 14:31:25)
-     ]
-     ```
+ /*
+ 
+ Method 1: scanDirectory
+ 
 
-     【정렬】
-     1. 그룹 내 파일 정렬:
-     displayPriority로 정렬 (Front → Rear → Left → Interior)
+ [Purpose]
+ Recursively scans directory to discover all video files and group them.
 
-     2. 그룹 정렬:
-     timestamp 내림차순 (최신순)
+ [FileManager.enumerator]
+ Apple's standard API for recursive directory traversal:
 
-     【Dictionary 사용】
-     ```swift
-     var groups: [String: [VideoFileInfo]] = [:]
-     let key = "\(file.baseFilename)_\(file.eventType.rawValue)"
-     groups[key, default: []].append(file)
-     ```
+ ```swift
+ let enumerator = fileManager.enumerator(
+ at: directoryURL,
+ includingPropertiesForKeys: [.isRegularFileKey,...],
+ options: [.skipsHiddenFiles]
+ )
+ ```
 
-     또는:
-     ```swift
-     if groups[key] == nil {
-     groups[key] = []
-     }
-     groups[key]?.append(file)
-     ```
+ Operation:
+ 1. Iterates through all directory items (recursively)
+ 2. includingPropertiesForKeys: Specify properties to preload
+ 3. options: exclude hidden files
 
-     【성능】
-     - Dictionary 그룹화: O(N) - N은 파일 수
-     - 정렬: O(M log M) - M은 그룹 수
-     - 총: O(N + M log M)
-     ───────────────────────────────────────────────────────────────────────
-     */
+ [includingPropertiesForKeys]
+ Preloads file attributes for improved performance:
+ -.isRegularFileKey: normal file (excluding directories/symbolic links)
+ -.fileSizeKey: file size
+ -.contentModificationDateKey: modification date
 
-    /// @brief 개별 비디오 파일을 멀티채널 그룹으로 통합
-    ///
-    /// 같은 시각(baseFilename)과 이벤트 타입의 파일들을 하나의 그룹으로 묶습니다.
-    ///
-    /// @param files VideoFileInfo 배열
-    /// @return VideoFileGroup 배열 (최신순 정렬)
-    ///
-    /// 그룹화 과정:
-    /// 1. baseFilename + eventType을 키로 Dictionary 생성
-    /// 2. 같은 키의 파일들을 배열로 누적
-    /// 3. 각 그룹 내에서 카메라 위치별로 정렬 (Front → Rear → ...)
-    /// 4. 그룹을 timestamp 내림차순 정렬 (최신순)
-    ///
-    /// 예시:
-    /// ```swift
-    /// // 입력
-    /// let files = [
-    ///     VideoFileInfo(baseFilename: "20240115_143025", position: .front, ...),
-    ///     VideoFileInfo(baseFilename: "20240115_143025", position: .rear, ...)
-    /// ]
-    ///
-    /// // 그룹화
-    /// let groups = groupVideoFiles(files)
-    /// // groups[0].files = [Front, Rear]
-    /// // groups[0].channelCount = 2
-    /// ```
-    ///
-    /// 참고:
-    /// - 그룹 내 파일은 displayPriority로 정렬
-    /// - 그룹은 timestamp 내림차순 정렬 (최신이 먼저)
-    private func groupVideoFiles(_ files: [VideoFileInfo]) -> [VideoFileGroup] {
-        // 1단계: Dictionary로 그룹화
-        // 키: "baseFilename_eventType" (예: "20240115_143025_normal")
-        var groups: [String: [VideoFileInfo]] = [:]
+ If not preloaded:
+ - Requires separate system call for each file
+ - Performance degradation (especially with many files)
 
-        for file in files {
-            let key = "\(file.baseFilename)_\(file.eventType.rawValue)"
-            if groups[key] == nil {
-                groups[key] = []
-            }
-            groups[key]?.append(file)
-        }
+ [options:.skipsHiddenFiles]
+ Exclude hidden files/directories:
+ -.DS_Store (macOS metadata)
+ -.Trash (trash)
+ -._ starting files (macOS resource forks)
 
-        // 2단계: VideoFileGroup으로 변환
-        return groups.values.map { groupFiles in
-            // 2-1: 그룹 내 파일 정렬
-            // displayPriority: Front(0) → Rear(1) → Left(2) → Interior(3)
-            let sortedFiles = groupFiles.sorted { $0.position.displayPriority < $1.position.displayPriority }
-            return VideoFileGroup(files: sortedFiles)
-        }.sorted { $0.timestamp > $1.timestamp }  // 2-2: 그룹 최신순 정렬
-    }
+ [Return Type: [VideoFileGroup]]
+ Returns groups instead of individual files:
+ - Combines front/rear videos from the same time into one group
+ - Sorted newest first (most recent recordings first)
+
+ [throws]
+ Throws error when directory access fails:
+ - directoryNotFound: Directory not found
+ - cannotEnumerateDirectory: Insufficient permissions etc.
+ 
+ */
+
+ /// @brief Scan directory to discover dashcam video files
+ ///
+ /// Uses FileManager.enumerator to recursively explore all subdirectories
+ /// Parses video files and organizes them into multi-channel groups.
+ ///
+ /// @param directoryURL URL of directory to scan
+ /// @return Array of VideoFileGroup (sorted newest first)
+ /// @throws FileScannerError
+ /// -.directoryNotFound: Directory does not exist
+ /// -.cannotEnumerateDirectory: Failed to open directory
+ ///
+ /// Scan process:
+ /// 1. Check if directory exists
+ /// 2. Recursive traversal with FileManager.enumerator
+ /// 3. Check file extensions (.mp4,.mov etc.)
+ /// 4. Filename parsing with regex (date, time, camera position)
+ /// 5. VideoFileInfo structure creation
+ /// 6. Group by baseFilename
+ /// 7. Sort newest first and return
+ ///
+ /// Usage example:
+ /// ```swift
+ /// let scanner = FileScanner()
+ /// let sdCardURL = URL(fileURLWithPath: "/Volumes/BlackboxSD")
+ ///
+ /// do {
+ /// let groups = try scanner.scanDirectory(sdCardURL)
+ /// print("\(groups.count) recording groups found")
+ ///
+ /// for group in groups {
+ /// print("[\(group.timestamp)]")
+ /// print(" channels: \(group.channelCount)")
+ /// print(" type: \(group.eventType)")
+ /// print(" size: \(group.totalFileSize) bytes")
+ /// }
+ /// } catch FileScannerError.directoryNotFound(let path) {
+ /// print("Directory not found: \(path)")
+ /// } catch {
+ /// print("Scan failed: \(error)")
+ /// }
+ /// ```
+ ///
+ /// Performance:
+ /// - Time: O(N) - N is total file count
+ /// - Memory: O(M) - M is video file count
+ /// - Typical SD card (1000 files): approximately 100-200ms
+ func scanDirectory(_ directoryURL: URL) throws -> [VideoFileGroup] {
+ // Step 1: Automatic vendor detection
+ guard let parser = vendorDetector.detectVendor(in: directoryURL) else {
+ throw FileScannerError.unsupportedVendor("Could not identify blackbox vendor from file patterns")
+ }
+ currentParser = parser
+
+ // Step 2: Get video file list using FileSystemService
+ let videoFileURLs: [URL]
+ do {
+ videoFileURLs = try fileSystemService.listVideoFiles(at: directoryURL)
+ } catch FileSystemError.fileNotFound {
+ throw FileScannerError.directoryNotFound(directoryURL.path)
+ } catch FileSystemError.accessDenied {
+ throw FileScannerError.cannotEnumerateDirectory(directoryURL.path)
+ }
+
+ // Step 3: Parse each file with detected parser to create VideoFileInfo
+ var videoFiles: [VideoFileInfo] = []
+ for fileURL in videoFileURLs {
+ if let fileInfo = parser.parseVideoFile(fileURL) {
+ videoFiles.append(fileInfo)
+ }
+ }
+
+ // 4step: Multi-channel grouping
+ let groups = groupVideoFiles(videoFiles)
+
+ return groups
+ }
+
+ /*
+ 
+ Method 2: countVideoFiles
+ 
+
+ [Purpose]
+ Quick count of video files without filename parsing
+
+ [Usage Scenarios]
+ 1. Progress display:
+ "Total file count: 1000 "
+ "Scanning... (500/1000)"
+
+ 2. Quick check:
+ "Are there video files on the SD card?"
+
+ 3. Memory approximately:
+ When only count is needed without detailed information
+
+ [Difference from scanDirectory()]
+ scanDirectory():
+ - Filename regex matching
+ - VideoFileInfo creation
+ - Grouping
+ - Memory: O(M) - M is video file count
+ - Time: approximately 100-200ms
+
+ countVideoFiles():
+ - Check extensions only
+ - Memory: O(1) - count variable only
+ - Time: approximately 50-100ms (2x faster)
+
+ [Return Type: Int]
+ Returns 0 on error (not throws):
+ - Directory not found 0
+ - Insufficient permissions 0
+ - No files 0
+
+ User-friendly handling:
+ ```swift
+ let count = scanner.countVideoFiles(in: url)
+ if count == 0 {
+ print("No video files found")
+ } else {
+ print("\(count) files found")
+ }
+ ```
+ 
+ */
+
+ /// @brief Quickly count video files in directory
+ ///
+ /// Performs quick count by checking extensions only without filename parsing.
+ /// Approximately 2x faster than scanDirectory() and uses minimal memory.
+ ///
+ /// @param directoryURL URL of directory to scan
+ /// @return Number of video files, or 0 on error
+ ///
+ /// Usage example:
+ /// ```swift
+ /// let scanner = FileScanner()
+ /// let count = scanner.countVideoFiles(in: sdCardURL)
+ ///
+ /// if count == 0 {
+ /// print("No video files found")
+ /// } else {
+ /// print("\(count) files found")
+ /// // Now start full scan
+ /// let groups = try scanner.scanDirectory(sdCardURL)
+ /// }
+ /// ```
+ ///
+ /// Progress display example:
+ /// ```swift
+ /// let totalCount = scanner.countVideoFiles(in: sdCardURL)
+ /// var scannedCount = 0
+ ///
+ /// // Update progress while scanning
+ /// for group in groups {
+ /// scannedCount += group.channelCount
+ /// let progress = Double(scannedCount) / Double(totalCount)
+ /// updateProgressBar(progress)
+ /// }
+ /// ```
+ ///
+ /// Note:
+ /// - Returns 0 on error (not throws)
+ /// - Faster than scanDirectory() by omitting filename parsing
+ /// - Memory usage: O(1) - count variable only
+ func countVideoFiles(in directoryURL: URL) -> Int {
+ // Get video file list using FileSystemService
+ // Returns 0 on error (no files or access denied)
+ guard let videoFileURLs = try? fileSystemService.listVideoFiles(at: directoryURL) else {
+ return 0
+ }
+
+ return videoFileURLs.count
+ }
+
+ // MARK: - Private Methods
+
+
+ /*
+ 
+ Method 4: groupVideoFiles (Private)
+ 
+
+ [Purpose]
+ Combines individual video files into multi-channel groups
+
+ [Grouping Criteria]
+ - baseFilename: "20240115_143025" (time)
+ - eventType:.normal,.event,.parking
+
+ Same time + same event type = one group
+
+ [Grouping Example]
+ Input (individual files):
+ ```
+ [
+ VideoFileInfo(baseFilename: "20240115_143025", position:.front, eventType:.normal),
+ VideoFileInfo(baseFilename: "20240115_143025", position:.rear, eventType:.normal),
+ VideoFileInfo(baseFilename: "20240115_143125", position:.front, eventType:.event),
+ ]
+ ```
+
+ Dictionary Grouping:
+ ```
+ {
+ "20240115_143025_normal": [Front, Rear],
+ "20240115_143125_event": [Front]
+ }
+ ```
+
+ Output (groups):
+ ```
+ [
+ VideoFileGroup(files: [Front, Rear], timestamp: 2024-01-15 14:30:25),
+ VideoFileGroup(files: [Front], timestamp: 2024-01-15 14:31:25)
+ ]
+ ```
+
+ [Sorting]
+ 1. Sorting files within group:
+ Sort by displayPriority (Front Rear Left Interior)
+
+ 2. Group sorting:
+ Descending by timestamp (newest first)
+
+ [Using Dictionary]
+ ```swift
+ var groups: [String: [VideoFileInfo]] = [:]
+ let key = "\(file.baseFilename)_\(file.eventType.rawValue)"
+ groups[key, default: []].append(file)
+ ```
+
+ Or:
+ ```swift
+ if groups[key] == nil {
+ groups[key] = []
+ }
+ groups[key]?.append(file)
+ ```
+
+ [Performance]
+ - Dictionary Grouping: O(N) - N is file count
+ - Sorting: O(M log M) - M is group count
+ - Total: O(N + M log M)
+ 
+ */
+
+ /// @brief Combines individual video files into multi-channel groups
+ ///
+ /// Groups files with the same time (baseFilename) and event type.
+ ///
+ /// @param files Array of VideoFileInfo
+ /// @return Array of VideoFileGroup (sorted newest first)
+ ///
+ /// Grouping process:
+ /// 1. Create Dictionary with baseFilename + eventType as key
+ /// 2. Accumulate files with same key into array
+ /// 3. Sort by camera position within each group (Front Rear...)
+ /// 4. Sort groups by timestamp descending (newest first)
+ ///
+ /// Example:
+ /// ```swift
+ /// // Input
+ /// let files = [
+ /// VideoFileInfo(baseFilename: "20240115_143025", position:.front,...),
+ /// VideoFileInfo(baseFilename: "20240115_143025", position:.rear,...)
+ /// ]
+ ///
+ /// // Grouping
+ /// let groups = groupVideoFiles(files)
+ /// // groups[0].files = [Front, Rear]
+ /// // groups[0].channelCount = 2
+ /// ```
+ ///
+ /// Note:
+ /// - group within file Sort by displayPriority
+ /// - group Descending by timestamp sorting (newest first)
+ private func groupVideoFiles(_ files: [VideoFileInfo]) -> [VideoFileGroup] {
+ // 1step: Dictionary Grouping
+ // Key: "baseFilename_eventType" (e.g. "20240115_143025_normal")
+ var groups: [String: [VideoFileInfo]] = [:]
+
+ for file in files {
+ let key = "\(file.baseFilename)_\(file.eventType.rawValue)"
+ if groups[key] == nil {
+ groups[key] = []
+ }
+ groups[key]?.append(file)
+ }
+
+ // Step 2: Convert to VideoFileGroup
+ return groups.values.map { groupFiles in
+ // 2-1: Sort files within group
+ // displayPriority: Front(0) Rear(1) Left(2) Interior(3)
+ let sortedFiles = groupFiles.sorted { $0.position.displayPriority < $1.position.displayPriority }
+ return VideoFileGroup(files: sortedFiles)
+ }.sorted { $0.timestamp > $1.timestamp } // 2-2: group sorted newest first
+ }
 }
 
 // MARK: - Supporting Types
 
 /*
- ───────────────────────────────────────────────────────────────────────────
- VideoFileInfo 구조체
- ───────────────────────────────────────────────────────────────────────────
+ 
+ VideoFileInfo Structure
+ 
 
- 【목적】
- 개별 비디오 파일의 메타데이터를 담는 경량 구조체
+ [Purpose]
+ Lightweight structure containing metadata for individual video files
 
- 【필드 설명】
- - url: 파일의 URL (파일 열기용)
- - timestamp: 녹화 시작 시각 (정렬, 필터링용)
- - position: 카메라 위치 (전방/후방 구분)
- - eventType: 이벤트 타입 (일반/이벤트/주차)
- - fileSize: 파일 크기 (저장 공간 계산용)
- - baseFilename: 기본 파일명 (그룹화 키)
+ [Field Descriptions]
+ - url: file URL (file Open)
+ - timestamp: recording start time (sorting, Filtering)
+ - position: camera position (Front/Rear distinction)
+ - eventType: event type (normal//)
+ - fileSize: file size (Storage space calculation)
+ - baseFilename: Base filename (Grouping key)
 
- 【struct 사용 이유】
- - 값 타입: 복사 시 독립적
- - 가벼움: 참조 카운트 없음
- - 불변성: let으로 선언하여 안전성 보장
+ [Reasons for Using struct]
+ - value type: 
+ - Lightweight: reference none
+ -: let before 
 
- 【사용 시나리오】
+ [Usage Scenarios]
  ```swift
  let fileInfo = VideoFileInfo(
  url: URL(fileURLWithPath: "/Videos/20240115_143025_F.mp4"),
  timestamp: Date(),
- position: .front,
- eventType: .normal,
- fileSize: 104857600,  // 100 MB
+ position:.front,
+ eventType:.normal,
+ fileSize: 104857600, // 100 MB
  baseFilename: "20240115_143025"
  )
 
- print(fileInfo.url.lastPathComponent)  // "20240115_143025_F.mp4"
- print(fileInfo.position)                // CameraPosition.front
+ print(fileInfo.url.lastPathComponent) // "20240115_143025_F.mp4"
+ print(fileInfo.position) // CameraPosition.front
  ```
- ───────────────────────────────────────────────────────────────────────────
+ 
  */
 
 /// @struct VideoFileInfo
-/// @brief 개별 비디오 파일의 정보
+/// @brief Information about individual video file
 ///
-/// 파일명을 파싱하여 추출한 메타데이터를 담는 경량 구조체입니다.
-/// 그룹화 전의 개별 파일 단위 정보를 표현합니다.
+/// Lightweight structure containing metadata extracted from filename parsing.
+/// Represents individual file-level information before grouping.
 struct VideoFileInfo {
-    /// @var url
-    /// @brief 파일의 URL
-    ///
-    /// 파일을 열거나 메타데이터를 읽을 때 사용:
-    /// ```swift
-    /// let data = try Data(contentsOf: fileInfo.url)
-    /// ```
-    let url: URL
+ /// @var url
+ /// @brief File URL
+ ///
+ /// Used to open file or read metadata:
+ /// ```swift
+ /// let data = try Data(contentsOf: fileInfo.url)
+ /// ```
+ let url: URL
 
-    /// @var timestamp
-    /// @brief 녹화 시작 시각
-    ///
-    /// 파일명에서 추출한 날짜/시간:
-    /// "20240115_143025_F.mp4" → Date(2024-01-15 14:30:25 +0900)
-    ///
-    /// 용도:
-    /// - 파일 정렬 (최신순/오래된순)
-    /// - 날짜 필터링 (오늘, 이번 주 등)
-    /// - UI 표시 ("2024-01-15 14:30")
-    let timestamp: Date
+ /// @var timestamp
+ /// @brief Recording start time
+ ///
+ /// file extractionone date/Time:
+ /// "20240115_143025_F.mp4" Date(2024-01-15 14:30:25 +0900)
+ ///
+ /// Purpose:
+ /// - File sorting (newest first/oldest)
+ /// - Date filtering (, etc.)
+ /// - UI display ("2024-01-15 14:30")
+ let timestamp: Date
 
-    /// @var position
-    /// @brief 카메라 위치
-    ///
-    /// 파일명의 위치 코드에서 추출:
-    /// - "F" → .front (전방)
-    /// - "R" → .rear (후방)
-    /// - "L" → .left (좌측)
-    /// - "I" → .interior (실내)
-    ///
-    /// 용도:
-    /// - 멀티채널 그룹화
-    /// - UI에서 채널 선택
-    let position: CameraPosition
+ /// @var position
+ /// @brief camera position
+ ///
+ /// Extracted from position code in filename:
+ /// - "F".front (Front)
+ /// - "R".rear (Rear)
+ /// - "L".left (Left)
+ /// - "I".interior (Interior)
+ ///
+ /// Purpose:
+ /// - Multi-channel grouping
+ /// - UI channels select
+ let position: CameraPosition
 
-    /// @var eventType
-    /// @brief 이벤트 타입
-    ///
-    /// 파일 경로에서 감지:
-    /// - "/Normal/" 포함 → .normal (일반 녹화)
-    /// - "/Event/" 포함 → .event (충격 감지)
-    /// - "/Parking/" 포함 → .parking (주차 모드)
-    ///
-    /// 용도:
-    /// - 이벤트 필터링
-    /// - UI 아이콘 표시 (⚠️ 이벤트)
-    let eventType: EventType
+ /// @var eventType
+ /// @brief event type
+ ///
+ /// Detected from file path:
+ /// - "/Normal/" include.normal (Normal recordings)
+ /// - "/Event/" include.event (impact detection)
+ /// - "/Parking/" include.parking (Parking mode)
+ ///
+ /// Purpose:
+ /// - Event filtering
+ /// - UI icon display (� )
+ let eventType: EventType
 
-    /// @var fileSize
-    /// @brief 파일 크기 (바이트)
-    ///
-    /// FileManager.attributesOfItem에서 조회:
-    /// ```swift
-    /// let mb = Double(fileSize) / 1_000_000
-    /// print(String(format: "%.1f MB", mb))
-    /// ```
-    ///
-    /// 용도:
-    /// - 저장 공간 계산
-    /// - 전송 시간 예측
-    /// - 대용량 파일 경고
-    let fileSize: UInt64
+ /// @var fileSize
+ /// @brief File size (bytes)
+ ///
+ /// Retrieved from FileManager.attributesOfItem:
+ /// ```swift
+ /// let mb = Double(fileSize) / 1_000_000
+ /// print(String(format: "%.1f MB", mb))
+ /// ```
+ ///
+ /// Purpose:
+ /// - Storage space calculation
+ /// - Transfer time estimation
+ /// - Large file warning
+ let fileSize: UInt64
 
-    /// @var baseFilename
-    /// @brief 기본 파일명 (카메라 위치 코드 제외)
-    ///
-    /// "20240115_143025_F.mp4" → "20240115_143025"
-    ///
-    /// 용도:
-    /// - 멀티채널 그룹화 키
-    /// - 같은 baseFilename = 같은 시각의 다른 채널
-    ///
-    /// 예시:
-    /// - "20240115_143025_F.mp4" → baseFilename: "20240115_143025"
-    /// - "20240115_143025_R.mp4" → baseFilename: "20240115_143025"
-    /// → 같은 그룹으로 묶임
-    let baseFilename: String
+ /// @var baseFilename
+ /// @brief Base filename (camera position exclude)
+ ///
+ /// "20240115_143025_F.mp4" "20240115_143025"
+ ///
+ /// Purpose:
+ /// - Multi-channel grouping key
+ /// - same baseFilename = same time other channels
+ ///
+ /// Example:
+ /// - "20240115_143025_F.mp4" baseFilename: "20240115_143025"
+ /// - "20240115_143025_R.mp4" baseFilename: "20240115_143025"
+ /// Grouped together
+ let baseFilename: String
 }
 
 /*
- ───────────────────────────────────────────────────────────────────────────
- VideoFileGroup 구조체
- ───────────────────────────────────────────────────────────────────────────
+ 
+ VideoFileGroup Structure
+ 
 
- 【목적】
- 같은 시각에 녹화된 멀티채널 비디오 파일의 그룹
+ [Purpose]
+ Group of multi-channel video files recorded at the same time
 
- 【구조】
+ [Structure]
  ```
  VideoFileGroup
- ├── files: [VideoFileInfo]
- │   ├── Front camera
- │   └── Rear camera
- ├── timestamp: Date (첫 번째 파일의 시각)
- ├── eventType: EventType (그룹의 이벤트 타입)
- └── channelCount: Int (채널 수: 1 or 2)
+ files: [VideoFileInfo]
+ Front camera
+ Rear camera
+ timestamp: Date (first file time)
+ eventType: EventType (group event type)
+ channelCount: Int (channels: 1 or 2)
  ```
 
- 【Computed Properties】
- 저장하지 않고 필요할 때 계산:
+ [Computed Properties]
+ storageha neededto Calculation:
  - timestamp: files[0].timestamp
  - eventType: files[0].eventType
  - baseFilename: files[0].baseFilename
- - basePath: files[0]의 디렉토리 경로
+ - basePath: files[0] path
  - channelCount: files.count
- - totalFileSize: 모든 파일 크기의 합
+ - totalFileSize: all file size 
 
- 이점:
- - 메모리 절약
- - 자동 업데이트 (files 변경 시)
- - 일관성 보장
+ point:
+ - memory approximately
+ - automatic (files )
+ - 
 
- 【메서드】
- - file(for:): 특정 위치의 파일 URL 조회
- - hasChannel(_:): 특정 위치의 채널 존재 여부
+ [Methods]
+ - file(for:): specific position file URL query
+ - hasChannel(_:): specific position channels whether
 
- 【사용 예시】
+ use 
  ```swift
  let group = VideoFileGroup(files: [frontFile, rearFile])
 
- print(group.timestamp)           // 2024-01-15 14:30:25
- print(group.channelCount)        // 2
- print(group.totalFileSize)       // 200000000 (200 MB)
+ print(group.timestamp) // 2024-01-15 14:30:25
+ print(group.channelCount) // 2
+ print(group.totalFileSize) // 200000000 (200 MB)
 
- if let frontURL = group.file(for: .front) {
- print(frontURL.lastPathComponent)  // "20240115_143025_F.mp4"
+ if let frontURL = group.file(for:.front) {
+ print(frontURL.lastPathComponent) // "20240115_143025_F.mp4"
  }
 
  if group.hasChannel(.rear) {
- print("후방 카메라 녹화 있음")
+ print("Rear camera recording exists")
  }
  ```
- ───────────────────────────────────────────────────────────────────────────
+ 
  */
 
 /// @struct VideoFileGroup
-/// @brief 같은 시각에 녹화된 멀티채널 비디오 파일의 그룹
+/// @brief Group of multi-channel video files recorded at the same time
 ///
-/// 전방/후방 카메라가 동시에 녹화한 파일들을 하나의 그룹으로 표현합니다.
+/// Represents files recorded simultaneously by front/rear cameras as one group.
 struct VideoFileGroup {
-    /// @var files
-    /// @brief 그룹에 속한 비디오 파일들
-    ///
-    /// 정렬 순서: displayPriority (Front → Rear → Left → Interior)
-    ///
-    /// 일반적인 구성:
-    /// - 1채널: [Front]
-    /// - 2채널: [Front, Rear]
-    /// - 3채널: [Front, Rear, Interior] (고급 모델)
-    let files: [VideoFileInfo]
+ /// @var files
+ /// @brief Video files belonging to the group
+ ///
+ /// Sort order: displayPriority (Front Rear Left Interior)
+ ///
+ /// Typical configuration:
+ /// - 1channels: [Front]
+ /// - 2channels: [Front, Rear]
+ /// - 3channels: [Front, Rear, Interior] (advanced models)
+ let files: [VideoFileInfo]
 
-    /*
-     ───────────────────────────────────────────────────────────────────────
-     Computed Properties
-     ───────────────────────────────────────────────────────────────────────
+ /*
+ 
+ Computed Properties
+ 
 
-     저장하지 않고 필요할 때 계산하는 속성들입니다.
+ Properties computed when needed without storage.
 
-     장점:
-     1. 메모리 절약: 값을 저장하지 않음
-     2. 자동 업데이트: files가 변경되면 자동 반영
-     3. 일관성: files와 항상 동기화
+ Advantages:
+ 1. Memory approximately: value storageha none
+ 2. Automatic update: Automatically reflects when files change
+ 3. Consistency: Always synchronized with files
 
-     단점:
-     1. 계산 비용: 매번 호출 시 계산
+ Disadvantages:
+ 1. Computation cost: Calculated on each call
 
-     그러나 여기서는 단순 조회 작업이므로 비용이 거의 없습니다.
-     ───────────────────────────────────────────────────────────────────────
-     */
+ However, cost is minimal here as these are simple lookup operations.
+ 
+ */
 
-    /// @var timestamp
-    /// @brief 녹화 시작 시각
-    ///
-    /// 그룹의 첫 번째 파일 시각을 반환합니다.
-    /// 모든 파일은 같은 시각이므로 첫 번째 파일만 확인.
-    ///
-    /// files가 비어 있으면 현재 시각 반환 (방어 코드).
-    var timestamp: Date {
-        return files.first?.timestamp ?? Date()
-    }
+ /// @var timestamp
+ /// @brief Recording start time
+ ///
+ /// Returns the time of the first file in the group.
+ /// All files have the same time, so only check the first file.
+ ///
+ /// Returns current time if files is empty (defensive code).
+ var timestamp: Date {
+ return files.first?.timestamp ?? Date()
+ }
 
-    /// @var eventType
-    /// @brief 이벤트 타입
-    ///
-    /// 그룹의 첫 번째 파일 이벤트 타입을 반환합니다.
-    /// 모든 파일은 같은 이벤트 타입이므로 첫 번째 파일만 확인.
-    ///
-    /// files가 비어 있으면 .unknown 반환.
-    var eventType: EventType {
-        return files.first?.eventType ?? .unknown
-    }
+ /// @var eventType
+ /// @brief event type
+ ///
+ /// Returns the event type of the first file in the group.
+ /// All files have the same event type, so only check the first file.
+ ///
+ /// Returns.unknown if files is empty.
+ var eventType: EventType {
+ return files.first?.eventType ??.unknown
+ }
 
-    /// @var baseFilename
-    /// @brief 기본 파일명
-    ///
-    /// 그룹의 첫 번째 파일 baseFilename을 반환합니다.
-    /// 예: "20240115_143025"
-    var baseFilename: String {
-        return files.first?.baseFilename ?? ""
-    }
+ /// @var baseFilename
+ /// @brief Base filename
+ ///
+ /// Returns the baseFilename of the first file in the group.
+ /// e.g. "20240115_143025"
+ var baseFilename: String {
+ return files.first?.baseFilename ?? ""
+ }
 
-    /// @var basePath
-    /// @brief 기본 경로 (디렉토리 경로)
-    ///
-    /// 그룹의 첫 번째 파일이 위치한 디렉토리 경로를 반환합니다.
-    ///
-    /// 예시:
-    /// - 파일: "/Volumes/SD/Normal/20240115_143025_F.mp4"
-    /// - basePath: "/Volumes/SD/Normal"
-    ///
-    /// 용도:
-    /// - 같은 디렉토리의 다른 파일 접근
-    /// - 경로 표시
-    var basePath: String {
-        guard let firstFile = files.first else { return "" }
-        return firstFile.url.deletingLastPathComponent().path
-    }
+ /// @var basePath
+ /// @brief base path ( path)
+ ///
+ /// Returns the directory path where the first file in the group is located.
+ ///
+ /// Example:
+ /// - File: "/Volumes/SD/Normal/20240115_143025_F.mp4"
+ /// - basePath: "/Volumes/SD/Normal"
+ ///
+ /// Purpose:
+ /// - Access other files in same directory
+ /// - Path display
+ var basePath: String {
+ guard let firstFile = files.first else { return "" }
+ return firstFile.url.deletingLastPathComponent().path
+ }
 
-    /// @var channelCount
-    /// @brief 채널 수
-    ///
-    /// 그룹에 포함된 비디오 파일 개수를 반환합니다.
-    ///
-    /// 일반적인 값:
-    /// - 1: 단일 채널 (전방만)
-    /// - 2: 듀얼 채널 (전방 + 후방)
-    /// - 3: 트리플 채널 (전방 + 후방 + 실내)
-    ///
-    /// 용도:
-    /// - UI 레이아웃 결정 (1채널: 전체 화면, 2채널: 분할 화면)
-    /// - 필터링 (2채널 녹화만 보기)
-    var channelCount: Int {
-        return files.count
-    }
+ /// @var channelCount
+ /// @brief channels 
+ ///
+ /// Returns the number of video files in the group.
+ ///
+ /// Typical values:
+ /// - 1: Single channels (Frontonly)
+ /// - 2: Dual channels (Front + Rear)
+ /// - 3: Triple channels (Front + Rear + Interior)
+ ///
+ /// Purpose:
+ /// - UI layout decision (1channels: Total, 2channels: to )
+ /// - Filtering (2channel recordings only )
+ var channelCount: Int {
+ return files.count
+ }
 
-    /// @var totalFileSize
-    /// @brief 전체 파일 크기 (바이트)
-    ///
-    /// 그룹의 모든 파일 크기를 합산합니다.
-    ///
-    /// 계산:
-    /// totalFileSize = file1.size + file2.size + ...
-    ///
-    /// 예시:
-    /// - Front: 100 MB
-    /// - Rear: 80 MB
-    /// - Total: 180 MB
-    ///
-    /// 용도:
-    /// - 저장 공간 계산
-    /// - 전송 시간 예측
-    /// - 대용량 그룹 경고
-    ///
-    /// reduce 사용:
-    /// ```swift
-    /// [100, 80, 50].reduce(0, +)  // 230
-    /// [100, 80, 50].reduce(0) { $0 + $1 }  // 230
-    /// ```
-    var totalFileSize: UInt64 {
-        return files.reduce(0) { $0 + $1.fileSize }
-    }
+ /// @var totalFileSize
+ /// @brief Total file size (bytes)
+ ///
+ /// Sums the sizes of all files in the group.
+ ///
+ /// Calculation:
+ /// totalFileSize = file1.size + file2.size +...
+ ///
+ /// Example:
+ /// - Front: 100 MB
+ /// - Rear: 80 MB
+ /// - Total: 180 MB
+ ///
+ /// Purpose:
+ /// - Storage space calculation
+ /// - Transfer time estimation
+ /// - large group warning
+ ///
+ /// Using reduce:
+ /// ```swift
+ /// [100, 80, 50].reduce(0, +) // 230
+ /// [100, 80, 50].reduce(0) { $0 + $1 } // 230
+ /// ```
+ var totalFileSize: UInt64 {
+ return files.reduce(0) { $0 + $1.fileSize }
+ }
 
-    /*
-     ───────────────────────────────────────────────────────────────────────
-     메서드
-     ───────────────────────────────────────────────────────────────────────
+ /*
+ 
+ method
+ 
 
-     특정 카메라 위치의 파일을 조회하는 헬퍼 메서드들입니다.
-     ───────────────────────────────────────────────────────────────────────
-     */
+ Helper methods to retrieve files for specific camera positions.
+ 
+ */
 
-    /// @brief 특정 카메라 위치의 파일 URL 조회
-    ///
-    /// @param position 조회할 카메라 위치
-    /// @return 해당 위치의 파일 URL, 없으면 nil
-    ///
-    /// 사용 예시:
-    /// ```swift
-    /// let group = VideoFileGroup(files: [frontFile, rearFile])
-    ///
-    /// if let frontURL = group.file(for: .front) {
-    ///     print("전방 카메라: \(frontURL.lastPathComponent)")
-    ///     // 전방 비디오 재생
-    /// }
-    ///
-    /// if let rearURL = group.file(for: .rear) {
-    ///     print("후방 카메라: \(rearURL.lastPathComponent)")
-    ///     // 후방 비디오 재생
-    /// } else {
-    ///     print("후방 카메라 없음")
-    /// }
-    /// ```
-    ///
-    /// 내부 동작:
-    /// files 배열에서 position이 일치하는 첫 번째 파일의 URL 반환:
-    /// ```swift
-    /// files.first { $0.position == position }?.url
-    /// ```
-    func file(for position: CameraPosition) -> URL? {
-        return files.first { $0.position == position }?.url
-    }
+ /// @brief specific camera position file URL query
+ ///
+ /// @param position queryto camera position
+ /// @return File URL for that position, or nil if not found
+ ///
+ /// Usage example:
+ /// ```swift
+ /// let group = VideoFileGroup(files: [frontFile, rearFile])
+ ///
+ /// if let frontURL = group.file(for:.front) {
+ /// print("Front camera: \(frontURL.lastPathComponent)")
+ /// // Front 
+ /// }
+ ///
+ /// if let rearURL = group.file(for:.rear) {
+ /// print("Rear camera: \(rearURL.lastPathComponent)")
+ /// // Rear 
+ /// } else {
+ /// print("Rear camera none")
+ /// }
+ /// ```
+ ///
+ /// Internal operation:
+ /// Returns URL of first file in files array matching position:
+ /// ```swift
+ /// files.first { $0.position == position }?.url
+ /// ```
+ func file(for position: CameraPosition) -> URL? {
+ return files.first { $0.position == position }?.url
+ }
 
-    /// @brief 특정 카메라 위치의 채널 존재 여부 확인
-    ///
-    /// @param position 확인할 카메라 위치
-    /// @return 해당 위치의 파일이 있으면 true
-    ///
-    /// 사용 예시:
-    /// ```swift
-    /// let group = VideoFileGroup(files: [frontFile])
-    ///
-    /// if group.hasChannel(.front) {
-    ///     print("✓ 전방 카메라")
-    /// }
-    ///
-    /// if group.hasChannel(.rear) {
-    ///     print("✓ 후방 카메라")
-    /// } else {
-    ///     print("✗ 후방 카메라 없음")
-    /// }
-    ///
-    /// // UI 버튼 활성화/비활성화
-    /// rearButton.isEnabled = group.hasChannel(.rear)
-    /// ```
-    ///
-    /// 내부 동작:
-    /// files 배열에 position이 일치하는 파일이 있는지 확인:
-    /// ```swift
-    /// files.contains { $0.position == position }
-    /// ```
-    func hasChannel(_ position: CameraPosition) -> Bool {
-        return files.contains { $0.position == position }
-    }
+ /// @brief specific camera position channels whether check
+ ///
+ /// @param position checkto camera position
+ /// @return true if file exists for that position
+ ///
+ /// Usage example:
+ /// ```swift
+ /// let group = VideoFileGroup(files: [frontFile])
+ ///
+ /// if group.hasChannel(.front) {
+ /// print(" Front camera")
+ /// }
+ ///
+ /// if group.hasChannel(.rear) {
+ /// print(" Rear camera")
+ /// } else {
+ /// print(" Rear camera none")
+ /// }
+ ///
+ /// // Enable/disable UI button
+ /// rearButton.isEnabled = group.hasChannel(.rear)
+ /// ```
+ ///
+ /// Internal operation:
+ /// Check if file matching position exists in files array:
+ /// ```swift
+ /// files.contains { $0.position == position }
+ /// ```
+ func hasChannel(_ position: CameraPosition) -> Bool {
+ return files.contains { $0.position == position }
+ }
 }
 
 /*
- ───────────────────────────────────────────────────────────────────────────
- FileScannerError 열거형
- ───────────────────────────────────────────────────────────────────────────
+ 
+ FileScannerError Enumeration
+ 
 
- 【오류 종류】
- 1. directoryNotFound: 디렉토리가 존재하지 않음
- 2. cannotEnumerateDirectory: 디렉토리 열기 실패 (권한 부족 등)
- 3. invalidPath: 잘못된 경로 (향후 확장용)
+ [Error Types]
+ 1. directoryNotFound: Directory does not exist
+ 2. cannotEnumerateDirectory: Failed to open directory (Insufficient permissions etc.)
+ 3. invalidPath: ( )
 
- 【LocalizedError 프로토콜】
- 사용자 친화적인 오류 메시지 제공:
+ [LocalizedError Protocol]
+ useza remove:
  ```swift
  do {
  let groups = try scanner.scanDirectory(url)
  } catch {
- print(error.localizedDescription)  // "Directory not found: /path"
+ print(error.localizedDescription) // "Directory not found: /path"
  }
  ```
 
- 【사용 패턴】
+ [Usage Pattern]
  ```swift
  do {
  let groups = try scanner.scanDirectory(sdCardURL)
- // 성공 처리
+ // Handle success
  } catch FileScannerError.directoryNotFound(let path) {
- showAlert("디렉토리를 찾을 수 없습니다: \(path)")
+ showAlert("Directory not found: \(path)")
  } catch FileScannerError.cannotEnumerateDirectory(let path) {
- showAlert("디렉토리를 읽을 수 없습니다: \(path)")
+ showAlert("Cannot read directory: \(path)")
  } catch {
- showAlert("알 수 없는 오류: \(error)")
+ showAlert("Unknown error: \(error)")
  }
  ```
- ───────────────────────────────────────────────────────────────────────────
+ 
  */
 
 /// @enum FileScannerError
-/// @brief 파일 스캔 중 발생할 수 있는 오류
+/// @brief Errors that can occur during file scanning
 enum FileScannerError: Error {
-    /// @brief 디렉토리가 존재하지 않음
-    ///
-    /// 발생 시나리오:
-    /// - SD 카드가 마운트되지 않음
-    /// - 경로 오타
-    /// - SD 카드가 제거됨
-    ///
-    /// 복구 방법:
-    /// 1. SD 카드 재삽입
-    /// 2. 경로 확인
-    /// 3. 다른 경로 시도
-    case directoryNotFound(String)
+ /// @brief Directory does not exist
+ ///
+ /// Occurrence scenarios:
+ /// - SD card not mounted
+ /// - Path typo
+ /// - SD card removed
+ ///
+ /// Recovery methods:
+ /// 1. Reinsert SD card
+ /// 2. Verify path
+ /// 3. Try different path
+ case directoryNotFound(String)
 
-    /// @brief 디렉토리 열기 실패
-    ///
-    /// 발생 시나리오:
-    /// - 읽기 권한 부족
-    /// - 디스크 I/O 오류
-    /// - 파일시스템 손상
-    ///
-    /// 복구 방법:
-    /// 1. 권한 확인 (chmod)
-    /// 2. 디스크 검사
-    /// 3. SD 카드 교체
-    case cannotEnumerateDirectory(String)
+ /// @brief Failed to open directory
+ ///
+ /// Occurrence scenarios:
+ /// - Insufficient permissions
+ /// - Disk I/O error
+ /// - Filesystem corruption
+ ///
+ /// Recovery methods:
+ /// 1. Check permissions (chmod)
+ /// 2. Check disk
+ /// 3. Replace SD card
+ case cannotEnumerateDirectory(String)
 
-    /// @brief 지원하지 않는 블랙박스 제조사
-    ///
-    /// 발생 시나리오:
-    /// - 파일명 패턴이 등록된 제조사와 일치하지 않음
-    /// - 새로운 블랙박스 제조사의 SD 카드
-    ///
-    /// 복구 방법:
-    /// 1. 해당 제조사의 파서 구현 및 등록
-    /// 2. 다른 SD 카드 시도
-    case unsupportedVendor(String)
+ /// @brief Unsupported dashcam vendor
+ ///
+ /// Occurrence scenarios:
+ /// - file registervendor and ha none
+ /// - SD card from new dashcam vendor
+ ///
+ /// Recovery methods:
+ /// 1. remove parser implement and register
+ /// 2. Try different SD card
+ case unsupportedVendor(String)
 
-    /// @brief 잘못된 경로
-    ///
-    /// 향후 확장을 위한 예약 오류.
-    /// 현재는 사용되지 않음.
-    case invalidPath(String)
+ /// @brief Invalid path
+ ///
+ /// one approximately.
+ /// Not currently used.
+ case invalidPath(String)
 }
 
 extension FileScannerError: LocalizedError {
-    /// @brief 사용자에게 표시할 오류 메시지
-    var errorDescription: String? {
-        switch self {
-        case .directoryNotFound(let path):
-            return "Directory not found: \(path)"
-        case .cannotEnumerateDirectory(let path):
-            return "Cannot enumerate directory: \(path)"
-        case .unsupportedVendor(let message):
-            return "Unsupported vendor: \(message)"
-        case .invalidPath(let path):
-            return "Invalid path: \(path)"
-        }
-    }
+ /// @brief Error message to display to user
+ var errorDescription: String? {
+ switch self {
+ case.directoryNotFound(let path):
+ return "Directory not found: \(path)"
+ case.cannotEnumerateDirectory(let path):
+ return "Cannot enumerate directory: \(path)"
+ case.unsupportedVendor(let message):
+ return "Unsupported vendor: \(message)"
+ case.invalidPath(let path):
+ return "Invalid path: \(path)"
+ }
+ }
 }
 
 /*
- ═══════════════════════════════════════════════════════════════════════════
- 통합 가이드
- ═══════════════════════════════════════════════════════════════════════════
+ 
+ 
+ 
 
- 【1. 기본 사용법】
+ [1. Basic Usage]
 
  ```swift
  let scanner = FileScanner()
@@ -1043,64 +1043,64 @@ extension FileScannerError: LocalizedError {
 
  do {
  let groups = try scanner.scanDirectory(sdCardURL)
- print("\(groups.count)개 녹화 그룹 발견")
+ print("\(groups.count) recording groups found")
 
  for group in groups {
  let dateFormatter = DateFormatter()
- dateFormatter.dateStyle = .short
- dateFormatter.timeStyle = .short
+ dateFormatter.dateStyle =.short
+ dateFormatter.timeStyle =.short
 
  print("[\(dateFormatter.string(from: group.timestamp))]")
- print("  채널: \(group.channelCount)")
- print("  타입: \(group.eventType)")
- print("  크기: \(group.totalFileSize / 1_000_000) MB")
+ print(" channels: \(group.channelCount)")
+ print(" type: \(group.eventType)")
+ print(" size: \(group.totalFileSize / 1_000_000) MB")
 
- if let frontURL = group.file(for: .front) {
- print("  전방: \(frontURL.lastPathComponent)")
+ if let frontURL = group.file(for:.front) {
+ print(" Front: \(frontURL.lastPathComponent)")
  }
- if let rearURL = group.file(for: .rear) {
- print("  후방: \(rearURL.lastPathComponent)")
+ if let rearURL = group.file(for:.rear) {
+ print(" Rear: \(rearURL.lastPathComponent)")
  }
  print()
  }
  } catch {
- print("스캔 실패: \(error.localizedDescription)")
+ print("Scan failed: \(error.localizedDescription)")
  }
  ```
 
- 【2. 필터링 예시】
+ [2. Filtering Examples]
 
  ```swift
  let groups = try scanner.scanDirectory(sdCardURL)
 
- // 이벤트 녹화만 필터링
- let eventGroups = groups.filter { $0.eventType == .event }
- print("이벤트 녹화: \(eventGroups.count)개")
+ // Event recordings only Filtering
+ let eventGroups = groups.filter { $0.eventType ==.event }
+ print("Event recordings: \(eventGroups.count) ")
 
- // 오늘 녹화만 필터링
+ // recording only Filtering
  let calendar = Calendar.current
  let todayGroups = groups.filter {
  calendar.isDateInToday($0.timestamp)
  }
- print("오늘 녹화: \(todayGroups.count)개")
+ print("Today's recordings: \(todayGroups.count) ")
 
- // 특정 날짜 범위 필터링
- let startDate = Date(timeIntervalSinceNow: -7 * 24 * 3600)  // 7일 전
+ // specific date Filtering
+ let startDate = Date(timeIntervalSinceNow: -7 * 24 * 3600) // 7 before
  let recentGroups = groups.filter {
  $0.timestamp > startDate
  }
- print("최근 7일: \(recentGroups.count)개")
+ print("Last 7 days: \(recentGroups.count) ")
 
- // 2채널 녹화만 필터링
+ // 2channel recordings only Filtering
  let dualChannelGroups = groups.filter { $0.channelCount == 2 }
- print("2채널 녹화: \(dualChannelGroups.count)개")
+ print("2channels recording: \(dualChannelGroups.count) ")
 
- // 대용량 파일 필터링 (100 MB 이상)
+ // large files Filtering (100 MB )
  let largeGroups = groups.filter { $0.totalFileSize > 100_000_000 }
- print("대용량 녹화: \(largeGroups.count)개")
+ print("Large recordings: \(largeGroups.count) ")
  ```
 
- 【3. 진행률 표시】
+ [3. Progress Display]
 
  ```swift
  @MainActor
@@ -1112,35 +1112,35 @@ extension FileScannerError: LocalizedError {
  func scanDirectory(_ url: URL) async {
  let scanner = FileScanner()
 
- // 1단계: 빠른 카운트
- statusMessage = "파일 개수 확인 중..."
+ // 1step: 
+ statusMessage = "Checking file count..."
  let totalCount = await Task.detached {
  scanner.countVideoFiles(in: url)
  }.value
 
  if totalCount == 0 {
- statusMessage = "비디오 파일을 찾을 수 없습니다"
+ statusMessage = "No video files found"
  return
  }
 
- statusMessage = "\(totalCount)개 파일 스캔 중..."
+ statusMessage = "\(totalCount) files Scanning..."
  progress = 0.0
 
- // 2단계: 전체 스캔
+ // 2step: Total 
  do {
  groups = try await Task.detached {
  try scanner.scanDirectory(url)
  }.value
 
- statusMessage = "스캔 완료: \(groups.count)개 녹화"
+ statusMessage = "Scan complete: \(groups.count) recordings"
  progress = 1.0
  } catch {
- statusMessage = "스캔 실패: \(error.localizedDescription)"
+ statusMessage = "Scan failed: \(error.localizedDescription)"
  }
  }
  }
 
- // SwiftUI에서 사용
+ // SwiftUI use
  struct ScanView: View {
  @StateObject private var viewModel = ScanViewModel()
 
@@ -1148,7 +1148,7 @@ extension FileScannerError: LocalizedError {
  VStack {
  Text(viewModel.statusMessage)
  ProgressView(value: viewModel.progress)
- Button("스캔 시작") {
+ Button(" start") {
  Task {
  await viewModel.scanDirectory(sdCardURL)
  }
@@ -1158,7 +1158,7 @@ extension FileScannerError: LocalizedError {
  }
  ```
 
- 【4. SwiftUI 리스트 통합】
+ [4. SwiftUI List Integration]
 
  ```swift
  struct VideoListView: View {
@@ -1176,37 +1176,37 @@ extension FileScannerError: LocalizedError {
 
  var body: some View {
  HStack {
- // 이벤트 아이콘
- if group.eventType == .event {
+ // Event icon
+ if group.eventType ==.event {
  Image(systemName: "exclamationmark.triangle.fill")
- .foregroundColor(.red)
+.foregroundColor(.red)
  }
 
- VStack(alignment: .leading) {
- // 날짜/시간
- Text(group.timestamp, style: .date)
- Text(group.timestamp, style: .time)
- .font(.caption)
- .foregroundColor(.secondary)
+ VStack(alignment:.leading) {
+ // Date/time
+ Text(group.timestamp, style:.date)
+ Text(group.timestamp, style:.time)
+.font(.caption)
+.foregroundColor(.secondary)
  }
 
  Spacer()
 
- // 채널 표시
+ // channels display
  HStack(spacing: 4) {
  if group.hasChannel(.front) {
  Image(systemName: "camera.fill")
  }
  if group.hasChannel(.rear) {
  Image(systemName: "camera.fill")
- .rotationEffect(.degrees(180))
+.rotationEffect(.degrees(180))
  }
  }
 
- // 파일 크기
+ // File size
  Text(formatFileSize(group.totalFileSize))
- .font(.caption)
- .foregroundColor(.secondary)
+.font(.caption)
+.foregroundColor(.secondary)
  }
  }
 
@@ -1217,7 +1217,7 @@ extension FileScannerError: LocalizedError {
  }
  ```
 
- 【5. 오류 처리 패턴】
+ [5. Error Handling Patterns]
 
  ```swift
  func handleScan(_ url: URL) {
@@ -1227,34 +1227,34 @@ extension FileScannerError: LocalizedError {
  let groups = try scanner.scanDirectory(url)
 
  if groups.isEmpty {
- showWarning("비디오 파일을 찾을 수 없습니다")
+ showWarning("No video files found")
  } else {
- showSuccess("\(groups.count)개 녹화 발견")
+ showSuccess("\(groups.count) recordings ")
  displayGroups(groups)
  }
 
  } catch FileScannerError.directoryNotFound(let path) {
  showAlert(
- title: "디렉토리를 찾을 수 없습니다",
- message: "경로: \(path)\n\nSD 카드가 마운트되었는지 확인하세요."
+ title: "Directory not found",
+ message: "path: \(path)\n\nPlease check if SD card is mounted."
  )
 
  } catch FileScannerError.cannotEnumerateDirectory(let path) {
  showAlert(
- title: "디렉토리를 읽을 수 없습니다",
- message: "경로: \(path)\n\n읽기 권한을 확인하세요."
+ title: "to no",
+ message: "path: \(path)\n\nPlease check read permissions."
  )
 
  } catch {
  showAlert(
- title: "스캔 실패",
+ title: " ",
  message: error.localizedDescription
  )
  }
  }
  ```
 
- 【6. 테스트 코드】
+ [6. Test Code]
 
  ```swift
  class FileScannerTests: XCTestCase {
@@ -1267,27 +1267,27 @@ extension FileScannerError: LocalizedError {
  }
 
  func testScanDirectory() throws {
- // 테스트 파일 생성
+ // Create test files
  createTestFile("20240115_143025_F.mp4")
  createTestFile("20240115_143025_R.mp4")
  createTestFile("20240115_143125_F.mp4")
 
- // 스캔
+ // Scan
  let groups = try scanner.scanDirectory(testURL)
 
- // 검증
+ // Verify
  XCTAssertEqual(groups.count, 2)
- XCTAssertEqual(groups[0].channelCount, 2)  // 전방 + 후방
- XCTAssertEqual(groups[1].channelCount, 1)  // 전방만
+ XCTAssertEqual(groups[0].channelCount, 2) // Front + Rear
+ XCTAssertEqual(groups[1].channelCount, 1) // Frontonly
  }
 
  func testCountVideoFiles() {
  createTestFile("20240115_143025_F.mp4")
  createTestFile("20240115_143025_R.mp4")
- createTestFile("README.txt")  // 비비디오 파일
+ createTestFile("README.txt") // Non-video file
 
  let count = scanner.countVideoFiles(in: testURL)
- XCTAssertEqual(count, 2)  // 비디오 파일만 카운트
+ XCTAssertEqual(count, 2) // Count video files only
  }
 
  func testDirectoryNotFound() {
@@ -1299,5 +1299,5 @@ extension FileScannerError: LocalizedError {
  }
  ```
 
- ═══════════════════════════════════════════════════════════════════════════
+ 
  */

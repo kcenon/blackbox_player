@@ -1,17 +1,17 @@
 /**
  * @file BlackVueParser.swift
- * @brief BlackVue 블랙박스 파일 파서
+ * @brief BlackVue dashcam file parser
  * @author BlackboxPlayer Development Team
  *
  * @details
- * BlackVue 블랙박스의 파일명 형식과 메타데이터를 파싱합니다.
+ * Parses BlackVue dashcam filename format and metadata.
  *
- * 파일명 형식: YYYYMMDD_HHMMSS_X.mp4
- * - 예: 20240115_143025_F.mp4
+ * Filename format: YYYYMMDD_HHMMSS_X.mp4
+ * - Example: 20240115_143025_F.mp4
  *
- * 메타데이터: Stream #2 (mp4s)
- * - GPS: NMEA 0183 형식
- * - 가속도: 3축 데이터
+ * Metadata: Stream #2 (mp4s)
+ * - GPS: NMEA 0183 format
+ * - Acceleration: 3-axis data
  */
 
 import Foundation
@@ -22,7 +22,7 @@ import Foundation
 
 /**
  * @class BlackVueParser
- * @brief BlackVue 블랙박스 파일 파서
+ * @brief BlackVue dashcam file parser
  */
 class BlackVueParser: VendorParserProtocol {
 
@@ -34,17 +34,17 @@ class BlackVueParser: VendorParserProtocol {
     // MARK: - Private Properties
 
     /**
-     * 파일명 정규식 패턴: YYYYMMDD_HHMMSS_X.mp4
+     * Filename regex pattern: YYYYMMDD_HHMMSS_X.mp4
      *
-     * 캡처 그룹:
-     * - 1: 날짜 (YYYYMMDD) - 8자리 숫자
-     * - 2: 시간 (HHMMSS) - 6자리 숫자
-     * - 3: 카메라 위치 (F/R/L/I) - 1글자 이상
-     * - 4: 확장자 (mp4/avi 등)
+     * Capture groups:
+     * - 1: Date (YYYYMMDD) - 8 digits
+     * - 2: Time (HHMMSS) - 6 digits
+     * - 3: Camera position (F/R/L/I) - 1+ characters
+     * - 4: Extension (mp4/avi etc.)
      */
     private let filenamePattern = #"^(\d{8})_(\d{6})_([FRLIi]+)\.(\w+)$"#
 
-    /// 컴파일된 정규식
+    /// Compiled regular expression
     private let filenameRegex: NSRegularExpression?
 
     // MARK: - Initialization
@@ -59,9 +59,9 @@ class BlackVueParser: VendorParserProtocol {
     // MARK: - VendorParserProtocol Methods
 
     /**
-     * @brief 파일명이 BlackVue 형식과 일치하는지 검사
-     * @param filename 검사할 파일명
-     * @return 일치 여부
+     * @brief Check if filename matches BlackVue format
+     * @param filename Filename to check
+     * @return Whether it matches
      */
     func matches(_ filename: String) -> Bool {
         guard let regex = filenameRegex else { return false }
@@ -71,24 +71,24 @@ class BlackVueParser: VendorParserProtocol {
     }
 
     /**
-     * @brief 파일명에서 메타데이터 추출
-     * @param fileURL 비디오 파일 URL
-     * @return VideoFileInfo 또는 nil
+     * @brief Extract metadata from filename
+     * @param fileURL Video file URL
+     * @return VideoFileInfo or nil
      *
      * @details
-     * 파일명 파싱 과정:
-     * 1. 정규식으로 날짜, 시간, 카메라 위치 추출
-     * 2. 날짜/시간 문자열 → Date 변환
-     * 3. 카메라 위치 코드 → CameraPosition enum
-     * 4. 경로에서 이벤트 타입 감지
-     * 5. 파일 크기 조회
-     * 6. VideoFileInfo 생성
+     * Filename parsing process:
+     * 1. Extract date, time, camera position using regex
+     * 2. Convert date/time string → Date
+     * 3. Camera position code → CameraPosition enum
+     * 4. Detect event type from path
+     * 5. Query file size
+     * 6. Create VideoFileInfo
      */
     func parseVideoFile(_ fileURL: URL) -> VideoFileInfo? {
         let filename = fileURL.lastPathComponent
         let pathString = fileURL.path
 
-        // 정규식 매칭
+        // Regex matching
         guard let regex = filenameRegex else { return nil }
 
         let range = NSRange(filename.startIndex..<filename.endIndex, in: filename)
@@ -96,15 +96,15 @@ class BlackVueParser: VendorParserProtocol {
             return nil
         }
 
-        // 캡처 그룹 개수 확인: [전체, 날짜, 시간, 위치, 확장자]
+        // Check capture group count: [all, date, time, position, extension]
         guard match.numberOfRanges == 5 else { return nil }
 
-        // 캡처 그룹 추출
+        // Extract capture groups
         let dateString = (filename as NSString).substring(with: match.range(at: 1))
         let timeString = (filename as NSString).substring(with: match.range(at: 2))
         let positionCode = (filename as NSString).substring(with: match.range(at: 3))
 
-        // 타임스탬프 파싱: "20240115143025" → Date
+        // Parse timestamp: "20240115143025" → Date
         let timestampString = dateString + timeString
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyyMMddHHmmss"
@@ -114,18 +114,18 @@ class BlackVueParser: VendorParserProtocol {
             return nil
         }
 
-        // 카메라 위치 감지
+        // Detect camera position
         let position = CameraPosition.detect(from: positionCode)
 
-        // 이벤트 타입 감지 (경로 기반)
+        // Detect event type (path-based)
         let eventType = EventType.detect(from: pathString)
 
-        // 파일 크기 조회
+        // Query file size
         let fileSize = UInt64(
             (try? FileManager.default.attributesOfItem(atPath: fileURL.path)[.size] as? UInt64) ?? 0
         )
 
-        // 기본 파일명 생성 (카메라 위치 제외)
+        // Generate base filename (excluding camera position)
         // "20240115_143025_F.mp4" → "20240115_143025"
         let baseFilename = "\(dateString)_\(timeString)"
 
@@ -140,38 +140,38 @@ class BlackVueParser: VendorParserProtocol {
     }
 
     /**
-     * @brief 비디오에서 GPS 데이터 추출
-     * @param fileURL 비디오 파일 URL
-     * @return GPSPoint 배열
+     * @brief Extract GPS data from video
+     * @param fileURL Video file URL
+     * @return Array of GPSPoint
      *
      * @details
-     * BlackVue는 Stream #2에 NMEA 0183 형식으로 GPS 데이터 저장
-     * GPSParser를 사용하여 추출합니다.
+     * BlackVue stores GPS data in NMEA 0183 format in Stream #2
+     * Uses GPSParser for extraction.
      */
     func extractGPSData(from fileURL: URL) -> [GPSPoint] {
-        // TODO: GPSParser 통합
-        // 현재는 빈 배열 반환
+        // TODO: Integrate GPSParser
+        // Currently returns empty array
         return []
     }
 
     /**
-     * @brief 비디오에서 가속도 데이터 추출
-     * @param fileURL 비디오 파일 URL
-     * @return AccelerationData 배열
+     * @brief Extract acceleration data from video
+     * @param fileURL Video file URL
+     * @return Array of AccelerationData
      *
      * @details
-     * BlackVue는 Stream #2에 가속도 데이터 포함
-     * GSensorParser를 사용하여 추출합니다.
+     * BlackVue includes acceleration data in Stream #2
+     * Uses GSensorParser for extraction.
      */
     func extractAccelerationData(from fileURL: URL) -> [AccelerationData] {
-        // TODO: GSensorParser 통합
-        // 현재는 빈 배열 반환
+        // TODO: Integrate GSensorParser
+        // Currently returns empty array
         return []
     }
 
     /**
-     * @brief BlackVue 지원 기능
-     * @return VendorFeature 배열
+     * @brief BlackVue supported features
+     * @return Array of VendorFeature
      */
     func supportedFeatures() -> [VendorFeature] {
         return [

@@ -2,34 +2,34 @@
 /// @brief Frame capture service for screenshot functionality
 /// @author BlackboxPlayer Development Team
 /// @details
-/// 이 파일은 비디오 프레임을 캡처하여 이미지 파일로 저장하는 서비스를 정의합니다.
+/// This file defines a service for capturing video frames and saving them as image files.
 
 import Foundation
 import CoreGraphics
 import AppKit
 
 /// @class FrameCaptureService
-/// @brief 비디오 프레임을 캡처하고 저장하는 서비스 클래스입니다.
+/// @brief Service class for capturing and saving video frames.
 ///
 /// @details
-/// ## 주요 기능:
-/// - 현재 비디오 프레임 캡처
-/// - 다양한 이미지 포맷 지원 (PNG, JPEG)
-/// - 메타데이터 오버레이 (타임스탬프, GPS 정보)
-/// - 다중 채널 캡처 (모든 카메라 뷰 한 번에)
+/// ## Key Features:
+/// - Capture current video frame
+/// - Support various image formats (PNG, JPEG)
+/// - Metadata overlay (Timestamp, GPS info)
+/// - Multi-channel capture (All camera views at once)
 ///
-/// ## 사용 예:
+/// ## Usage Example:
 /// ```swift
 /// let service = FrameCaptureService()
 ///
-/// // 단일 프레임 캡처
+/// // Single frame capture
 /// try service.captureFrame(
 ///     frame: videoFrame,
 ///     toFile: "/path/to/capture.png",
 ///     format: .png
 /// )
 ///
-/// // 메타데이터 포함 캡처
+/// // Capture with metadata included
 /// try service.captureWithOverlay(
 ///     frame: videoFrame,
 ///     metadata: "2024-01-15 14:30:25",
@@ -41,14 +41,14 @@ class FrameCaptureService {
     // MARK: - Types
 
     /// @enum ImageFormat
-    /// @brief 지원되는 이미지 포맷
+    /// @brief Supported image formats
     enum ImageFormat {
-        case png    // 무손실 압축, 큰 파일 크기
-        case jpeg(quality: Double)  // 손실 압축, 작은 파일 크기, quality: 0.0~1.0
+        case png    // Lossless compression, larger file size
+        case jpeg(quality: Double)  // Lossy compression, smaller file size, quality: 0.0~1.0
     }
 
     /// @enum CaptureError
-    /// @brief 캡처 관련 에러
+    /// @brief Capture-related errors
     enum CaptureError: LocalizedError {
         case cannotCreateImage
         case cannotWriteFile(String)
@@ -71,46 +71,46 @@ class FrameCaptureService {
 
     // MARK: - Initialization
 
-    /// @brief 프레임 캡처 서비스를 생성합니다.
+    /// @brief Create frame capture service.
     init() {
-        // 초기화 로직 없음
+        // No initialization needed
     }
 
     // MARK: - Public Methods
 
-    /// @brief 비디오 프레임을 이미지 파일로 저장합니다.
+    /// @brief Save video frame as image file.
     ///
-    /// @param frame 캡처할 비디오 프레임
-    /// @param toFile 저장할 파일 경로 (절대 경로)
-    /// @param format 이미지 포맷 (기본값: PNG)
+    /// @param frame Video frame to capture
+    /// @param toFile File path to save (Absolute path)
+    /// @param format Image format (default value: PNG)
     ///
     /// @throws CaptureError
     ///
     /// @details
-    /// 캡처 과정:
-    /// 1. VideoFrame 데이터를 CGImage로 변환
-    /// 2. CGImage를 NSImage로 변환
-    /// 3. 지정된 포맷으로 인코딩
-    /// 4. 파일에 저장
+    /// Capture process:
+    /// 1. Convert VideoFrame data to CGImage
+    /// 2. Convert CGImage to NSImage
+    /// 3. Encode to specified format
+    /// 4. Save to file
     func captureFrame(
         frame: VideoFrame,
         toFile filePath: String,
         format: ImageFormat = .png
     ) throws {
-        // 1. VideoFrame을 CGImage로 변환
+        // 1. Convert VideoFrame to CGImage
         guard let cgImage = createCGImage(from: frame) else {
             throw CaptureError.cannotCreateImage
         }
 
-        // 2. CGImage를 NSImage로 변환
+        // 2. Convert CGImage to NSImage
         let nsImage = NSImage(cgImage: cgImage, size: NSSize(width: frame.width, height: frame.height))
 
-        // 3. 이미지 데이터 생성
+        // 3. Create image data
         guard let imageData = encodeImage(nsImage, format: format) else {
             throw CaptureError.cannotCreateImage
         }
 
-        // 4. 파일에 저장
+        // 4. Save to file
         let url = URL(fileURLWithPath: filePath)
         do {
             try imageData.write(to: url, options: .atomic)
@@ -119,42 +119,42 @@ class FrameCaptureService {
         }
     }
 
-    /// @brief 메타데이터 오버레이와 함께 프레임을 캡처합니다.
+    /// @brief Capture frame with metadata overlay.
     ///
-    /// @param frame 캡처할 비디오 프레임
-    /// @param overlayText 오버레이할 텍스트 (타임스탬프, GPS 정보 등)
-    /// @param toFile 저장할 파일 경로
-    /// @param format 이미지 포맷
+    /// @param frame Video frame to capture
+    /// @param overlayText Text to overlay (Timestamp, GPS info, etc)
+    /// @param toFile File path to save
+    /// @param format Image format
     ///
     /// @throws CaptureError
     ///
     /// @details
-    /// 오버레이 위치:
-    /// - 화면 하단에 반투명 검은색 배경
-    /// - 흰색 텍스트로 정보 표시
+    /// Overlay location:
+    /// - Bottom of screen with semi-transparent black background
+    /// - Display white text info
     func captureWithOverlay(
         frame: VideoFrame,
         overlayText: String,
         toFile filePath: String,
         format: ImageFormat = .png
     ) throws {
-        // 1. VideoFrame을 CGImage로 변환
+        // 1. Convert VideoFrame to CGImage
         guard let cgImage = createCGImage(from: frame) else {
             throw CaptureError.cannotCreateImage
         }
 
-        // 2. CGImage를 NSImage로 변환
+        // 2. Convert CGImage to NSImage
         let nsImage = NSImage(cgImage: cgImage, size: NSSize(width: frame.width, height: frame.height))
 
-        // 3. 오버레이 추가
+        // 3. Add overlay
         let overlayedImage = addOverlay(to: nsImage, text: overlayText)
 
-        // 4. 이미지 데이터 생성
+        // 4. Create image data
         guard let imageData = encodeImage(overlayedImage, format: format) else {
             throw CaptureError.cannotCreateImage
         }
 
-        // 5. 파일에 저장
+        // 5. Save to file
         let url = URL(fileURLWithPath: filePath)
         do {
             try imageData.write(to: url, options: .atomic)
@@ -163,33 +163,33 @@ class FrameCaptureService {
         }
     }
 
-    /// @brief 다중 채널 프레임을 하나의 이미지로 캡처합니다.
+    /// @brief Capture multi-channel frames as single image.
     ///
-    /// @param frames 채널별 비디오 프레임 딕셔너리
-    /// @param layout 레이아웃 (grid, horizontal)
-    /// @param toFile 저장할 파일 경로
-    /// @param format 이미지 포맷
+    /// @param frames Dictionary of video frames by channel
+    /// @param layout Layout (grid, horizontal)
+    /// @param toFile File path to save
+    /// @param format Image format
     ///
     /// @throws CaptureError
     ///
     /// @details
-    /// 레이아웃:
-    /// - grid: 2x3 그리드 (최대 6개 채널)
-    /// - horizontal: 수평 배치 (1x5)
+    /// Layout options:
+    /// - grid: 2x3 grid (maximum 6 channels)
+    /// - horizontal: Horizontal arrangement (1x5)
     func captureMultiChannel(
         frames: [String: VideoFrame],
         layout: ChannelLayout = .grid,
         toFile filePath: String,
         format: ImageFormat = .png
     ) throws {
-        // 채널 정렬 (일관된 순서로)
+        // Sort channels (consistent order)
         let sortedFrames = frames.sorted { $0.key < $1.key }.map { $0.value }
 
         guard !sortedFrames.isEmpty else {
             throw CaptureError.invalidFrame
         }
 
-        // 레이아웃에 따라 합성
+        // Composite according to layout
         let compositeImage: NSImage
         switch layout {
         case .grid:
@@ -198,12 +198,12 @@ class FrameCaptureService {
             compositeImage = createHorizontalImage(frames: sortedFrames)
         }
 
-        // 이미지 데이터 생성
+        // Create image data
         guard let imageData = encodeImage(compositeImage, format: format) else {
             throw CaptureError.cannotCreateImage
         }
 
-        // 파일에 저장
+        // Save to file
         let url = URL(fileURLWithPath: filePath)
         do {
             try imageData.write(to: url, options: .atomic)
@@ -214,34 +214,34 @@ class FrameCaptureService {
 
     // MARK: - Private Methods
 
-    /// @brief VideoFrame을 CGImage로 변환합니다.
+    /// @brief Convert VideoFrame to CGImage.
     ///
-    /// @param frame 비디오 프레임
+    /// @param frame Video frame
     ///
-    /// @return CGImage, 실패 시 nil
+    /// @return CGImage, or nil on failure
     ///
     /// @details
-    /// VideoFrame의 BGRA 데이터를 CGImage로 변환합니다.
+    /// Convert VideoFrame's BGRA data to CGImage.
     private func createCGImage(from frame: VideoFrame) -> CGImage? {
         let width = frame.width
         let height = frame.height
         let data = frame.data
 
-        // Data를 CFData로 변환
+        // Convert Data to CFData
         let cfData = data as CFData
 
-        // Data Provider 생성
+        // Create Data Provider
         guard let dataProvider = CGDataProvider(data: cfData) else {
             return nil
         }
 
-        // Color Space 생성 (sRGB)
+        // Create Color Space (sRGB)
         guard let colorSpace = CGColorSpace(name: CGColorSpace.sRGB) else {
             return nil
         }
 
-        // CGImage 생성
-        // BGRA 포맷 (VideoDecoder 출력 포맷)
+        // Create CGImage
+        // BGRA format (VideoDecoder output format)
         let cgImage = CGImage(
             width: width,
             height: height,
@@ -259,22 +259,22 @@ class FrameCaptureService {
         return cgImage
     }
 
-    /// @brief NSImage를 지정된 포맷으로 인코딩합니다.
+    /// @brief Encode NSImage to specified format
     ///
-    /// @param image NSImage 인스턴스
-    /// @param format 이미지 포맷
+    /// @param image NSImage instance
+    /// @param format Image format
     ///
-    /// @return 인코딩된 이미지 데이터, 실패 시 nil
+    /// @return Encoded image data, or nil on failure
     private func encodeImage(_ image: NSImage, format: ImageFormat) -> Data? {
-        // NSImage를 CGImage로 변환
+        // Convert NSImage to CGImage
         guard let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
             return nil
         }
 
-        // NSBitmapImageRep 생성
+        // Create NSBitmapImageRep
         let bitmap = NSBitmapImageRep(cgImage: cgImage)
 
-        // 포맷에 따라 인코딩
+        // Encode according to format
         switch format {
         case .png:
             return bitmap.representation(using: .png, properties: [:])
@@ -283,29 +283,29 @@ class FrameCaptureService {
         }
     }
 
-    /// @brief 이미지에 텍스트 오버레이를 추가합니다.
+    /// @brief Add text overlay to image
     ///
-    /// @param image 원본 이미지
-    /// @param text 오버레이할 텍스트
+    /// @param image Original image
+    /// @param text Text to overlay
     ///
-    /// @return 오버레이가 추가된 이미지
+    /// @return Image with overlay added
     private func addOverlay(to image: NSImage, text: String) -> NSImage {
         let size = image.size
 
-        // 새 이미지 생성 (원본과 같은 크기)
+        // Create new image (same size as original)
         let newImage = NSImage(size: size)
         newImage.lockFocus()
 
-        // 원본 이미지 그리기
+        // Draw original image
         image.draw(at: .zero, from: NSRect(origin: .zero, size: size), operation: .sourceOver, fraction: 1.0)
 
-        // 배경 사각형 (하단, 반투명 검은색)
+        // Background rectangle (bottom, semi-transparent black)
         let bgHeight: CGFloat = 40
         let bgRect = NSRect(x: 0, y: 0, width: size.width, height: bgHeight)
         NSColor.black.withAlphaComponent(0.7).setFill()
         bgRect.fill()
 
-        // 텍스트 속성
+        // Text attributes
         let paragraphStyle = NSMutableParagraphStyle()
         paragraphStyle.alignment = .center
 
@@ -315,7 +315,7 @@ class FrameCaptureService {
             .paragraphStyle: paragraphStyle
         ]
 
-        // 텍스트 그리기
+        // Draw text
         let textRect = NSRect(x: 0, y: 10, width: size.width, height: 20)
         (text as NSString).draw(in: textRect, withAttributes: attributes)
 
@@ -324,36 +324,36 @@ class FrameCaptureService {
         return newImage
     }
 
-    /// @brief 프레임들을 그리드 레이아웃으로 합성합니다.
+    /// @brief Compose frames in grid layout
     ///
-    /// @param frames 프레임 배열
+    /// @param frames frame array
     ///
-    /// @return 합성된 이미지
+    /// @return Composed image
     ///
     /// @details
-    /// 2x3 그리드 (최대 6개 채널)
+    /// 2x3 grid (maximum 6 channels)
     private func createGridImage(frames: [VideoFrame]) -> NSImage {
-        // 첫 번째 프레임의 크기를 기준으로
+        // Use first frame's size as reference
         let frameWidth = frames.first?.width ?? 1920
         let frameHeight = frames.first?.height ?? 1080
 
-        // 2x3 그리드
+        // 2x3 grid
         let cols = 3
         let rows = 2
         let totalWidth = frameWidth * cols
         let totalHeight = frameHeight * rows
 
-        // 새 이미지 생성
+        // Create new image
         let compositeImage = NSImage(size: NSSize(width: totalWidth, height: totalHeight))
         compositeImage.lockFocus()
 
-        // 각 프레임 배치
+        // Arrange each frame
         for (index, frame) in frames.prefix(6).enumerated() {
             let row = index / cols
             let col = index % cols
 
             let x = col * frameWidth
-            let y = (rows - 1 - row) * frameHeight  // 위에서 아래로
+            let y = (rows - 1 - row) * frameHeight  // Top to bottom
 
             if let cgImage = createCGImage(from: frame) {
                 let nsImage = NSImage(cgImage: cgImage, size: NSSize(width: frame.width, height: frame.height))
@@ -367,14 +367,14 @@ class FrameCaptureService {
         return compositeImage
     }
 
-    /// @brief 프레임들을 수평 레이아웃으로 합성합니다.
+    /// @brief Compose frames in horizontal layout
     ///
-    /// @param frames 프레임 배열
+    /// @param frames frame array
     ///
-    /// @return 합성된 이미지
+    /// @return Composed image
     ///
     /// @details
-    /// 1x5 수평 배치
+    /// 1x5 horizontal arrangement
     private func createHorizontalImage(frames: [VideoFrame]) -> NSImage {
         let frameWidth = frames.first?.width ?? 1920
         let frameHeight = frames.first?.height ?? 1080
@@ -383,11 +383,11 @@ class FrameCaptureService {
         let totalWidth = frameWidth * count
         let totalHeight = frameHeight
 
-        // 새 이미지 생성
+        // Create new image
         let compositeImage = NSImage(size: NSSize(width: totalWidth, height: totalHeight))
         compositeImage.lockFocus()
 
-        // 각 프레임 배치
+        // Arrange each frame
         for (index, frame) in frames.prefix(5).enumerated() {
             let x = index * frameWidth
 
@@ -407,8 +407,8 @@ class FrameCaptureService {
 // MARK: - Supporting Types
 
 /// @enum ChannelLayout
-/// @brief 다중 채널 레이아웃
+/// @brief Multi-channel layout
 enum ChannelLayout {
-    case grid        // 2x3 그리드
-    case horizontal  // 1x5 수평
+    case grid        // 2x3 grid
+    case horizontal  // 1x5 horizontal
 }

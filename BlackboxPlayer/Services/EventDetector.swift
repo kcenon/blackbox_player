@@ -1,62 +1,62 @@
 /// @file EventDetector.swift
-/// @brief 비디오 이벤트 자동 감지 서비스
+/// @brief Video event auto-detection service
 /// @author BlackboxPlayer Development Team
 /// @details
-/// GPS 데이터를 분석하여 급가속, 급감속, 급회전 등의 이벤트를 자동으로 감지하는 서비스입니다.
-/// 속도 변화율과 방향 변화를 분석하여 이벤트 마커를 생성합니다.
+/// Service that automatically detects events such as rapid acceleration, hard braking, and sharp turns by analyzing GPS data.
+/// Generates event markers by analyzing speed change rates and direction changes.
 
 import Foundation
 
 /// @class EventDetector
-/// @brief 이벤트 자동 감지 서비스
+/// @brief Event auto-detection service
 ///
 /// @details
-/// GPS 데이터를 분석하여 운전 이벤트를 자동으로 감지합니다.
+/// Automatically detects driving events by analyzing GPS data.
 ///
-/// ## 감지 알고리즘
+/// ## Detection Algorithms
 ///
-/// ### 1. 급감속 (Hard Braking)
+/// ### 1. Hard Braking
 /// ```
-/// 조건:
-/// - 속도 감소량 ≥ 20 km/h
-/// - 시간 간격 ≤ 0.5초
-/// - 현재 속도 > 10 km/h (정지 상태 아님)
+/// Conditions:
+/// - Speed decrease ≥ 20 km/h
+/// - Time interval ≤ 0.5s
+/// - Current speed > 10 km/h (not stopped)
 ///
-/// 강도 계산:
-/// magnitude = min(1.0, 속도감소량 / 50.0)
-/// ```
-///
-/// ### 2. 급가속 (Rapid Acceleration)
-/// ```
-/// 조건:
-/// - 속도 증가량 ≥ 20 km/h
-/// - 시간 간격 ≤ 0.5초
-/// - 이전 속도 < 100 km/h (이미 고속이 아님)
-///
-/// 강도 계산:
-/// magnitude = min(1.0, 속도증가량 / 60.0)
+/// Magnitude calculation:
+/// magnitude = min(1.0, speed decrease / 50.0)
 /// ```
 ///
-/// ### 3. 급회전 (Sharp Turn)
+/// ### 2. Rapid Acceleration
 /// ```
-/// 조건:
-/// - 방향 변화 ≥ 45도
-/// - 속도 > 20 km/h (일정 속도 이상)
-/// - 속도 변화 < 10 km/h (급감속이 아님)
+/// Conditions:
+/// - Speed increase ≥ 20 km/h
+/// - Time interval ≤ 0.5s
+/// - Previous speed < 100 km/h (not already at high speed)
 ///
-/// 강도 계산:
-/// magnitude = min(1.0, 방향변화량 / 90.0)
+/// Magnitude calculation:
+/// magnitude = min(1.0, speed increase / 60.0)
 /// ```
 ///
-/// ## 사용 예제
+/// ### 3. Sharp Turn
+/// ```
+/// Conditions:
+/// - Heading change ≥ 45 degrees
+/// - Speed > 20 km/h (above certain speed)
+/// - Speed change < 10 km/h (not hard braking)
+///
+/// Magnitude calculation:
+/// magnitude = min(1.0, heading change / 90.0)
+/// ```
+///
+/// ## Usage Example
 /// ```swift
 /// let detector = EventDetector()
 /// let gpsPoints = loadGPSData()
 ///
-/// // 이벤트 감지
+/// // Detect events
 /// let events = detector.detectEvents(from: gpsPoints)
 ///
-/// // 결과 출력
+/// // Print results
 /// for event in events {
 ///     print(event.description)
 /// }
@@ -64,59 +64,59 @@ import Foundation
 class EventDetector {
     // MARK: - Constants
 
-    /// 급감속 감지 임계값 (km/h)
+    /// Hard braking detection threshold (km/h)
     private let hardBrakingThreshold: Double = 20.0
 
-    /// 급가속 감지 임계값 (km/h)
+    /// Rapid acceleration detection threshold (km/h)
     private let rapidAccelerationThreshold: Double = 20.0
 
-    /// 급회전 감지 임계값 (도)
+    /// Sharp turn detection threshold (degrees)
     private let sharpTurnThreshold: Double = 45.0
 
-    /// 이벤트 감지를 위한 최대 시간 간격 (초)
+    /// Maximum time interval for event detection (seconds)
     private let maxTimeInterval: TimeInterval = 0.5
 
-    /// 급회전 감지를 위한 최소 속도 (km/h)
+    /// Minimum speed for sharp turn detection (km/h)
     private let minSpeedForTurn: Double = 20.0
 
     // MARK: - Public Methods
 
-    /// @brief GPS 데이터로부터 이벤트 감지
-    /// @param gpsPoints GPS 포인트 배열 (시간 순 정렬)
-    /// @return 감지된 이벤트 마커 배열
+    /// @brief Detect events from GPS data
+    /// @param gpsPoints GPS point array (sorted by time)
+    /// @return Array of detected event markers
     ///
     /// @details
-    /// GPS 데이터를 분석하여 급가속, 급감속, 급회전 이벤트를 감지합니다.
+    /// Detects rapid acceleration, hard braking, and sharp turn events by analyzing GPS data.
     ///
-    /// **전제 조건:**
-    /// - gpsPoints는 timestamp 기준으로 정렬되어 있어야 함
-    /// - 최소 2개 이상의 GPS 포인트 필요
+    /// **Prerequisites:**
+    /// - gpsPoints must be sorted by timestamp
+    /// - Minimum of 2 GPS points required
     ///
-    /// **반환값:**
-    /// - 감지된 모든 이벤트 마커 배열 (timestamp 순 정렬)
-    /// - GPS 데이터가 부족하면 빈 배열 반환
+    /// **Return Value:**
+    /// - Array of all detected event markers (sorted by timestamp)
+    /// - Returns empty array if insufficient GPS data
     func detectEvents(from gpsPoints: [GPSPoint]) -> [EventMarker] {
-        // 최소 2개의 GPS 포인트 필요
+        // Need at least 2 GPS points
         guard gpsPoints.count >= 2 else {
             return []
         }
 
         var events: [EventMarker] = []
 
-        // 연속된 GPS 포인트 쌍을 분석
+        // Analyze consecutive GPS point pairs
         for i in 1..<gpsPoints.count {
             let previousPoint = gpsPoints[i - 1]
             let currentPoint = gpsPoints[i]
 
-            // 시간 간격 계산
+            // Calculate time interval
             let timeInterval = currentPoint.timestamp.timeIntervalSince(previousPoint.timestamp)
 
-            // 시간 간격이 너무 크면 스킵 (데이터 누락)
+            // Skip if time interval is too large (missing data)
             guard timeInterval > 0 && timeInterval <= maxTimeInterval else {
                 continue
             }
 
-            // 속도 변화 분석
+            // Analyze speed changes
             if let eventMarker = detectSpeedChangeEvent(
                 previous: previousPoint,
                 current: currentPoint,
@@ -125,7 +125,7 @@ class EventDetector {
                 events.append(eventMarker)
             }
 
-            // 방향 변화 분석 (급회전)
+            // Analyze heading changes (sharp turns)
             if let eventMarker = detectTurnEvent(
                 previous: previousPoint,
                 current: currentPoint,
@@ -135,34 +135,34 @@ class EventDetector {
             }
         }
 
-        // 타임스탬프 순으로 정렬
+        // Sort by timestamp
         return events.sorted()
     }
 
     // MARK: - Private Methods
 
-    /// @brief 속도 변화 이벤트 감지 (급가속/급감속)
-    /// @param previous 이전 GPS 포인트
-    /// @param current 현재 GPS 포인트
-    /// @param timeInterval 시간 간격 (초)
-    /// @return EventMarker 또는 nil
+    /// @brief Detect speed change events (rapid acceleration/hard braking)
+    /// @param previous Previous GPS point
+    /// @param current Current GPS point
+    /// @param timeInterval Time interval (seconds)
+    /// @return EventMarker or nil
     private func detectSpeedChangeEvent(
         previous: GPSPoint,
         current: GPSPoint,
         timeInterval: TimeInterval
     ) -> EventMarker? {
-        // 속도 정보가 없으면 스킵
+        // Skip if no speed information
         guard let previousSpeed = previous.speed,
               let currentSpeed = current.speed else {
             return nil
         }
 
-        // 속도 변화량 계산 (km/h)
+        // Calculate speed change (km/h)
         let speedChange = currentSpeed - previousSpeed
 
-        // 급감속 감지
+        // Detect hard braking
         if speedChange <= -hardBrakingThreshold && currentSpeed > 10.0 {
-            // 강도 계산: 속도 감소량에 비례 (최대 50km/h 기준)
+            // Calculate magnitude: proportional to speed decrease (max 50km/h baseline)
             let magnitude = min(1.0, abs(speedChange) / 50.0)
 
             return EventMarker(
@@ -180,9 +180,9 @@ class EventDetector {
             )
         }
 
-        // 급가속 감지
+        // Detect rapid acceleration
         if speedChange >= rapidAccelerationThreshold && previousSpeed < 100.0 {
-            // 강도 계산: 속도 증가량에 비례 (최대 60km/h 기준)
+            // Calculate magnitude: proportional to speed increase (max 60km/h baseline)
             let magnitude = min(1.0, speedChange / 60.0)
 
             return EventMarker(
@@ -203,17 +203,17 @@ class EventDetector {
         return nil
     }
 
-    /// @brief 방향 변화 이벤트 감지 (급회전)
-    /// @param previous 이전 GPS 포인트
-    /// @param current 현재 GPS 포인트
-    /// @param timeInterval 시간 간격 (초)
-    /// @return EventMarker 또는 nil
+    /// @brief Detect heading change events (sharp turns)
+    /// @param previous Previous GPS point
+    /// @param current Current GPS point
+    /// @param timeInterval Time interval (seconds)
+    /// @return EventMarker or nil
     private func detectTurnEvent(
         previous: GPSPoint,
         current: GPSPoint,
         timeInterval: TimeInterval
     ) -> EventMarker? {
-        // 방향과 속도 정보가 없으면 스킵
+        // Skip if no heading or speed information
         guard let previousHeading = previous.heading,
               let currentHeading = current.heading,
               let previousSpeed = previous.speed,
@@ -221,25 +221,25 @@ class EventDetector {
             return nil
         }
 
-        // 속도가 너무 낮으면 스킵 (정지 또는 저속)
+        // Skip if speed is too low (stopped or very slow)
         guard previousSpeed > minSpeedForTurn && currentSpeed > minSpeedForTurn else {
             return nil
         }
 
-        // 방향 변화량 계산 (0 ~ 180도 범위)
+        // Calculate heading change (0 ~ 180 degree range)
         let headingChange = calculateHeadingChange(from: previousHeading, to: currentHeading)
 
-        // 급회전 감지
+        // Detect sharp turn
         if headingChange >= sharpTurnThreshold {
-            // 속도 변화량 (급감속과 동시에 일어나면 급회전으로 분류 안 함)
+            // Speed change (don't classify as sharp turn if simultaneous hard braking)
             let speedChange = abs(currentSpeed - previousSpeed)
 
-            // 급감속이 아닌 경우만 급회전으로 분류
+            // Only classify as sharp turn if not hard braking
             guard speedChange < 10.0 else {
                 return nil
             }
 
-            // 강도 계산: 방향 변화량에 비례 (최대 90도 기준)
+            // Calculate magnitude: proportional to heading change (max 90 degree baseline)
             let magnitude = min(1.0, headingChange / 90.0)
 
             return EventMarker(
@@ -261,26 +261,26 @@ class EventDetector {
         return nil
     }
 
-    /// @brief 방향 변화량 계산 (0 ~ 180도 범위)
-    /// @param fromHeading 시작 방향 (0 ~ 360도)
-    /// @param toHeading 끝 방향 (0 ~ 360도)
-    /// @return 방향 변화량 (0 ~ 180도)
+    /// @brief Calculate heading change (0 ~ 180 degree range)
+    /// @param fromHeading Starting heading (0 ~ 360 degrees)
+    /// @param toHeading Ending heading (0 ~ 360 degrees)
+    /// @return Heading change (0 ~ 180 degrees)
     ///
     /// @details
-    /// 두 방향 사이의 최소 각도를 계산합니다.
+    /// Calculates the minimum angle between two headings.
     ///
-    /// **예시:**
+    /// **Examples:**
     /// ```
-    /// from: 10도, to: 350도 → 20도 (시계 반대방향)
-    /// from: 350도, to: 10도 → 20도 (시계방향)
-    /// from: 0도, to: 180도 → 180도
-    /// from: 0도, to: 90도 → 90도
+    /// from: 10°, to: 350° → 20° (counterclockwise)
+    /// from: 350°, to: 10° → 20° (clockwise)
+    /// from: 0°, to: 180° → 180°
+    /// from: 0°, to: 90° → 90°
     /// ```
     private func calculateHeadingChange(from fromHeading: Double, to toHeading: Double) -> Double {
-        // 방향 차이 계산
+        // Calculate heading difference
         var diff = abs(toHeading - fromHeading)
 
-        // 180도 이상이면 반대 방향으로 계산 (최소 각도)
+        // If over 180 degrees, calculate via opposite direction (minimum angle)
         if diff > 180 {
             diff = 360 - diff
         }
@@ -288,16 +288,16 @@ class EventDetector {
         return diff
     }
 
-    /// @brief 이벤트 필터링 (중복 제거)
-    /// @param events 원본 이벤트 배열
-    /// @param minInterval 최소 간격 (초)
-    /// @return 필터링된 이벤트 배열
+    /// @brief Filter events (remove duplicates)
+    /// @param events Original event array
+    /// @param minInterval Minimum interval (seconds)
+    /// @return Filtered event array
     ///
     /// @details
-    /// 같은 종류의 이벤트가 짧은 시간 내에 여러 번 감지되면
-    /// 가장 강한 이벤트만 남기고 나머지는 제거합니다.
+    /// When multiple events of the same type are detected in a short time,
+    /// keeps only the strongest event and removes the rest.
     ///
-    /// **사용 예:**
+    /// **Usage Example:**
     /// ```swift
     /// let filtered = detector.filterDuplicateEvents(events, minInterval: 2.0)
     /// ```
@@ -310,27 +310,27 @@ class EventDetector {
         var lastEventByType: [DrivingEventType: EventMarker] = [:]
 
         for event in events.sorted() {
-            // 같은 종류의 이전 이벤트 확인
+            // Check for previous event of same type
             if let lastEvent = lastEventByType[event.type] {
-                // 시간 간격 확인
+                // Check time interval
                 let interval = event.timestamp - lastEvent.timestamp
 
                 if interval < minInterval {
-                    // 간격이 짧으면 더 강한 이벤트만 유지
+                    // If interval is short, keep only the stronger event
                     if event.magnitude > lastEvent.magnitude {
-                        // 현재 이벤트가 더 강함
+                        // Current event is stronger
                         if let index = filteredEvents.firstIndex(where: { $0.id == lastEvent.id }) {
                             filteredEvents.remove(at: index)
                         }
                         filteredEvents.append(event)
                         lastEventByType[event.type] = event
                     }
-                    // 이전 이벤트가 더 강하면 현재 이벤트 무시
+                    // Skip current event if previous event is stronger
                     continue
                 }
             }
 
-            // 새 이벤트 추가
+            // Add new event
             filteredEvents.append(event)
             lastEventByType[event.type] = event
         }

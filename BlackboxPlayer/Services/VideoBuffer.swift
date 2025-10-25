@@ -2,34 +2,34 @@
 /// @brief Frame buffer for video playback
 /// @author BlackboxPlayer Development Team
 /// @details
-/// 이 파일은 비디오 프레임을 버퍼링하는 클래스를 정의합니다.
-/// 메모리 사용량을 제한하고 부드러운 재생을 보장합니다.
+/// This file class that buffers video framesdefines
+/// Limits memory usage and ensures smooth playback.
 
 import Foundation
 
 /// @class VideoBuffer
-/// @brief 비디오 프레임을 버퍼링하는 스레드 안전한 클래스입니다.
+/// @brief video frame buffer Thread-safe is.
 ///
 /// @details
-/// ## 주요 기능:
-/// - 순환 버퍼 구조 (FIFO)
-/// - 최대 크기 제한 (메모리 절약)
-/// - 스레드 안전성 (DispatchQueue 사용)
-/// - 자동 오래된 프레임 삭제
+/// ## Key features:
+/// -  buffer  (FIFO)
+/// -  size  (memory )
+/// - Thread-safe (DispatchQueue Use)
+/// - Auto-remove old frame Delete
 ///
-/// ## 버퍼링 전략:
-/// - 채널당 최대 30 프레임 버퍼 (약 1초분, 30fps 기준)
-/// - 버퍼 가득 차면 가장 오래된 프레임 자동 삭제
-/// - 디코딩 스레드와 렌더링 스레드 사이의 동기화
+/// ## buffer :
+/// - channel  30 frame buffer ( 1seconds, 30fps based on)
+/// - buffer     frame  Delete
+/// - decoding threadand rendering thread between synchronization
 ///
-/// ## 사용 예:
+/// ## Usage example:
 /// ```swift
 /// let buffer = VideoBuffer(maxSize: 30)
 ///
-/// // 디코딩 스레드에서
+/// // decoding thread
 /// buffer.append(frame)
 ///
-/// // 렌더링 스레드에서
+/// // rendering thread
 /// if let frame = buffer.next() {
 ///     render(frame)
 /// }
@@ -39,113 +39,113 @@ class VideoBuffer {
     // MARK: - Properties
 
     /// @var frames
-    /// @brief 저장된 비디오 프레임 배열
+    /// @brief Save video frame array
     /// @details
-    /// - FIFO 순서로 관리 (First In, First Out)
-    /// - private: 외부에서 직접 접근 불가
+    /// - FIFO Managed in order (First In, First Out)
+    /// - private: Cannot be accessed directly from outside
     private var frames: [VideoFrame] = []
 
     /// @var maxSize
-    /// @brief 버퍼의 최대 크기 (프레임 개수)
+    /// @brief buffer  size (frame count)
     /// @details
-    /// - 기본값: 30 프레임 (30fps 기준 1초)
-    /// - 메모리 사용량 제한을 위해 설정
+    /// - : 30 frame (30fps based on 1seconds)
+    /// - memory Use   Set up
     private let maxSize: Int
 
     /// @var queue
-    /// @brief 스레드 안전성을 위한 직렬 큐
+    /// @brief Thread-safe  serial queue
     /// @details
-    /// - 여러 스레드에서 동시 접근 시 데이터 경쟁 방지
-    /// - 직렬 큐(serial queue): 한 번에 하나의 작업만 실행
+    /// - Multiple threadsimultaneous access from  Prevent data race
+    /// - serial queue(serial queue): Only one task at a time Execute
     private let queue = DispatchQueue(label: "com.blackboxplayer.videobuffer", qos: .userInitiated)
 
     /// @var currentIndex
-    /// @brief 현재 읽기 위치 인덱스
+    /// @brief Current read position 
     /// @details
-    /// - next() 호출 시 반환할 프레임의 인덱스
-    /// - 순차적으로 증가
+    /// - next() Call  Return frame 
+    /// - Increment sequentially
     private var currentIndex: Int = 0
 
     /// @var isEmpty
-    /// @brief 버퍼가 비어있는지 여부
+    /// @brief buffer  
     var isEmpty: Bool {
         return queue.sync { frames.isEmpty }
     }
 
     /// @var count
-    /// @brief 현재 버퍼에 저장된 프레임 개수
+    /// @brief  buffer Save frame count
     var count: Int {
         return queue.sync { frames.count }
     }
 
     /// @var isFull
-    /// @brief 버퍼가 가득 찼는지 여부
+    /// @brief buffer   
     var isFull: Bool {
         return queue.sync { frames.count >= maxSize }
     }
 
     // MARK: - Initialization
 
-    /// @brief 비디오 버퍼를 생성합니다.
+    /// @brief video buffer Create.
     ///
-    /// @param maxSize 버퍼의 최대 크기 (프레임 개수), 기본값 30
+    /// @param maxSize buffer  size (frame count),  30
     ///
     /// @details
-    /// 적절한 버퍼 크기 선택:
-    /// - 30fps 영상: 30 프레임 = 1초
-    /// - 60fps 영상: 60 프레임 = 1초
-    /// - 너무 크면 메모리 낭비, 너무 작으면 버퍼 언더런 발생
+    ///  buffer size selection:
+    /// - 30fps video: 30 frame = 1seconds
+    /// - 60fps video: 60 frame = 1seconds
+    /// -   memory waste,   buffer More 
     init(maxSize: Int = 30) {
         self.maxSize = maxSize
     }
 
     // MARK: - Public Methods
 
-    /// @brief 버퍼에 새 프레임을 추가합니다.
+    /// @brief buffer new frame Add.
     ///
-    /// @param frame 추가할 비디오 프레임
+    /// @param frame Add video frame
     ///
     /// @details
-    /// 동작 방식:
-    /// 1. 버퍼가 가득 차 있으면 가장 오래된 프레임 삭제
-    /// 2. 새 프레임을 버퍼 끝에 추가
-    /// 3. 스레드 안전하게 처리
+    /// How it works:
+    /// 1. buffer      frame Delete
+    /// 2. new frame buffer to end Add
+    /// 3. Thread-safe Process
     func append(_ frame: VideoFrame) {
         queue.async { [weak self] in
             guard let self = self else { return }
 
-            // 버퍼가 가득 차면 가장 오래된 프레임 삭제
+            // buffer     frame Delete
             if self.frames.count >= self.maxSize {
                 self.frames.removeFirst()
-                // 인덱스 조정 (삭제로 인해 모든 인덱스가 -1)
+                //  Adjust (All due to deletion  -1)
                 if self.currentIndex > 0 {
                     self.currentIndex -= 1
                 }
             }
 
-            // 새 프레임 추가
+            // new frame Add
             self.frames.append(frame)
         }
     }
 
-    /// @brief 다음 프레임을 가져옵니다.
+    /// @brief Next frame .
     ///
-    /// @return 다음 비디오 프레임, 없으면 nil
+    /// @return Next video frame, If none nil
     ///
     /// @details
-    /// 순차적 읽기:
-    /// - currentIndex 위치의 프레임 반환
-    /// - currentIndex 증가
-    /// - 버퍼 끝에 도달하면 nil 반환
+    ///  Reading:
+    /// - currentIndex at position frame Return
+    /// - currentIndex Increment
+    /// - buffer When reached end nil Return
     ///
-    /// 주의:
-    /// - 프레임을 버퍼에서 삭제하지 않음
-    /// - 여러 번 호출 가능
+    /// Note:
+    /// - frame buffer Delete 
+    /// - Multiple  Call 
     func next() -> VideoFrame? {
         return queue.sync { [weak self] in
             guard let self = self else { return nil }
 
-            // 인덱스 범위 확인
+            //  range Check
             guard self.currentIndex < self.frames.count else {
                 return nil
             }
@@ -156,24 +156,24 @@ class VideoBuffer {
         }
     }
 
-    /// @brief 특정 타임스탬프에 가장 가까운 프레임을 가져옵니다.
+    /// @brief Specific timestampclosest to frame .
     ///
-    /// @param timestamp 찾을 타임스탬프 (초 단위)
+    /// @param timestamp to find timestamp (seconds )
     ///
-    /// @return 가장 가까운 비디오 프레임, 없으면 nil
+    /// @return Closest video frame, If none nil
     ///
     /// @details
-    /// 탐색 방법:
-    /// 1. 버퍼의 모든 프레임 순회
-    /// 2. 각 프레임과 목표 타임스탬프의 차이 계산
-    /// 3. 차이가 가장 작은 프레임 반환
+    /// Search method:
+    /// 1. buffer All frame Traverse
+    /// 2. Each frame target timestampdifference from Calculate
+    /// 3. With smallest difference frame Return
     func frame(at timestamp: TimeInterval) -> VideoFrame? {
         return queue.sync { [weak self] in
             guard let self = self, !self.frames.isEmpty else {
                 return nil
             }
 
-            // 가장 가까운 프레임 찾기
+            // Closest frame 
             var closestFrame: VideoFrame?
             var minDifference = Double.infinity
 
@@ -189,13 +189,13 @@ class VideoBuffer {
         }
     }
 
-    /// @brief 현재 버퍼에서 가장 최근 프레임을 가져옵니다.
+    /// @brief  buffer   frame .
     ///
-    /// @return 가장 최근 프레임, 없으면 nil
+    /// @return   frame, If none nil
     ///
     /// @details
-    /// 버퍼의 마지막 프레임을 반환합니다.
-    /// 실시간 미리보기나 썸네일 생성에 유용합니다.
+    /// buffer  frame Return.
+    ///    Create .
     func latest() -> VideoFrame? {
         return queue.sync { [weak self] in
             guard let self = self else { return nil }
@@ -203,11 +203,11 @@ class VideoBuffer {
         }
     }
 
-    /// @brief 버퍼를 비웁니다.
+    /// @brief bufferEmpty
     ///
     /// @details
-    /// 모든 프레임을 삭제하고 인덱스를 초기화합니다.
-    /// seek 또는 파일 전환 시 호출합니다.
+    /// All frame Delete  Initialize.
+    /// seek or file switch  Call.
     func clear() {
         queue.async { [weak self] in
             guard let self = self else { return }
@@ -216,11 +216,11 @@ class VideoBuffer {
         }
     }
 
-    /// @brief 읽기 위치를 처음으로 되돌립니다.
+    /// @brief Reset read position to beginning.
     ///
     /// @details
-    /// currentIndex를 0으로 재설정합니다.
-    /// 프레임은 삭제하지 않고 다시 읽을 수 있게 합니다.
+    /// currentIndex 0to Set up.
+    /// frame Delete      .
     func reset() {
         queue.async { [weak self] in
             guard let self = self else { return }
@@ -228,37 +228,37 @@ class VideoBuffer {
         }
     }
 
-    /// @brief 특정 타임스탬프 이전의 모든 프레임을 삭제합니다.
+    /// @brief Specific timestamp All before frame Delete.
     ///
-    /// @param timestamp 기준 타임스탬프 (초 단위)
+    /// @param timestamp based on timestamp (seconds )
     ///
     /// @details
-    /// 메모리 최적화:
-    /// - 이미 재생된 오래된 프레임 삭제
-    /// - 메모리 사용량 감소
-    /// - 버퍼 공간 확보
+    /// memory Optimization:
+    /// - Old already played frame Delete
+    /// - memory Use 
+    /// - buffer Secure space
     func removeFrames(before timestamp: TimeInterval) {
         queue.async { [weak self] in
             guard let self = self else { return }
 
-            // 타임스탬프 이전의 프레임 개수 계산
+            // timestamp before frame count Calculate
             let removeCount = self.frames.prefix(while: { $0.timestamp < timestamp }).count
 
-            // 프레임 삭제
+            // frame Delete
             if removeCount > 0 {
                 self.frames.removeFirst(removeCount)
-                // 인덱스 조정
+                //  Adjust
                 self.currentIndex = max(0, self.currentIndex - removeCount)
             }
         }
     }
 
-    /// @brief 버퍼의 상태 정보를 문자열로 반환합니다.
+    /// @brief buffer Status  stringto Return.
     ///
-    /// @return 버퍼 상태 문자열
+    /// @return buffer Status string
     ///
     /// @details
-    /// 디버깅 용도로 버퍼 상태를 출력합니다.
+    ///  for purpose of buffer status output.
     func getStatusString() -> String {
         return queue.sync { [weak self] in
             guard let self = self else { return "Buffer: disposed" }

@@ -1,11 +1,11 @@
 /**
  * @file VendorDetector.swift
- * @brief 블랙박스 제조사 자동 감지
+ * @brief Automatic dashcam vendor detection
  * @author BlackboxPlayer Development Team
  *
  * @details
- * 파일명 패턴과 디렉토리 구조를 분석하여 블랙박스 제조사를 자동으로 감지합니다.
- * 여러 파서를 시도하여 가장 적합한 파서를 선택합니다.
+ * Analyzes filename patterns and directory structure to automatically detect dashcam vendor.
+ * Tries multiple parsers to select the most suitable one.
  */
 
 import Foundation
@@ -16,34 +16,34 @@ import Foundation
 
 /**
  * @class VendorDetector
- * @brief 제조사 자동 감지 및 파서 관리
+ * @brief Automatic vendor detection and parser management
  *
  * @details
- * 1. 샘플 파일 수집 (최대 10개)
- * 2. 각 파서로 매칭 시도
- * 3. 가장 높은 점수의 파서 선택
- * 4. 신뢰도 검사 (50% 이상 매칭)
- * 5. 캐싱으로 성능 최적화
+ * 1. Collect sample files (max 10)
+ * 2. Try matching with each parser
+ * 3. Select parser with highest score
+ * 4. Confidence check (50% or more matches)
+ * 5. Performance optimization through caching
  */
 class VendorDetector {
 
     // MARK: - Properties
 
-    /// 등록된 모든 파서
+    /// All registered parsers
     private var parsers: [VendorParserProtocol] = []
 
-    /// 감지된 제조사 캐시 (디렉토리 경로 → 파서)
+    /// Detected vendor cache (directory path → parser)
     private var detectedVendorCache: [String: VendorParserProtocol] = [:]
 
-    /// 캐시 락 (thread-safe)
+    /// Cache lock (thread-safe)
     private let cacheLock = NSLock()
 
     // MARK: - Initialization
 
     /**
-     * @brief VendorDetector 초기화
+     * @brief Initialize VendorDetector
      *
-     * 기본 파서들을 등록합니다.
+     * Registers default parsers.
      */
     init() {
         registerDefaultParsers()
@@ -52,19 +52,19 @@ class VendorDetector {
     // MARK: - Private Methods
 
     /**
-     * @brief 기본 파서 등록
+     * @brief Register default parsers
      *
-     * 지원하는 모든 제조사의 파서를 등록합니다.
-     * 향후 새로운 파서 추가 시 이 메서드만 수정하면 됩니다.
+     * Registers parsers for all supported vendors.
+     * To add new parsers in the future, only modify this method.
      */
     private func registerDefaultParsers() {
-        // BlackVue 파서
+        // BlackVue parser
         parsers.append(BlackVueParser())
 
-        // CR-2000 OMEGA 파서
+        // CR-2000 OMEGA parser
         parsers.append(CR2000OmegaParser())
 
-        // 향후 추가:
+        // Future additions:
         // parsers.append(ThinkwareParser())
         // parsers.append(ViofoParser())
         // parsers.append(NextbaseParser())
@@ -73,34 +73,34 @@ class VendorDetector {
     // MARK: - Public Methods
 
     /**
-     * @brief 새로운 파서 등록 (플러그인)
-     * @param parser 등록할 파서
+     * @brief Register new parser (plugin)
+     * @param parser Parser to register
      *
-     * 외부에서 커스텀 파서를 추가할 수 있습니다.
+     * Allows adding custom parsers from outside.
      */
     func registerParser(_ parser: VendorParserProtocol) {
         parsers.append(parser)
 
-        // 캐시 무효화 (새 파서 추가 시)
+        // Invalidate cache (when adding new parser)
         cacheLock.lock()
         detectedVendorCache.removeAll()
         cacheLock.unlock()
     }
 
     /**
-     * @brief 디렉토리 스캔으로 제조사 자동 감지
-     * @param directoryURL 스캔할 디렉토리
-     * @return 감지된 파서, 실패 시 nil
+     * @brief Automatic vendor detection by scanning directory
+     * @param directoryURL Directory to scan
+     * @return Detected parser, nil if failed
      *
      * @details
-     * 1. 캐시 확인
-     * 2. 샘플 파일 수집 (최대 10개)
-     * 3. 각 파서로 매칭 시도
-     * 4. 최고 점수 파서 선택
-     * 5. 신뢰도 검사 (50% 이상)
+     * 1. Check cache
+     * 2. Collect sample files (max 10)
+     * 3. Try matching with each parser
+     * 4. Select parser with highest score
+     * 5. Confidence check (50% or more)
      */
     func detectVendor(in directoryURL: URL) -> VendorParserProtocol? {
-        // 캐시 확인
+        // Check cache
         let cacheKey = directoryURL.path
         cacheLock.lock()
         if let cached = detectedVendorCache[cacheKey] {
@@ -109,7 +109,7 @@ class VendorDetector {
         }
         cacheLock.unlock()
 
-        // 샘플 파일 수집 (처음 10개)
+        // Collect sample files (first 10)
         let fileManager = FileManager.default
         guard let enumerator = fileManager.enumerator(
             at: directoryURL,
@@ -126,7 +126,7 @@ class VendorDetector {
             let filename = fileURL.lastPathComponent
             let ext = fileURL.pathExtension.lowercased()
 
-            // 비디오 파일만 샘플링
+            // Sample only video files
             if ["mp4", "mov", "avi", "mkv"].contains(ext) {
                 sampleFiles.append(filename)
             }
@@ -134,7 +134,7 @@ class VendorDetector {
 
         guard !sampleFiles.isEmpty else { return nil }
 
-        // 각 파서로 매칭 시도
+        // Try matching with each parser
         var matchScores: [(parser: VendorParserProtocol, score: Int)] = []
 
         for parser in parsers {
@@ -149,21 +149,21 @@ class VendorDetector {
             }
         }
 
-        // 가장 높은 점수의 파서 선택
+        // Select parser with highest score
         guard let best = matchScores.max(by: { $0.score < $1.score }) else {
             return nil
         }
 
-        // 신뢰도 검사: 최소 50% 이상 매칭해야 함
+        // Confidence check: must match at least 50%
         let confidence = Double(best.score) / Double(sampleFiles.count)
         guard confidence >= 0.5 else {
-            print("⚠️ 낮은 신뢰도 (\(Int(confidence * 100))%): \(best.parser.vendorName)")
+            print("⚠️ Low confidence (\(Int(confidence * 100))%): \(best.parser.vendorName)")
             return nil
         }
 
-        print("✓ 감지된 제조사: \(best.parser.vendorName) (신뢰도: \(Int(confidence * 100))%)")
+        print("✓ Detected vendor: \(best.parser.vendorName) (confidence: \(Int(confidence * 100))%)")
 
-        // 캐시 저장
+        // Save to cache
         cacheLock.lock()
         detectedVendorCache[cacheKey] = best.parser
         cacheLock.unlock()
@@ -172,11 +172,11 @@ class VendorDetector {
     }
 
     /**
-     * @brief 특정 파일명으로 제조사 감지
-     * @param filename 파일명
-     * @return 감지된 파서, 실패 시 nil
+     * @brief Detect vendor for specific filename
+     * @param filename Filename
+     * @return Detected parser, nil if failed
      *
-     * 단일 파일의 제조사를 빠르게 감지합니다.
+     * Quickly detects vendor for a single file.
      */
     func detectVendor(for filename: String) -> VendorParserProtocol? {
         for parser in parsers {
@@ -188,26 +188,26 @@ class VendorDetector {
     }
 
     /**
-     * @brief 등록된 모든 파서 목록
-     * @return 파서 배열
+     * @brief List of all registered parsers
+     * @return Array of parsers
      */
     func allParsers() -> [VendorParserProtocol] {
         return parsers
     }
 
     /**
-     * @brief 특정 vendorId로 파서 검색
-     * @param vendorId 제조사 식별자
-     * @return 파서 또는 nil
+     * @brief Search parser by vendorId
+     * @param vendorId Vendor identifier
+     * @return Parser or nil
      */
     func parser(for vendorId: String) -> VendorParserProtocol? {
         return parsers.first { $0.vendorId == vendorId }
     }
 
     /**
-     * @brief 캐시 초기화
+     * @brief Clear cache
      *
-     * 메모리 절약 또는 재감지를 위해 캐시를 삭제합니다.
+     * Deletes cache for memory saving or re-detection.
      */
     func clearCache() {
         cacheLock.lock()
