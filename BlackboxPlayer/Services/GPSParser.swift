@@ -488,79 +488,96 @@ class GPSParser {
     /// - Coordinate parsing failed: Skip
     /// - UTF-8 decoding failed: Return empty array
     func parseNMEA(data: Data, baseDate: Date) -> [GPSPoint] {
-        // Store base date
-        // (used in parseDateTime() when parsing time)
         self.baseDate = baseDate
 
-        // Step 1: Decode as UTF-8 text
-        // Return empty array if Data → String conversion fails
-        guard let text = String(data: data, encoding: .utf8) else {
+        guard let lines = decodeNMEALines(from: data) else {
             return []
         }
 
-        // Step 2: Split into lines
-        // "...\n...\n..." → ["...", "...", "..."]
-        let lines = text.components(separatedBy: .newlines)
-
-        // Array to store results
         var gpsPoints: [GPSPoint] = []
-
-        // Temporary storage for merging GPRMC and GPGGA
-        // Store after GPRMC parsing, reference when parsing GPGGA
         var currentRMC: NMEARecord?
 
-        // Step 3: Iterate through each line and parse
         for line in lines {
-            // Trim leading/trailing whitespace
             let sentence = line.trimmingCharacters(in: .whitespaces)
-
-            // Skip if empty line or doesn't start with $
-            // NMEA sentences must start with $
             guard !sentence.isEmpty, sentence.hasPrefix("$") else { continue }
 
-            // Step 3-1: Process GPRMC or GNRMC sentence
-            // (position, speed, heading information)
-            if sentence.hasPrefix("$GPRMC") || sentence.hasPrefix("$GNRMC") {
-                // Parse GPRMC
-                if let rmc = parseGPRMC(sentence) {
-                    // Temporary store (for merging with next GPGGA)
-                    currentRMC = rmc
-
-                    // Create GPSPoint and add to array
-                    // (may be updated later by GPGGA)
-                    if let point = createGPSPoint(from: rmc) {
-                        gpsPoints.append(point)
-                    }
-                }
-            }
-            // Step 3-2: Process GPGGA or GNGGA sentence
-            // (altitude, satellite count, accuracy information)
-            else if sentence.hasPrefix("$GPGGA") || sentence.hasPrefix("$GNGGA") {
-                // Parse GPGGA and check previous RMC
-                if let gga = parseGPGGA(sentence), let _ = currentRMC {
-                    // Update last added GPSPoint
-                    if !gpsPoints.isEmpty {
-                        let lastIndex = gpsPoints.count - 1
-                        let lastPoint = gpsPoints[lastIndex]
-
-                        // Keep GPRMC data,
-                        // Add only GPGGA data (altitude, satellite count, accuracy)
-                        gpsPoints[lastIndex] = GPSPoint(
-                            timestamp: lastPoint.timestamp,
-                            latitude: lastPoint.latitude,
-                            longitude: lastPoint.longitude,
-                            altitude: gga.altitude,              // Added from GPGGA
-                            speed: lastPoint.speed,
-                            heading: lastPoint.heading,
-                            horizontalAccuracy: gga.hdop.map { $0 * 10 },  // HDOP → meters (approximate)
-                            satelliteCount: gga.satelliteCount   // Added from GPGGA
-                        )
-                    }
-                }
+            if isGPRMCSentence(sentence) {
+                currentRMC = processGPRMCSentence(sentence, into: &gpsPoints)
+            } else if isGPGGASentence(sentence) {
+                processGPGGASentence(sentence, mergeWith: currentRMC, into: &gpsPoints)
             }
         }
 
         return gpsPoints
+    }
+
+    /// Decode NMEA data into individual sentence lines
+    /// @param data Raw NMEA data in UTF-8 encoding
+    /// @return Array of NMEA sentence lines, or nil if decoding fails
+    private func decodeNMEALines(from data: Data) -> [String]? {
+        guard let text = String(data: data, encoding: .utf8) else {
+            return nil
+        }
+        return text.components(separatedBy: .newlines)
+    }
+
+    /// Check if sentence is GPRMC or GNRMC type
+    /// @param sentence NMEA sentence string
+    /// @return true if sentence is GPRMC/GNRMC
+    private func isGPRMCSentence(_ sentence: String) -> Bool {
+        return sentence.hasPrefix("$GPRMC") || sentence.hasPrefix("$GNRMC")
+    }
+
+    /// Check if sentence is GPGGA or GNGGA type
+    /// @param sentence NMEA sentence string
+    /// @return true if sentence is GPGGA/GNGGA
+    private func isGPGGASentence(_ sentence: String) -> Bool {
+        return sentence.hasPrefix("$GPGGA") || sentence.hasPrefix("$GNGGA")
+    }
+
+    /// Process GPRMC sentence and add GPS point to array
+    /// @param sentence GPRMC sentence string
+    /// @param points GPS points array to append to
+    /// @return Parsed NMEARecord for potential GPGGA merging
+    private func processGPRMCSentence(_ sentence: String, into points: inout [GPSPoint]) -> NMEARecord? {
+        guard let rmc = parseGPRMC(sentence),
+              let point = createGPSPoint(from: rmc) else {
+            return nil
+        }
+        points.append(point)
+        return rmc
+    }
+
+    /// Process GPGGA sentence and merge with last GPS point
+    /// @param sentence GPGGA sentence string
+    /// @param rmc Previous GPRMC record for validation
+    /// @param points GPS points array to update
+    private func processGPGGASentence(_ sentence: String, mergeWith rmc: NMEARecord?, into points: inout [GPSPoint]) {
+        guard let gga = parseGPGGA(sentence), rmc != nil else {
+            return
+        }
+        mergeGPGGAData(gga, intoLastPointOf: &points)
+    }
+
+    /// Merge GPGGA data (altitude, satellites, accuracy) into last GPS point
+    /// @param gga Parsed GPGGA record
+    /// @param points GPS points array to update
+    private func mergeGPGGAData(_ gga: NMEARecord, intoLastPointOf points: inout [GPSPoint]) {
+        guard !points.isEmpty else { return }
+
+        let lastIndex = points.count - 1
+        let lastPoint = points[lastIndex]
+
+        points[lastIndex] = GPSPoint(
+            timestamp: lastPoint.timestamp,
+            latitude: lastPoint.latitude,
+            longitude: lastPoint.longitude,
+            altitude: gga.altitude,
+            speed: lastPoint.speed,
+            heading: lastPoint.heading,
+            horizontalAccuracy: gga.hdop.map { $0 * 10 },
+            satelliteCount: gga.satelliteCount
+        )
     }
 
     /*
@@ -765,61 +782,64 @@ class GPSParser {
     /// 4. Latitude parsing failed
     /// 5. Longitude parsing failed
     private func parseGPRMC(_ sentence: String) -> NMEARecord? {
-        // $GPRMC,123519,A,4807.038,N,01131.000,E,022.4,084.4,230394,003.1,W*6A
-        // Fields: [0]Type, [1]Time, [2]Status, [3]Lat, [4]LatDir, [5]Lon, [6]LonDir,
-        //         [7]Speed, [8]Heading, [9]Date, [10]MagVar, [11]MagVarDir, [12]Checksum
-
-        // Step 1: Split by comma
-        // "$GPRMC,123519,A,..." → ["$GPRMC", "123519", "A", ...]
         let fields = sentence.components(separatedBy: ",")
 
-        // Minimum 10 fields required
-        guard fields.count >= 10 else { return nil }
+        guard validateGPRMCFields(fields) else { return nil }
 
-        // Step 2: Check status
-        // A = Active (valid), V = Void (invalid)
-        guard fields[2] == "A" else { return nil }
-
-        // Step 3: Parse time and date
-        // fields[1]: HHMMSS
-        // fields[9]: DDMMYY (optional)
-        guard let timestamp = parseDateTime(time: fields[1], date: fields.count > 9 ? fields[9] : nil) else {
+        guard let timestamp = parseDateTime(time: fields[1], date: fields.count > 9 ? fields[9] : nil),
+              let (latitude, longitude) = parseCoordinates(
+                latValue: fields[3], latDir: fields[4],
+                lonValue: fields[5], lonDir: fields[6]
+              ) else {
             return nil
         }
 
-        // Step 4: Parse latitude
-        // fields[3]: DDMM.MMMM
-        // fields[4]: N or S
-        guard let latitude = parseCoordinate(fields[3], direction: fields[4]) else {
-            return nil
-        }
+        let (speed, heading) = parseMovementData(speedField: fields[7], headingField: fields[8])
 
-        // Step 5: Parse longitude
-        // fields[5]: DDDMM.MMMM
-        // fields[6]: E or W
-        guard let longitude = parseCoordinate(fields[5], direction: fields[6]) else {
-            return nil
-        }
-
-        // Step 6: Parse speed (knots → km/h)
-        // Example: "022.4" → 22.4 knots → 41.48 km/h
-        let speed = Double(fields[7]).map { $0 * 1.852 }  // Convert knots to km/h
-
-        // Step 7: Parse heading (degrees)
-        // Example: "084.4" → 84.4°
-        let heading = Double(fields[8])
-
-        // Step 8: Create NMEARecord
         return NMEARecord(
             timestamp: timestamp,
             latitude: latitude,
             longitude: longitude,
-            altitude: nil,           // No altitude information in GPRMC
+            altitude: nil,
             speed: speed,
             heading: heading,
-            hdop: nil,               // No HDOP information in GPRMC
-            satelliteCount: nil      // No satellite count information in GPRMC
+            hdop: nil,
+            satelliteCount: nil
         )
+    }
+
+    /// Validate GPRMC fields meet minimum requirements
+    /// @param fields Array of GPRMC sentence fields
+    /// @return true if fields are valid
+    private func validateGPRMCFields(_ fields: [String]) -> Bool {
+        return fields.count >= 10 && fields[2] == "A"
+    }
+
+    /// Parse latitude and longitude coordinates
+    /// @param latValue Latitude value string (DDMM.MMMM)
+    /// @param latDir Latitude direction (N/S)
+    /// @param lonValue Longitude value string (DDDMM.MMMM)
+    /// @param lonDir Longitude direction (E/W)
+    /// @return Tuple of (latitude, longitude) in decimal degrees, or nil if parsing fails
+    private func parseCoordinates(
+        latValue: String, latDir: String,
+        lonValue: String, lonDir: String
+    ) -> (Double, Double)? {
+        guard let latitude = parseCoordinate(latValue, direction: latDir),
+              let longitude = parseCoordinate(lonValue, direction: lonDir) else {
+            return nil
+        }
+        return (latitude, longitude)
+    }
+
+    /// Parse speed and heading from GPRMC fields
+    /// @param speedField Speed in knots
+    /// @param headingField Heading in degrees
+    /// @return Tuple of (speed in km/h, heading in degrees)
+    private func parseMovementData(speedField: String, headingField: String) -> (Double?, Double?) {
+        let speed = Double(speedField).map { $0 * 1.852 }  // Convert knots to km/h
+        let heading = Double(headingField)
+        return (speed, heading)
     }
 
     /*
@@ -989,55 +1009,59 @@ class GPSParser {
     /// 6: Dead Reckoning
     /// ```
     private func parseGPGGA(_ sentence: String) -> NMEARecord? {
-        // $GPGGA,123519,4807.038,N,01131.000,E,1,08,0.9,545.4,M,46.9,M,,*47
-        // Fields: [0]Type, [1]Time, [2]Lat, [3]LatDir, [4]Lon, [5]LonDir,
-        //         [6]Quality, [7]NumSats, [8]HDOP, [9]Alt, [10]AltUnit, ...
-
-        // Step 1: Split by comma
         let fields = sentence.components(separatedBy: ",")
 
-        // Minimum 11 fields required
-        guard fields.count >= 11 else { return nil }
+        guard validateGPGGAFields(fields) else { return nil }
 
-        // Step 2: Check GPS quality
-        // 0 = Invalid, 1+ = Valid
-        guard let quality = Int(fields[6]), quality > 0 else { return nil }
-
-        // Step 3: Parse time
-        // GPGGA has no date information, so use baseDate
-        guard let timestamp = parseDateTime(time: fields[1], date: nil) else {
+        guard let timestamp = parseDateTime(time: fields[1], date: nil),
+              let (latitude, longitude) = parseCoordinates(
+                latValue: fields[2], latDir: fields[3],
+                lonValue: fields[4], lonDir: fields[5]
+              ) else {
             return nil
         }
 
-        // Step 4: Parse coordinates
-        guard let latitude = parseCoordinate(fields[2], direction: fields[3]),
-              let longitude = parseCoordinate(fields[4], direction: fields[5]) else {
-            return nil
-        }
+        let (altitude, satelliteCount, hdop) = parseAccuracyData(
+            altField: fields[9],
+            satField: fields[7],
+            hdopField: fields[8]
+        )
 
-        // Step 5: Parse altitude (meters)
-        // Example: "545.4" → 545.4m
-        let altitude = Double(fields[9])
-
-        // Step 6: Parse satellite count
-        // Example: "08" → 8
-        let satelliteCount = Int(fields[7])
-
-        // Step 7: Parse HDOP
-        // Example: "0.9" → 0.9 (excellent accuracy)
-        let hdop = Double(fields[8])
-
-        // Step 8: Create NMEARecord
         return NMEARecord(
             timestamp: timestamp,
             latitude: latitude,
             longitude: longitude,
             altitude: altitude,
-            speed: nil,              // No speed information in GPGGA
-            heading: nil,            // No heading information in GPGGA
+            speed: nil,
+            heading: nil,
             hdop: hdop,
             satelliteCount: satelliteCount
         )
+    }
+
+    /// Validate GPGGA fields meet minimum requirements
+    /// @param fields Array of GPGGA sentence fields
+    /// @return true if fields are valid
+    private func validateGPGGAFields(_ fields: [String]) -> Bool {
+        guard fields.count >= 11 else { return false }
+        guard let quality = Int(fields[6]), quality > 0 else { return false }
+        return true
+    }
+
+    /// Parse altitude, satellite count, and HDOP from GPGGA fields
+    /// @param altField Altitude string (meters)
+    /// @param satField Satellite count string
+    /// @param hdopField HDOP string
+    /// @return Tuple of (altitude, satelliteCount, hdop)
+    private func parseAccuracyData(
+        altField: String,
+        satField: String,
+        hdopField: String
+    ) -> (Double?, Int?, Double?) {
+        let altitude = Double(altField)
+        let satelliteCount = Int(satField)
+        let hdop = Double(hdopField)
+        return (altitude, satelliteCount, hdop)
     }
 
     /*
@@ -1415,59 +1439,75 @@ class GPSParser {
     /// ### UTC Time Zone:
     /// GPS always uses UTC (Coordinated Universal Time).
     private func parseDateTime(time: String, date: String?) -> Date? {
-        // baseDate must be set
         guard let baseDate = baseDate else { return nil }
+        guard let (hour, minute, second) = parseTimeComponents(from: time) else {
+            return nil
+        }
 
-        // Step 1: Check time length
-        // Minimum HHMMSS = 6 digits
+        var components = Calendar.current.dateComponents([.year, .month, .day], from: baseDate)
+
+        if let (year, month, day) = parseDateComponents(from: date) {
+            components.year = year
+            components.month = month
+            components.day = day
+        }
+
+        return createDate(from: components, hour: hour, minute: minute, second: second)
+    }
+
+    /// Parse time components from NMEA time string
+    /// @param time Time string in HHMMSS format
+    /// @return Tuple of (hour, minute, second), or nil if parsing fails
+    private func parseTimeComponents(from time: String) -> (Int, Int, Int)? {
         guard time.count >= 6 else { return nil }
 
-        // Step 2: Parse time
-        // "143025" → 14:30:25
-        let hourString = String(time.prefix(2))           // "14"
-        let minuteString = String(time.dropFirst(2).prefix(2))  // "30"
-        let secondString = String(time.dropFirst(4).prefix(2))  // "25"
+        let hourString = String(time.prefix(2))
+        let minuteString = String(time.dropFirst(2).prefix(2))
+        let secondString = String(time.dropFirst(4).prefix(2))
 
-        // Convert string → integer
         guard let hour = Int(hourString),
               let minute = Int(minuteString),
               let second = Int(secondString) else {
             return nil
         }
 
-        // Step 3: Initialize date components
-        // Get year/month/day from baseDate
-        var components = Calendar.current.dateComponents([.year, .month, .day], from: baseDate)
+        return (hour, minute, second)
+    }
 
-        // Step 4: Parse NMEA date if present
-        if let date = date, date.count >= 6 {
-            // "150124" → 2024-01-15
-            let dayString = String(date.prefix(2))              // "15"
-            let monthString = String(date.dropFirst(2).prefix(2))  // "01"
-            let yearString = String(date.dropFirst(4).prefix(2))   // "24"
+    /// Parse date components from NMEA date string
+    /// @param date Date string in DDMMYY format (optional)
+    /// @return Tuple of (year, month, day), or nil if parsing fails or date is nil
+    private func parseDateComponents(from date: String?) -> (Int, Int, Int)? {
+        guard let date = date, date.count >= 6 else { return nil }
 
-            // Convert string → integer
-            if let day = Int(dayString),
-               let month = Int(monthString),
-               let year = Int(yearString) {
-                // 2-digit year → 4-digit year
-                // 24 → 2024
-                components.year = 2000 + year
-                components.month = month
-                components.day = day
-            }
+        let dayString = String(date.prefix(2))
+        let monthString = String(date.dropFirst(2).prefix(2))
+        let yearString = String(date.dropFirst(4).prefix(2))
+
+        guard let day = Int(dayString),
+              let month = Int(monthString),
+              let year = Int(yearString) else {
+            return nil
         }
 
-        // Step 5: Set time components
-        components.hour = hour
-        components.minute = minute
-        components.second = second
+        // Convert 2-digit year to 4-digit year (24 → 2024)
+        return (2000 + year, month, day)
+    }
 
-        // GPS always uses UTC
-        components.timeZone = TimeZone(identifier: "UTC")
+    /// Create Date object from components
+    /// @param components Base date components (year, month, day)
+    /// @param hour Hour value
+    /// @param minute Minute value
+    /// @param second Second value
+    /// @return Date object in UTC timezone
+    private func createDate(from components: DateComponents, hour: Int, minute: Int, second: Int) -> Date? {
+        var dateComponents = components
+        dateComponents.hour = hour
+        dateComponents.minute = minute
+        dateComponents.second = second
+        dateComponents.timeZone = TimeZone(identifier: "UTC")
 
-        // Step 6: Create Date object
-        return Calendar.current.date(from: components)
+        return Calendar.current.date(from: dateComponents)
     }
 
     /*
