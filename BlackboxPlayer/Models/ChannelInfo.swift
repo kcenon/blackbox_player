@@ -552,60 +552,60 @@ struct ChannelInfo: Codable, Equatable, Identifiable, Hashable {
     let isEnabled: Bool
 
     /// @var fileSize
-    /// @brief 파일 크기 (bytes)
+    /// @brief File size (bytes)
     ///
     /// File size in bytes
     ///
-    /// 파일 크기입니다. (단위: bytes)
+    /// File size. (Unit: bytes)
     ///
-    /// **UInt64 타입:**
-    /// - Unsigned Integer 64-bit (부호 없는 64비트 정수)
-    /// - 범위: 0 ~ 18,446,744,073,709,551,615 (약 18 엑사바이트)
-    /// - 파일 크기는 음수가 될 수 없으므로 Unsigned 사용
-    /// - 대용량 파일도 처리 가능 (64비트면 충분)
+    /// **UInt64 Type:**
+    /// - Unsigned Integer 64-bit (unsigned 64-bit integer)
+    /// - Range: 0 ~ 18,446,744,073,709,551,615 (approximately 18 exabytes)
+    /// - File size cannot be negative, so Unsigned is used
+    /// - Can handle large files (64-bit is sufficient)
     ///
-    /// **단위 변환:**
+    /// **Unit Conversion:**
     /// - 1 KB = 1,024 bytes
     /// - 1 MB = 1,024 KB = 1,048,576 bytes
     /// - 1 GB = 1,024 MB = 1,073,741,824 bytes
     ///
-    /// **파일 크기 예시:**
-    /// - Full HD, 30 fps, 8 Mbps, 1분:
-    ///   - 8 Mbps = 1 MB/초
-    ///   - 60초 × 1 MB = 60 MB
-    ///   - = 62,914,560 bytes (약 63 MB)
+    /// **File Size Examples:**
+    /// - Full HD, 30 fps, 8 Mbps, 1 minute:
+    ///   - 8 Mbps = 1 MB/second
+    ///   - 60 seconds × 1 MB = 60 MB
+    ///   - = 62,914,560 bytes (approximately 63 MB)
     ///
-    /// - Full HD, 30 fps, 8 Mbps, 1시간:
-    ///   - 60 MB/분 × 60분 = 3,600 MB
-    ///   - = 3,774,873,600 bytes (약 3.6 GB)
+    /// - Full HD, 30 fps, 8 Mbps, 1 hour:
+    ///   - 60 MB/minute × 60 minutes = 3,600 MB
+    ///   - = 3,774,873,600 bytes (approximately 3.6 GB)
     let fileSize: UInt64
 
     /// @var duration
-    /// @brief 비디오 길이 (초)
+    /// @brief Video duration (seconds)
     ///
     /// Duration of video in seconds
     ///
-    /// 비디오 길이입니다. (단위: 초)
+    /// Video duration. (Unit: seconds)
     ///
-    /// **TimeInterval 타입:**
-    /// - Double의 typealias
-    /// - 시간 간격을 나타내는 표준 타입
-    /// - 소수점 이하도 표현 가능 (예: 123.456초)
+    /// **TimeInterval Type:**
+    /// - Typealias for Double
+    /// - Standard type for representing time intervals
+    /// - Can represent decimal values (e.g., 123.456 seconds)
     ///
-    /// **일반적인 블랙박스 녹화 길이:**
-    /// - 1분 파일: 60.0초
-    /// - 3분 파일: 180.0초
-    /// - 5분 파일: 300.0초 (가장 일반적)
-    /// - 10분 파일: 600.0초
+    /// **Common Blackbox Recording Durations:**
+    /// - 1-minute file: 60.0 seconds
+    /// - 3-minute file: 180.0 seconds
+    /// - 5-minute file: 300.0 seconds (most common)
+    /// - 10-minute file: 600.0 seconds
     ///
-    /// **분할 녹화 이유:**
-    /// - 파일 손상 시 피해 최소화
-    /// - SD 카드 호환성 (FAT32는 4GB 제한)
-    /// - 파일 관리 용이
+    /// **Reasons for Segmented Recording:**
+    /// - Minimize damage in case of file corruption
+    /// - SD card compatibility (FAT32 has 4GB limit)
+    /// - Easier file management
     ///
-    /// **시간 변환:**
+    /// **Time Conversion:**
     /// ```swift
-    /// let seconds = 3665.5  // 1시간 1분 5.5초
+    /// let seconds = 3665.5  // 1 hour 1 minute 5.5 seconds
     /// let hours = Int(seconds / 3600)  // 1
     /// let minutes = Int((seconds.truncatingRemainder(dividingBy: 3600)) / 60)  // 1
     /// let secs = seconds.truncatingRemainder(dividingBy: 60)  // 5.5
@@ -613,39 +613,39 @@ struct ChannelInfo: Codable, Equatable, Identifiable, Hashable {
     let duration: TimeInterval
 
     /// @var timeOffset
-    /// @brief 채널 시간 오프셋 (초)
+    /// @brief Channel time offset (seconds)
     ///
     /// Time offset for this channel in seconds
     ///
-    /// 채널 간 시간 차이를 보정하기 위한 오프셋입니다.
+    /// Offset to compensate for time differences between channels.
     ///
-    /// **시간 오프셋(Time Offset)이란?**
-    /// - 카메라 간 하드웨어 딜레이 보정
-    /// - 각 채널이 정확히 같은 시간에 녹화를 시작하지 않을 수 있음
-    /// - 예: 전방 카메라가 후방 카메라보다 0.05초 빠르게 시작
+    /// **What is Time Offset?**
+    /// - Compensates for hardware delay between cameras
+    /// - Each channel may not start recording at exactly the same time
+    /// - Example: Front camera starts 0.05 seconds earlier than rear camera
     ///
-    /// **사용 예시:**
+    /// **Usage Example:**
     /// ```swift
     /// let frontChannel = ChannelInfo(
     ///     position: .front,
     ///     ...,
-    ///     timeOffset: 0.0  // 기준 채널
+    ///     timeOffset: 0.0  // Reference channel
     /// )
     ///
     /// let rearChannel = ChannelInfo(
     ///     position: .rear,
     ///     ...,
-    ///     timeOffset: 0.05  // 0.05초 늦게 시작
+    ///     timeOffset: 0.05  // Starts 0.05 seconds late
     /// )
     ///
-    /// // 동기화 시:
-    /// // 전방 5.00초 프레임 == 후방 5.05초 프레임
+    /// // When synchronized:
+    /// // Front 5.00s frame == Rear 5.05s frame
     /// ```
     ///
-    /// **값의 의미:**
-    /// - 0.0: 기준 시간 (보통 전방 카메라)
-    /// - 양수: 이 채널이 늦게 시작 (시간 추가)
-    /// - 음수: 이 채널이 빠르게 시작 (시간 감소)
+    /// **Value Meaning:**
+    /// - 0.0: Reference time (usually front camera)
+    /// - Positive: This channel starts late (add time)
+    /// - Negative: This channel starts early (subtract time)
     let timeOffset: TimeInterval
 
     // MARK: - Initialization
@@ -682,55 +682,55 @@ struct ChannelInfo: Codable, Equatable, Identifiable, Hashable {
 
     // MARK: - Computed Properties
 
-    /// @brief 해상도 문자열 (예: "1920x1080")
-    /// @return "가로x세로" 형식
+    /// @brief Resolution string (e.g., "1920x1080")
+    /// @return "width x height" format
     ///
     /// Resolution as a formatted string (e.g., "1920x1080")
     ///
-    /// 해상도를 "가로x세로" 형식의 문자열로 반환합니다.
+    /// Returns the resolution as a "width x height" formatted string.
     ///
-    /// **형식:**
+    /// **Format:**
     /// - "{width}x{height}"
-    /// - 예: "1920x1080", "3840x2160", "1280x720"
+    /// - Examples: "1920x1080", "3840x2160", "1280x720"
     ///
-    /// **사용 예시:**
+    /// **Usage Example:**
     /// ```swift
     /// let channel = ChannelInfo.frontHD
     /// print(channel.resolutionString)  // "1920x1080"
     ///
-    /// // UI 표시
+    /// // UI display
     /// resolutionLabel.text = channel.resolutionString
     /// ```
     var resolutionString: String {
         return "\(width)x\(height)"
     }
 
-    /// @brief 일반적인 해상도 이름 (예: "Full HD", "4K")
-    /// @return 해상도 등급 이름
+    /// @brief Common resolution name (e.g., "Full HD", "4K")
+    /// @return Resolution grade name
     ///
     /// Common resolution name (e.g., "Full HD", "4K")
     ///
-    /// 일반적인 해상도 이름을 반환합니다.
+    /// Returns the common resolution name.
     ///
-    /// **해상도 매핑:**
+    /// **Resolution Mapping:**
     /// - 3840 × 2160 → "4K UHD" (Ultra High Definition)
     /// - 2560 × 1440 → "2K QHD" (Quad High Definition)
     /// - 1920 × 1080 → "Full HD"
     /// - 1280 × 720  → "HD"
     /// - 640 × 480   → "SD" (Standard Definition)
-    /// - 기타        → "1920x1080" (resolutionString 반환)
+    /// - Other       → "1920x1080" (returns resolutionString)
     ///
-    /// **switch 패턴 매칭:**
-    /// - (width, height) 튜플로 두 값을 동시에 매칭
-    /// - case (3840, 2160): 정확히 3840×2160일 때만 매칭
-    /// - default: 위의 경우에 해당하지 않는 모든 경우
+    /// **switch Pattern Matching:**
+    /// - Match two values simultaneously with (width, height) tuple
+    /// - case (3840, 2160): Matches only when exactly 3840×2160
+    /// - default: All cases not matching above
     ///
-    /// **사용 예시:**
+    /// **Usage Example:**
     /// ```swift
     /// let channel = ChannelInfo(position: .front, ..., width: 1920, height: 1080)
     /// print(channel.resolutionName)  // "Full HD"
     ///
-    /// // UI에 표시
+    /// // Display in UI
     /// resolutionLabel.text = channel.resolutionName  // "Full HD"
     /// detailLabel.text = channel.resolutionString    // "1920x1080"
     /// ```
@@ -747,92 +747,92 @@ struct ChannelInfo: Codable, Equatable, Identifiable, Hashable {
         case (640, 480):
             return "SD"
         default:
-            // 알 수 없는 해상도는 "1920x1080" 형식으로 반환
+            // Unknown resolutions return "1920x1080" format
             return resolutionString
         }
     }
 
-    /// @brief 화면 비율 (소수)
-    /// @return 가로/세로 비율
+    /// @brief Aspect ratio (decimal)
+    /// @return Width/height ratio
     ///
     /// Aspect ratio as a decimal
     ///
-    /// 화면 비율을 소수로 반환합니다.
+    /// Returns the aspect ratio as a decimal number.
     ///
-    /// **화면 비율(Aspect Ratio):**
-    /// - 가로 ÷ 세로의 비율
-    /// - 화면의 가로세로 비율을 나타냄
+    /// **Aspect Ratio:**
+    /// - Ratio of width ÷ height
+    /// - Represents the width-to-height ratio of the screen
     ///
-    /// **계산 공식:**
+    /// **Calculation Formula:**
     /// ```
     /// aspectRatio = width / height
     ///
-    /// 예시:
+    /// Examples:
     ///   1920 ÷ 1080 = 1.777... (16:9)
     ///   1280 ÷ 720  = 1.777... (16:9)
     ///   1024 ÷ 768  = 1.333... (4:3)
     ///   2560 ÷ 1080 = 2.370... (21:9)
     /// ```
     ///
-    /// **일반적인 비율:**
-    /// - 1.777 (16:9): 와이드스크린 (일반 블랙박스, TV)
-    /// - 1.333 (4:3): 구형 비율
-    /// - 2.370 (21:9): 울트라 와이드
+    /// **Common Ratios:**
+    /// - 1.777 (16:9): Widescreen (standard blackbox, TV)
+    /// - 1.333 (4:3): Legacy ratio
+    /// - 2.370 (21:9): Ultra-wide
     ///
-    /// **Double 캐스팅:**
-    /// - width와 height는 Int 타입
-    /// - 나눗셈 전에 Double로 변환해야 소수점 계산
+    /// **Double Casting:**
+    /// - width and height are Int type
+    /// - Must convert to Double before division for decimal calculation
     /// - Double(width) / Double(height)
     ///
-    /// **사용 예시:**
+    /// **Usage Example:**
     /// ```swift
     /// let channel = ChannelInfo.frontHD
     /// print(channel.aspectRatio)  // 1.7777777777777777
     ///
-    /// // 화면 비율 체크
+    /// // Check aspect ratio
     /// if channel.aspectRatio > 2.0 {
-    ///     print("울트라 와이드 화면")
+    ///     print("Ultra-wide screen")
     /// }
     /// ```
     var aspectRatio: Double {
         return Double(width) / Double(height)
     }
 
-    /// @brief 화면 비율 문자열 (예: "16:9")
-    /// @return 비율 문자열
+    /// @brief Aspect ratio string (e.g., "16:9")
+    /// @return Ratio string
     ///
     /// Aspect ratio as a formatted string (e.g., "16:9")
     ///
-    /// 화면 비율을 읽기 쉬운 문자열로 반환합니다.
+    /// Returns the aspect ratio as a human-readable string.
     ///
-    /// **변환 규칙:**
-    /// - 16:9 (1.777...)에 가까우면 → "16:9"
-    /// - 4:3 (1.333...)에 가까우면 → "4:3"
-    /// - 21:9 (2.333...)에 가까우면 → "21:9"
-    /// - 그 외 → "1.78:1" (소수점 2자리)
+    /// **Conversion Rules:**
+    /// - Close to 16:9 (1.777...) → "16:9"
+    /// - Close to 4:3 (1.333...) → "4:3"
+    /// - Close to 21:9 (2.333...) → "21:9"
+    /// - Other → "1.78:1" (2 decimal places)
     ///
-    /// **근사값 비교:**
+    /// **Approximate Value Comparison:**
     /// - abs(ratio - 16.0/9.0) < 0.01
-    /// - abs: 절댓값 (음수를 양수로)
-    /// - ratio와 16/9의 차이가 0.01 미만이면 "같다"고 판단
-    /// - 오차 허용: 부동소수점 연산의 미세한 오차 보정
+    /// - abs: Absolute value (convert negative to positive)
+    /// - If difference between ratio and 16/9 is less than 0.01, consider "equal"
+    /// - Error tolerance: Compensate for floating-point arithmetic errors
     ///
-    /// **계산 예시:**
+    /// **Calculation Examples:**
     /// ```
     /// 1920 ÷ 1080 = 1.7777...
     /// 16 ÷ 9 = 1.7777...
-    /// 차이 = |1.7777... - 1.7777...| = 0.0 < 0.01  ✓ → "16:9"
+    /// Difference = |1.7777... - 1.7777...| = 0.0 < 0.01  ✓ → "16:9"
     ///
     /// 1024 ÷ 768 = 1.3333...
     /// 4 ÷ 3 = 1.3333...
-    /// 차이 = |1.3333... - 1.3333...| = 0.0 < 0.01  ✓ → "4:3"
+    /// Difference = |1.3333... - 1.3333...| = 0.0 < 0.01  ✓ → "4:3"
     ///
     /// 1920 ÷ 1200 = 1.6
     /// 16 ÷ 9 = 1.7777...
-    /// 차이 = |1.6 - 1.7777...| = 0.1777 > 0.01  ✗ → "1.60:1"
+    /// Difference = |1.6 - 1.7777...| = 0.1777 > 0.01  ✗ → "1.60:1"
     /// ```
     ///
-    /// **사용 예시:**
+    /// **Usage Example:**
     /// ```swift
     /// let channel1 = ChannelInfo(position: .front, ..., width: 1920, height: 1080)
     /// print(channel1.aspectRatioString)  // "16:9"
@@ -845,47 +845,47 @@ struct ChannelInfo: Codable, Equatable, Identifiable, Hashable {
     /// ```
     var aspectRatioString: String {
         let ratio = aspectRatio
-        // 16:9 체크 (1.777...)
+        // Check for 16:9 (1.777...)
         if abs(ratio - 16.0 / 9.0) < 0.01 {
             return "16:9"
-            // 4:3 체크 (1.333...)
+            // Check for 4:3 (1.333...)
         } else if abs(ratio - 4.0 / 3.0) < 0.01 {
             return "4:3"
-            // 21:9 체크 (2.333...)
+            // Check for 21:9 (2.333...)
         } else if abs(ratio - 21.0 / 9.0) < 0.01 {
             return "21:9"
-            // 기타: "1.78:1" 형식
+            // Other: "1.78:1" format
         } else {
             return String(format: "%.2f:1", ratio)
         }
     }
 
-    /// @brief 프레임 레이트 문자열
-    /// @return "XX fps" 또는 "XX.XX fps" 형식
+    /// @brief Frame rate string
+    /// @return "XX fps" or "XX.XX fps" format
     ///
     /// Frame rate as formatted string
     ///
-    /// 프레임 레이트를 문자열로 반환합니다.
+    /// Returns the frame rate as a string.
     ///
-    /// **형식:**
-    /// - 정수 프레임 레이트: "30 fps", "60 fps"
-    /// - 소수 프레임 레이트: "29.97 fps", "23.98 fps"
+    /// **Format:**
+    /// - Integer frame rate: "30 fps", "60 fps"
+    /// - Decimal frame rate: "29.97 fps", "23.98 fps"
     ///
-    /// **정수 체크:**
+    /// **Integer Check:**
     /// - frameRate == floor(frameRate)
-    /// - floor: 소수점 이하 버림 (예: floor(30.0) = 30.0)
-    /// - 30.0 == floor(30.0) → true (정수)
+    /// - floor: Rounds down to integer (e.g., floor(30.0) = 30.0)
+    /// - 30.0 == floor(30.0) → true (integer)
     /// - 29.97 == floor(29.97) → false (29.97 != 29.0)
     ///
-    /// **포맷 선택:**
-    /// - 정수: "\(Int(frameRate)) fps" → "30 fps"
-    /// - 소수: String(format: "%.2f fps", frameRate) → "29.97 fps"
+    /// **Format Selection:**
+    /// - Integer: "\(Int(frameRate)) fps" → "30 fps"
+    /// - Decimal: String(format: "%.2f fps", frameRate) → "29.97 fps"
     ///
     /// **NTSC vs PAL:**
-    /// - NTSC (미국, 한국): 29.97 fps (정확히는 30000/1001)
-    /// - PAL (유럽): 25.0 fps
+    /// - NTSC (US, Korea): 29.97 fps (exactly 30000/1001)
+    /// - PAL (Europe): 25.0 fps
     ///
-    /// **사용 예시:**
+    /// **Usage Example:**
     /// ```swift
     /// let channel1 = ChannelInfo(position: .front, ..., frameRate: 30.0)
     /// print(channel1.frameRateString)  // "30 fps"
@@ -893,51 +893,51 @@ struct ChannelInfo: Codable, Equatable, Identifiable, Hashable {
     /// let channel2 = ChannelInfo(position: .front, ..., frameRate: 29.97)
     /// print(channel2.frameRateString)  // "29.97 fps"
     ///
-    /// // UI 표시
+    /// // UI display
     /// fpsLabel.text = channel.frameRateString
     /// ```
     var frameRateString: String {
-        // 정수 프레임 레이트 체크
+        // Check for integer frame rate
         if frameRate == floor(frameRate) {
-            // 정수: "30 fps"
+            // Integer: "30 fps"
             return "\(Int(frameRate)) fps"
         } else {
-            // 소수: "29.97 fps"
+            // Decimal: "29.97 fps"
             return String(format: "%.2f fps", frameRate)
         }
     }
 
-    /// @brief 비트레이트 문자열
-    /// @return "XX.X Mbps" 또는 "XXX Kbps" 형식 (옵셔널)
+    /// @brief Bitrate string
+    /// @return "XX.X Mbps" or "XXX Kbps" format (optional)
     ///
     /// Bitrate as human-readable string
     ///
-    /// 비트레이트를 읽기 쉬운 문자열로 반환합니다.
+    /// Returns the bitrate as a human-readable string.
     ///
-    /// **변환 규칙:**
-    /// - 1,000,000 bps 이상 → Mbps (메가비트)
-    /// - 1,000,000 bps 미만 → Kbps (킬로비트)
+    /// **Conversion Rules:**
+    /// - >= 1,000,000 bps → Mbps (megabits)
+    /// - < 1,000,000 bps → Kbps (kilobits)
     ///
-    /// **단위 변환:**
+    /// **Unit Conversion:**
     /// ```
     /// 1 Mbps = 1,000,000 bps
     /// 1 Kbps = 1,000 bps
     ///
-    /// 예시:
+    /// Examples:
     ///   8,000,000 bps = 8.0 Mbps
     ///   4,500,000 bps = 4.5 Mbps
     ///   750,000 bps = 750 Kbps
     /// ```
     ///
-    /// **포맷:**
-    /// - Mbps: 소수점 1자리 (예: "8.0 Mbps")
-    /// - Kbps: 정수 (예: "750 Kbps")
+    /// **Format:**
+    /// - Mbps: 1 decimal place (e.g., "8.0 Mbps")
+    /// - Kbps: Integer (e.g., "750 Kbps")
     ///
-    /// **옵셔널 반환:**
-    /// - bitrate가 nil이면 nil 반환
-    /// - guard let으로 옵셔널 바인딩
+    /// **Optional Return:**
+    /// - Returns nil if bitrate is nil
+    /// - Uses guard let for optional binding
     ///
-    /// **사용 예시:**
+    /// **Usage Example:**
     /// ```swift
     /// let channel1 = ChannelInfo(position: .front, ..., bitrate: 8_000_000)
     /// print(channel1.bitrateString ?? "N/A")  // "8.0 Mbps"
@@ -948,51 +948,51 @@ struct ChannelInfo: Codable, Equatable, Identifiable, Hashable {
     /// let channel3 = ChannelInfo(position: .front, ..., bitrate: nil)
     /// print(channel3.bitrateString ?? "N/A")  // "N/A"
     ///
-    /// // UI 표시
-    /// bitrateLabel.text = channel.bitrateString ?? "알 수 없음"
+    /// // UI display
+    /// bitrateLabel.text = channel.bitrateString ?? "Unknown"
     /// ```
     var bitrateString: String? {
-        // bitrate가 nil이면 nil 반환
+        // Return nil if bitrate is nil
         guard let bitrate = bitrate else { return nil }
 
-        // Mbps 단위로 변환
+        // Convert to Mbps
         let mbps = Double(bitrate) / 1_000_000
 
-        // 1 Mbps 이상: Mbps 단위로 표시
+        // >= 1 Mbps: Display in Mbps
         if mbps >= 1.0 {
             return String(format: "%.1f Mbps", mbps)
-            // 1 Mbps 미만: Kbps 단위로 표시
+            // < 1 Mbps: Display in Kbps
         } else {
             let kbps = Double(bitrate) / 1000
             return String(format: "%.0f Kbps", kbps)
         }
     }
 
-    /// @brief 파일 크기 문자열
-    /// @return "XXX MB" 또는 "X.X GB" 형식
+    /// @brief File size string
+    /// @return "XXX MB" or "X.X GB" format
     ///
     /// File size as human-readable string
     ///
-    /// 파일 크기를 읽기 쉬운 문자열로 반환합니다.
+    /// Returns the file size as a human-readable string.
     ///
     /// **ByteCountFormatter:**
-    /// - Foundation의 표준 파일 크기 포맷터
-    /// - 자동으로 적절한 단위 선택 (Bytes, KB, MB, GB)
-    /// - 로케일에 맞는 형식으로 표시
+    /// - Foundation's standard file size formatter
+    /// - Automatically selects appropriate unit (Bytes, KB, MB, GB)
+    /// - Displays in locale-appropriate format
     ///
     /// **countStyle:**
-    /// - .file: 파일 크기 형식 (1024 기반, 이진)
+    /// - .file: File size format (1024-based, binary)
     ///   - 1 KB = 1,024 bytes
     ///   - 1 MB = 1,024 KB
     ///   - 1 GB = 1,024 MB
     ///
-    /// - .memory: 메모리 형식 (.file과 동일, 더 명확한 이름)
+    /// - .memory: Memory format (same as .file, clearer name)
     ///
-    /// - .decimal: 십진법 형식 (1000 기반)
+    /// - .decimal: Decimal format (1000-based)
     ///   - 1 KB = 1,000 bytes
     ///   - 1 MB = 1,000 KB
     ///
-    /// **포맷 예시:**
+    /// **Format Examples:**
     /// ```
     /// 1,024 bytes       → "1 KB"
     /// 1,048,576 bytes   → "1 MB"
@@ -1000,55 +1000,55 @@ struct ChannelInfo: Codable, Equatable, Identifiable, Hashable {
     /// 1,073,741,824 bytes → "1 GB"
     /// ```
     ///
-    /// **Int64 캐스팅:**
-    /// - ByteCountFormatter.string(fromByteCount:)는 Int64 파라미터
-    /// - fileSize는 UInt64
-    /// - Int64(fileSize)로 변환 필요
+    /// **Int64 Casting:**
+    /// - ByteCountFormatter.string(fromByteCount:) takes Int64 parameter
+    /// - fileSize is UInt64
+    /// - Must convert with Int64(fileSize)
     ///
-    /// **사용 예시:**
+    /// **Usage Example:**
     /// ```swift
     /// let channel = ChannelInfo(position: .front, ..., fileSize: 104_857_600)
     /// print(channel.fileSizeString)  // "100 MB"
     ///
-    /// // UI 표시
-    /// fileSizeLabel.text = "크기: \(channel.fileSizeString)"
+    /// // UI display
+    /// fileSizeLabel.text = "Size: \(channel.fileSizeString)"
     /// ```
     var fileSizeString: String {
-        // ByteCountFormatter 생성
+        // Create ByteCountFormatter
         let formatter = ByteCountFormatter()
-        // 파일 크기 형식 (1024 기반)
+        // File size format (1024-based)
         formatter.countStyle = .file
-        // UInt64를 Int64로 변환하여 포맷
+        // Convert UInt64 to Int64 and format
         return formatter.string(fromByteCount: Int64(fileSize))
     }
 
-    /// @brief 파일 경로에서 파일명 추출
-    /// @return 파일명 (경로 제외)
+    /// @brief Extract filename from file path
+    /// @return Filename (excluding path)
     ///
     /// Filename extracted from path
     ///
-    /// 파일 경로에서 파일명만 추출합니다.
+    /// Extracts only the filename from the file path.
     ///
-    /// **경로 vs 파일명:**
+    /// **Path vs Filename:**
     /// ```
-    /// 경로:   "normal/2025_01_10_09_00_00_F.mp4"
-    ///                  ↓ lastPathComponent
-    /// 파일명: "2025_01_10_09_00_00_F.mp4"
+    /// Path:     "normal/2025_01_10_09_00_00_F.mp4"
+    ///                    ↓ lastPathComponent
+    /// Filename: "2025_01_10_09_00_00_F.mp4"
     /// ```
     ///
     /// **NSString.lastPathComponent:**
-    /// - 경로의 마지막 구성 요소(파일명) 반환
-    /// - 디렉토리 구분자(/) 이후의 문자열
-    /// - Swift String을 NSString으로 캐스팅하여 사용
+    /// - Returns the last component of the path (filename)
+    /// - String after directory separator (/)
+    /// - Used by casting Swift String to NSString
     ///
-    /// **예시:**
+    /// **Examples:**
     /// ```
     /// "normal/2025_01_10_09_00_00_F.mp4"       → "2025_01_10_09_00_00_F.mp4"
     /// "/media/sd/event/2025_01_10_10_30_15_R.mp4" → "2025_01_10_10_30_15_R.mp4"
     /// "video.mp4"                              → "video.mp4"
     /// ```
     ///
-    /// **사용 예시:**
+    /// **Usage Example:**
     /// ```swift
     /// let channel = ChannelInfo(
     ///     position: .front,
@@ -1057,51 +1057,51 @@ struct ChannelInfo: Codable, Equatable, Identifiable, Hashable {
     /// )
     /// print(channel.filename)  // "2025_01_10_09_00_00_F.mp4"
     ///
-    /// // UI 표시
+    /// // UI display
     /// filenameLabel.text = channel.filename
     /// ```
     var filename: String {
         return (filePath as NSString).lastPathComponent
     }
 
-    /// @brief 고해상도 채널 확인 (>= 1080p)
-    /// @return 1080p 이상이면 true
+    /// @brief Check for high-resolution channel (>= 1080p)
+    /// @return True if 1080p or higher
     ///
     /// Check if this is a high-resolution channel (>= 1080p)
     ///
-    /// 고해상도 채널인지 확인합니다. (1080p 이상)
+    /// Checks if the channel is high-resolution (1080p or higher).
     ///
-    /// **고해상도 기준:**
-    /// - height >= 1080 (세로 픽셀이 1080 이상)
-    /// - Full HD (1920×1080) 이상
+    /// **High-Resolution Criteria:**
+    /// - height >= 1080 (vertical pixels 1080 or more)
+    /// - Full HD (1920×1080) or higher
     ///
-    /// **해상도 분류:**
+    /// **Resolution Classification:**
     /// ```
-    /// 고해상도 (true):
+    /// High-resolution (true):
     ///   - 4K UHD (3840×2160)     height: 2160 ✓
     ///   - 2K QHD (2560×1440)     height: 1440 ✓
     ///   - Full HD (1920×1080)    height: 1080 ✓
     ///
-    /// 저해상도 (false):
+    /// Low-resolution (false):
     ///   - HD (1280×720)          height: 720  ✗
     ///   - SD (640×480)           height: 480  ✗
     /// ```
     ///
-    /// **활용:**
-    /// - UI 레이아웃 조정 (고해상도는 더 큰 화면)
-    /// - 성능 최적화 (고해상도는 더 많은 리소스 사용)
-    /// - 품질 표시 (고해상도 배지 표시)
+    /// **Usage:**
+    /// - UI layout adjustment (high-resolution uses larger screen)
+    /// - Performance optimization (high-resolution uses more resources)
+    /// - Quality indication (display high-resolution badge)
     ///
-    /// **사용 예시:**
+    /// **Usage Example:**
     /// ```swift
     /// let channel = ChannelInfo.frontHD  // 1920×1080
     /// if channel.isHighResolution {
-    ///     print("고해상도 채널")
-    ///     // 고해상도 UI 레이아웃 사용
+    ///     print("High-resolution channel")
+    ///     // Use high-resolution UI layout
     ///     playerView.frame = largeFrame
     /// } else {
-    ///     print("저해상도 채널")
-    ///     // 저해상도 UI 레이아웃 사용
+    ///     print("Low-resolution channel")
+    ///     // Use low-resolution UI layout
     ///     playerView.frame = smallFrame
     /// }
     /// ```
@@ -1109,38 +1109,38 @@ struct ChannelInfo: Codable, Equatable, Identifiable, Hashable {
         return height >= 1080
     }
 
-    /// @brief 오디오 유무 확인
-    /// @return 오디오가 있으면 true
+    /// @brief Check audio availability
+    /// @return True if audio is present
     ///
     /// Check if audio is available
     ///
-    /// 오디오가 있는지 확인합니다.
+    /// Checks if audio is present.
     ///
-    /// **체크 로직:**
-    /// - audioCodec != nil: 오디오 코덱이 있으면 오디오 있음
-    /// - audioCodec == nil: 오디오 코덱이 없으면 오디오 없음
+    /// **Check Logic:**
+    /// - audioCodec != nil: Audio present if audio codec exists
+    /// - audioCodec == nil: No audio if audio codec is absent
     ///
-    /// **오디오가 없는 경우:**
-    /// - 블랙박스 설정에서 오디오 녹음 비활성화
-    /// - 오디오 하드웨어 없음 (저가형 블랙박스)
-    /// - 파일 손상 또는 코덱 파싱 실패
+    /// **Cases Without Audio:**
+    /// - Audio recording disabled in blackbox settings
+    /// - No audio hardware (budget blackbox)
+    /// - File corruption or codec parsing failure
     ///
-    /// **활용:**
-    /// - 오디오 컨트롤 UI 표시/숨김
-    /// - 음량 조절 버튼 활성화/비활성화
-    /// - 오디오 없음 안내 메시지
+    /// **Usage:**
+    /// - Show/hide audio control UI
+    /// - Enable/disable volume adjustment buttons
+    /// - Display no-audio message
     ///
-    /// **사용 예시:**
+    /// **Usage Example:**
     /// ```swift
     /// let channel = ChannelInfo.frontHD
     /// if channel.hasAudio {
-    ///     print("오디오 있음: \(channel.audioCodec ?? "unknown")")
-    ///     // 오디오 컨트롤 표시
+    ///     print("Audio present: \(channel.audioCodec ?? "unknown")")
+    ///     // Show audio controls
     ///     volumeSlider.isHidden = false
     ///     muteButton.isHidden = false
     /// } else {
-    ///     print("오디오 없음")
-    ///     // 오디오 컨트롤 숨김
+    ///     print("No audio")
+    ///     // Hide audio controls
     ///     volumeSlider.isHidden = true
     ///     muteButton.isHidden = true
     ///     showNoAudioMessage()
@@ -1152,47 +1152,47 @@ struct ChannelInfo: Codable, Equatable, Identifiable, Hashable {
 
     // MARK: - Validation
 
-    /// @brief 필수 속성 유효성 검증
-    /// @return 모든 필수 속성이 유효하면 true
+    /// @brief Validate required properties
+    /// @return True if all required properties are valid
     ///
     /// Validate that all required properties are valid
     ///
-    /// 필수 속성이 모두 유효한지 검증합니다.
+    /// Validates that all required properties are valid.
     ///
-    /// **검증 조건:**
-    /// 1. width > 0: 가로 해상도가 양수
-    /// 2. height > 0: 세로 해상도가 양수
-    /// 3. frameRate > 0: 프레임 레이트가 양수
-    /// 4. !filePath.isEmpty: 파일 경로가 비어있지 않음
+    /// **Validation Conditions:**
+    /// 1. width > 0: Horizontal resolution is positive
+    /// 2. height > 0: Vertical resolution is positive
+    /// 3. frameRate > 0: Frame rate is positive
+    /// 4. !filePath.isEmpty: File path is not empty
     ///
-    /// **논리 AND (&&) 연산:**
-    /// - 모든 조건이 true여야 최종 결과가 true
-    /// - 하나라도 false면 최종 결과가 false
+    /// **Logical AND (&&) Operation:**
+    /// - Final result is true only if all conditions are true
+    /// - Final result is false if any condition is false
     ///
-    /// **검증 예시:**
+    /// **Validation Examples:**
     /// ```
-    /// 유효한 채널:
+    /// Valid channel:
     ///   width: 1920 > 0       ✓
     ///   height: 1080 > 0      ✓
     ///   frameRate: 30.0 > 0   ✓
     ///   filePath: "normal/2025_01_10_09_00_00_F.mp4"  ✓
     ///   → isValid = true
     ///
-    /// 잘못된 채널:
-    ///   width: 0              ✗ (0은 유효하지 않음)
+    /// Invalid channel:
+    ///   width: 0              ✗ (0 is invalid)
     ///   → isValid = false
     ///
-    /// 빈 경로:
-    ///   filePath: ""          ✗ (비어있음)
+    /// Empty path:
+    ///   filePath: ""          ✗ (empty)
     ///   → isValid = false
     /// ```
     ///
-    /// **활용:**
-    /// - 데이터 무결성 확인
-    /// - 잘못된 데이터 필터링
-    /// - 에러 처리
+    /// **Usage:**
+    /// - Data integrity verification
+    /// - Filter out invalid data
+    /// - Error handling
     ///
-    /// **사용 예시:**
+    /// **Usage Example:**
     /// ```swift
     /// let channel = ChannelInfo(
     ///     position: .front,
@@ -1203,16 +1203,16 @@ struct ChannelInfo: Codable, Equatable, Identifiable, Hashable {
     /// )
     ///
     /// if channel.isValid {
-    ///     print("유효한 채널")
-    ///     // 채널 재생
+    ///     print("Valid channel")
+    ///     // Play channel
     ///     playChannel(channel)
     /// } else {
-    ///     print("잘못된 채널 데이터")
-    ///     // 에러 처리
-    ///     showError("채널 데이터가 유효하지 않습니다")
+    ///     print("Invalid channel data")
+    ///     // Error handling
+    ///     showError("Channel data is invalid")
     /// }
     ///
-    /// // 유효한 채널만 필터링
+    /// // Filter only valid channels
     /// let validChannels = channels.filter { $0.isValid }
     /// ```
     var isValid: Bool {
@@ -1227,47 +1227,47 @@ struct ChannelInfo: Codable, Equatable, Identifiable, Hashable {
 
 /*
  ───────────────────────────────────────────────────────────────────────────────
- Sample Data - 샘플 채널 데이터
+ Sample Data - Sample Channel Data
  ───────────────────────────────────────────────────────────────────────────────
 
- 테스트, SwiftUI 프리뷰, 개발 중 UI 확인을 위한 샘플 데이터입니다.
+ Sample data for testing, SwiftUI previews, and UI verification during development.
 
- 【샘플 채널 구성】
+ 【Sample Channel Configuration】
 
- 1. frontHD: 전방 카메라 (Full HD, 1920×1080, 30fps, 8 Mbps)
- - 가장 일반적인 설정
- - 오디오 포함 (MP3)
+ 1. frontHD: Front camera (Full HD, 1920×1080, 30fps, 8 Mbps)
+ - Most common configuration
+ - Audio included (MP3)
 
- 2. rearHD: 후방 카메라 (HD, 1280×720, 30fps, 4 Mbps)
- - 전방보다 낮은 해상도 (일반적)
- - 오디오 없음
+ 2. rearHD: Rear camera (HD, 1280×720, 30fps, 4 Mbps)
+ - Lower resolution than front (typical)
+ - No audio
 
- 3. leftHD: 좌측 카메라 (HD, 1280×720, 30fps, 4 Mbps)
- - 4채널 이상 블랙박스
+ 3. leftHD: Left camera (HD, 1280×720, 30fps, 4 Mbps)
+ - For 4+ channel blackbox
 
- 4. rightHD: 우측 카메라 (HD, 1280×720, 30fps, 4 Mbps)
- - 4채널 이상 블랙박스
+ 4. rightHD: Right camera (HD, 1280×720, 30fps, 4 Mbps)
+ - For 4+ channel blackbox
 
- 5. interiorHD: 실내 카메라 (HD, 1280×720, 30fps, 4 Mbps)
- - 택시, 승차 공유용
+ 5. interiorHD: Interior camera (HD, 1280×720, 30fps, 4 Mbps)
+ - For taxi, ride-sharing vehicles
 
- 【실제 블랙박스 해상도 구성 예시】
+ 【Real Blackbox Resolution Configuration Examples】
 
- 2채널 일반형:
- - 전방: Full HD (1920×1080)
- - 후방: HD (1280×720)
+ 2-channel standard:
+ - Front: Full HD (1920×1080)
+ - Rear: HD (1280×720)
 
- 2채널 고급형:
- - 전방: 4K (3840×2160)
- - 후방: Full HD (1920×1080)
+ 2-channel premium:
+ - Front: 4K (3840×2160)
+ - Rear: Full HD (1920×1080)
 
- 4채널:
- - 전방: Full HD (1920×1080)
- - 후방/좌측/우측: HD (1280×720)
+ 4-channel:
+ - Front: Full HD (1920×1080)
+ - Rear/Left/Right: HD (1280×720)
 
- 【사용 예시】
+ 【Usage Examples】
 
- SwiftUI 프리뷰:
+ SwiftUI Preview:
  ```swift
  struct ChannelView_Previews: PreviewProvider {
  static var previews: some View {
@@ -1282,7 +1282,7 @@ struct ChannelInfo: Codable, Equatable, Identifiable, Hashable {
  }
  ```
 
- 단위 테스트:
+ Unit Test:
  ```swift
  func testChannelValidation() {
  XCTAssertTrue(ChannelInfo.frontHD.isValid)
@@ -1302,21 +1302,21 @@ struct ChannelInfo: Codable, Equatable, Identifiable, Hashable {
 extension ChannelInfo {
     /// Sample front camera (Full HD)
     ///
-    /// 전방 카메라 샘플입니다. (Full HD)
+    /// Front camera sample. (Full HD)
     ///
-    /// **스펙:**
-    /// - 위치: 전방 (Front)
-    /// - 해상도: 1920×1080 (Full HD)
-    /// - 프레임 레이트: 30 fps
-    /// - 비트레이트: 8 Mbps
-    /// - 코덱: H.264
-    /// - 오디오: MP3
-    /// - 파일 크기: 100 MB
+    /// **Specifications:**
+    /// - Position: Front
+    /// - Resolution: 1920×1080 (Full HD)
+    /// - Frame Rate: 30 fps
+    /// - Bitrate: 8 Mbps
+    /// - Codec: H.264
+    /// - Audio: MP3
+    /// - File Size: 100 MB
     ///
-    /// **일반적인 전방 카메라 설정:**
-    /// - 가장 높은 해상도 (Full HD 또는 4K)
-    /// - 오디오 녹음 활성화
-    /// - 높은 비트레이트로 선명한 화질
+    /// **Typical Front Camera Settings:**
+    /// - Highest resolution (Full HD or 4K)
+    /// - Audio recording enabled
+    /// - High bitrate for clear quality
     static let frontHD = ChannelInfo(
         position: .front,
         filePath: "normal/2025_01_10_09_00_00_F.mp4",
@@ -1331,21 +1331,21 @@ extension ChannelInfo {
 
     /// Sample rear camera (HD)
     ///
-    /// 후방 카메라 샘플입니다. (HD)
+    /// Rear camera sample. (HD)
     ///
-    /// **스펙:**
-    /// - 위치: 후방 (Rear)
-    /// - 해상도: 1280×720 (HD)
-    /// - 프레임 레이트: 30 fps
-    /// - 비트레이트: 4 Mbps
-    /// - 코덱: H.264
-    /// - 오디오: 없음
-    /// - 파일 크기: 50 MB
+    /// **Specifications:**
+    /// - Position: Rear
+    /// - Resolution: 1280×720 (HD)
+    /// - Frame Rate: 30 fps
+    /// - Bitrate: 4 Mbps
+    /// - Codec: H.264
+    /// - Audio: None
+    /// - File Size: 50 MB
     ///
-    /// **일반적인 후방 카메라 설정:**
-    /// - 전방보다 낮은 해상도 (비용 절감)
-    /// - 오디오 없음 (중복 녹음 불필요)
-    /// - 전방의 50% 비트레이트
+    /// **Typical Rear Camera Settings:**
+    /// - Lower resolution than front (cost savings)
+    /// - No audio (redundant recording unnecessary)
+    /// - 50% of front bitrate
     static let rearHD = ChannelInfo(
         position: .rear,
         filePath: "normal/2025_01_10_09_00_00_R.mp4",
@@ -1359,12 +1359,12 @@ extension ChannelInfo {
 
     /// Sample left camera (HD)
     ///
-    /// 좌측 카메라 샘플입니다. (HD)
+    /// Left camera sample. (HD)
     ///
-    /// **스펙:**
-    /// - 위치: 좌측 (Left)
-    /// - 해상도: 1280×720 (HD)
-    /// - 4채널 이상 블랙박스에서 사용
+    /// **Specifications:**
+    /// - Position: Left
+    /// - Resolution: 1280×720 (HD)
+    /// - Used in 4+ channel blackbox
     static let leftHD = ChannelInfo(
         position: .left,
         filePath: "normal/2025_01_10_09_00_00_L.mp4",
@@ -1378,12 +1378,12 @@ extension ChannelInfo {
 
     /// Sample right camera (HD)
     ///
-    /// 우측 카메라 샘플입니다. (HD)
+    /// Right camera sample. (HD)
     ///
-    /// **스펙:**
-    /// - 위치: 우측 (Right)
-    /// - 해상도: 1280×720 (HD)
-    /// - 4채널 이상 블랙박스에서 사용
+    /// **Specifications:**
+    /// - Position: Right
+    /// - Resolution: 1280×720 (HD)
+    /// - Used in 4+ channel blackbox
     static let rightHD = ChannelInfo(
         position: .right,
         filePath: "normal/2025_01_10_09_00_00_Ri.mp4",
@@ -1397,12 +1397,12 @@ extension ChannelInfo {
 
     /// Sample interior camera (HD)
     ///
-    /// 실내 카메라 샘플입니다. (HD)
+    /// Interior camera sample. (HD)
     ///
-    /// **스펙:**
-    /// - 위치: 실내 (Interior)
-    /// - 해상도: 1280×720 (HD)
-    /// - 택시, 승차 공유 차량용
+    /// **Specifications:**
+    /// - Position: Interior
+    /// - Resolution: 1280×720 (HD)
+    /// - For taxi, ride-sharing vehicles
     static let interiorHD = ChannelInfo(
         position: .interior,
         filePath: "normal/2025_01_10_09_00_00_I.mp4",
@@ -1416,18 +1416,18 @@ extension ChannelInfo {
 
     /// Array of all sample channels
     ///
-    /// 모든 샘플 채널의 배열입니다.
+    /// Array of all sample channels.
     ///
-    /// **포함 채널:**
-    /// - frontHD: 전방 Full HD
-    /// - rearHD: 후방 HD
-    /// - leftHD: 좌측 HD
-    /// - rightHD: 우측 HD
-    /// - interiorHD: 실내 HD
+    /// **Included Channels:**
+    /// - frontHD: Front Full HD
+    /// - rearHD: Rear HD
+    /// - leftHD: Left HD
+    /// - rightHD: Right HD
+    /// - interiorHD: Interior HD
     ///
-    /// **사용 예시:**
+    /// **Usage Example:**
     /// ```swift
-    /// // 모든 채널을 SwiftUI List로 표시
+    /// // Display all channels in SwiftUI List
     /// List(ChannelInfo.allSampleChannels) { channel in
     ///     VStack(alignment: .leading) {
     ///         Text(channel.position.displayName)
@@ -1435,7 +1435,7 @@ extension ChannelInfo {
     ///     }
     /// }
     ///
-    /// // 5채널 블랙박스 시뮬레이션
+    /// // 5-channel blackbox simulation
     /// let multiChannelPlayer = MultiChannelPlayer(
     ///     channels: ChannelInfo.allSampleChannels
     /// )

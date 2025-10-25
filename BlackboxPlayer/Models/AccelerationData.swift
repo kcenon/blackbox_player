@@ -1,16 +1,17 @@
 /// @file AccelerationData.swift
-/// @brief 블랙박스 G-센서(가속도계) 데이터 모델
+/// @brief Blackbox G-Sensor (Accelerometer) data model
 /// @author BlackboxPlayer Development Team
 ///
 /// Model for G-Sensor (accelerometer) data
 
 /*
  ┌──────────────────────────────────────────────────────────────────────────┐
- │                   AccelerationData 모델 개요                             │
+ │                   AccelerationData Model Overview                        │
  │                                                                          │
- │  블랙박스의 G-센서(가속도계)가 측정한 가속도 데이터 포인트입니다.        │
+ │  Acceleration data point measured by the dashcam's G-sensor              │
+ │  (accelerometer).                                                        │
  │                                                                          │
- │  【3축 가속도】                                                          │
+ │  【3-Axis Acceleration】                                                 │
  │                                                                          │
  │                    Z (Vertical)                                          │
  │                      ↑                                                   │
@@ -21,102 +22,102 @@
  │                   /  │                                                   │
  │                  ↙   ↓                                                   │
  │                                                                          │
- │  X축 (Lateral/좌우):                                                     │
- │    - 양수 (+): 우측으로 가속 (우회전, 우측 충격)                         │
- │    - 음수 (-): 좌측으로 가속 (좌회전, 좌측 충격)                         │
+ │  X-axis (Lateral/Left-Right):                                            │
+ │    - Positive (+): Acceleration to the right (right turn, right impact)  │
+ │    - Negative (-): Acceleration to the left (left turn, left impact)     │
  │                                                                          │
- │  Y축 (Longitudinal/전후):                                                │
- │    - 양수 (+): 전방으로 가속 (가속, 후방 충격)                           │
- │    - 음수 (-): 후방으로 가속 (제동, 전방 충격)                           │
+ │  Y-axis (Longitudinal/Forward-Backward):                                 │
+ │    - Positive (+): Forward acceleration (accelerating, rear impact)      │
+ │    - Negative (-): Backward acceleration (braking, front impact)         │
  │                                                                          │
- │  Z축 (Vertical/상하):                                                    │
- │    - 양수 (+): 위로 가속 (점프, 하방 충격)                               │
- │    - 음수 (-): 아래로 가속 (낙하, 상방 충격)                             │
- │    - 정상 주행: 약 1.0G (중력)                                           │
+ │  Z-axis (Vertical/Up-Down):                                              │
+ │    - Positive (+): Upward acceleration (jump, downward impact)           │
+ │    - Negative (-): Downward acceleration (falling, upward impact)        │
+ │    - Normal driving: ~1.0G (gravity)                                     │
  │                                                                          │
- │  【충격 강도 분류】                                                      │
+ │  【Impact Severity Classification】                                      │
  │                                                                          │
- │  총 가속도 크기 = √(x² + y² + z²)                                        │
+ │  Total acceleration magnitude = √(x² + y² + z²)                          │
  │                                                                          │
- │  - None:     < 1.0G  (정상 주행)         Green                          │
- │  - Low:      1.0-1.5G (경미한 가속)      Light Green                     │
- │  - Moderate: 1.5-2.5G (유의미한 가속)    Amber                           │
- │  - High:     2.5-4.0G (충격/사고)        Orange                          │
- │  - Severe:   > 4.0G   (심각한 충격)      Red                             │
+ │  - None:     < 1.0G  (normal driving)           Green                    │
+ │  - Low:      1.0-1.5G (minor acceleration)      Light Green              │
+ │  - Moderate: 1.5-2.5G (significant acceleration) Amber                   │
+ │  - High:     2.5-4.0G (impact/accident)         Orange                   │
+ │  - Severe:   > 4.0G   (severe impact)           Red                      │
  │                                                                          │
- │  【데이터 소스】                                                         │
+ │  【Data Source】                                                         │
  │                                                                          │
- │  블랙박스 SD 카드                                                        │
+ │  Dashcam SD Card                                                         │
  │      │                                                                   │
- │      ├─ 20250115_100000_F.mp4 (비디오)                                  │
- │      └─ 20250115_100000.gsn (G-센서 데이터)                              │
+ │      ├─ 20250115_100000_F.mp4 (video)                                   │
+ │      └─ 20250115_100000.gsn (G-sensor data)                              │
  │           │                                                              │
- │           ├─ 타임스탬프                                                  │
- │           ├─ X축 가속도 (G)                                              │
- │           ├─ Y축 가속도 (G)                                              │
- │           └─ Z축 가속도 (G)                                              │
+ │           ├─ Timestamp                                                   │
+ │           ├─ X-axis acceleration (G)                                     │
+ │           ├─ Y-axis acceleration (G)                                     │
+ │           └─ Z-axis acceleration (G)                                     │
  │                │                                                         │
  │                ▼                                                         │
  │           AccelerationParser                                             │
  │                │                                                         │
  │                ▼                                                         │
- │           AccelerationData (이 구조체)                                   │
+ │           AccelerationData (this struct)                                 │
  │                                                                          │
  └──────────────────────────────────────────────────────────────────────────┘
 
- 【G-센서(가속도계)란?】
+ 【What is a G-Sensor (Accelerometer)?】
 
- 차량의 가속도를 3축으로 측정하는 센서입니다.
+ A sensor that measures vehicle acceleration in three axes.
 
- 원리:
- - MEMS (Micro-Electro-Mechanical Systems) 기술
- - 미세한 질량체의 움직임 감지
- - 전기 신호로 변환
+ Principle:
+ - MEMS (Micro-Electro-Mechanical Systems) technology
+ - Detects movement of microscopic mass
+ - Converts to electrical signals
 
- 블랙박스에서의 역할:
- 1. 충격 감지: 사고 발생 시 이벤트 녹화 트리거
- 2. 주차 모드: 정차 중 충격 감지
- 3. 급제동/급가속 경고
- 4. 운전 습관 분석
+ Role in dashcam:
+ 1. Impact detection: Triggers event recording when accident occurs
+ 2. Parking mode: Detects impacts while parked
+ 3. Hard braking/acceleration warnings
+ 4. Driving habit analysis
 
- 측정 단위: G (중력 가속도)
- - 1G = 9.8 m/s² (지구 중력)
- - 예: 2G = 19.6 m/s² (중력의 2배)
+ Measurement unit: G (gravitational acceleration)
+ - 1G = 9.8 m/s² (Earth's gravity)
+ - Example: 2G = 19.6 m/s² (twice gravity)
 
- 【G-Force (G-force)란?】
+ 【What is G-Force?】
 
- G는 중력 가속도를 기준으로 한 가속도 단위입니다.
+ G is an acceleration unit based on gravitational acceleration.
 
- 참고 수치:
- - 0G: 무중력 상태 (우주)
- - 1G: 정지 상태 (지구 표면)
- - 2G: 급제동, 빠른 회전
- - 3-4G: 경미한 충돌
- - 5-10G: 심각한 충돌
- - >15G: 치명적 충돌
+ Reference values:
+ - 0G: Weightless state (space)
+ - 1G: Stationary (Earth's surface)
+ - 2G: Hard braking, sharp turn
+ - 3-4G: Minor collision
+ - 5-10G: Severe collision
+ - >15G: Fatal collision
 
- 일상 예시:
- - 엘리베이터 출발: 약 1.2G
- - 롤러코스터: 3-5G
- - 전투기 기동: 9G
- - 자동차 급제동: 0.8-1.5G
- - 자동차 충돌: 20-100G (순간적)
+ Everyday examples:
+ - Elevator start: ~1.2G
+ - Roller coaster: 3-5G
+ - Fighter jet maneuver: 9G
+ - Car hard braking: 0.8-1.5G
+ - Car collision: 20-100G (momentary)
 
- 【벡터 크기 계산】
+ 【Vector Magnitude Calculation】
 
- 3축 가속도를 하나의 값으로 표현하려면 벡터 크기를 계산합니다.
+ To express 3-axis acceleration as a single value, calculate vector magnitude.
 
- 수학 공식:
+ Mathematical formula:
  ```
  magnitude = √(x² + y² + z²)
  ```
 
- 예시:
+ Example:
  ```swift
- // 급제동 (Y축 -1.8G)
+ // Hard braking (Y-axis -1.8G)
  x = 0.0
  y = -1.8
- z = 1.0 (중력)
+ z = 1.0 (gravity)
 
  magnitude = √(0² + (-1.8)² + 1²)
  = √(0 + 3.24 + 1)
@@ -124,72 +125,72 @@
  = 2.06G
  ```
 
- 왜 제곱근인가?:
- - 피타고라스 정리의 3D 확장
+ Why square root?:
+ - 3D extension of Pythagorean theorem
  - 2D: √(x² + y²)
  - 3D: √(x² + y² + z²)
 
- 【방향 감지 알고리즘】
+ 【Direction Detection Algorithm】
 
- 가장 큰 절댓값을 가진 축이 주요 충격 방향입니다.
+ The axis with the largest absolute value is the primary impact direction.
 
- 알고리즘:
+ Algorithm:
  ```
- 1. |x|, |y|, |z| 계산
- 2. 최댓값 찾기
- 3. 해당 축의 부호 확인
- - x > 0: 우측
- - x < 0: 좌측
- - y > 0: 전방
- - y < 0: 후방
- - z > 0: 상방
- - z < 0: 하방
+ 1. Calculate |x|, |y|, |z|
+ 2. Find maximum value
+ 3. Check sign of corresponding axis
+ - x > 0: right
+ - x < 0: left
+ - y > 0: forward
+ - y < 0: backward
+ - z > 0: up
+ - z < 0: down
  ```
 
- 예시:
+ Example:
  ```swift
- x = 1.5  (우측)
- y = -3.5 (후방, 즉 전방 충격)
- z = 0.8  (상방)
+ x = 1.5  (right)
+ y = -3.5 (backward, i.e., front impact)
+ z = 0.8  (up)
 
  |x| = 1.5
- |y| = 3.5  ← 최대!
+ |y| = 3.5  ← maximum!
  |z| = 0.8
 
- y < 0이므로 → backward (제동/전방 충격)
+ y < 0, so → backward (braking/front impact)
  ```
  */
 
 import Foundation
 
 /*
- 【AccelerationData 구조체】
+ 【AccelerationData Struct】
 
- 블랙박스의 G-센서가 측정한 3축 가속도 데이터 포인트입니다.
+ 3-axis acceleration data point measured by the dashcam's G-sensor.
 
- 데이터 구조:
- - 값 타입 (struct) - 불변성과 스레드 안전성
- - Codable - JSON 직렬화/역직렬화
- - Equatable - 비교 연산 (==, !=)
- - Hashable - Set, Dictionary 키로 사용 가능
- - Identifiable - SwiftUI List에서 사용
+ Data structure:
+ - Value type (struct) - Immutability and thread safety
+ - Codable - JSON serialization/deserialization
+ - Equatable - Comparison operations (==, !=)
+ - Hashable - Can be used as Set, Dictionary key
+ - Identifiable - Used in SwiftUI List
 
- 사용 예시:
+ Usage example:
  ```swift
- // 1. G-센서 데이터 파싱
+ // 1. Parse G-sensor data
  let parser = AccelerationParser()
  let dataPoints = try parser.parseAccelerationData(from: gsnFileURL)
 
- // 2. 충격 감지
+ // 2. Detect impacts
  for data in dataPoints {
  if data.isImpact {
- print("충격 감지: \(data.magnitudeString)")
- print("방향: \(data.primaryDirection.displayName)")
- print("강도: \(data.impactSeverity.displayName)")
+ print("Impact detected: \(data.magnitudeString)")
+ print("Direction: \(data.primaryDirection.displayName)")
+ print("Severity: \(data.impactSeverity.displayName)")
  }
  }
 
- // 3. 차트 시각화
+ // 3. Chart visualization
  Chart(dataPoints) { point in
  LineMark(x: .value("Time", point.timestamp),
  y: .value("G-Force", point.magnitude))
@@ -197,147 +198,147 @@ import Foundation
  ```
  */
 /// @struct AccelerationData
-/// @brief 블랙박스 G-센서 가속도 데이터 포인트
+/// @brief Dashcam G-sensor acceleration data point
 ///
 /// G-Sensor acceleration data point from dashcam recording
 struct AccelerationData: Codable, Equatable, Hashable {
     /*
-     【타임스탬프 (Timestamp)】
+     【Timestamp】
 
-     이 가속도 측정이 이루어진 시각입니다.
+     The time when this acceleration measurement was taken.
 
-     타입: Date
-     - UTC 기준 (협정 세계시)
-     - 비디오 프레임과 동기화
+     Type: Date
+     - UTC based (Coordinated Universal Time)
+     - Synchronized with video frames
 
-     용도:
-     - 비디오 재생 시 해당 시점의 가속도 표시
-     - 시간 기반 차트 그리기
-     - GPS 데이터와 시간 동기화
+     Usage:
+     - Display acceleration at specific time during video playback
+     - Draw time-based charts
+     - Time synchronization with GPS data
      */
     /// @var timestamp
-    /// @brief GPS 측정 시각
+    /// @brief Measurement timestamp
     ///
     /// Timestamp of this reading
     let timestamp: Date
 
     /*
-     【X축 가속도 (Lateral)】
+     【X-axis Acceleration (Lateral)】
 
-     좌우 방향의 가속도를 G-force 단위로 나타냅니다.
+     Lateral (left-right) acceleration in G-force units.
 
-     방향:
-     - 양수 (+): 우측으로 가속
-     * 좌회전 시 원심력으로 우측으로 쏠림
-     * 좌측에서 충격 받음 (우측으로 밀림)
-     - 음수 (-): 좌측으로 가속
-     * 우회전 시 원심력으로 좌측으로 쏠림
-     * 우측에서 충격 받음 (좌측으로 밀림)
+     Direction:
+     - Positive (+): Acceleration to the right
+     * Pull to the right from centrifugal force during left turn
+     * Impact from the left (pushed to the right)
+     - Negative (-): Acceleration to the left
+     * Pull to the left from centrifugal force during right turn
+     * Impact from the right (pushed to the left)
 
-     예시 값:
-     - 0.0G: 직진
-     - +0.5G: 완만한 좌회전
-     - -1.2G: 급한 우회전
-     - +2.0G: 좌측 충격
+     Example values:
+     - 0.0G: Straight ahead
+     - +0.5G: Gentle left turn
+     - -1.2G: Sharp right turn
+     - +2.0G: Left side impact
 
-     사용:
+     Usage:
      ```swift
      if data.x > 1.5 {
-     print("강한 좌회전 또는 좌측 충격")
+     print("Sharp left turn or left side impact")
      } else if data.x < -1.5 {
-     print("강한 우회전 또는 우측 충격")
+     print("Sharp right turn or right side impact")
      }
      ```
      */
     /// @var x
-    /// @brief X축 가속도 (좌우 방향, G-force)
+    /// @brief X-axis acceleration (lateral direction, G-force)
     ///
     /// X-axis acceleration in G-force (lateral/side-to-side)
     /// Positive: right, Negative: left
     let x: Double
 
     /*
-     【Y축 가속도 (Longitudinal)】
+     【Y-axis Acceleration (Longitudinal)】
 
-     전후 방향의 가속도를 G-force 단위로 나타냅니다.
+     Longitudinal (forward-backward) acceleration in G-force units.
 
-     방향:
-     - 양수 (+): 전방으로 가속
-     * 가속 페달 밟음
-     * 후방에서 충격 받음 (전방으로 밀림)
-     - 음수 (-): 후방으로 가속
-     * 브레이크 밟음 (제동)
-     * 전방에서 충격 받음 (후방으로 밀림)
+     Direction:
+     - Positive (+): Forward acceleration
+     * Pressing accelerator pedal
+     * Impact from rear (pushed forward)
+     - Negative (-): Backward acceleration
+     * Pressing brake pedal (braking)
+     * Impact from front (pushed backward)
 
-     예시 값:
-     - 0.0G: 등속 주행
-     - +0.8G: 일반 가속
-     - -1.5G: 급제동
-     - -3.0G: 전방 충돌
+     Example values:
+     - 0.0G: Constant speed driving
+     - +0.8G: Normal acceleration
+     - -1.5G: Hard braking
+     - -3.0G: Front collision
 
-     사용:
+     Usage:
      ```swift
      if data.y < -2.0 {
-     print("급제동 또는 전방 충돌!")
+     print("Hard braking or front collision!")
      triggerEventRecording()
      } else if data.y > 1.5 {
-     print("급가속 또는 후방 충돌")
+     print("Rapid acceleration or rear collision")
      }
      ```
 
-     주의:
-     - 블랙박스마다 Y축 방향 정의가 다를 수 있음
-     - 일부는 양/음 부호가 반대
+     Note:
+     - Y-axis direction definition may vary between dashcam models
+     - Some models have opposite positive/negative signs
      */
     /// @var y
-    /// @brief Y축 가속도 (전후 방향, G-force)
+    /// @brief Y-axis acceleration (longitudinal direction, G-force)
     ///
     /// Y-axis acceleration in G-force (longitudinal/forward-backward)
     /// Positive: forward, Negative: backward
     let y: Double
 
     /*
-     【Z축 가속도 (Vertical)】
+     【Z-axis Acceleration (Vertical)】
 
-     상하 방향의 가속도를 G-force 단위로 나타냅니다.
+     Vertical (up-down) acceleration in G-force units.
 
-     방향:
-     - 양수 (+): 위로 가속
-     * 포트홀에서 튀어 오름
-     * 과속방지턱 넘음
-     * 하방에서 충격 (위로 밀림)
-     - 음수 (-): 아래로 가속
-     * 급격한 낙하
-     * 점프 후 착지
+     Direction:
+     - Positive (+): Upward acceleration
+     * Bouncing up from pothole
+     * Crossing speed bump
+     * Impact from below (pushed upward)
+     - Negative (-): Downward acceleration
+     * Sudden drop
+     * Landing after jump
 
-     정상 주행: 약 1.0G
-     - 중력에 의한 가속도
-     - 평지 주행 시 Z ≈ 1.0G
+     Normal driving: ~1.0G
+     - Acceleration due to gravity
+     - When driving on flat surface: Z ≈ 1.0G
 
-     예시 값:
-     - 1.0G: 평지 주행 (중력)
-     - 1.5G: 작은 요철 통과
-     - 2.0G: 큰 포트홀
-     - 0.5G: 하강 또는 점프
+     Example values:
+     - 1.0G: Flat surface driving (gravity)
+     - 1.5G: Passing small bump
+     - 2.0G: Large pothole
+     - 0.5G: Descending or jumping
 
-     사용:
+     Usage:
      ```swift
      let verticalDeviation = abs(data.z - 1.0)
      if verticalDeviation > 0.5 {
-     print("노면 상태 불량 또는 충격")
+     print("Poor road condition or impact")
      }
 
      if data.z > 2.0 {
-     print("과속방지턱 또는 포트홀")
+     print("Speed bump or pothole")
      }
      ```
 
-     왜 1.0G인가?:
-     - 지구 중력 = 1G = 9.8 m/s²
-     - 정지 상태에서도 Z축은 1G 측정
+     Why 1.0G?:
+     - Earth's gravity = 1G = 9.8 m/s²
+     - Z-axis measures 1G even when stationary
      */
     /// @var z
-    /// @brief Z축 가속도 (상하 방향, G-force)
+    /// @brief Z-axis acceleration (vertical direction, G-force)
     ///
     /// Z-axis acceleration in G-force (vertical/up-down)
     /// Positive: up, Negative: down
@@ -346,43 +347,43 @@ struct AccelerationData: Codable, Equatable, Hashable {
     // MARK: - Initialization
 
     /*
-     【초기화 메서드】
+     【Initialization Method】
 
-     AccelerationData 인스턴스를 생성합니다.
+     Creates an AccelerationData instance.
 
-     매개변수:
-     - timestamp: 측정 시각
-     - x: X축 가속도 (좌우)
-     - y: Y축 가속도 (전후)
-     - z: Z축 가속도 (상하)
+     Parameters:
+     - timestamp: Measurement time
+     - x: X-axis acceleration (lateral)
+     - y: Y-axis acceleration (longitudinal)
+     - z: Z-axis acceleration (vertical)
 
-     사용 예시:
+     Usage example:
      ```swift
-     // 1. 정상 주행 (중력만)
+     // 1. Normal driving (gravity only)
      let normal = AccelerationData(
      timestamp: Date(),
      x: 0.0,
      y: 0.0,
-     z: 1.0  // 중력
+     z: 1.0  // gravity
      )
 
-     // 2. 급제동
+     // 2. Hard braking
      let braking = AccelerationData(
      timestamp: Date(),
      x: 0.0,
-     y: -1.8,  // 후방으로 가속 (제동)
+     y: -1.8,  // backward acceleration (braking)
      z: 1.0
      )
 
-     // 3. 충돌
+     // 3. Collision
      let impact = AccelerationData(
      timestamp: Date(),
-     x: 1.5,   // 우측으로 밀림
-     y: -3.5,  // 후방으로 밀림 (전방 충격)
-     z: 0.8    // 약간 하방으로
+     x: 1.5,   // pushed to the right
+     y: -3.5,  // pushed backward (front impact)
+     z: 0.8    // slightly downward
      )
 
-     // 4. 파싱 중 생성
+     // 4. Created during parsing
      let data = AccelerationData(
      timestamp: baseDate.addingTimeInterval(timeOffset),
      x: parsedX,
@@ -401,19 +402,19 @@ struct AccelerationData: Codable, Equatable, Hashable {
     // MARK: - Calculations
 
     /*
-     【총 가속도 크기 (Magnitude)】
+     【Total Acceleration Magnitude】
 
-     3축 가속도의 벡터 크기를 계산합니다.
+     Calculates the vector magnitude of 3-axis acceleration.
 
-     수학 공식:
+     Mathematical formula:
      ```
      magnitude = √(x² + y² + z²)
      ```
 
-     반환값:
-     - Double: 총 가속도 (G 단위)
+     Return value:
+     - Double: Total acceleration (G units)
 
-     계산 예시:
+     Calculation example:
      ```
      x = 1.5
      y = -3.5
@@ -425,17 +426,17 @@ struct AccelerationData: Codable, Equatable, Hashable {
      = 3.89G
      ```
 
-     사용 예시:
+     Usage example:
      ```swift
      let data = AccelerationData(timestamp: Date(), x: 1.5, y: -3.5, z: 0.8)
      let mag = data.magnitude  // 3.89
 
      if mag > 2.5 {
-     print("충격 감지! \(mag)G")
+     print("Impact detected! \(mag)G")
      triggerEventRecording()
      }
 
-     // 차트에 표시
+     // Display in chart
      Chart(dataPoints) { point in
      LineMark(
      x: .value("Time", point.timestamp),
@@ -444,13 +445,13 @@ struct AccelerationData: Codable, Equatable, Hashable {
      }
      ```
 
-     왜 벡터 크기를 사용하는가?:
-     - 방향 무관한 총 가속도
-     - 충격 강도 판단에 유용
-     - 단일 임계값으로 판단 가능
+     Why use vector magnitude?:
+     - Total acceleration regardless of direction
+     - Useful for determining impact severity
+     - Can be judged with a single threshold
      */
-    /// @brief 총 가속도 크기 계산 (벡터 크기)
-    /// @return 3축 가속도의 벡터 크기 (G 단위)
+    /// @brief Calculate total acceleration magnitude (vector length)
+    /// @return Vector magnitude of 3-axis acceleration (G units)
     ///
     /// Total acceleration magnitude (vector length)
     var magnitude: Double {
@@ -458,28 +459,28 @@ struct AccelerationData: Codable, Equatable, Hashable {
     }
 
     /*
-     【수평면 가속도 크기 (Lateral Magnitude)】
+     【Horizontal Plane Acceleration Magnitude (Lateral Magnitude)】
 
-     X-Y 평면의 가속도 크기를 계산합니다 (Z축 제외).
+     Calculates acceleration magnitude in X-Y plane (excluding Z-axis).
 
-     수학 공식:
+     Mathematical formula:
      ```
      lateralMagnitude = √(x² + y²)
      ```
 
-     반환값:
-     - Double: 수평면 가속도 (G 단위)
+     Return value:
+     - Double: Horizontal plane acceleration (G units)
 
-     용도:
-     - 주행 패턴 분석 (상하 움직임 제외)
-     - 회전/제동 강도 측정
-     - 노면 상태 영향 최소화
+     Purpose:
+     - Analyze driving patterns (excluding vertical movement)
+     - Measure turning/braking intensity
+     - Minimize road surface condition effects
 
-     계산 예시:
+     Calculation example:
      ```
-     x = 2.0  (좌회전)
-     y = -1.5 (제동)
-     z = 1.2  (노면 요철)
+     x = 2.0  (left turn)
+     y = -1.5 (braking)
+     z = 1.2  (road bumps)
 
      lateralMagnitude = √(2.0² + (-1.5)²)
      = √(4.0 + 2.25)
@@ -489,21 +490,21 @@ struct AccelerationData: Codable, Equatable, Hashable {
      magnitude = √(2.0² + (-1.5)² + 1.2²) = 2.74G
      ```
 
-     사용 예시:
+     Usage example:
      ```swift
      let lateral = data.lateralMagnitude
 
-     // 주행 패턴 분석
+     // Analyze driving pattern
      if lateral > 1.5 {
-     print("급격한 조향 또는 제동")
+     print("Sudden steering or braking")
      }
 
-     // 운전 습관 점수 (Z축 노면 영향 제외)
+     // Driving habit score (excluding Z-axis road effects)
      let drivingScore = 100 - (lateral * 10)
      ```
      */
-    /// @brief 수평면 가속도 크기 (X-Y 평면)
-    /// @return X-Y 평면의 가속도 크기 (G 단위)
+    /// @brief Horizontal plane acceleration magnitude (X-Y plane)
+    /// @return Acceleration magnitude in X-Y plane (G units)
     ///
     /// Lateral acceleration magnitude (X-Y plane)
     var lateralMagnitude: Double {
@@ -511,36 +512,36 @@ struct AccelerationData: Codable, Equatable, Hashable {
     }
 
     /*
-     【유의미한 가속도 확인】
+     【Check for Significant Acceleration】
 
-     총 가속도가 1.5G를 초과하는지 확인합니다.
+     Checks if total acceleration exceeds 1.5G.
 
-     임계값: 1.5G
-     - 일반 주행: < 1.5G
-     - 유의미한 가속: > 1.5G
+     Threshold: 1.5G
+     - Normal driving: < 1.5G
+     - Significant acceleration: > 1.5G
 
-     반환값:
-     - Bool: 1.5G 초과 시 true
+     Return value:
+     - Bool: true if exceeds 1.5G
 
-     사용 예시:
+     Usage example:
      ```swift
      if data.isSignificant {
-     print("유의미한 가속도 감지: \(data.magnitudeString)")
+     print("Significant acceleration detected: \(data.magnitudeString)")
      highlightOnChart()
      }
 
-     // 유의미한 데이터만 필터링
+     // Filter only significant data
      let significantEvents = allData.filter { $0.isSignificant }
-     print("총 \(significantEvents.count)개의 유의미한 이벤트")
+     print("Total \(significantEvents.count) significant events")
      ```
 
-     왜 1.5G인가?:
-     - 일반 운전: 0.5-1.2G
-     - 급한 조작: 1.2-1.5G
-     - 비정상 상황: > 1.5G
+     Why 1.5G?:
+     - Normal driving: 0.5-1.2G
+     - Sudden maneuver: 1.2-1.5G
+     - Abnormal situation: > 1.5G
      */
-    /// @brief 유의미한 가속도 확인 (> 1.5G)
-    /// @return 1.5G 초과 시 true
+    /// @brief Check for significant acceleration (> 1.5G)
+    /// @return true if exceeds 1.5G
     ///
     /// Check if this reading indicates significant acceleration
     /// Threshold: > 1.5 G-force
@@ -549,46 +550,46 @@ struct AccelerationData: Codable, Equatable, Hashable {
     }
 
     /*
-     【충격 여부 확인】
+     【Check for Impact】
 
-     총 가속도가 2.5G를 초과하는지 확인합니다 (충격/사고).
+     Checks if total acceleration exceeds 2.5G (impact/accident).
 
-     임계값: 2.5G
-     - 일반 주행: < 2.5G
-     - 충격/사고: > 2.5G
+     Threshold: 2.5G
+     - Normal driving: < 2.5G
+     - Impact/accident: > 2.5G
 
-     반환값:
-     - Bool: 2.5G 초과 시 true
+     Return value:
+     - Bool: true if exceeds 2.5G
 
-     사용 예시:
+     Usage example:
      ```swift
      if data.isImpact {
-     print("⚠️ 충격 감지! \(data.magnitudeString)")
-     print("방향: \(data.primaryDirection.displayName)")
+     print("Impact detected! \(data.magnitudeString)")
+     print("Direction: \(data.primaryDirection.displayName)")
 
-     // 이벤트 녹화 트리거
+     // Trigger event recording
      triggerEventRecording(before: 10, after: 20)
 
-     // 알림 전송
+     // Send notification
      sendEmergencyNotification()
 
-     // 파일 보호 (자동 삭제 방지)
+     // Protect file (prevent auto-deletion)
      protectCurrentRecording()
      }
 
-     // 충격 이벤트만 표시
+     // Display only impact events
      let impacts = allData.filter { $0.isImpact }
-     print("충격 이벤트: \(impacts.count)개")
+     print("Impact events: \(impacts.count)")
      ```
 
-     실제 예시:
-     - 급제동: 약 1.5-2.0G (충격 아님)
-     - 경미한 접촉: 2.5-3.5G (충격)
-     - 중간 충돌: 3.5-5.0G (충격)
-     - 심각한 충돌: > 5.0G (심각한 충격)
+     Real-world examples:
+     - Hard braking: ~1.5-2.0G (not impact)
+     - Minor contact: 2.5-3.5G (impact)
+     - Medium collision: 3.5-5.0G (impact)
+     - Severe collision: > 5.0G (severe impact)
      */
-    /// @brief 충격 이벤트 확인 (> 2.5G)
-    /// @return 2.5G 초과 시 true
+    /// @brief Check for impact event (> 2.5G)
+    /// @return true if exceeds 2.5G
     ///
     /// Check if this reading indicates an impact/collision
     /// Threshold: > 2.5 G-force
@@ -597,46 +598,46 @@ struct AccelerationData: Codable, Equatable, Hashable {
     }
 
     /*
-     【심각한 충격 확인】
+     【Check for Severe Impact】
 
-     총 가속도가 4.0G를 초과하는지 확인합니다 (심각한 충격).
+     Checks if total acceleration exceeds 4.0G (severe impact).
 
-     임계값: 4.0G
-     - 일반 충격: 2.5-4.0G
-     - 심각한 충격: > 4.0G
+     Threshold: 4.0G
+     - Normal impact: 2.5-4.0G
+     - Severe impact: > 4.0G
 
-     반환값:
-     - Bool: 4.0G 초과 시 true
+     Return value:
+     - Bool: true if exceeds 4.0G
 
-     사용 예시:
+     Usage example:
      ```swift
      if data.isSevereImpact {
-     print("🚨 심각한 충격 감지! \(data.magnitudeString)")
+     print("SEVERE IMPACT DETECTED! \(data.magnitudeString)")
 
-     // 긴급 조치
+     // Emergency measures
      triggerEmergencyMode()
 
-     // 자동으로 119 연결 (일부 블랙박스)
+     // Auto-call 911 (some dashcams)
      callEmergencyServices()
 
-     // 비상 연락처에 SMS 전송
+     // Send SMS to emergency contacts
      sendEmergencySMS(location: currentGPS)
 
-     // 에어백 전개 가능성
+     // Airbag deployment possibility
      if data.magnitude > 10.0 {
-     print("⚠️ 에어백 전개 수준의 충격")
+     print("Airbag deployment-level impact")
      }
      }
      ```
 
-     실제 시나리오:
-     - 4-6G: 중간 속도 충돌
-     - 6-10G: 고속 충돌
-     - >10G: 매우 심각한 충돌
-     - >20G: 치명적 충돌 (순간적)
+     Real-world scenarios:
+     - 4-6G: Medium-speed collision
+     - 6-10G: High-speed collision
+     - >10G: Very severe collision
+     - >20G: Fatal collision (momentary)
      */
-    /// @brief 심각한 충격 확인 (> 4.0G)
-    /// @return 4.0G 초과 시 true
+    /// @brief Check for severe impact (> 4.0G)
+    /// @return true if exceeds 4.0G
     ///
     /// Check if this reading indicates a severe impact
     /// Threshold: > 4.0 G-force
@@ -645,188 +646,188 @@ struct AccelerationData: Codable, Equatable, Hashable {
     }
 
     /*
-     【충격 강도 분류】
+     【Impact Severity Classification】
 
-     총 가속도 크기에 따라 충격 강도를 5단계로 분류합니다.
+     Classifies impact severity into 5 levels based on total acceleration magnitude.
 
-     분류 기준:
-     - None:     < 1.0G  (정상 주행)
-     - Low:      1.0-1.5G (경미한 가속)
-     - Moderate: 1.5-2.5G (유의미한 가속)
-     - High:     2.5-4.0G (충격)
-     - Severe:   > 4.0G   (심각한 충격)
+     Classification criteria:
+     - None:     < 1.0G  (normal driving)
+     - Low:      1.0-1.5G (minor acceleration)
+     - Moderate: 1.5-2.5G (significant acceleration)
+     - High:     2.5-4.0G (impact)
+     - Severe:   > 4.0G   (severe impact)
 
-     반환값:
-     - ImpactSeverity: 충격 강도 열거형
+     Return value:
+     - ImpactSeverity: Impact severity enum
 
-     사용 예시:
+     Usage example:
      ```swift
      let severity = data.impactSeverity
 
      switch severity {
      case .none:
-     statusLabel.text = "정상"
+     statusLabel.text = "Normal"
      statusLabel.textColor = .systemGreen
      case .low:
-     statusLabel.text = "경미"
+     statusLabel.text = "Minor"
      statusLabel.textColor = .systemYellow
      case .moderate:
-     statusLabel.text = "주의"
+     statusLabel.text = "Caution"
      statusLabel.textColor = .systemOrange
      case .high:
-     statusLabel.text = "충격"
+     statusLabel.text = "Impact"
      statusLabel.textColor = .systemRed
      triggerEventRecording()
      case .severe:
-     statusLabel.text = "심각"
+     statusLabel.text = "Severe"
      statusLabel.textColor = .systemRed
      triggerEmergencyMode()
      }
 
-     // UI 색상 적용
+     // Apply UI color
      circle.fill(Color(hex: severity.colorHex))
 
-     // 필터링
+     // Filter
      let severeImpacts = allData.filter { $0.impactSeverity == .severe }
      ```
 
-     색상 코드:
+     Color codes:
      - None: Green (#4CAF50)
      - Low: Light Green (#8BC34A)
      - Moderate: Amber (#FFC107)
      - High: Orange (#FF9800)
      - Severe: Red (#F44336)
      */
-    /// @brief 충격 강도 분류 (5단계)
-    /// @return ImpactSeverity 열거형 (none, low, moderate, high, severe)
+    /// @brief Classify impact severity (5 levels)
+    /// @return ImpactSeverity enum (none, low, moderate, high, severe)
     ///
     /// Classify the impact severity
     var impactSeverity: ImpactSeverity {
-        let mag = magnitude  // 총 가속도 크기
+        let mag = magnitude  // Total acceleration magnitude
 
         if mag > 4.0 {
-            return .severe  // 심각 (> 4.0G)
+            return .severe  // Severe (> 4.0G)
         } else if mag > 2.5 {
-            return .high  // 높음 (2.5-4.0G)
+            return .high  // High (2.5-4.0G)
         } else if mag > 1.5 {
-            return .moderate  // 중간 (1.5-2.5G)
+            return .moderate  // Moderate (1.5-2.5G)
         } else if mag > 1.0 {
-            return .low  // 낮음 (1.0-1.5G)
+            return .low  // Low (1.0-1.5G)
         } else {
-            return .none  // 없음 (< 1.0G)
+            return .none  // None (< 1.0G)
         }
     }
 
     /*
-     【주요 충격 방향 판단】
+     【Determine Primary Impact Direction】
 
-     가장 큰 절댓값을 가진 축을 기준으로 충격 방향을 판단합니다.
+     Determines impact direction based on the axis with the largest absolute value.
 
-     알고리즘:
-     1. |x|, |y|, |z| 계산
-     2. 최댓값 찾기
-     3. 해당 축의 부호 확인
+     Algorithm:
+     1. Calculate |x|, |y|, |z|
+     2. Find maximum value
+     3. Check sign of corresponding axis
 
-     반환값:
-     - ImpactDirection: 충격 방향 열거형
+     Return value:
+     - ImpactDirection: Impact direction enum
 
-     사용 예시:
+     Usage example:
      ```swift
      let direction = data.primaryDirection
 
-     print("주요 충격 방향: \(direction.displayName)")
+     print("Primary impact direction: \(direction.displayName)")
      // "Forward", "Backward", "Left", "Right", "Up", "Down"
 
-     // 아이콘 표시
+     // Display icon
      let icon = Image(systemName: direction.iconName)
      // arrow.up, arrow.down, arrow.left, arrow.right, etc.
 
-     // 방향별 처리
+     // Handle by direction
      switch direction {
      case .forward:
-     print("전방 가속 또는 후방 충격")
+     print("Forward acceleration or rear impact")
      case .backward:
-     print("제동 또는 전방 충격")
+     print("Braking or front impact")
      case .left:
-     print("우회전 또는 우측 충격")
+     print("Right turn or right side impact")
      case .right:
-     print("좌회전 또는 좌측 충격")
+     print("Left turn or left side impact")
      case .up:
-     print("포트홀 또는 하방 충격")
+     print("Pothole or downward impact")
      case .down:
-     print("낙하 또는 상방 충격")
+     print("Drop or upward impact")
      }
 
-     // UI 화살표 회전
+     // Rotate UI arrow
      arrowView.transform = CGAffineTransform(rotationAngle: direction.angle)
      ```
 
-     예시 계산:
+     Example calculation:
      ```
      x = 1.5, y = -3.5, z = 0.8
 
      |x| = 1.5
-     |y| = 3.5  ← 최대!
+     |y| = 3.5  ← maximum!
      |z| = 0.8
 
-     y < 0 → backward (제동/전방 충격)
+     y < 0 → backward (braking/front impact)
      ```
      */
-    /// @brief 주요 충격 방향 판단
-    /// @return ImpactDirection 열거형 (forward, backward, left, right, up, down)
+    /// @brief Determine primary impact direction
+    /// @return ImpactDirection enum (forward, backward, left, right, up, down)
     ///
     /// Determine primary impact direction
     var primaryDirection: ImpactDirection {
-        let absX = abs(x)  // X축 절댓값
-        let absY = abs(y)  // Y축 절댓값
-        let absZ = abs(z)  // Z축 절댓값
+        let absX = abs(x)  // X-axis absolute value
+        let absY = abs(y)  // Y-axis absolute value
+        let absZ = abs(z)  // Z-axis absolute value
 
-        let maxValue = max(absX, absY, absZ)  // 최댓값 찾기
+        let maxValue = max(absX, absY, absZ)  // Find maximum
 
-        // 최댓값에 해당하는 축의 방향 반환
+        // Return direction of axis with maximum value
         if maxValue == absX {
-            return x > 0 ? .right : .left  // X축이 최대
+            return x > 0 ? .right : .left  // X-axis is maximum
         } else if maxValue == absY {
-            return y > 0 ? .forward : .backward  // Y축이 최대
+            return y > 0 ? .forward : .backward  // Y-axis is maximum
         } else {
-            return z > 0 ? .up : .down  // Z축이 최대
+            return z > 0 ? .up : .down  // Z-axis is maximum
         }
     }
 
     // MARK: - Formatting
 
     /*
-     【가속도 문자열 포맷】
+     【Acceleration String Format】
 
-     X, Y, Z 축의 가속도를 읽기 쉬운 문자열로 변환합니다.
+     Converts X, Y, Z axis accelerations into a readable string.
 
-     형식: "X: XXX.XXG, Y: XXX.XXG, Z: XXX.XXG"
+     Format: "X: XXX.XXG, Y: XXX.XXG, Z: XXX.XXG"
 
-     반환값:
-     - String: 포맷된 3축 가속도 문자열
+     Return value:
+     - String: Formatted 3-axis acceleration string
 
-     사용 예시:
+     Usage example:
      ```swift
      let data = AccelerationData(timestamp: Date(), x: 1.5, y: -3.5, z: 0.8)
      print(data.formattedString)
      // "X: 1.50G, Y: -3.50G, Z: 0.80G"
 
-     // UI 레이블
+     // UI label
      detailLabel.text = data.formattedString
 
-     // 로그 출력
+     // Log output
      print("[\(data.timestamp)] \(data.formattedString)")
 
-     // 데이터 내보내기
+     // Data export
      let csv = "\(data.timestamp),\(data.formattedString)"
      ```
 
-     형식 설명:
-     - %.2f: 소수점 2자리
-     - G: G-force 단위 표시
+     Format description:
+     - %.2f: 2 decimal places
+     - G: G-force unit indicator
      */
-    /// @brief 가속도를 문자열로 포맷
-    /// @return "X: XXX.XXG, Y: XXX.XXG, Z: XXX.XXG" 형식
+    /// @brief Format acceleration as string
+    /// @return "X: XXX.XXG, Y: XXX.XXG, Z: XXX.XXG" format
     ///
     /// Format acceleration as string with G-force units
     var formattedString: String {
@@ -834,37 +835,37 @@ struct AccelerationData: Codable, Equatable, Hashable {
     }
 
     /*
-     【총 가속도 크기 문자열】
+     【Total Acceleration Magnitude String】
 
-     벡터 크기를 읽기 쉬운 문자열로 변환합니다.
+     Converts vector magnitude into a readable string.
 
-     형식: "XXX.XX G"
+     Format: "XXX.XX G"
 
-     반환값:
-     - String: 포맷된 총 가속도 문자열
+     Return value:
+     - String: Formatted total acceleration string
 
-     사용 예시:
+     Usage example:
      ```swift
      let data = AccelerationData(timestamp: Date(), x: 1.5, y: -3.5, z: 0.8)
      print(data.magnitudeString)
      // "3.89 G"
 
-     // 차트 레이블
+     // Chart label
      Text(data.magnitudeString)
      .font(.caption)
 
-     // 알림 메시지
+     // Alert message
      if data.isImpact {
-     showAlert(title: "충격 감지", message: "강도: \(data.magnitudeString)")
+     showAlert(title: "Impact Detected", message: "Severity: \(data.magnitudeString)")
      }
 
-     // 통계
+     // Statistics
      let maxG = allData.map { $0.magnitude }.max() ?? 0
-     print("최대 가속도: \(String(format: "%.2f G", maxG))")
+     print("Maximum acceleration: \(String(format: "%.2f G", maxG))")
      ```
      */
-    /// @brief 총 가속도 크기를 문자열로 포맷
-    /// @return "XXX.XX G" 형식
+    /// @brief Format total acceleration magnitude as string
+    /// @return "XXX.XX G" format
     ///
     /// Format magnitude as string
     var magnitudeString: String {
@@ -875,69 +876,69 @@ struct AccelerationData: Codable, Equatable, Hashable {
 // MARK: - Supporting Types
 
 /*
- 【ImpactSeverity 열거형】
+ 【ImpactSeverity Enum】
 
- 충격 강도를 5단계로 분류하는 열거형입니다.
+ Enum that classifies impact severity into 5 levels.
 
- 프로토콜:
- - String: Raw Value로 문자열 사용
- - Codable: JSON 직렬화
+ Protocols:
+ - String: Uses string as Raw Value
+ - Codable: JSON serialization
 
- 단계:
- - none: 정상 주행 (< 1.0G)
- - low: 경미 (1.0-1.5G)
- - moderate: 중간 (1.5-2.5G)
- - high: 높음 (2.5-4.0G)
- - severe: 심각 (> 4.0G)
+ Levels:
+ - none: Normal driving (< 1.0G)
+ - low: Minor (1.0-1.5G)
+ - moderate: Moderate (1.5-2.5G)
+ - high: High (2.5-4.0G)
+ - severe: Severe (> 4.0G)
  */
 /// @enum ImpactSeverity
-/// @brief 충격 강도 분류 (5단계)
+/// @brief Impact severity classification (5 levels)
 ///
 /// Impact severity classification
 enum ImpactSeverity: String, Codable {
-    case none = "none"          // 정상 주행
-    case low = "low"            // 경미한 가속
-    case moderate = "moderate"  // 유의미한 가속
-    case high = "high"          // 충격
-    case severe = "severe"      // 심각한 충격
+    case none = "none"          // Normal driving
+    case low = "low"            // Minor acceleration
+    case moderate = "moderate"  // Significant acceleration
+    case high = "high"          // Impact
+    case severe = "severe"      // Severe impact
 
     /*
-     【표시 이름】
+     【Display Name】
 
-     첫 글자를 대문자로 변환한 이름을 반환합니다.
+     Returns the name with first letter capitalized.
 
-     반환값:
+     Return value:
      - String: "None", "Low", "Moderate", "High", "Severe"
 
-     사용 예시:
+     Usage example:
      ```swift
      let severity = ImpactSeverity.high
      print(severity.displayName)  // "High"
 
-     // UI 레이블
+     // UI label
      severityLabel.text = severity.displayName
      ```
      */
     var displayName: String {
-        return rawValue.capitalized  // 첫 글자 대문자
+        return rawValue.capitalized  // First letter capitalized
     }
 
     /*
-     【색상 코드】
+     【Color Code】
 
-     충격 강도에 해당하는 색상 코드를 반환합니다.
+     Returns the color code corresponding to impact severity.
 
-     색상:
-     - None: Green (#4CAF50) - 안전
-     - Low: Light Green (#8BC34A) - 경미
-     - Moderate: Amber (#FFC107) - 주의
-     - High: Orange (#FF9800) - 위험
-     - Severe: Red (#F44336) - 심각
+     Colors:
+     - None: Green (#4CAF50) - Safe
+     - Low: Light Green (#8BC34A) - Minor
+     - Moderate: Amber (#FFC107) - Caution
+     - High: Orange (#FF9800) - Danger
+     - Severe: Red (#F44336) - Severe
 
-     반환값:
-     - String: Hex 색상 코드
+     Return value:
+     - String: Hex color code
 
-     사용 예시:
+     Usage example:
      ```swift
      let severity = data.impactSeverity
      let color = Color(hex: severity.colorHex)
@@ -946,7 +947,7 @@ enum ImpactSeverity: String, Codable {
      .fill(color)
      .frame(width: 50, height: 50)
 
-     // 차트 색상
+     // Chart color
      LineMark(...)
      .foregroundStyle(Color(hex: severity.colorHex))
      ```
@@ -954,69 +955,69 @@ enum ImpactSeverity: String, Codable {
     var colorHex: String {
         switch self {
         case .none:
-            return "#4CAF50"  // Green - 안전
+            return "#4CAF50"  // Green - Safe
         case .low:
-            return "#8BC34A"  // Light Green - 경미
+            return "#8BC34A"  // Light Green - Minor
         case .moderate:
-            return "#FFC107"  // Amber - 주의
+            return "#FFC107"  // Amber - Caution
         case .high:
-            return "#FF9800"  // Orange - 위험
+            return "#FF9800"  // Orange - Danger
         case .severe:
-            return "#F44336"  // Red - 심각
+            return "#F44336"  // Red - Severe
         }
     }
 }
 
 /*
- 【ImpactDirection 열거형】
+ 【ImpactDirection Enum】
 
- 충격 방향을 6방향으로 분류하는 열거형입니다.
+ Enum that classifies impact direction into 6 directions.
 
- 프로토콜:
- - String: Raw Value로 문자열 사용
- - Codable: JSON 직렬화
+ Protocols:
+ - String: Uses string as Raw Value
+ - Codable: JSON serialization
 
- 방향:
- - forward: 전방 (Y+)
- - backward: 후방 (Y-)
- - left: 좌측 (X-)
- - right: 우측 (X+)
- - up: 상방 (Z+)
- - down: 하방 (Z-)
+ Directions:
+ - forward: Forward (Y+)
+ - backward: Backward (Y-)
+ - left: Left (X-)
+ - right: Right (X+)
+ - up: Up (Z+)
+ - down: Down (Z-)
  */
 /// @enum ImpactDirection
-/// @brief 충격 방향 (6방향)
+/// @brief Impact direction (6 directions)
 ///
 /// Impact direction
 enum ImpactDirection: String, Codable {
-    case forward = "forward"    // 전방 가속 / 후방 충격
-    case backward = "backward"  // 제동 / 전방 충격
-    case left = "left"          // 좌측 가속 / 우측 충격
-    case right = "right"        // 우측 가속 / 좌측 충격
-    case up = "up"              // 상방 가속 / 하방 충격
-    case down = "down"          // 하방 가속 / 상방 충격
+    case forward = "forward"    // Forward acceleration / rear impact
+    case backward = "backward"  // Braking / front impact
+    case left = "left"          // Left acceleration / right impact
+    case right = "right"        // Right acceleration / left impact
+    case up = "up"              // Upward acceleration / downward impact
+    case down = "down"          // Downward acceleration / upward impact
 
     /*
-     【표시 이름】
+     【Display Name】
 
-     첫 글자를 대문자로 변환한 이름을 반환합니다.
+     Returns the name with first letter capitalized.
 
-     반환값:
+     Return value:
      - String: "Forward", "Backward", "Left", "Right", "Up", "Down"
      */
     var displayName: String {
-        return rawValue.capitalized  // 첫 글자 대문자
+        return rawValue.capitalized  // First letter capitalized
     }
 
     /*
-     【아이콘 이름】
+     【Icon Name】
 
-     SF Symbols 아이콘 이름을 반환합니다.
+     Returns SF Symbols icon name.
 
-     반환값:
-     - String: SF Symbols 이름
+     Return value:
+     - String: SF Symbols name
 
-     아이콘:
+     Icons:
      - Forward: arrow.up
      - Backward: arrow.down
      - Left: arrow.left
@@ -1024,7 +1025,7 @@ enum ImpactDirection: String, Codable {
      - Up: arrow.up.circle
      - Down: arrow.down.circle
 
-     사용 예시:
+     Usage example:
      ```swift
      let direction = data.primaryDirection
 
@@ -1058,11 +1059,11 @@ enum ImpactDirection: String, Codable {
 // MARK: - Identifiable
 
 /*
- 【Identifiable 프로토콜 확장】
+ 【Identifiable Protocol Extension】
 
- SwiftUI의 List, ForEach 등에서 사용할 수 있도록 고유 식별자를 제공합니다.
+ Provides unique identifier for use in SwiftUI List, ForEach, etc.
 
- 사용 예시:
+ Usage example:
  ```swift
  List(accelerationData) { point in
  HStack {
@@ -1076,131 +1077,131 @@ enum ImpactDirection: String, Codable {
  ```
  */
 extension AccelerationData: Identifiable {
-    var id: Date { timestamp }  // timestamp를 고유 식별자로 사용
+    var id: Date { timestamp }  // Use timestamp as unique identifier
 }
 
 // MARK: - Sample Data
 
 /*
- 【샘플 데이터 확장】
+ 【Sample Data Extension】
 
- 테스트와 SwiftUI 프리뷰를 위한 샘플 가속도 데이터를 제공합니다.
+ Provides sample acceleration data for testing and SwiftUI previews.
 
- 시나리오:
- - normal: 정상 주행
- - braking: 급제동
- - sharpTurn: 급회전
- - impact: 충격
- - severeImpact: 심각한 충격
+ Scenarios:
+ - normal: Normal driving
+ - braking: Hard braking
+ - sharpTurn: Sharp turn
+ - impact: Impact
+ - severeImpact: Severe impact
  */
 extension AccelerationData {
     /*
-     【정상 주행】
+     【Normal Driving】
 
-     중력(1G)만 작용하는 평지 주행 상태입니다.
+     Flat surface driving with only gravity (1G) applied.
 
-     값:
-     - X: 0.0G (좌우 없음)
-     - Y: 0.0G (전후 없음)
-     - Z: 1.0G (중력)
+     Values:
+     - X: 0.0G (no lateral)
+     - Y: 0.0G (no longitudinal)
+     - Z: 1.0G (gravity)
      */
     /// Normal driving (minimal acceleration)
     static let normal = AccelerationData(
         timestamp: Date(),
         x: 0.0,
         y: 0.0,
-        z: 1.0  // Gravity (중력)
+        z: 1.0  // Gravity
     )
 
     /*
-     【급제동】
+     【Hard Braking】
 
-     후방으로 1.8G 가속 (제동).
+     1.8G backward acceleration (braking).
 
-     값:
-     - X: 0.0G (좌우 없음)
-     - Y: -1.8G (제동)
-     - Z: 1.0G (중력)
+     Values:
+     - X: 0.0G (no lateral)
+     - Y: -1.8G (braking)
+     - Z: 1.0G (gravity)
 
-     총 가속도: √(0² + 1.8² + 1²) = 2.06G (Moderate)
+     Total acceleration: √(0² + 1.8² + 1²) = 2.06G (Moderate)
      */
     /// Moderate braking
     static let braking = AccelerationData(
         timestamp: Date(),
         x: 0.0,
-        y: -1.8,  // 제동
+        y: -1.8,  // Braking
         z: 1.0
     )
 
     /*
-     【급회전】
+     【Sharp Turn】
 
-     우측으로 2.2G + 약간의 전방 가속.
+     2.2G to the right + slight forward acceleration.
 
-     값:
-     - X: 2.2G (우측, 좌회전)
-     - Y: 0.5G (전방 가속)
-     - Z: 1.0G (중력)
+     Values:
+     - X: 2.2G (right, left turn)
+     - Y: 0.5G (forward acceleration)
+     - Z: 1.0G (gravity)
 
-     총 가속도: √(2.2² + 0.5² + 1²) = 2.44G (Moderate)
+     Total acceleration: √(2.2² + 0.5² + 1²) = 2.44G (Moderate)
      */
     /// Sharp turn
     static let sharpTurn = AccelerationData(
         timestamp: Date(),
-        x: 2.2,   // 우측 (좌회전)
-        y: 0.5,   // 약간 가속
+        x: 2.2,   // Right (left turn)
+        y: 0.5,   // Slight acceleration
         z: 1.0
     )
 
     /*
-     【충격 이벤트】
+     【Impact Event】
 
-     전방 충돌 시나리오.
+     Front collision scenario.
 
-     값:
-     - X: 1.5G (우측으로 밀림)
-     - Y: -3.5G (후방으로 밀림, 전방 충격)
-     - Z: 0.8G (약간 하방)
+     Values:
+     - X: 1.5G (pushed to the right)
+     - Y: -3.5G (pushed backward, front impact)
+     - Z: 0.8G (slightly downward)
 
-     총 가속도: √(1.5² + 3.5² + 0.8²) = 3.89G (High)
-     방향: Backward (Y축이 최대, 음수)
+     Total acceleration: √(1.5² + 3.5² + 0.8²) = 3.89G (High)
+     Direction: Backward (Y-axis is maximum, negative)
      */
     /// Impact event
     static let impact = AccelerationData(
         timestamp: Date(),
-        x: 1.5,   // 우측
-        y: -3.5,  // 전방 충격
-        z: 0.8    // 약간 하방
+        x: 1.5,   // Right
+        y: -3.5,  // Front impact
+        z: 0.8    // Slightly downward
     )
 
     /*
-     【심각한 충격】
+     【Severe Impact】
 
-     심각한 전방 충돌 시나리오.
+     Severe front collision scenario.
 
-     값:
-     - X: 2.8G (우측으로 강하게 밀림)
-     - Y: -5.2G (후방으로 강하게 밀림)
-     - Z: 1.5G (위로 튕김)
+     Values:
+     - X: 2.8G (strongly pushed to the right)
+     - Y: -5.2G (strongly pushed backward)
+     - Z: 1.5G (bounced upward)
 
-     총 가속도: √(2.8² + 5.2² + 1.5²) = 6.08G (Severe)
+     Total acceleration: √(2.8² + 5.2² + 1.5²) = 6.08G (Severe)
      */
     /// Severe impact
     static let severeImpact = AccelerationData(
         timestamp: Date(),
-        x: 2.8,   // 우측으로 강하게
-        y: -5.2,  // 심각한 전방 충격
-        z: 1.5    // 위로 튕김
+        x: 2.8,   // Strongly to the right
+        y: -5.2,  // Severe front impact
+        z: 1.5    // Bounced upward
     )
 
     /*
-     【샘플 데이터 배열】
+     【Sample Data Array】
 
-     정상 주행부터 충격까지의 시나리오가 포함된 배열입니다.
+     Array containing scenarios from normal driving to impact.
 
-     사용 예시:
+     Usage example:
      ```swift
-     // 차트 프리뷰
+     // Chart preview
      Chart(AccelerationData.sampleData) { point in
      LineMark(
      x: .value("Time", point.timestamp),
@@ -1208,7 +1209,7 @@ extension AccelerationData {
      )
      }
 
-     // 테스트
+     // Testing
      func testImpactDetection() {
      let sample = AccelerationData.sampleData
      let impacts = sample.filter { $0.isImpact }

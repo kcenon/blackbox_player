@@ -1,5 +1,5 @@
 /// @file VideoFile.swift
-/// @brief 블랙박스 비디오 파일 모델 (멀티 채널 지원)
+/// @brief Blackbox video file model (multi-channel support)
 /// @author BlackboxPlayer Development Team
 ///
 /// Model for dashcam video file (potentially multi-channel)
@@ -8,171 +8,171 @@ import Foundation
 
 /*
  ═══════════════════════════════════════════════════════════════════════════════
- VideoFile - 블랙박스 비디오 파일 모델
+ VideoFile - Blackbox Video File Model
  ═══════════════════════════════════════════════════════════════════════════════
 
- 【개요】
- VideoFile은 블랙박스 녹화 파일의 완전한 정보를 나타내는 최상위 모델입니다.
- 여러 카메라 채널, GPS/G-센서 메타데이터, 이벤트 타입, 사용자 설정 등 모든 정보를
- 하나의 구조체로 통합 관리합니다.
+ 【Overview】
+ VideoFile blackbox recording File complete information represent top-level model.
+ multiple camera channel, GPS/G-Sensor metadata, Event Type, useer settings etc all information
+ one struct integration management.
 
- 【VideoFile이란?】
+ 【VideoFileWhat is】
 
- 하나의 녹화 시간에 기록된 모든 채널의 비디오 파일과 메타데이터의 집합입니다.
+ A collection of all channel video files and metadata recorded at a single recording time.
 
- 구조 예시 (2채널 블랙박스, 2025년 1월 10일 09:00:00 녹화):
+ structure example (2channel blackbox, 2025-01-10 09:00:00 recording):
 
  VideoFile (2025_01_10_09_00_00)
- ├─ 📹 채널 1: 전방 카메라
- │   └─ 파일: 2025_01_10_09_00_00_F.mp4 (Full HD, 100 MB)
+ ├─ 📹 channel 1: Front Camera
+ │   └─ File: 2025_01_10_09_00_00_F.mp4 (Full HD, 100 MB)
  │
- ├─ 📹 채널 2: 후방 카메라
- │   └─ 파일: 2025_01_10_09_00_00_R.mp4 (HD, 50 MB)
+ ├─ 📹 channel 2: Rear Camera
+ │   └─ File: 2025_01_10_09_00_00_R.mp4 (HD, 50 MB)
  │
- ├─ 📍 GPS 메타데이터
- │   └─ 3,600개 GPS 포인트 (1초마다)
+ ├─ 📍 GPS metadata
+ │   └─ 3,600 GPS points (every 1 second)
  │
- ├─ 📊 G-센서 메타데이터
- │   └─ 36,000개 가속도 데이터 (0.1초마다)
+ ├─ 📊 G-Sensor metadata
+ │   └─ 36,000 acceleration data points (every 0.1 second)
  │
- └─ 📝 추가 정보
- ├─ 이벤트 타입: 일반 녹화
- ├─ 녹화 시간: 2025-01-10 09:00:00
- ├─ 길이: 1분
- ├─ 즐겨찾기: false
- ├─ 메모: nil
- └─ 손상 여부: false
+ └─ 📝 Additional Information
+ ├─ Event Type: Normal recording
+ ├─ recording time: 2025-01-10 09:00:00
+ ├─ Duration: 1 minute
+ ├─ Favorite: false
+ ├─ Notes: nil
+ └─ Corrupted status: false
 
- 【모델 통합】
+ 【Model Integration】
 
- VideoFile은 다른 모든 모델을 조합합니다:
+ VideoFile combines all other models:
 
  VideoFile
- ├─ EventType enum         (이벤트 종류)
- ├─ [ChannelInfo]          (채널 배열)
- │   └─ CameraPosition enum (카메라 위치)
+ ├─ EventType enum         (Event Type)
+ ├─ [channelInfo]          (channel array)
+ │   └─ CameraPosition enum (camera abovetion)
  │
- └─ VideoMetadata          (메타데이터)
- ├─ [GPSPoint]         (GPS 배열)
- └─ [AccelerationData] (가속도 배열)
+ └─ VideoMetadata          (metadata)
+ ├─ [GPSPoint]         (GPS array)
+ └─ [AccelerationData] (acceleration array)
 
- 【불변 구조체(Immutable Struct)】
+ 【Immutable Struct】
 
- VideoFile은 struct로 선언되어 불변(immutable) 데이터 구조입니다.
+ VideoFile struct declared as an immutable data structure.
 
- 불변의 장점:
- 1. 스레드 안전 (Thread-safe)
- - 여러 스레드에서 동시에 읽어도 안전
- - 동기화(lock) 불필요
+ immutable advantages:
+ 1. thread safe (Thread-safe)
+ - multiple threadfrom simultaneously read safe
+ - synchronization(lock) not required
 
- 2. 예측 가능성 (Predictability)
- - 생성 후 값이 변하지 않음
- - 부작용(side effect) 없음
+ 2. prediction possibility (Predictability)
+ - create  value change not
+ - side effect(side effect) none
 
- 3. 값 복사 (Value semantics)
- - 할당 시 복사본 생성
- - 원본 영향 없음
+ 3. value copy (Value semantics)
+ - assignment  copy create
+ - original affect none
 
- 불변 업데이트 패턴:
+ Immutable update pattern:
  ```swift
- // 기존 파일
+ // original file
  let originalFile = VideoFile(...)
 
- // 새로운 인스턴스 생성 (기존 파일은 변경 안 됨)
+ // new instance create (original file change not ed)
  let updatedFile = originalFile.withFavorite(true)
 
- // originalFile: isFavorite = false (변경 안 됨)
- // updatedFile: isFavorite = true   (새 인스턴스)
+ // originalFile: isFavorite = false (change not ed)
+ // updatedFile: isFavorite = true   (new instance)
  ```
 
- 이 패턴은 SwiftUI와 함께 사용할 때 특히 유용합니다:
- - @State, @Binding과 자연스럽게 동작
- - 뷰 업데이트 자동 트리거
- - Undo/Redo 구현 용이
+  pattern SwiftUI with use when particularly useful:
+ - @State, @Bindingand naturally operation
+ - view update automatic trigger
+ - Undo/Redo implementation easy
 
- 【멀티 채널 시스템】
+ 【Multi-channel System】
 
- 하나의 VideoFile은 1~5개의 채널을 포함할 수 있습니다:
+ one VideoFile 1~5 channel contains number :
 
- 1채널 (기본):
+ 1channel (Basic):
  ┌─────────────┐
- │   전방 (F)   │
+ │   Front (F)   │
  └─────────────┘
 
- 2채널 (일반적):
+ 2channel (Common):
  ┌─────────────┬─────────────┐
- │   전방 (F)   │   후방 (R)   │
+ │   Front (F)   │   Rear (R)   │
  └─────────────┴─────────────┘
 
- 4채널 (고급):
+ 4channel (Advanced):
  ┌──────┬──────┬──────┬──────┐
- │ 전방  │ 후방  │ 좌측  │ 우측  │
+ │ Front  │ Rear  │ Left  │ Right  │
  │  (F) │  (R) │  (L) │ (Ri) │
  └──────┴──────┴──────┴──────┘
 
- 5채널 (최고급):
+ 5channel (Advanced):
  ┌──────┬──────┬──────┬──────┬──────┐
- │ 전방  │ 후방  │ 좌측  │ 우측  │ 실내  │
+ │ Front  │ Rear  │ Left  │ Right  │ Interior  │
  │  (F) │  (R) │  (L) │ (Ri) │  (I) │
  └──────┴──────┴──────┴──────┴──────┘
 
- 모든 채널은 동일한 timestamp에 녹화되지만 독립적인 파일입니다.
+ all channel sameone timestamp recordingonly independentin File.
 
- 【파일 시스템 구조】
+ 【File System Structure】
 
- 블랙박스 SD 카드 디렉토리 구조:
+ blackbox SD card  structure:
 
  /media/sd/
- ├─ normal/                    (일반 녹화)
+ ├─ normal/                    (Normal recording)
  │   ├─ 2025_01_10_09_00_00_F.mp4
  │   ├─ 2025_01_10_09_00_00_R.mp4
  │   ├─ 2025_01_10_09_01_00_F.mp4
  │   └─ 2025_01_10_09_01_00_R.mp4
  │
- ├─ event/                     (충격 이벤트)
+ ├─ event/                     (Impact events)
  │   ├─ 2025_01_10_10_30_15_F.mp4
  │   └─ 2025_01_10_10_30_15_R.mp4
  │
- ├─ parking/                   (주차 모드)
+ ├─ parking/                   (Parking mode)
  │   └─ 2025_01_10_18_00_00_F.mp4
  │
- └─ manual/                    (수동 녹화)
+ └─ manual/                    (Manual recording)
  ├─ 2025_01_10_15_00_00_F.mp4
  └─ 2025_01_10_15_00_00_R.mp4
 
  basePath:
- - "normal/2025_01_10_09_00_00" (채널 접미사 제외)
- - 모든 채널에 공통된 경로 부분
+ - "normal/2025_01_10_09_00_00" (channel suffix exclude)
+ - all channel commoned path portion
 
- 【사용 예시】
+ 【Usage Example】
 
  ```swift
- // 2채널 블랙박스 파일 생성
+ // 2channel blackbox file create
  let videoFile = VideoFile(
  timestamp: Date(),
  eventType: .normal,
  duration: 60.0,
- channels: [frontChannel, rearChannel],
+ channels: [frontchannel, rearchannel],
  metadata: metadata,
  basePath: "normal/2025_01_10_09_00_00"
  )
 
- // 채널 접근
- if let frontChannel = videoFile.frontChannel {
- print("전방 카메라: \(frontChannel.resolutionName)")
+ // channel access
+ if let frontchannel = videoFile.frontchannel {
+ print("Front Camera: \(frontchannel.resolutionName)")
  }
 
- // 메타데이터 확인
+ // metadata check
  if videoFile.hasImpactEvents {
- print("⚠️ 충격 이벤트 \(videoFile.impactEventCount)회")
+ print("⚠️ Impact events \(videoFile.impactEventCount)times")
  }
 
- // 파일 정보
- print("총 크기: \(videoFile.totalFileSizeString)")
- print("길이: \(videoFile.durationString)")
- print("시간: \(videoFile.timestampString)")
+ // File information
+ print("total size: \(videoFile.totalFileSizeString)")
+ print("Duration: \(videoFile.durationString)")
+ print("time: \(videoFile.timestampString)")
 
- // 즐겨찾기 추가 (불변 업데이트)
+ // Favorite Add (Immutable update)
  let favoriteFile = videoFile.withFavorite(true)
  ```
 
@@ -180,363 +180,363 @@ import Foundation
  */
 
 /// @struct VideoFile
-/// @brief 블랙박스 비디오 파일 (멀티 채널, 메타데이터 포함)
+/// @brief blackbox video file (multi channel, metadata include)
 ///
 /// Dashcam video file with metadata and channel information
 ///
-/// 블랙박스 비디오 파일의 완전한 정보를 나타내는 구조체입니다.
+/// blackbox video file complete information represent struct.
 ///
-/// **포함 정보:**
-/// - 채널 정보 (1~5개 카메라)
-/// - 메타데이터 (GPS, G-센서)
-/// - 이벤트 타입 (일반, 충격, 주차 등)
-/// - 사용자 설정 (즐겨찾기, 메모)
-/// - 파일 상태 (손상 여부)
+/// **include information:**
+/// - channel information (1~5 camera)
+/// - metadata (GPS, G-Sensor)
+/// - Event Type (normal, impact, parking etc)
+/// - useer settings (Favorite, Notes)
+/// - File status (Corrupted status)
 ///
-/// **프로토콜:**
-/// - Codable: JSON 직렬화/역직렬화
-/// - Equatable: 동등성 비교
-/// - Identifiable: SwiftUI List/ForEach에서 고유 식별
-/// - Hashable: Set/Dictionary 키로 사용 가능
+/// **:**
+/// - Codable: JSON serialization/serialization
+/// - Equatable: etc compare
+/// - Identifiable: SwiftUI List/ForEachfrom Unique each
+/// - Hashable: Set/Dictionary key use possible
 ///
-/// **불변 구조:**
-/// - struct로 선언되어 값 타입 (value type)
-/// - 프로퍼티는 모두 let (상수)
-/// - 변경은 새 인스턴스 생성 (withX 메서드)
+/// **immutable structure:**
+/// - struct declared as value type (value type)
+/// - property  let (constant)
+/// - change new instance create (withX method)
 ///
-/// **사용 예시:**
+/// **use example:**
 /// ```swift
 /// let videoFile = VideoFile(
 ///     timestamp: Date(),
 ///     eventType: .normal,
 ///     duration: 60.0,
-///     channels: [frontChannel, rearChannel],
+///     channels: [frontchannel, rearchannel],
 ///     metadata: metadata,
 ///     basePath: "normal/2025_01_10_09_00_00"
 /// )
 ///
-/// // 채널 확인
-/// print("채널 수: \(videoFile.channelCount)")
-/// print("전방 카메라: \(videoFile.hasChannel(.front) ? "있음" : "없음")")
+/// // channel check
+/// print("channel number: \(videoFile.channelCount)")
+/// print("Front Camera: \(videoFile.haschannel(.front) ? "available" : "none")")
 ///
-/// // 메타데이터 확인
+/// // metadata check
 /// if videoFile.hasImpactEvents {
-///     print("⚠️ 충격 \(videoFile.impactEventCount)회")
+///     print("⚠️ impact \(videoFile.impactEventCount)times")
 /// }
 ///
-/// // 즐겨찾기 추가 (불변 업데이트)
+/// // Favorite Add (Immutable update)
 /// let favoriteFile = videoFile.withFavorite(true)
 /// ```
 struct VideoFile: Codable, Equatable, Identifiable, Hashable {
     /// @var id
-    /// @brief 파일 고유 식별자 (UUID)
+    /// @brief File Unique eacher (UUID)
     ///
     /// Unique identifier
     ///
-    /// 파일의 고유 식별자입니다.
+    /// File Unique eacher.
     ///
     /// **UUID (Universally Unique Identifier):**
-    /// - 128비트 고유 식별자
-    /// - SwiftUI List/ForEach에서 각 파일 구별
-    /// - 충돌 확률: 거의 0 (10^-18 수준)
+    /// - 128 Unique eacher
+    /// - SwiftUI List/ForEachfrom each File distinguish
+    /// -  :  0 (10^-18 numberlevel)
     ///
-    /// **사용 예시:**
+    /// **use example:**
     /// ```swift
     /// List(videoFiles) { file in
-    ///     // file.id로 각 파일 구별
+    ///     // file.id each File distinguish
     ///     VideoFileRow(file: file)
     /// }
     /// ```
     let id: UUID
 
     /// @var timestamp
-    /// @brief 녹화 시작 시간
+    /// @brief recording start time
     ///
     /// Recording start timestamp
     ///
-    /// 녹화 시작 시간입니다.
+    /// recording start time.
     ///
-    /// **Date 타입:**
-    /// - Swift의 표준 날짜/시간 타입
-    /// - UTC 기반 절대 시간 (타임존 독립적)
-    /// - TimeInterval 연산 가능 (초 단위)
+    /// **Date type:**
+    /// - Swift level date/time type
+    /// - UTC half  time (ing independent)
+    /// - TimeInterval operation possible (second unit)
     ///
-    /// **타임스탬프 활용:**
-    /// - 파일 정렬 (시간순 정렬)
-    /// - 파일 검색 (날짜/시간 필터)
-    /// - UI 표시 (DateFormatter)
+    /// **timestamp usage:**
+    /// - File sort (timepure sort)
+    /// - File search (date/time filter)
+    /// - UI display (DateFormatter)
     ///
-    /// **파일명 규칙:**
-    /// - 파일명에 포함: YYYY_MM_DD_HH_MM_SS
-    /// - 예: 2025_01_10_09_00_00 → 2025년 1월 10일 09:00:00
+    /// **filename :**
+    /// - filename include: YYYY_MM_DD_HH_MM_SS
+    /// - example: 2025_01_10_09_00_00 → 2025-01-10 09:00:00
     ///
-    /// **사용 예시:**
+    /// **use example:**
     /// ```swift
-    /// // 시간 비교
+    /// // time compare
     /// let recentFiles = videoFiles.filter { file in
-    ///     file.timestamp > Date().addingTimeInterval(-3600) // 1시간 이내
+    ///     file.timestamp > Date().addingTimeInterval(-3600) // 1time 
     /// }
     ///
-    /// // 시간순 정렬
+    /// // timepure sort
     /// let sortedFiles = videoFiles.sorted { $0.timestamp < $1.timestamp }
     ///
-    /// // 날짜 표시
-    /// print(videoFile.timestampString)  // "2025. 1. 10. 오전 9:00"
+    /// // date display
+    /// print(videoFile.timestampString)  // "2025. 1. 10. AM 9:00"
     /// ```
     let timestamp: Date
 
     /// @var eventType
-    /// @brief 이벤트 종류 (normal, impact, parking 등)
+    /// @brief Event Type (normal, impact, parking etc)
     ///
     /// Event type (normal, impact, parking, etc.)
     ///
-    /// 이벤트 종류입니다.
+    /// Event Type.
     ///
     /// **EventType enum:**
-    /// - normal: 일반 녹화 (우선순위 1)
-    /// - impact: 충격 이벤트 (우선순위 4)
-    /// - parking: 주차 모드 (우선순위 2)
-    /// - manual: 수동 녹화 (우선순위 3)
-    /// - emergency: 비상 녹화 (우선순위 5)
-    /// - unknown: 알 수 없음 (우선순위 0)
+    /// - normal: Normal recording (priority 1)
+    /// - impact: Impact events (priority 4)
+    /// - parking: Parking mode (priority 2)
+    /// - manual: Manual recording (priority 3)
+    /// - emergency:  recording (priority 5)
+    /// - unknown:  number none (priority 0)
     ///
-    /// **자동 분류:**
-    /// - 파일 경로로 자동 감지
-    /// - "event/" 폴더 → .impact
-    /// - "parking/" 폴더 → .parking
-    /// - "manual/" 폴더 → .manual
+    /// **automatic minute:**
+    /// - File path automatic detection
+    /// - "event/" foldermore → .impact
+    /// - "parking/" foldermore → .parking
+    /// - "manual/" foldermore → .manual
     ///
-    /// **활용:**
-    /// - 파일 분류 및 그룹화
-    /// - 색상 코딩 (빨강: 충격, 초록: 일반)
-    /// - 우선순위 정렬
+    /// **usage:**
+    /// - File minute  
+    /// -   (: impact, second: normal)
+    /// - priority sort
     ///
-    /// **사용 예시:**
+    /// **use example:**
     /// ```swift
-    /// // 충격 이벤트 필터링
+    /// // Impact events filterring
     /// let impactFiles = videoFiles.filter { $0.eventType == .impact }
     ///
-    /// // 우선순위 정렬 (높은 것부터)
+    /// // priority sort (high )
     /// let sortedFiles = videoFiles.sorted { $0.eventType > $1.eventType }
     ///
-    /// // 색상 표시
-    /// let badgeColor = videoFile.eventType.colorHex  // "#F44336" (빨강)
+    /// //  display
+    /// let badgeColor = videoFile.eventType.colorHex  // "#F44336" ()
     /// ```
     let eventType: EventType
 
     /// @var duration
-    /// @brief 비디오 길이 (초)
+    /// @brief video Duration (second)
     ///
     /// Video duration in seconds
     ///
-    /// 비디오 길이입니다. (단위: 초)
+    /// video Duration. (unit: second)
     ///
-    /// **TimeInterval 타입:**
-    /// - Double의 typealias
-    /// - 소수점 포함 가능 (예: 59.5초)
+    /// **TimeInterval type:**
+    /// - Double typealias
+    /// - number include possible (example: 59.5second)
     ///
-    /// **일반적인 녹화 길이:**
-    /// - 1분: 60.0초 (가장 일반적)
-    /// - 3분: 180.0초
-    /// - 5분: 300.0초
-    /// - 충격 이벤트: 30.0초 (전후 포함)
-    /// - 주차 모드: 10.0초 (움직임 감지 시)
+    /// **Commonin recording Duration:**
+    /// - 1 minute: 60.0second ( Common)
+    /// - 3minute: 180.0second
+    /// - 5minute: 300.0second
+    /// - Impact events: 30.0second ( include)
+    /// - Parking mode: 10.0second (ing detection )
     ///
-    /// **모든 채널 동일:**
-    /// - 모든 채널의 duration은 동일
-    /// - 동시에 녹화 시작/종료
+    /// **all channel same:**
+    /// - all channel duration same
+    /// - simultaneously recording start/
     ///
-    /// **포맷팅:**
-    /// - durationString: "1:00" (1분), "1:30" (1분 30초), "1:05:30" (1시간 5분 30초)
+    /// **format:**
+    /// - durationString: "1:00" (1 minute), "1:30" (1 minute 30second), "1:05:30" (1time 5minute 30second)
     ///
-    /// **사용 예시:**
+    /// **use example:**
     /// ```swift
-    /// print("길이: \(videoFile.durationString)")  // "1:00"
+    /// print("Duration: \(videoFile.durationString)")  // "1:00"
     ///
-    /// // 긴 영상 필터링
-    /// let longVideos = videoFiles.filter { $0.duration > 180.0 } // 3분 이상
+    /// //  video filterring
+    /// let longVideos = videoFiles.filter { $0.duration > 180.0 } // 3minute or more
     ///
-    /// // 재생 진행률 계산
+    /// // playback  calculate
     /// let progress = currentTime / videoFile.duration  // 0.0 ~ 1.0
     /// ```
     let duration: TimeInterval
 
     /// @var channels
-    /// @brief 모든 비디오 채널 배열 (1~5채널)
+    /// @brief all video channel array (1~5channel)
     ///
     /// All video channels (front, rear, left, right, interior)
     ///
-    /// 모든 비디오 채널 배열입니다.
+    /// all video channel array.
     ///
-    /// **ChannelInfo 배열:**
-    /// - 1~5개 채널 포함
-    /// - 각 채널은 독립적인 비디오 파일
-    /// - 동일한 timestamp, duration
+    /// **channelInfo array:**
+    /// - 1~5 channel include
+    /// - each channel independentin video file
+    /// - sameone timestamp, duration
     ///
-    /// **채널 수에 따른 분류:**
-    /// - 1채널: 전방만 (기본)
-    /// - 2채널: 전방 + 후방 (일반적)
-    /// - 3채널: 전방 + 후방 + 실내
-    /// - 4채널: 전방 + 후방 + 좌측 + 우측
-    /// - 5채널: 전방 + 후방 + 좌측 + 우측 + 실내
+    /// **channel number  minute:**
+    /// - 1channel: Frontonly (Basic)
+    /// - 2channel: Front + Rear (Common)
+    /// - 3channel: Front + Rear + Interior
+    /// - 4channel: Front + Rear + Left + Right
+    /// - 5channel: Front + Rear + Left + Right + Interior
     ///
-    /// **배열 순서:**
-    /// - 순서는 중요하지 않음
-    /// - 일반적으로 displayPriority 순서 (front, rear, left, right, interior)
+    /// **array purefrom:**
+    /// - purefrom ha not
+    /// - Commonuh displayPriority purefrom (front, rear, left, right, interior)
     ///
-    /// **활용:**
-    /// - 멀티 뷰 재생 (화면 분할)
-    /// - 채널별 재생/숨김 제어
-    /// - 총 파일 크기 계산
+    /// **usage:**
+    /// - multi view playback ( minutedo)
+    /// - channeleach playback/ 
+    /// - total File size calculate
     ///
-    /// **사용 예시:**
+    /// **use example:**
     /// ```swift
-    /// print("채널 수: \(videoFile.channels.count)")
+    /// print("channel number: \(videoFile.channels.count)")
     ///
-    /// // 모든 채널 정보 출력
+    /// // all channel information output
     /// for channel in videoFile.channels {
     ///     print("\(channel.position.displayName): \(channel.resolutionName)")
     /// }
     ///
-    /// // 특정 채널 찾기
-    /// if let frontChannel = videoFile.frontChannel {
-    ///     print("전방: \(frontChannel.fileSizeString)")
+    /// // specific channel 
+    /// if let frontchannel = videoFile.frontchannel {
+    ///     print("Front: \(frontchannel.fileSizeString)")
     /// }
     /// ```
-    let channels: [ChannelInfo]
+    let channels: [channelInfo]
 
     /// @var metadata
-    /// @brief GPS 및 G-센서 메타데이터
+    /// @brief GPS  G-Sensor metadata
     ///
     /// Associated metadata (GPS, G-Sensor)
     ///
-    /// GPS 및 G-센서 메타데이터입니다.
+    /// GPS  G-Sensor metadata.
     ///
-    /// **VideoMetadata 구조:**
-    /// - gpsPoints: [GPSPoint] (GPS 시계열)
-    /// - accelerationData: [AccelerationData] (센서 시계열)
-    /// - deviceInfo: DeviceInfo? (장치 정보)
+    /// **VideoMetadata structure:**
+    /// - gpsPoints: [GPSPoint] (GPS )
+    /// - accelerationData: [AccelerationData] (Sensor )
+    /// - deviceInfo: DeviceInfo? (device information)
     ///
-    /// **메타데이터 크기:**
-    /// - GPS: 1시간당 약 3,600개 포인트 (1Hz)
-    /// - G-센서: 1시간당 약 36,000개 포인트 (10Hz)
-    /// - 메모리: 1시간당 약 2.5 MB
+    /// **metadata size:**
+    /// - GPS: 1time approximately 3,600 points (1Hz)
+    /// - G-Sensor: 1time approximately 36,000 points (10Hz)
+    /// - Notes: 1time approximately 2.5 MB
     ///
-    /// **빈 메타데이터:**
-    /// - GPS/센서 없는 블랙박스
-    /// - 구형 모델
-    /// - metadata = VideoMetadata() (빈 구조체)
+    /// **empty metadata:**
+    /// - GPS/Sensor not blackbox
+    /// - nine model
+    /// - metadata = VideoMetadata() (empty struct)
     ///
-    /// **활용:**
-    /// - 지도에 주행 경로 표시
-    /// - 속도 그래프 표시
-    /// - 충격 이벤트 타임라인 표시
+    /// **usage:**
+    /// -  driving path display
+    /// - speed  display
+    /// - Impact events ingtimeline display
     ///
-    /// **사용 예시:**
+    /// **use example:**
     /// ```swift
-    /// // GPS 데이터 확인
+    /// // GPS data check
     /// if videoFile.hasGPSData {
     ///     let summary = videoFile.metadata.summary
-    ///     print("주행 거리: \(summary.distanceString)")
-    ///     print("평균 속도: \(summary.averageSpeedString ?? "N/A")")
+    ///     print("driving distance: \(summary.distanceString)")
+    ///     print("average speed: \(summary.averageSpeedString ?? "N/A")")
     /// }
     ///
-    /// // 충격 이벤트 확인
+    /// // Impact events check
     /// if videoFile.hasImpactEvents {
     ///     for event in videoFile.metadata.impactEvents {
-    ///         print("충격: \(event.magnitude)G at \(event.timestamp)")
+    ///         print("impact: \(event.magnitude)G at \(event.timestamp)")
     ///     }
     /// }
     /// ```
     let metadata: VideoMetadata
 
     /// @var basePath
-    /// @brief 기본 파일 경로 (채널 접미사 제외)
+    /// @brief Basic File path (channel suffix exclude)
     ///
     /// Base file path (without channel suffix)
     ///
-    /// 기본 파일 경로입니다. (채널 접미사 제외)
+    /// Basic File path. (channel suffix exclude)
     ///
-    /// **basePath 구조:**
-    /// - "폴더/YYYY_MM_DD_HH_MM_SS"
-    /// - 채널별 파일은 _F, _R, _L, _Ri, _I 접미사 추가
+    /// **basePath structure:**
+    /// - "foldermore/YYYY_MM_DD_HH_MM_SS"
+    /// - channeleach File _F, _R, _L, _Ri, _I suffix Add
     ///
-    /// **예시:**
+    /// **example:**
     /// ```
     /// basePath: "normal/2025_01_10_09_00_00"
     ///
-    /// 실제 파일:
-    ///   normal/2025_01_10_09_00_00_F.mp4   (전방)
-    ///   normal/2025_01_10_09_00_00_R.mp4   (후방)
-    ///   normal/2025_01_10_09_00_00_L.mp4   (좌측)
-    ///   normal/2025_01_10_09_00_00_Ri.mp4  (우측)
-    ///   normal/2025_01_10_09_00_00_I.mp4   (실내)
+    ///  File:
+    ///   normal/2025_01_10_09_00_00_F.mp4   (Front)
+    ///   normal/2025_01_10_09_00_00_R.mp4   (Rear)
+    ///   normal/2025_01_10_09_00_00_L.mp4   (Left)
+    ///   normal/2025_01_10_09_00_00_Ri.mp4  (Right)
+    ///   normal/2025_01_10_09_00_00_I.mp4   (Interior)
     /// ```
     ///
-    /// **폴더 구조:**
-    /// - "normal/": 일반 녹화
-    /// - "event/": 충격 이벤트
-    /// - "parking/": 주차 모드
-    /// - "manual/": 수동 녹화
-    /// - "emergency/": 비상 녹화
+    /// **foldermore structure:**
+    /// - "normal/": Normal recording
+    /// - "event/": Impact events
+    /// - "parking/": Parking mode
+    /// - "manual/": Manual recording
+    /// - "emergency/":  recording
     ///
-    /// **활용:**
-    /// - 파일 경로 생성
-    /// - 폴더별 분류
-    /// - 파일 삭제 (모든 채널 동시 삭제)
+    /// **usage:**
+    /// - File path create
+    /// - foldermoreeach minute
+    /// - File  (all channel simultaneously )
     ///
-    /// **사용 예시:**
+    /// **use example:**
     /// ```swift
-    /// // 기본 파일명 추출
+    /// // Basic filename extract
     /// print(videoFile.baseFilename)  // "2025_01_10_09_00_00"
     ///
-    /// // 전체 경로 생성
+    /// // total path create
     /// let frontPath = "\(videoFile.basePath)_F.mp4"
     /// let rearPath = "\(videoFile.basePath)_R.mp4"
     /// ```
     let basePath: String
 
     /// @var isFavorite
-    /// @brief 즐겨찾기 표시 여부
+    /// @brief whether marked as favorite
     ///
     /// Whether this file is marked as favorite
     ///
-    /// 즐겨찾기 표시 여부입니다.
+    /// whether marked as favorite.
     ///
-    /// **즐겨찾기 기능:**
-    /// - 사용자가 중요한 영상 표시
-    /// - 자동 삭제에서 보호
-    /// - 빠른 접근 (즐겨찾기 탭)
+    /// **Favorite :**
+    /// - useer one video display
+    /// - automatic from 
+    /// -  access (Favorite )
     ///
-    /// **활용 시나리오:**
-    /// - 아름다운 풍경
-    /// - 재미있는 순간
-    /// - 사고 영상 (증거)
-    /// - 특별한 순간 (여행, 이벤트)
+    /// **usage :**
+    /// -  
+    /// -  pure
+    /// - accident video ()
+    /// - specialone pure (, event)
     ///
-    /// **불변 업데이트:**
+    /// **Immutable update:**
     /// ```swift
-    /// // 즐겨찾기 추가
+    /// // Favorite Add
     /// let favoriteFile = videoFile.withFavorite(true)
     ///
-    /// // 즐겨찾기 제거
+    /// // Favorite 
     /// let unfavoriteFile = favoriteFile.withFavorite(false)
     /// ```
     ///
-    /// **UI 표시:**
-    /// - 별 아이콘 (★ vs ☆)
-    /// - 노란색 강조
-    /// - 즐겨찾기 배지
+    /// **UI display:**
+    /// - each  (★ vs ☆)
+    /// -  
+    /// - Favorite 
     ///
-    /// **사용 예시:**
+    /// **use example:**
     /// ```swift
-    /// // 즐겨찾기 필터링
+    /// // Favorite filterring
     /// let favorites = videoFiles.filter { $0.isFavorite }
     ///
-    /// // 즐겨찾기 토글
+    /// // Favorite 
     /// let updatedFile = videoFile.withFavorite(!videoFile.isFavorite)
     ///
-    /// // UI 표시
+    /// // UI display
     /// favoriteButton.setImage(
     ///     UIImage(systemName: videoFile.isFavorite ? "star.fill" : "star"),
     ///     for: .normal
@@ -545,40 +545,40 @@ struct VideoFile: Codable, Equatable, Identifiable, Hashable {
     let isFavorite: Bool
 
     /// @var notes
-    /// @brief 사용자 메모/코멘트 (옵셔널)
+    /// @brief useer Notes/ ()
     ///
     /// User-added notes/comments
     ///
-    /// 사용자가 추가한 메모/코멘트입니다.
+    /// useer Addone Notes/.
     ///
-    /// **옵셔널 String:**
-    /// - 메모가 없으면 nil
-    /// - 빈 문자열("")과 nil은 다름
-    /// - nil: 메모 입력 안 함
-    /// - "": 메모 입력했지만 비어있음
+    /// ** String:**
+    /// - Notes notuh nil
+    /// - empty string("")and nil 
+    /// - nil: Notes  not 
+    /// - "": Notes only available
     ///
-    /// **활용 시나리오:**
-    /// - 영상 설명 ("아름다운 석양")
-    /// - 위치 정보 ("서울 명동")
-    /// - 사건 기록 ("급브레이크 차량")
-    /// - 개인 메모 ("나중에 편집")
+    /// **usage :**
+    /// - video description (" ")
+    /// - abovetion information ("from ")
+    /// -  record (" ")
+    /// - itemsin Notes (" ")
     ///
-    /// **최대 길이:**
-    /// - 제한 없음 (UI에서 제한 가능)
-    /// - 일반적으로 200~500자
+    /// **maximum Duration:**
+    /// - one none (UIfrom one possible)
+    /// - Commonuh 200~500er
     ///
-    /// **불변 업데이트:**
+    /// **Immutable update:**
     /// ```swift
-    /// // 메모 추가
+    /// // Notes Add
     /// let notedFile = videoFile.withNotes("Beautiful sunset drive")
     ///
-    /// // 메모 제거
+    /// // Notes 
     /// let clearedFile = notedFile.withNotes(nil)
     /// ```
     ///
-    /// **사용 예시:**
+    /// **use example:**
     /// ```swift
-    /// // 메모 표시
+    /// // Notes display
     /// if let notes = videoFile.notes, !notes.isEmpty {
     ///     notesLabel.text = notes
     ///     notesLabel.isHidden = false
@@ -586,7 +586,7 @@ struct VideoFile: Codable, Equatable, Identifiable, Hashable {
     ///     notesLabel.isHidden = true
     /// }
     ///
-    /// // 메모 검색
+    /// // Notes search
     /// let searchResults = videoFiles.filter { file in
     ///     file.notes?.localizedCaseInsensitiveContains("sunset") ?? false
     /// }
@@ -594,47 +594,47 @@ struct VideoFile: Codable, Equatable, Identifiable, Hashable {
     let notes: String?
 
     /// @var isCorrupted
-    /// @brief 파일 손상 여부
+    /// @brief whether file is corrupted
     ///
     /// File is corrupted or damaged
     ///
-    /// 파일이 손상되었는지 여부입니다.
+    /// File Corrupted status.
     ///
-    /// **손상 원인:**
-    /// - SD 카드 불량 섹터
-    /// - 갑작스러운 전원 차단 (녹화 중)
-    /// - 파일 시스템 손상
-    /// - 코덱 오류
+    /// **corrupted in:**
+    /// - SD card  
+    /// -   only (recording )
+    /// - File  corrupted
+    /// -  
     ///
-    /// **손상 증상:**
-    /// - 재생 불가
-    /// - 메타데이터 파싱 실패
-    /// - 파일 크기 0
+    /// **corrupted :**
+    /// - playback 
+    /// - metadata  
+    /// - File size 0
     /// - duration = 0
     ///
-    /// **손상 파일 처리:**
-    /// - 재생 시도 안 함 (에러 방지)
-    /// - UI에 경고 표시
-    /// - 복구 시도 또는 삭제 권장
+    /// **corrupted File processing:**
+    /// - playback  not  ( )
+    /// - UI  display
+    /// - nine  also  
     ///
     /// **isPlayable vs isCorrupted:**
     /// - isPlayable = isValid && !isCorrupted
-    /// - 둘 다 체크해야 안전한 재생
+    /// -    safeone playback
     ///
-    /// **사용 예시:**
+    /// **use example:**
     /// ```swift
     /// if videoFile.isCorrupted {
-    ///     // 손상 파일 표시
+    ///     // corrupted File display
     ///     thumbnailView.alpha = 0.5
-    ///     warningLabel.text = "⚠️ 손상된 파일"
+    ///     warningLabel.text = "⚠️ corrupteded File"
     ///     warningLabel.isHidden = false
     ///     playButton.isEnabled = false
     /// } else if videoFile.isPlayable {
-    ///     // 정상 재생 가능
+    ///     // normal playback possible
     ///     playButton.isEnabled = true
     /// }
     ///
-    /// // 손상 파일 필터링
+    /// // corrupted File filterring
     /// let healthyFiles = videoFiles.filter { !$0.isCorrupted }
     /// ```
     let isCorrupted: Bool
@@ -646,7 +646,7 @@ struct VideoFile: Codable, Equatable, Identifiable, Hashable {
         timestamp: Date,
         eventType: EventType,
         duration: TimeInterval,
-        channels: [ChannelInfo],
+        channels: [channelInfo],
         metadata: VideoMetadata = VideoMetadata(),
         basePath: String,
         isFavorite: Bool = false,
@@ -665,142 +665,142 @@ struct VideoFile: Codable, Equatable, Identifiable, Hashable {
         self.isCorrupted = isCorrupted
     }
 
-    // MARK: - Channel Access
+    // MARK: - channel Access
 
-    /// @brief 특정 위치의 채널 검색
-    /// @param position 카메라 위치
-    /// @return 채널 정보 또는 nil
+    /// @brief specific abovetion channel search
+    /// @param position camera abovetion
+    /// @return channel information also nil
     ///
     /// Get channel by position
     /// - Parameter position: Camera position
-    /// - Returns: Channel info or nil
+    /// - Returns: channel info or nil
     ///
-    /// 특정 위치의 채널을 찾습니다.
+    /// specific abovetion channel .
     ///
-    /// **검색 알고리즘:**
-    /// - first(where:) 사용
-    /// - 배열을 순회하며 첫 번째 일치 항목 반환
-    /// - 시간 복잡도: O(n), n = channels.count (보통 1~5)
+    /// **search :**
+    /// - first(where:) use
+    /// - array iterateha  th tion  return
+    /// - time : O(n), n = channels.count ( 1~5)
     ///
-    /// **옵셔널 반환:**
-    /// - 채널이 있으면 ChannelInfo 반환
-    /// - 채널이 없으면 nil 반환
+    /// ** return:**
+    /// - channels if available channelInfo return
+    /// - channels notuh nil return
     ///
-    /// **사용 예시:**
+    /// **use example:**
     /// ```swift
-    /// // 전방 카메라 찾기
-    /// if let frontChannel = videoFile.channel(for: .front) {
-    ///     print("전방: \(frontChannel.resolutionName)")
+    /// // Front Camera 
+    /// if let frontchannel = videoFile.channel(for: .front) {
+    ///     print("Front: \(frontchannel.resolutionName)")
     /// } else {
-    ///     print("전방 카메라 없음")
+    ///     print("Front Camera none")
     /// }
     ///
-    /// // 모든 채널 확인
+    /// // all channel check
     /// for position in CameraPosition.allCases {
     ///     if let channel = videoFile.channel(for: position) {
     ///         print("\(position.displayName): \(channel.fileSizeString)")
     ///     }
     /// }
     /// ```
-    func channel(for position: CameraPosition) -> ChannelInfo? {
+    func channel(for position: CameraPosition) -> channelInfo? {
         return channels.first { $0.position == position }
     }
 
-    /// @brief 전방 카메라 채널
-    /// @return 전방 채널 또는 nil
+    /// @brief Front Camera channel
+    /// @return Front channel also nil
     ///
     /// Front camera channel
     ///
-    /// 전방 카메라 채널입니다.
+    /// Front Camera channel.
     ///
-    /// **편의 프로퍼티:**
-    /// - channel(for: .front)의 축약형
-    /// - 가장 자주 사용되는 채널 (전방)
+    /// **convenience property:**
+    /// - channel(for: .front) approximately
+    /// -  er use channel (Front)
     ///
-    /// **사용 예시:**
+    /// **use example:**
     /// ```swift
-    /// if let front = videoFile.frontChannel {
-    ///     print("전방 해상도: \(front.resolutionName)")
+    /// if let front = videoFile.frontchannel {
+    ///     print("Front resolution: \(front.resolutionName)")
     ///     playerView.loadVideo(from: front.filePath)
     /// }
     /// ```
-    var frontChannel: ChannelInfo? {
+    var frontchannel: channelInfo? {
         return channel(for: .front)
     }
 
-    /// @brief 후방 카메라 채널
-    /// @return 후방 채널 또는 nil
+    /// @brief Rear Camera channel
+    /// @return Rear channel also nil
     ///
     /// Rear camera channel
     ///
-    /// 후방 카메라 채널입니다.
+    /// Rear Camera channel.
     ///
-    /// **편의 프로퍼티:**
-    /// - channel(for: .rear)의 축약형
-    /// - 2채널 이상 블랙박스에서 사용
+    /// **convenience property:**
+    /// - channel(for: .rear) approximately
+    /// - 2channel or more blackboxfrom use
     ///
-    /// **사용 예시:**
+    /// **use example:**
     /// ```swift
-    /// if let rear = videoFile.rearChannel {
-    ///     print("후방 해상도: \(rear.resolutionName)")
+    /// if let rear = videoFile.rearchannel {
+    ///     print("Rear resolution: \(rear.resolutionName)")
     ///     rearPlayerView.loadVideo(from: rear.filePath)
     /// }
     /// ```
-    var rearChannel: ChannelInfo? {
+    var rearchannel: channelInfo? {
         return channel(for: .rear)
     }
 
-    /// @brief 특정 채널 존재 여부 확인
-    /// @param position 카메라 위치
-    /// @return 채널이 있으면 true
+    /// @brief specific channel  whether check
+    /// @param position camera abovetion
+    /// @return channels if available true
     ///
     /// Check if specific channel exists
     /// - Parameter position: Camera position
     /// - Returns: True if channel exists
     ///
-    /// 특정 채널이 있는지 확인합니다.
+    /// specific channels exists check.
     ///
-    /// **체크 로직:**
-    /// - channel(for:)가 nil이 아니면 true
-    /// - nil이면 false
+    /// ** :**
+    /// - channel(for:) nil  true
+    /// - nil false
     ///
-    /// **사용 예시:**
+    /// **use example:**
     /// ```swift
-    /// // 채널별 UI 표시/숨김
-    /// rearPlayerView.isHidden = !videoFile.hasChannel(.rear)
-    /// leftPlayerView.isHidden = !videoFile.hasChannel(.left)
-    /// rightPlayerView.isHidden = !videoFile.hasChannel(.right)
+    /// // channeleach UI display/
+    /// rearPlayerView.isHidden = !videoFile.haschannel(.rear)
+    /// leftPlayerView.isHidden = !videoFile.haschannel(.left)
+    /// rightPlayerView.isHidden = !videoFile.haschannel(.right)
     ///
-    /// // 채널 개수 안내
-    /// if videoFile.hasChannel(.rear) {
-    ///     print("2채널 이상 블랙박스")
+    /// // channel count not
+    /// if videoFile.haschannel(.rear) {
+    ///     print("2channel or more blackbox")
     /// } else {
-    ///     print("1채널 블랙박스")
+    ///     print("1channel blackbox")
     /// }
     /// ```
-    func hasChannel(_ position: CameraPosition) -> Bool {
+    func haschannel(_ position: CameraPosition) -> Bool {
         return channel(for: position) != nil
     }
 
-    /// @brief 사용 가능한 채널 개수
-    /// @return 채널 개수 (1~5)
+    /// @brief use possibleone channel count
+    /// @return channel count (1~5)
     ///
     /// Number of available channels
     ///
-    /// 사용 가능한 채널 개수입니다.
+    /// use possibleone channel count.
     ///
-    /// **채널 개수:**
-    /// - 1: 전방만
-    /// - 2: 전방 + 후방 (가장 일반적)
-    /// - 3: 전방 + 후방 + 실내
-    /// - 4: 전방 + 후방 + 좌측 + 우측
-    /// - 5: 전방 + 후방 + 좌측 + 우측 + 실내
+    /// **channel count:**
+    /// - 1: Frontonly
+    /// - 2: Front + Rear ( Common)
+    /// - 3: Front + Rear + Interior
+    /// - 4: Front + Rear + Left + Right
+    /// - 5: Front + Rear + Left + Right + Interior
     ///
-    /// **사용 예시:**
+    /// **use example:**
     /// ```swift
-    /// print("\(videoFile.channelCount)채널 블랙박스")
+    /// print("\(videoFile.channelCount)channel blackbox")
     ///
-    /// // UI 레이아웃 선택
+    /// // UI  
     /// switch videoFile.channelCount {
     /// case 1:
     ///     useSingleViewLayout()
@@ -816,138 +816,138 @@ struct VideoFile: Codable, Equatable, Identifiable, Hashable {
         return channels.count
     }
 
-    /// @brief 활성화된 채널 배열
-    /// @return 활성화된 채널만 포함
+    /// @brief enableded channel array
+    /// @return enableded channelonly include
     ///
     /// Array of enabled channels only
     ///
-    /// 활성화된 채널만 포함하는 배열입니다.
+    /// enableded channelonly includeha array.
     ///
-    /// **필터링:**
-    /// - isEnabled == true인 채널만
-    /// - 사용자가 특정 채널을 숨긴 경우 제외
+    /// **filterring:**
+    /// - isEnabled == truein channelonly
+    /// - useer specific channel   exclude
     ///
-    /// **사용 예시:**
+    /// **use example:**
     /// ```swift
-    /// // 활성화된 채널만 재생
-    /// for channel in videoFile.enabledChannels {
+    /// // enableded channelonly playback
+    /// for channel in videoFile.enabledchannels {
     ///     createPlayerView(for: channel)
     /// }
     ///
-    /// print("\(videoFile.enabledChannels.count)개 채널 활성화")
+    /// print("\(videoFile.enabledchannels.count) channel enabled")
     /// ```
-    var enabledChannels: [ChannelInfo] {
+    var enabledchannels: [channelInfo] {
         return channels.filter { $0.isEnabled }
     }
 
-    /// @brief 멀티 채널 녹화 확인
-    /// @return 2채널 이상이면 true
+    /// @brief multi channel recording check
+    /// @return 2channel or more true
     ///
     /// Check if this is a multi-channel recording
     ///
-    /// 멀티 채널 녹화인지 확인합니다.
+    /// multi channel recordingin check.
     ///
-    /// **멀티 채널 기준:**
-    /// - 2개 이상의 채널
-    /// - 1채널: false (단일 채널)
-    /// - 2채널 이상: true (멀티 채널)
+    /// **multi channel level:**
+    /// - 2 or more channel
+    /// - 1channel: false (only channel)
+    /// - 2channel or more: true (multi channel)
     ///
-    /// **활용:**
-    /// - UI 레이아웃 선택
-    /// - 채널 전환 버튼 표시/숨김
-    /// - 화면 분할 모드 활성화
+    /// **usage:**
+    /// - UI  
+    /// - channel   display/
+    /// -  minutedo mode enabled
     ///
-    /// **사용 예시:**
+    /// **use example:**
     /// ```swift
-    /// if videoFile.isMultiChannel {
-    ///     // 채널 전환 버튼 표시
+    /// if videoFile.isMultichannel {
+    ///     // channel   display
     ///     channelSwitchButton.isHidden = false
     ///
-    ///     // 화면 분할 옵션 활성화
+    ///     //  minutedo  enabled
     ///     splitViewButton.isEnabled = true
     /// } else {
-    ///     // 단일 채널 모드
+    ///     // only channel mode
     ///     channelSwitchButton.isHidden = true
     ///     splitViewButton.isEnabled = false
     /// }
     /// ```
-    var isMultiChannel: Bool {
+    var isMultichannel: Bool {
         return channels.count > 1
     }
 
     // MARK: - File Properties
 
-    /// @brief 모든 채널 파일의 총 크기
-    /// @return 총 파일 크기 (bytes)
+    /// @brief all channel File total size
+    /// @return total File size (bytes)
     ///
     /// Total size of all channel files
     ///
-    /// 모든 채널 파일의 총 크기입니다. (단위: bytes)
+    /// all channel File total size. (unit: bytes)
     ///
-    /// **집계 연산:**
-    /// - reduce 사용하여 모든 채널의 fileSize 합산
-    /// - 초기값: 0
-    /// - 누적 연산: $0 + $1.fileSize
+    /// ** operation:**
+    /// - reduce useha all channel fileSize sum
+    /// - initialvalue: 0
+    /// -  operation: $0 + $1.fileSize
     ///
-    /// **reduce 동작 원리:**
+    /// **reduce operation :**
     /// ```swift
     /// channels.reduce(0) { $0 + $1.fileSize }
     ///
-    /// // 단계별 계산 (2채널 예시):
-    /// 초기: result = 0
-    /// 1단계: result = 0 + frontChannel.fileSize (100 MB)
+    /// // stepeach calculate (2channel example):
+    /// initial: result = 0
+    /// 1step: result = 0 + frontchannel.fileSize (100 MB)
     ///        result = 100 MB
-    /// 2단계: result = 100 MB + rearChannel.fileSize (50 MB)
+    /// 2step: result = 100 MB + rearchannel.fileSize (50 MB)
     ///        result = 150 MB
-    /// 최종: 150 MB
+    /// final: 150 MB
     /// ```
     ///
-    /// **예상 크기:**
-    /// - 1채널: 60~100 MB (1분 Full HD)
-    /// - 2채널: 100~150 MB
-    /// - 5채널: 200~300 MB
+    /// **example size:**
+    /// - 1channel: 60~100 MB (1 minute Full HD)
+    /// - 2channel: 100~150 MB
+    /// - 5channel: 200~300 MB
     ///
-    /// **사용 예시:**
+    /// **use example:**
     /// ```swift
     /// let totalSize = videoFile.totalFileSize
-    /// print("총 크기: \(totalSize) bytes")
+    /// print("total size: \(totalSize) bytes")
     ///
-    /// // 포맷된 문자열
-    /// print("총 크기: \(videoFile.totalFileSizeString)")  // "150 MB"
+    /// // formated string
+    /// print("total size: \(videoFile.totalFileSizeString)")  // "150 MB"
     ///
-    /// // 저장 공간 체크
+    /// // storage  
     /// if videoFile.totalFileSize > 500_000_000 {  // 500 MB
-    ///     print("⚠️ 대용량 파일")
+    ///     print("⚠️  File")
     /// }
     /// ```
     var totalFileSize: UInt64 {
-        // reduce로 모든 채널의 fileSize 합산
+        // reduce all channel fileSize sum
         return channels.reduce(0) { $0 + $1.fileSize }
     }
 
-    /// @brief 총 파일 크기 문자열
-    /// @return "XXX MB" 또는 "X.X GB" 형식
+    /// @brief total File size string
+    /// @return "XXX MB" also "X.X GB" format
     ///
     /// Total file size as human-readable string
     ///
-    /// 총 파일 크기를 읽기 쉬운 문자열로 반환합니다.
+    /// total File size   string return.
     ///
     /// **ByteCountFormatter:**
-    /// - Foundation의 표준 파일 크기 포맷터
-    /// - 자동으로 적절한 단위 선택
-    /// - 1024 기반 (이진)
+    /// - Foundation level File size format
+    /// - automaticuh one unit 
+    /// - 1024 half ()
     ///
-    /// **포맷 예시:**
+    /// **format example:**
     /// ```
     /// 1,048,576 bytes     → "1 MB"
     /// 157,286,400 bytes   → "150 MB"
     /// 1,073,741,824 bytes → "1 GB"
     /// ```
     ///
-    /// **사용 예시:**
+    /// **use example:**
     /// ```swift
-    /// fileSizeLabel.text = "크기: \(videoFile.totalFileSizeString)"
-    /// // 출력: "크기: 150 MB"
+    /// fileSizeLabel.text = "size: \(videoFile.totalFileSizeString)"
+    /// // output: "size: 150 MB"
     /// ```
     var totalFileSizeString: String {
         let formatter = ByteCountFormatter()
@@ -955,106 +955,106 @@ struct VideoFile: Codable, Equatable, Identifiable, Hashable {
         return formatter.string(fromByteCount: Int64(totalFileSize))
     }
 
-    /// @brief 기본 파일명 (basePath에서 추출)
-    /// @return 파일명 (YYYY_MM_DD_HH_MM_SS)
+    /// @brief Basic filename (basePathfrom extract)
+    /// @return filename (YYYY_MM_DD_HH_MM_SS)
     ///
     /// Base filename (extracted from basePath)
     ///
-    /// 기본 파일명입니다. (basePath에서 추출)
+    /// Basic filename. (basePathfrom extract)
     ///
-    /// **추출 방법:**
-    /// - lastPathComponent: 경로의 마지막 부분
+    /// **extract :**
+    /// - lastPathComponent: path  portion
     /// - "normal/2025_01_10_09_00_00" → "2025_01_10_09_00_00"
     ///
-    /// **파일명 형식:**
+    /// **filename format:**
     /// - YYYY_MM_DD_HH_MM_SS
-    /// - 예: 2025_01_10_09_00_00 (2025년 1월 10일 09:00:00)
+    /// - example: 2025_01_10_09_00_00 (2025-01-10 09:00:00)
     ///
-    /// **사용 예시:**
+    /// **use example:**
     /// ```swift
     /// print(videoFile.baseFilename)  // "2025_01_10_09_00_00"
     ///
-    /// // 파일 검색
+    /// // File search
     /// let searchTerm = "2025_01_10"
     /// if videoFile.baseFilename.contains(searchTerm) {
-    ///     print("2025년 1월 10일 녹화 파일")
+    ///     print("2025-01-10 recording File")
     /// }
     /// ```
     var baseFilename: String {
         return (basePath as NSString).lastPathComponent
     }
 
-    /// @brief 길이 문자열 (HH:MM:SS)
-    /// @return "H:MM:SS" 또는 "M:SS" 형식
+    /// @brief Duration string (HH:MM:SS)
+    /// @return "H:MM:SS" also "M:SS" format
     ///
     /// Duration as formatted string (HH:MM:SS)
     ///
-    /// 길이를 HH:MM:SS 형식의 문자열로 반환합니다.
+    /// Duration HH:MM:SS format string return.
     ///
-    /// **포맷 규칙:**
-    /// - 1시간 이상: "H:MM:SS" (예: "1:05:30")
-    /// - 1시간 미만: "M:SS" (예: "1:30")
+    /// **format :**
+    /// - 1time or more: "H:MM:SS" (example: "1:05:30")
+    /// - 1time less than: "M:SS" (example: "1:30")
     ///
-    /// **계산 과정:**
+    /// **calculate anding:**
     /// ```swift
-    /// duration = 3665초 (1시간 1분 5초)
+    /// duration = 3665second (1time 1 minute 5second)
     ///
     /// hours = 3665 / 3600 = 1
     /// minutes = (3665 % 3600) / 60 = 1065 / 60 = 17
     /// seconds = 3665 % 60 = 45
     ///
-    /// 결과: "1:17:45"
+    /// and: "1:17:45"
     /// ```
     ///
-    /// **포맷 문자열:**
-    /// - %d: 정수 (시간, 분)
-    /// - %02d: 2자리 정수, 앞에 0 패딩 (분, 초)
-    /// - 예: minutes=5 → "%02d" → "05"
+    /// **format string:**
+    /// - %d: ingnumber (time, minute)
+    /// - %02d: 2er ingnumber,  0  (minute, second)
+    /// - example: minutes=5 → "%02d" → "05"
     ///
-    /// **사용 예시:**
+    /// **use example:**
     /// ```swift
     /// durationLabel.text = videoFile.durationString
-    /// // 출력: "1:00" (1분) 또는 "1:05:30" (1시간 5분 30초)
+    /// // output: "1:00" (1 minute) also "1:05:30" (1time 5minute 30second)
     ///
-    /// // 남은 시간 표시
+    /// //  time display
     /// let remaining = duration - currentTime
     /// let remainingString = formatDuration(remaining)
     /// ```
     var durationString: String {
-        // 시간, 분, 초 계산
+        // time, minute, second calculate
         let hours = Int(duration) / 3600
         let minutes = (Int(duration) % 3600) / 60
         let seconds = Int(duration) % 60
 
-        // 1시간 이상: "H:MM:SS"
+        // 1time or more: "H:MM:SS"
         if hours > 0 {
             return String(format: "%d:%02d:%02d", hours, minutes, seconds)
-            // 1시간 미만: "M:SS"
+            // 1time less than: "M:SS"
         } else {
             return String(format: "%d:%02d", minutes, seconds)
         }
     }
 
-    /// @brief 타임스탬프 문자열 (날짜+시간)
-    /// @return 날짜와 시간 포맷된 문자열
+    /// @brief timestamp string (date+time)
+    /// @return date time formated string
     ///
     /// Timestamp as formatted string
     ///
-    /// 타임스탬프를 날짜+시간 형식의 문자열로 반환합니다.
+    /// timestamp date+time format string return.
     ///
     /// **DateFormatter:**
-    /// - dateStyle: .medium (예: "2025. 1. 10.")
-    /// - timeStyle: .medium (예: "오전 9:00:00")
+    /// - dateStyle: .medium (example: "2025. 1. 10.")
+    /// - timeStyle: .medium (example: "AM 9:00:00")
     ///
-    /// **로케일:**
-    /// - 시스템 로케일 사용
-    /// - 한국: "2025. 1. 10. 오전 9:00:00"
-    /// - 미국: "Jan 10, 2025 at 9:00:00 AM"
+    /// **:**
+    /// -   use
+    /// - one: "2025. 1. 10. AM 9:00:00"
+    /// - : "Jan 10, 2025 at 9:00:00 AM"
     ///
-    /// **사용 예시:**
+    /// **use example:**
     /// ```swift
     /// timestampLabel.text = videoFile.timestampString
-    /// // 출력: "2025. 1. 10. 오전 9:00:00"
+    /// // output: "2025. 1. 10. AM 9:00:00"
     /// ```
     var timestampString: String {
         let formatter = DateFormatter()
@@ -1063,23 +1063,23 @@ struct VideoFile: Codable, Equatable, Identifiable, Hashable {
         return formatter.string(from: timestamp)
     }
 
-    /// @brief 날짜 문자열 (날짜만)
-    /// @return 날짜 포맷된 문자열
+    /// @brief date string (dateonly)
+    /// @return date formated string
     ///
     /// Short timestamp (date only)
     ///
-    /// 날짜만 포함하는 짧은 타임스탬프입니다.
+    /// dateonly includeha short timestamp.
     ///
     /// **DateFormatter:**
-    /// - dateStyle: .medium (예: "2025. 1. 10.")
-    /// - timeStyle: .none (시간 제외)
+    /// - dateStyle: .medium (example: "2025. 1. 10.")
+    /// - timeStyle: .none (time exclude)
     ///
-    /// **사용 예시:**
+    /// **use example:**
     /// ```swift
     /// dateLabel.text = videoFile.dateString
-    /// // 출력: "2025. 1. 10."
+    /// // output: "2025. 1. 10."
     ///
-    /// // 날짜별 그룹화
+    /// // dateeach 
     /// let grouped = Dictionary(grouping: videoFiles) { $0.dateString }
     /// ```
     var dateString: String {
@@ -1089,23 +1089,23 @@ struct VideoFile: Codable, Equatable, Identifiable, Hashable {
         return formatter.string(from: timestamp)
     }
 
-    /// @brief 시간 문자열 (시간만)
-    /// @return 시간 포맷된 문자열
+    /// @brief time string (timeonly)
+    /// @return time formated string
     ///
     /// Short timestamp (time only)
     ///
-    /// 시간만 포함하는 짧은 타임스탬프입니다.
+    /// timeonly includeha short timestamp.
     ///
     /// **DateFormatter:**
-    /// - dateStyle: .none (날짜 제외)
-    /// - timeStyle: .short (예: "오전 9:00")
+    /// - dateStyle: .none (date exclude)
+    /// - timeStyle: .short (example: "AM 9:00")
     ///
-    /// **사용 예시:**
+    /// **use example:**
     /// ```swift
     /// timeLabel.text = videoFile.timeString
-    /// // 출력: "오전 9:00"
+    /// // output: "AM 9:00"
     ///
-    /// // 같은 날짜 파일의 시간 표시
+    /// //  date File time display
     /// for file in todayFiles {
     ///     print("\(file.timeString): \(file.eventType.displayName)")
     /// }
@@ -1119,18 +1119,18 @@ struct VideoFile: Codable, Equatable, Identifiable, Hashable {
 
     // MARK: - Metadata Access
 
-    /// @brief GPS 데이터 유무 확인
-    /// @return GPS 데이터가 있으면 true
+    /// @brief GPS data availability check
+    /// @return GPS data if available true
     ///
     /// Check if video has GPS data
     ///
-    /// GPS 데이터가 있는지 확인합니다.
+    /// GPS data exists check.
     ///
-    /// **위임 패턴:**
-    /// - metadata.hasGPSData로 위임
-    /// - VideoFile이 직접 구현하지 않고 VideoMetadata에 위임
+    /// **aboveing pattern:**
+    /// - metadata.hasGPSData aboveing
+    /// - VideoFile  implementationha  VideoMetadata aboveing
     ///
-    /// **사용 예시:**
+    /// **use example:**
     /// ```swift
     /// if videoFile.hasGPSData {
     ///     showMapView()
@@ -1140,17 +1140,17 @@ struct VideoFile: Codable, Equatable, Identifiable, Hashable {
         return metadata.hasGPSData
     }
 
-    /// @brief G-센서 데이터 유무 확인
-    /// @return G-센서 데이터가 있으면 true
+    /// @brief G-sensor data availability check
+    /// @return G-sensor data if available true
     ///
     /// Check if video has G-Sensor data
     ///
-    /// G-센서 데이터가 있는지 확인합니다.
+    /// G-sensor data exists check.
     ///
-    /// **위임 패턴:**
-    /// - metadata.hasAccelerationData로 위임
+    /// **aboveing pattern:**
+    /// - metadata.hasAccelerationData aboveing
     ///
-    /// **사용 예시:**
+    /// **use example:**
     /// ```swift
     /// if videoFile.hasAccelerationData {
     ///     showGForceGraph()
@@ -1160,18 +1160,18 @@ struct VideoFile: Codable, Equatable, Identifiable, Hashable {
         return metadata.hasAccelerationData
     }
 
-    /// @brief 충격 이벤트 존재 여부 확인
-    /// @return 충격 이벤트가 있으면 true
+    /// @brief Impact events  whether check
+    /// @return Impact events if available true
     ///
     /// Check if video contains impact events
     ///
-    /// 충격 이벤트가 있는지 확인합니다.
+    /// Impact events exists check.
     ///
-    /// **위임 패턴:**
-    /// - metadata.hasImpactEvents로 위임
-    /// - 2.5G 이상의 충격이 하나라도 있으면 true
+    /// **aboveing pattern:**
+    /// - metadata.hasImpactEvents aboveing
+    /// - 2.5G or more impact one if available true
     ///
-    /// **사용 예시:**
+    /// **use example:**
     /// ```swift
     /// if videoFile.hasImpactEvents {
     ///     warningBadge.isHidden = false
@@ -1182,21 +1182,21 @@ struct VideoFile: Codable, Equatable, Identifiable, Hashable {
         return metadata.hasImpactEvents
     }
 
-    /// @brief 감지된 충격 이벤트 개수
-    /// @return 충격 이벤트 개수
+    /// @brief detectioned Impact events count
+    /// @return Impact events count
     ///
     /// Number of impact events detected
     ///
-    /// 감지된 충격 이벤트 개수입니다.
+    /// detectioned Impact events count.
     ///
-    /// **위임 패턴:**
-    /// - metadata.impactEvents.count로 위임
-    /// - 2.5G 이상의 충격 개수
+    /// **aboveing pattern:**
+    /// - metadata.impactEvents.count aboveing
+    /// - 2.5G or more impact count
     ///
-    /// **사용 예시:**
+    /// **use example:**
     /// ```swift
     /// if videoFile.impactEventCount > 0 {
-    ///     impactLabel.text = "충격 \(videoFile.impactEventCount)회"
+    ///     impactLabel.text = "impact \(videoFile.impactEventCount)times"
     /// }
     /// ```
     var impactEventCount: Int {
@@ -1205,72 +1205,72 @@ struct VideoFile: Codable, Equatable, Identifiable, Hashable {
 
     // MARK: - Validation
 
-    /// @brief 비디오 파일 유효성 검증
-    /// @return 최소 1개 채널이 있고 모든 채널이 유효하면 true
+    /// @brief video file valid validation
+    /// @return minimum 1 channels  all channels validha true
     ///
     /// Check if video file is valid (has at least one channel)
     ///
-    /// 비디오 파일이 유효한지 확인합니다.
+    /// video file validone check.
     ///
-    /// **유효성 조건:**
-    /// 1. channels.isEmpty == false (채널이 하나 이상)
-    /// 2. channels.allSatisfy { $0.isValid } (모든 채널이 유효)
+    /// **valid condition:**
+    /// 1. channels.isEmpty == false (channels one or more)
+    /// 2. channels.allSatisfy { $0.isValid } (all channels valid)
     ///
-    /// **allSatisfy 메서드:**
-    /// - 배열의 모든 요소가 조건을 만족하면 true
-    /// - 하나라도 실패하면 false
-    /// - 빈 배열은 true 반환 (vacuous truth)
+    /// **allSatisfy method:**
+    /// - array all  condition onlyha true
+    /// - one ha false
+    /// - empty array true return (vacuous truth)
     ///
-    /// **논리 AND (&&):**
-    /// - 두 조건 모두 true여야 true
-    /// - 채널이 있고 + 모든 채널이 유효
+    /// ** AND (&&):**
+    /// -  condition  true true
+    /// - channels  + all channels valid
     ///
-    /// **사용 예시:**
+    /// **use example:**
     /// ```swift
     /// if videoFile.isValid {
-    ///     // 유효한 파일
+    ///     // validone File
     ///     enablePlayButton()
     /// } else {
-    ///     // 잘못된 파일
-    ///     showError("파일이 유효하지 않습니다")
+    ///     // ed File
+    ///     showError("File validha ")
     /// }
     ///
-    /// // 유효한 파일만 필터링
+    /// // validone Fileonly filterring
     /// let validFiles = videoFiles.filter { $0.isValid }
     /// ```
     var isValid: Bool {
         return !channels.isEmpty && channels.allSatisfy { $0.isValid }
     }
 
-    /// @brief 비디오 재생 가능 여부 확인
-    /// @return 유효하고 손상되지 않았으면 true
+    /// @brief video playback possible whether check
+    /// @return validha corrupted uh true
     ///
     /// Check if video is playable (valid and not corrupted)
     ///
-    /// 비디오가 재생 가능한지 확인합니다.
+    /// video playback possibleone check.
     ///
-    /// **재생 가능 조건:**
-    /// 1. isValid == true (유효한 파일)
-    /// 2. isCorrupted == false (손상되지 않음)
+    /// **playback possible condition:**
+    /// 1. isValid == true (validone File)
+    /// 2. isCorrupted == false (corrupted not)
     ///
-    /// **논리 AND (&&):**
-    /// - 둘 다 true여야 재생 가능
-    /// - 유효하지만 손상된 파일: 재생 불가
-    /// - 유효하고 손상 안 됨: 재생 가능 ✓
+    /// ** AND (&&):**
+    /// -   true playback possible
+    /// - validhaonly corrupteded File: playback 
+    /// - validha corrupted not ed: playback possible ✓
     ///
-    /// **사용 예시:**
+    /// **use example:**
     /// ```swift
     /// playButton.isEnabled = videoFile.isPlayable
     ///
     /// if !videoFile.isPlayable {
     ///     if !videoFile.isValid {
-    ///         showError("파일이 유효하지 않습니다")
+    ///         showError("File validha ")
     ///     } else if videoFile.isCorrupted {
-    ///         showError("파일이 손상되었습니다")
+    ///         showError("File corrupted")
     ///     }
     /// }
     ///
-    /// // 재생 가능한 파일만 필터링
+    /// // playback possibleone Fileonly filterring
     /// let playableFiles = videoFiles.filter { $0.isPlayable }
     /// ```
     var isPlayable: Bool {
@@ -1279,54 +1279,54 @@ struct VideoFile: Codable, Equatable, Identifiable, Hashable {
 
     // MARK: - Mutations (return new instance)
 
-    /// @brief 즐겨찾기 상태 변경 (불변 업데이트)
-    /// @param isFavorite 새 즐겨찾기 상태
-    /// @return 새 VideoFile 인스턴스
+    /// @brief Favorite status change (Immutable update)
+    /// @param isFavorite new Favorite status
+    /// @return new VideoFile instance
     ///
     /// Create a copy with updated favorite status
     /// - Parameter isFavorite: New favorite status
     /// - Returns: New VideoFile instance
     ///
-    /// 즐겨찾기 상태를 변경한 새 인스턴스를 생성합니다.
+    /// Favorite status changeone new instance create.
     ///
-    /// **불변 업데이트 패턴:**
-    /// - struct는 불변 (immutable)
-    /// - 기존 인스턴스를 수정하는 대신 새 인스턴스 생성
-    /// - 원본은 변경되지 않음
+    /// **Immutable update pattern:**
+    /// - struct immutable (immutable)
+    /// - existing instance numberingha  new instance create
+    /// - original change not
     ///
-    /// **왜 불변인가?**
-    /// 1. 스레드 안전 (Thread safety)
-    /// 2. 예측 가능성 (Predictability)
-    /// 3. SwiftUI 호환성 (State management)
+    /// ** immutablein?**
+    /// 1. thread safe (Thread safety)
+    /// 2. prediction possibility (Predictability)
+    /// 3. SwiftUI  (State management)
     ///
-    /// **동작 원리:**
+    /// **operation :**
     /// ```swift
     /// let file1 = VideoFile(..., isFavorite: false)
     /// let file2 = file1.withFavorite(true)
     ///
-    /// file1.isFavorite  // false (변경 안 됨)
-    /// file2.isFavorite  // true  (새 인스턴스)
+    /// file1.isFavorite  // false (change not ed)
+    /// file2.isFavorite  // true  (new instance)
     /// ```
     ///
-    /// **SwiftUI 통합:**
+    /// **SwiftUI integration:**
     /// ```swift
     /// @State private var videoFile: VideoFile = ...
     ///
     /// Button("Toggle Favorite") {
-    ///     // SwiftUI가 자동으로 뷰 업데이트
+    ///     // SwiftUI automaticuh view update
     ///     videoFile = videoFile.withFavorite(!videoFile.isFavorite)
     /// }
     /// ```
     ///
-    /// **사용 예시:**
+    /// **use example:**
     /// ```swift
-    /// // 즐겨찾기 추가
+    /// // Favorite Add
     /// let favoriteFile = videoFile.withFavorite(true)
     ///
-    /// // 즐겨찾기 토글
+    /// // Favorite 
     /// let toggled = videoFile.withFavorite(!videoFile.isFavorite)
     ///
-    /// // 배열에서 업데이트
+    /// // arrayfrom update
     /// videoFiles[index] = videoFiles[index].withFavorite(true)
     /// ```
     func withFavorite(_ isFavorite: Bool) -> VideoFile {
@@ -1344,32 +1344,32 @@ struct VideoFile: Codable, Equatable, Identifiable, Hashable {
         )
     }
 
-    /// @brief 메모 변경 (불변 업데이트)
-    /// @param notes 새 메모 텍스트
-    /// @return 새 VideoFile 인스턴스
+    /// @brief Notes change (Immutable update)
+    /// @param notes new Notes 
+    /// @return new VideoFile instance
     ///
     /// Create a copy with updated notes
     /// - Parameter notes: New notes text
     /// - Returns: New VideoFile instance
     ///
-    /// 메모를 변경한 새 인스턴스를 생성합니다.
+    /// Notes changeone new instance create.
     ///
-    /// **불변 업데이트 패턴:**
-    /// - withFavorite(_:)와 동일한 패턴
-    /// - 메모만 변경, 나머지는 유지
+    /// **Immutable update pattern:**
+    /// - withFavorite(_:) sameone pattern
+    /// - Notesonly change,  
     ///
-    /// **사용 예시:**
+    /// **use example:**
     /// ```swift
-    /// // 메모 추가
+    /// // Notes Add
     /// let notedFile = videoFile.withNotes("Beautiful sunset")
     ///
-    /// // 메모 수정
+    /// // Notes numbering
     /// let updatedFile = videoFile.withNotes("Updated: Beautiful sunset drive")
     ///
-    /// // 메모 제거
+    /// // Notes 
     /// let clearedFile = videoFile.withNotes(nil)
     ///
-    /// // 사용자 입력 반영
+    /// // useer  half
     /// let newFile = videoFile.withNotes(notesTextField.text)
     /// ```
     func withNotes(_ notes: String?) -> VideoFile {
@@ -1387,10 +1387,10 @@ struct VideoFile: Codable, Equatable, Identifiable, Hashable {
         )
     }
 
-    /// @brief 채널 활성화 상태 변경 (불변 업데이트)
-    /// @param position 카메라 위치
-    /// @param enabled 새 활성화 상태
-    /// @return 새 VideoFile 인스턴스
+    /// @brief channel enabled status change (Immutable update)
+    /// @param position camera abovetion
+    /// @param enabled new enabled status
+    /// @return new VideoFile instance
     ///
     /// Create a copy with enabled/disabled channel
     /// - Parameters:
@@ -1398,55 +1398,55 @@ struct VideoFile: Codable, Equatable, Identifiable, Hashable {
     ///   - enabled: New enabled status
     /// - Returns: New VideoFile instance
     ///
-    /// 특정 채널의 활성화 상태를 변경한 새 인스턴스를 생성합니다.
+    /// specific channel enabled status changeone new instance create.
     ///
-    /// **복잡한 업데이트:**
-    /// - 중첩된 구조 업데이트 (channels 배열 내부)
-    /// - 특정 채널만 수정, 나머지는 유지
+    /// **one update:**
+    /// - ed structure update (channels array )
+    /// - specific channelonly numbering,  
     ///
-    /// **알고리즘:**
-    /// 1. channels 배열을 map으로 순회
-    /// 2. 해당 position의 채널 찾기
-    /// 3. 해당 채널만 새 ChannelInfo 생성 (isEnabled 변경)
-    /// 4. 나머지 채널은 그대로 반환
-    /// 5. 업데이트된 channels로 새 VideoFile 생성
+    /// **:**
+    /// 1. channels array mapuh iterate
+    /// 2. corresponding position channel 
+    /// 3. corresponding channelonly new channelInfo create (isEnabled change)
+    /// 4.  channel  return
+    /// 5. updateed channels new VideoFile create
     ///
-    /// **map 동작:**
+    /// **map operation:**
     /// ```swift
-    /// channels.map { channel -> ChannelInfo in
+    /// channels.map { channel -> channelInfo in
     ///     if channel.position == position {
-    ///         // 이 채널만 수정
-    ///         return ChannelInfo(..., isEnabled: enabled)
+    ///         //  channelonly numbering
+    ///         return channelInfo(..., isEnabled: enabled)
     ///     }
-    ///     // 나머지는 그대로
+    ///     //  
     ///     return channel
     /// }
     /// ```
     ///
-    /// **사용 예시:**
+    /// **use example:**
     /// ```swift
-    /// // 후방 카메라 숨기기
-    /// let hiddenRear = videoFile.withChannel(.rear, enabled: false)
+    /// // Rear Camera 
+    /// let hiddenRear = videoFile.withchannel(.rear, enabled: false)
     ///
-    /// // 실내 카메라 표시
-    /// let shownInterior = videoFile.withChannel(.interior, enabled: true)
+    /// // Interior camera display
+    /// let shownInterior = videoFile.withchannel(.interior, enabled: true)
     ///
-    /// // 채널 토글
-    /// if let rear = videoFile.rearChannel {
-    ///     let toggled = videoFile.withChannel(.rear, enabled: !rear.isEnabled)
+    /// // channel 
+    /// if let rear = videoFile.rearchannel {
+    ///     let toggled = videoFile.withchannel(.rear, enabled: !rear.isEnabled)
     /// }
     ///
-    /// // UI 버튼 핸들러
+    /// // UI  
     /// @objc func toggleRearCamera() {
-    ///     videoFile = videoFile.withChannel(.rear, enabled: !videoFile.rearChannel!.isEnabled)
+    ///     videoFile = videoFile.withchannel(.rear, enabled: !videoFile.rearchannel!.isEnabled)
     /// }
     /// ```
-    func withChannel(_ position: CameraPosition, enabled: Bool) -> VideoFile {
-        // 채널 배열을 순회하며 특정 채널만 수정
-        let updatedChannels = channels.map { channel -> ChannelInfo in
+    func withchannel(_ position: CameraPosition, enabled: Bool) -> VideoFile {
+        // channel array iterateha specific channelonly numbering
+        let updatedchannels = channels.map { channel -> channelInfo in
             if channel.position == position {
-                // 해당 채널: isEnabled만 변경한 새 인스턴스 생성
-                return ChannelInfo(
+                // corresponding channel: isEnabledonly changeone new instance create
+                return channelInfo(
                     id: channel.id,
                     position: channel.position,
                     filePath: channel.filePath,
@@ -1460,17 +1460,17 @@ struct VideoFile: Codable, Equatable, Identifiable, Hashable {
                     fileSize: channel.fileSize
                 )
             }
-            // 다른 채널: 그대로 반환
+            // other channel:  return
             return channel
         }
 
-        // 업데이트된 channels로 새 VideoFile 생성
+        // updateed channels new VideoFile create
         return VideoFile(
             id: id,
             timestamp: timestamp,
             eventType: eventType,
             duration: duration,
-            channels: updatedChannels,
+            channels: updatedchannels,
             metadata: metadata,
             basePath: basePath,
             isFavorite: isFavorite,
@@ -1484,56 +1484,56 @@ struct VideoFile: Codable, Equatable, Identifiable, Hashable {
 
 /*
  ───────────────────────────────────────────────────────────────────────────────
- Sample Data - 샘플 비디오 파일 데이터
+ Sample Data - Sample video file data
  ───────────────────────────────────────────────────────────────────────────────
 
- 테스트, SwiftUI 프리뷰, 개발 중 UI 확인을 위한 샘플 데이터입니다.
+ test, SwiftUI view,   UI check aboveone Sample data.
 
- 【일반 샘플】
+ 【normal Sample】
 
- 1. normal5Channel: 5채널 일반 녹화
- - 모든 채널 포함 (전방, 후방, 좌측, 우측, 실내)
- - 완전한 메타데이터 (GPS + G-센서)
- - 5채널 블랙박스 테스트용
+ 1. normal5channel: 5channel Normal recording
+ - all channel include (Front, Rear, Left, Right, Interior)
+ - complete metadata (GPS + G-Sensor)
+ - 5channel blackbox test
 
- 2. impact2Channel: 2채널 충격 이벤트
- - 전방 + 후방
- - 충격 메타데이터 포함
- - 사고 영상 시뮬레이션
+ 2. impact2channel: 2channel Impact events
+ - Front + Rear
+ - impact metadata include
+ - accident video simulation
 
- 3. parking1Channel: 1채널 주차 모드
- - 전방만
- - GPS만 (센서 없음)
- - 주차 모드 테스트
+ 3. parking1channel: 1channel Parking mode
+ - Frontonly
+ - GPSonly (Sensor none)
+ - Parking mode test
 
- 4. favoriteRecording: 즐겨찾기 녹화
+ 4. favoriteRecording: Favorite recording
  - isFavorite = true
- - notes 포함
- - 사용자 기능 테스트
+ - notes include
+ - useer  test
 
- 5. corruptedFile: 손상된 파일
+ 5. corruptedFile: corrupteded File
  - isCorrupted = true
- - 빈 메타데이터
- - 에러 처리 테스트
+ - empty metadata
+ -  processing test
 
- 【실제 테스트 파일】
+ 【 test File】
 
- 실제 비디오 파일을 사용하는 테스트 데이터:
- - comma2k19Test: Comma.ai 자율주행 데이터셋 (48초)
- - test360p, test720p, test1080p: 다양한 해상도 테스트
- - multiChannel4Test: 4채널 멀티뷰 테스트
+  video file useha test data:
+ - comma2k19Test: Comma.ai erdriving data (48second)
+ - test360p, test720p, test1080p: one resolution test
+ - multichannel4Test: 4channel multiview test
 
- 【사용 예시】
+ 【Usage Example】
 
- SwiftUI 프리뷰:
+ SwiftUI view:
  ```swift
  struct VideoFileView_Previews: PreviewProvider {
  static var previews: some View {
  Group {
- VideoFileView(file: .normal5Channel)
- .previewDisplayName("5 Channels")
+ VideoFileView(file: .normal5channel)
+ .previewDisplayName("5 channels")
 
- VideoFileView(file: .impact2Channel)
+ VideoFileView(file: .impact2channel)
  .previewDisplayName("Impact Event")
 
  VideoFileView(file: .corruptedFile)
@@ -1543,17 +1543,17 @@ struct VideoFile: Codable, Equatable, Identifiable, Hashable {
  }
  ```
 
- 단위 테스트:
+ unit test:
  ```swift
- func testMultiChannel() {
- let file = VideoFile.normal5Channel
+ func testMultichannel() {
+ let file = VideoFile.normal5channel
  XCTAssertEqual(file.channelCount, 5)
- XCTAssertTrue(file.isMultiChannel)
+ XCTAssertTrue(file.isMultichannel)
  XCTAssertTrue(file.isValid)
  }
 
  func testImpactDetection() {
- let file = VideoFile.impact2Channel
+ let file = VideoFile.impact2channel
  XCTAssertTrue(file.hasImpactEvents)
  XCTAssertGreaterThan(file.impactEventCount, 0)
  }
@@ -1565,85 +1565,85 @@ struct VideoFile: Codable, Equatable, Identifiable, Hashable {
 extension VideoFile {
     /// Sample normal recording (5 channels)
     ///
-    /// 5채널 일반 녹화 샘플입니다.
+    /// 5channel Normal recording Sample.
     ///
-    /// **포함 채널:**
-    /// - 전방 (Full HD, 100 MB)
-    /// - 후방 (HD, 50 MB)
-    /// - 좌측 (HD, 50 MB)
-    /// - 우측 (HD, 50 MB)
-    /// - 실내 (HD, 50 MB)
-    /// - 총 크기: 300 MB
+    /// **include channel:**
+    /// - Front (Full HD, 100 MB)
+    /// - Rear (HD, 50 MB)
+    /// - Left (HD, 50 MB)
+    /// - Right (HD, 50 MB)
+    /// - Interior (HD, 50 MB)
+    /// - total size: 300 MB
     ///
-    /// **메타데이터:**
-    /// - GPS: 60개 포인트 (1분)
-    /// - G-센서: 600개 포인트 (1분, 10Hz)
-    /// - 장치 정보: BlackVue DR900X-2CH
-    static let normal5Channel = VideoFile(
+    /// **metadata:**
+    /// - GPS: 60 points (1 minute)
+    /// - G-Sensor: 600 points (1 minute, 10Hz)
+    /// - device information: BlackVue DR900X-2CH
+    static let normal5channel = VideoFile(
         timestamp: Date(),
         eventType: .normal,
         duration: 60.0,
-        channels: ChannelInfo.allSampleChannels,
+        channels: channelInfo.allSamplechannels,
         metadata: VideoMetadata.sample,
         basePath: "normal/2025_01_10_09_00_00"
     )
 
     /// Sample impact recording (2 channels)
     ///
-    /// 2채널 충격 이벤트 샘플입니다.
+    /// 2channel Impact events Sample.
     ///
-    /// **포함 채널:**
-    /// - 전방 (Full HD, 100 MB)
-    /// - 후방 (HD, 50 MB)
-    /// - 총 크기: 150 MB
+    /// **include channel:**
+    /// - Front (Full HD, 100 MB)
+    /// - Rear (HD, 50 MB)
+    /// - total size: 150 MB
     ///
-    /// **메타데이터:**
-    /// - 충격 이벤트 포함 (3.5G)
-    /// - 짧은 길이 (30초)
-    /// - 충격 전후 15초씩
-    static let impact2Channel = VideoFile(
+    /// **metadata:**
+    /// - Impact events include (3.5G)
+    /// - short Duration (30second)
+    /// - impact  15second
+    static let impact2channel = VideoFile(
         timestamp: Date().addingTimeInterval(-3600),
         eventType: .impact,
         duration: 30.0,
-        channels: [ChannelInfo.frontHD, ChannelInfo.rearHD],
+        channels: [channelInfo.frontHD, channelInfo.rearHD],
         metadata: VideoMetadata.withImpact,
         basePath: "event/2025_01_10_10_30_15"
     )
 
     /// Sample parking recording (1 channel)
     ///
-    /// 1채널 주차 모드 샘플입니다.
+    /// 1channel Parking mode Sample.
     ///
-    /// **포함 채널:**
-    /// - 전방 (Full HD, 100 MB)
+    /// **include channel:**
+    /// - Front (Full HD, 100 MB)
     ///
-    /// **메타데이터:**
-    /// - GPS만 (센서 없음)
-    /// - 짧은 길이 (10초)
-    /// - 움직임 감지 시 녹화
-    static let parking1Channel = VideoFile(
+    /// **metadata:**
+    /// - GPSonly (Sensor none)
+    /// - short Duration (10second)
+    /// - ing detection  recording
+    static let parking1channel = VideoFile(
         timestamp: Date().addingTimeInterval(-7200),
         eventType: .parking,
         duration: 10.0,
-        channels: [ChannelInfo.frontHD],
+        channels: [channelInfo.frontHD],
         metadata: VideoMetadata.gpsOnly,
         basePath: "parking/2025_01_10_18_00_00"
     )
 
     /// Sample favorite recording
     ///
-    /// 즐겨찾기 녹화 샘플입니다.
+    /// Favorite recording Sample.
     ///
-    /// **특징:**
+    /// **:**
     /// - isFavorite = true
-    /// - notes 포함 ("Beautiful sunset drive")
-    /// - 수동 녹화 (EventType.manual)
-    /// - 긴 길이 (2분)
+    /// - notes include ("Beautiful sunset drive")
+    /// - Manual recording (EventType.manual)
+    /// -  Duration (2minute)
     static let favoriteRecording = VideoFile(
         timestamp: Date().addingTimeInterval(-10800),
         eventType: .manual,
         duration: 120.0,
-        channels: [ChannelInfo.frontHD, ChannelInfo.rearHD],
+        channels: [channelInfo.frontHD, channelInfo.rearHD],
         metadata: VideoMetadata.sample,
         basePath: "manual/2025_01_10_15_00_00",
         isFavorite: true,
@@ -1652,18 +1652,18 @@ extension VideoFile {
 
     /// Sample corrupted file
     ///
-    /// 손상된 파일 샘플입니다.
+    /// corrupteded File Sample.
     ///
-    /// **특징:**
+    /// **:**
     /// - isCorrupted = true
-    /// - duration = 0 (재생 불가)
-    /// - 빈 메타데이터
-    /// - 에러 처리 테스트용
+    /// - duration = 0 (playback )
+    /// - empty metadata
+    /// -  processing test
     static let corruptedFile = VideoFile(
         timestamp: Date().addingTimeInterval(-14400),
         eventType: .normal,
         duration: 0.0,
-        channels: [ChannelInfo.frontHD],
+        channels: [channelInfo.frontHD],
         metadata: VideoMetadata.sample,
         basePath: "normal/2025_01_10_12_00_00",
         isCorrupted: true
@@ -1671,25 +1671,25 @@ extension VideoFile {
 
     /// Array of all sample files
     ///
-    /// 모든 샘플 파일의 배열입니다.
+    /// all Sample File array.
     ///
-    /// **포함 샘플:**
-    /// - normal5Channel: 5채널 일반
-    /// - impact2Channel: 2채널 충격
-    /// - parking1Channel: 1채널 주차
-    /// - favoriteRecording: 즐겨찾기
-    /// - corruptedFile: 손상 파일
+    /// **include Sample:**
+    /// - normal5channel: 5channel normal
+    /// - impact2channel: 2channel impact
+    /// - parking1channel: 1channel parking
+    /// - favoriteRecording: Favorite
+    /// - corruptedFile: corrupted File
     ///
-    /// **사용 예시:**
+    /// **use example:**
     /// ```swift
     /// List(VideoFile.allSamples) { file in
     ///     VideoFileRow(file: file)
     /// }
     /// ```
     static let allSamples: [VideoFile] = [
-        normal5Channel,
-        impact2Channel,
-        parking1Channel,
+        normal5channel,
+        impact2channel,
+        parking1channel,
         favoriteRecording,
         corruptedFile
     ]
@@ -1698,20 +1698,20 @@ extension VideoFile {
 
     /// Test video: comma2k19 sample with sensor data
     ///
-    /// Comma.ai comma2k19 데이터셋 샘플입니다.
+    /// Comma.ai comma2k19 data Sample.
     ///
-    /// **파일 정보:**
-    /// - 해상도: 1164×874 (약 1.2:1)
-    /// - 프레임 레이트: 25 fps
-    /// - 길이: 48초
-    /// - 크기: 15.4 MB
-    /// - 용도: 자율주행 연구 데이터
+    /// **File information:**
+    /// - resolution: 1164×874 (approximately 1.2:1)
+    /// - frame : 25 fps
+    /// - Duration: 48second
+    /// - size: 15.4 MB
+    /// - : erdriving nine data
     static let comma2k19Test = VideoFile(
         timestamp: Date(),
         eventType: .normal,
         duration: 48.0,
         channels: [
-            ChannelInfo(
+            channelInfo(
                 position: .front,
                 filePath: "/Users/dongcheolshin/Downloads/blackbox_test_data/comma2k19_sample.mp4",
                 width: 1164,
@@ -1729,19 +1729,19 @@ extension VideoFile {
 
     /// Test video: 360p basic test
     ///
-    /// 360p 기본 테스트 비디오입니다.
+    /// 360p Basic test video.
     ///
-    /// **파일 정보:**
-    /// - 해상도: 640×360 (SD 미만)
-    /// - 프레임 레이트: 30 fps
-    /// - 길이: 10초
-    /// - 크기: 991 KB (약 1 MB)
+    /// **File information:**
+    /// - resolution: 640×360 (SD less than)
+    /// - frame : 30 fps
+    /// - Duration: 10second
+    /// - size: 991 KB (approximately 1 MB)
     static let test360p = VideoFile(
         timestamp: Date(),
         eventType: .normal,
         duration: 10.0,
         channels: [
-            ChannelInfo(
+            channelInfo(
                 position: .front,
                 filePath: "/Users/dongcheolshin/Downloads/blackbox_test_data/big_buck_bunny_360p.mp4",
                 width: 640,
@@ -1759,19 +1759,19 @@ extension VideoFile {
 
     /// Test video: 720p HD test
     ///
-    /// 720p HD 테스트 비디오입니다.
+    /// 720p HD test video.
     ///
-    /// **파일 정보:**
-    /// - 해상도: 1280×720 (HD)
-    /// - 프레임 레이트: 30 fps
-    /// - 길이: 10초
-    /// - 크기: 5 MB
+    /// **File information:**
+    /// - resolution: 1280×720 (HD)
+    /// - frame : 30 fps
+    /// - Duration: 10second
+    /// - size: 5 MB
     static let test720p = VideoFile(
         timestamp: Date(),
         eventType: .normal,
         duration: 10.0,
         channels: [
-            ChannelInfo(
+            channelInfo(
                 position: .front,
                 filePath: "/Users/dongcheolshin/Downloads/blackbox_test_data/big_buck_bunny_720p.mp4",
                 width: 1280,
@@ -1789,19 +1789,19 @@ extension VideoFile {
 
     /// Test video: 1080p high quality test
     ///
-    /// 1080p Full HD 고품질 테스트 비디오입니다.
+    /// 1080p Full HD  test video.
     ///
-    /// **파일 정보:**
-    /// - 해상도: 1920×1080 (Full HD)
-    /// - 프레임 레이트: 60 fps (고급)
-    /// - 길이: 10초
-    /// - 크기: 10 MB
+    /// **File information:**
+    /// - resolution: 1920×1080 (Full HD)
+    /// - frame : 60 fps (Advanced)
+    /// - Duration: 10second
+    /// - size: 10 MB
     static let test1080p = VideoFile(
         timestamp: Date(),
         eventType: .normal,
         duration: 10.0,
         channels: [
-            ChannelInfo(
+            channelInfo(
                 position: .front,
                 filePath: "/Users/dongcheolshin/Downloads/blackbox_test_data/sample_1080p.mp4",
                 width: 1920,
@@ -1819,19 +1819,19 @@ extension VideoFile {
 
     /// Test video: Multi-channel simulation (4 channels using comma2k19)
     ///
-    /// 4채널 멀티뷰 시뮬레이션 테스트입니다.
+    /// 4channel multiview simulation test.
     ///
-    /// **파일 정보:**
-    /// - 4채널: 전방, 후방, 좌측, 우측
-    /// - 모든 채널 동일 비디오 (comma2k19) 사용
-    /// - 총 크기: 약 60 MB (4 × 15 MB)
-    /// - 멀티 채널 UI 테스트용
-    static let multiChannel4Test = VideoFile(
+    /// **File information:**
+    /// - 4channel: Front, Rear, Left, Right
+    /// - all channel same video (comma2k19) use
+    /// - total size: approximately 60 MB (4 × 15 MB)
+    /// - multi channel UI test
+    static let multichannel4Test = VideoFile(
         timestamp: Date(),
         eventType: .normal,
         duration: 48.0,
         channels: [
-            ChannelInfo(
+            channelInfo(
                 position: .front,
                 filePath: "/Users/dongcheolshin/Downloads/blackbox_test_data/comma2k19_sample.mp4",
                 width: 1164,
@@ -1842,7 +1842,7 @@ extension VideoFile {
                 fileSize: 15_439_382,
                 duration: 48.0
             ),
-            ChannelInfo(
+            channelInfo(
                 position: .rear,
                 filePath: "/Users/dongcheolshin/Downloads/blackbox_test_data/comma2k19_sample.mp4",
                 width: 1164,
@@ -1853,7 +1853,7 @@ extension VideoFile {
                 fileSize: 15_439_382,
                 duration: 48.0
             ),
-            ChannelInfo(
+            channelInfo(
                 position: .left,
                 filePath: "/Users/dongcheolshin/Downloads/blackbox_test_data/comma2k19_sample.mp4",
                 width: 1164,
@@ -1864,7 +1864,7 @@ extension VideoFile {
                 fileSize: 15_439_382,
                 duration: 48.0
             ),
-            ChannelInfo(
+            channelInfo(
                 position: .right,
                 filePath: "/Users/dongcheolshin/Downloads/blackbox_test_data/comma2k19_sample.mp4",
                 width: 1164,
@@ -1882,18 +1882,18 @@ extension VideoFile {
 
     /// All real test files
     ///
-    /// 모든 실제 테스트 파일의 배열입니다.
+    /// all  test File array.
     ///
-    /// **포함 테스트:**
-    /// - multiChannel4Test: 4채널 멀티뷰 (맨 앞, 자주 사용)
-    /// - comma2k19Test: 자율주행 데이터
+    /// **include test:**
+    /// - multichannel4Test: 4channel multiview ( , er use)
+    /// - comma2k19Test: erdriving data
     /// - test1080p: Full HD 60fps
     /// - test720p: HD 30fps
-    /// - test360p: 저해상도
+    /// - test360p: resolution
     ///
-    /// **사용 예시:**
+    /// **use example:**
     /// ```swift
-    /// // 개발 중 테스트 파일 선택
+    /// //   test File 
     /// List(VideoFile.allTestFiles) { file in
     ///     Button(file.basePath) {
     ///         playVideo(file)
@@ -1901,7 +1901,7 @@ extension VideoFile {
     /// }
     /// ```
     static let allTestFiles: [VideoFile] = [
-        multiChannel4Test,  // Multi-channel test first for easy access
+        multichannel4Test,  // Multi-channel test first for easy access
         comma2k19Test,
         test1080p,
         test720p,

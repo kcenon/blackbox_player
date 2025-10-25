@@ -1,129 +1,128 @@
 /// @file Color+Hex.swift
 /// @brief Extension to create SwiftUI Color from hex strings
 /// @author BlackboxPlayer Development Team
-/// @details SwiftUI의 Color 타입을 확장하여 Hex 문자열로부터 색상을 생성하는 기능을 추가합니다.
+/// @details Extends SwiftUI's Color type to add functionality for creating colors from hex strings.
 ///
-/// 📚 이 파일의 목적
+/// Purpose of this file
 /// ════════════════════════════════════════════════════════════════════════════════
-/// SwiftUI의 Color 타입을 확장(Extension)하여 Hex 문자열로부터 색상을 생성하는
-/// 기능을 추가합니다.
+/// Extends SwiftUI's Color type to add the ability to create colors from hex strings.
 ///
-/// 원래 SwiftUI Color는 hex 문자열을 직접 받아들이지 못하지만, 이 Extension을
-/// 통해 "#FF0000" 같은 웹 표준 색상 코드를 사용할 수 있게 됩니다.
+/// While SwiftUI Color doesn't natively accept hex strings, this Extension enables
+/// the use of web-standard color codes like "#FF0000".
 ///
 ///
-/// 🎨 Hex 색상 코드란?
+/// What are Hex Color Codes?
 /// ════════════════════════════════════════════════════════════════════════════════
-/// Hex(16진수) 색상 코드는 웹과 디자인 도구에서 널리 사용되는 색상 표현 방식입니다.
+/// Hex (hexadecimal) color codes are a color representation method widely used in web and design tools.
 ///
-/// 📌 지원하는 형식:
+/// Supported formats:
 ///
-///    1) 3자리 RGB (#RGB)
-///       예: "#F00" → Red
-///       각 자리가 0~F(0~15) 값을 가지며, 자동으로 2배 확장됩니다.
+///    1) 3-digit RGB (#RGB)
+///       Example: "#F00" → Red
+///       Each digit has a value from 0~F (0~15) and is automatically expanded 2x.
 ///       #F00 → #FF0000
 ///
-///    2) 6자리 RGB (#RRGGBB)
-///       예: "#FF0000" → Red
-///       각 색상 채널(R, G, B)이 00~FF(0~255) 범위를 가집니다.
-///       가장 일반적으로 사용되는 형식입니다.
+///    2) 6-digit RGB (#RRGGBB)
+///       Example: "#FF0000" → Red
+///       Each color channel (R, G, B) has a range of 00~FF (0~255).
+///       This is the most commonly used format.
 ///
-///    3) 8자리 ARGB (#AARRGGBB)
-///       예: "#80FF0000" → 반투명 Red (50% 투명도)
-///       맨 앞 2자리가 알파(투명도) 채널입니다.
-///       AA=255(불투명), 00=0(완전 투명)
+///    3) 8-digit ARGB (#AARRGGBB)
+///       Example: "#80FF0000" → Semi-transparent Red (50% transparency)
+///       The first 2 digits represent the alpha (transparency) channel.
+///       AA=255 (opaque), 00=0 (fully transparent)
 ///
 ///
-/// 🔧 Extension이란?
+/// What is an Extension?
 /// ════════════════════════════════════════════════════════════════════════════════
-/// Extension은 Swift의 강력한 기능으로, 기존 타입에 새로운 기능을 추가할 수 있습니다.
+/// Extension is a powerful Swift feature that allows adding new functionality to existing types.
 ///
-/// 📌 특징:
-///    • 원본 코드 수정 없이 기능 추가 가능
-///    • SwiftUI의 Color는 Apple이 만든 타입이지만, 우리가 기능을 추가할 수 있음
-///    • 프로토콜 채택, 메서드 추가, 편의 생성자 추가 등이 가능
+/// Characteristics:
+///    • Can add functionality without modifying the original code
+///    • Even though SwiftUI's Color is an Apple-created type, we can add features to it
+///    • Can adopt protocols, add methods, add convenience initializers, etc.
 ///
-/// 📌 왜 Extension을 사용하나요?
-///    1) 코드 조직화: 관련 기능을 한 곳에 모을 수 있음
-///    2) 재사용성: 프로젝트 전체에서 Color(hex: "#FF0000") 형태로 사용 가능
-///    3) 가독성: 색상 정의가 명확해짐
+/// Why use Extensions?
+///    1) Code organization: Can group related functionality in one place
+///    2) Reusability: Can use Color(hex: "#FF0000") form throughout the project
+///    3) Readability: Color definitions become clearer
 ///
 ///
-/// 🎓 비트 연산 개념 (초보자용 설명)
+/// Bit Operation Concepts (For Beginners)
 /// ════════════════════════════════════════════════════════════════════════════════
-/// 이 코드는 비트 연산을 사용하여 hex 문자열을 색상 값으로 변환합니다.
+/// This code uses bit operations to convert hex strings to color values.
 ///
-/// 📌 기본 개념:
-///    컴퓨터는 모든 숫자를 2진수(0과 1)로 저장합니다.
-///    Hex(16진수)는 2진수를 사람이 읽기 쉽게 표현한 것입니다.
+/// Basic concepts:
+///    Computers store all numbers in binary (0s and 1s).
+///    Hex (hexadecimal) is a human-readable representation of binary.
 ///
-///    예: 0xFF = 11111111 (2진수) = 255 (10진수)
+///    Example: 0xFF = 11111111 (binary) = 255 (decimal)
 ///
-/// 📌 사용되는 비트 연산자:
+/// Bit operators used:
 ///
-///    1) >> (Right Shift, 우측 시프트)
-///       비트를 오른쪽으로 이동시킵니다.
-///       예: 0xFF00 >> 8 = 0x00FF
+///    1) >> (Right Shift)
+///       Shifts bits to the right.
+///       Example: 0xFF00 >> 8 = 0x00FF
 ///          11111111 00000000 → 00000000 11111111
 ///
-///       💡 의미: 8비트 오른쪽으로 이동 = 256으로 나누기와 같음
+///       Meaning: Shifting right by 8 bits = dividing by 256
 ///
-///    2) & (Bitwise AND, 비트 논리곱)
-///       두 비트가 모두 1일 때만 1을 반환합니다.
-///       예: 0xFF00 & 0x00FF = 0x0000
+///    2) & (Bitwise AND)
+///       Returns 1 only when both bits are 1.
+///       Example: 0xFF00 & 0x00FF = 0x0000
 ///          11111111 00000000
 ///        & 00000000 11111111
 ///        = 00000000 00000000
 ///
-///       💡 의미: 마스킹(특정 비트만 추출)에 사용
+///       Meaning: Used for masking (extracting specific bits)
 ///
-/// 📌 실전 예제:
-///    hex = "FF0000" (빨간색)
-///    int = 0xFF0000 (16진수로 파싱된 값)
+/// Practical example:
+///    hex = "FF0000" (red)
+///    int = 0xFF0000 (value parsed as hexadecimal)
 ///
-///    빨강 추출: int >> 16 = 0xFF0000 >> 16 = 0xFF (255)
-///    초록 추출: (int >> 8) & 0xFF = 0x00FF00 >> 8 = 0x00FF, 0x00FF & 0xFF = 0x00
-///    파랑 추출: int & 0xFF = 0xFF0000 & 0xFF = 0x00
+///    Extract red: int >> 16 = 0xFF0000 >> 16 = 0xFF (255)
+///    Extract green: (int >> 8) & 0xFF = 0x00FF00 >> 8 = 0x00FF, 0x00FF & 0xFF = 0x00
+///    Extract blue: int & 0xFF = 0xFF0000 & 0xFF = 0x00
 ///
 ///
-/// 💡 sRGB 색공간이란?
+/// What is the sRGB Color Space?
 /// ════════════════════════════════════════════════════════════════════════════════
-/// sRGB는 표준 RGB(standard RGB) 색공간으로, 대부분의 디스플레이와 웹에서
-/// 사용하는 색상 표준입니다.
+/// sRGB is the standard RGB color space, the color standard used by most displays
+/// and on the web.
 ///
-/// 📌 색공간(Color Space)이란?
-///    색상을 표현하는 방법과 범위를 정의한 것입니다.
-///    같은 RGB 값이라도 색공간에 따라 실제 보이는 색이 다를 수 있습니다.
+/// What is a Color Space?
+///    Defines the method and range for representing colors.
+///    The same RGB values can appear as different colors depending on the color space.
 ///
-/// 📌 sRGB의 특징:
-///    • 웹 표준 색공간
-///    • 대부분의 모니터가 지원
-///    • RGB 각 채널이 0.0~1.0 범위의 Double 값 사용
-///    • 우리가 hex에서 추출한 0~255 값을 255로 나눠 0.0~1.0으로 정규화
+/// sRGB characteristics:
+///    • Web standard color space
+///    • Supported by most monitors
+///    • Each RGB channel uses Double values in the range 0.0~1.0
+///    • We normalize the 0~255 values extracted from hex by dividing by 255 to get 0.0~1.0
 ///
 ///
-/// 📖 사용 예제
+/// Usage Examples
 /// ════════════════════════════════════════════════════════════════════════════════
 /// ```swift
-/// // 1. 6자리 hex 색상 사용 (가장 일반적)
+/// // 1. Using 6-digit hex colors (most common)
 /// let red = Color(hex: "#FF0000")
-/// let green = Color(hex: "00FF00")  // # 기호 생략 가능
+/// let green = Color(hex: "00FF00")  // # symbol can be omitted
 /// let blue = Color(hex: "#0000FF")
 ///
-/// // 2. 3자리 약식 표기
-/// let white = Color(hex: "#FFF")  // #FFFFFF와 동일
-/// let black = Color(hex: "#000")  // #000000과 동일
+/// // 2. 3-digit shorthand notation
+/// let white = Color(hex: "#FFF")  // Same as #FFFFFF
+/// let black = Color(hex: "#000")  // Same as #000000
 ///
-/// // 3. 8자리 ARGB (투명도 포함)
-/// let transparentRed = Color(hex: "#80FF0000")  // 50% 투명한 빨강
-/// let opaqueBlue = Color(hex: "#FF0000FF")      // 100% 불투명 파랑
+/// // 3. 8-digit ARGB (with transparency)
+/// let transparentRed = Color(hex: "#80FF0000")  // 50% transparent red
+/// let opaqueBlue = Color(hex: "#FF0000FF")      // 100% opaque blue
 ///
-/// // 4. SwiftUI 뷰에서 사용
-/// Text("안녕하세요")
+/// // 4. Using in SwiftUI views
+/// Text("Hello")
 ///     .foregroundColor(Color(hex: "#FF6B6B"))
 ///     .background(Color(hex: "#F0F0F0"))
 ///
-/// // 5. EventType의 색상 표시 (실제 프로젝트 사용 예)
+/// // 5. EventType color display (actual project usage example)
 /// Rectangle()
 ///     .fill(Color(hex: eventType.colorHex))
 ///     .frame(width: 20, height: 20)
@@ -134,323 +133,323 @@ import SwiftUI
 // MARK: - Color Extension
 
 /// @extension Color
-/// @brief Hex 문자열로부터 SwiftUI Color를 생성하는 Extension
-/// @details 3자리(#RGB), 6자리(#RRGGBB), 8자리(#AARRGGBB) Hex 형식을 지원하며,
-///          비트 연산을 통해 각 색상 채널을 추출하여 sRGB 색공간의 Color 객체를 생성합니다.
+/// @brief Extension to create SwiftUI Color from hex strings
+/// @details Supports 3-digit (#RGB), 6-digit (#RRGGBB), and 8-digit (#AARRGGBB) hex formats,
+///          and creates Color objects in the sRGB color space by extracting each color channel through bit operations.
 extension Color {
 
     // MARK: Hex String Initializer
 
     /// @brief Create a Color from a hex string
-    /// @details Hex 문자열로부터 SwiftUI Color 객체를 생성합니다.
+    /// @details Creates a SwiftUI Color object from a hex string.
     ///
-    /// 📌 초보자를 위한 생성자(Initializer) 설명
+    /// Initializer Explanation (For Beginners)
     /// ─────────────────────────────────────────────────────────────────
-    /// Initializer는 struct나 class의 인스턴스를 생성할 때 호출되는 특수한 메서드입니다.
-    /// `init` 키워드로 정의하며, 반환 타입을 명시하지 않습니다.
+    /// An initializer is a special method called when creating an instance of a struct or class.
+    /// It's defined with the `init` keyword and doesn't specify a return type.
     ///
-    /// 이 생성자는 String 타입의 hex 파라미터를 받아서 Color 인스턴스를 만듭니다.
-    /// 사용 예: let red = Color(hex: "#FF0000")
+    /// This initializer takes a hex parameter of type String and creates a Color instance.
+    /// Usage example: let red = Color(hex: "#FF0000")
     ///
     ///
-    /// 🔄 전체 동작 흐름
+    /// Overall Operation Flow
     /// ─────────────────────────────────────────────────────────────────
-    /// 1단계: 입력 문자열 정제 (trimming)
-    /// 2단계: Hex 문자열을 64비트 정수로 파싱
-    /// 3단계: 색상 채널(A, R, G, B) 추출 (비트 연산 사용)
-    /// 4단계: 0~255 값을 0.0~1.0 범위로 정규화
-    /// 5단계: sRGB 색공간을 사용하는 Color 객체 생성
+    /// Step 1: Sanitize input string (trimming)
+    /// Step 2: Parse hex string to 64-bit integer
+    /// Step 3: Extract color channels (A, R, G, B) using bit operations
+    /// Step 4: Normalize 0~255 values to 0.0~1.0 range
+    /// Step 5: Create Color object using sRGB color space
     ///
     /// @param hex Hex color string (e.g., "#FF0000", "FF0000", "#F00")
-    ///            지원 형식: 3자리(#RGB), 6자리(#RRGGBB), 8자리(#AARRGGBB)
+    ///            Supported formats: 3-digit (#RGB), 6-digit (#RRGGBB), 8-digit (#AARRGGBB)
     init(hex: String) {
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // 1단계: 입력 문자열 정제
+        // Step 1: Sanitize input string
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         //
-        // 📌 목적:
-        //    사용자가 "#FF0000", "FF0000", "#ff0000" 등 다양한 형태로 입력해도
-        //    올바르게 처리할 수 있도록 문자열을 정제합니다.
+        // Purpose:
+        //    Sanitizes the string so it can be correctly processed regardless of whether
+        //    the user enters "#FF0000", "FF0000", "#ff0000", etc.
         //
-        // 📌 동작 설명:
-        //    trimmingCharacters(in:) 메서드는 지정된 문자 집합에 속하지 않는
-        //    문자들을 제거합니다.
+        // How it works:
+        //    The trimmingCharacters(in:) method removes characters that are not
+        //    in the specified character set.
         //
-        //    CharacterSet.alphanumerics는 영문자(a-z, A-Z)와 숫자(0-9)를 포함하는
-        //    문자 집합입니다.
+        //    CharacterSet.alphanumerics is a character set containing letters (a-z, A-Z)
+        //    and digits (0-9).
         //
-        //    .inverted는 이를 반전시켜서 "영문자와 숫자가 아닌 것들"을 의미합니다.
-        //    즉, #, 공백, 특수문자 등이 모두 제거됩니다.
+        //    .inverted reverses this to mean "things that are not letters or digits".
+        //    That is, #, spaces, special characters, etc. are all removed.
         //
-        // 📌 예시:
-        //    입력: "#FF0000"  → 정제 후: "FF0000"
-        //    입력: "FF 00 00" → 정제 후: "FF0000"
-        //    입력: "#ff0000"  → 정제 후: "ff0000" (소문자도 허용)
+        // Examples:
+        //    Input: "#FF0000"  → After sanitization: "FF0000"
+        //    Input: "FF 00 00" → After sanitization: "FF0000"
+        //    Input: "#ff0000"  → After sanitization: "ff0000" (lowercase allowed)
         //
         let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // 2단계: Hex 문자열을 정수로 변환
+        // Step 2: Convert hex string to integer
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         //
-        // 📌 UInt64 타입 선택 이유:
-        //    UInt64는 부호 없는(음수가 없는) 64비트 정수입니다.
-        //    0 ~ 18,446,744,073,709,551,615 범위의 값을 저장할 수 있습니다.
+        // Why UInt64 type was chosen:
+        //    UInt64 is an unsigned (no negative values) 64-bit integer.
+        //    It can store values from 0 to 18,446,744,073,709,551,615.
         //
-        //    8자리 hex (#AARRGGBB)는 최대 0xFFFFFFFF (4,294,967,295)이므로
-        //    UInt64면 충분히 안전하게 저장할 수 있습니다.
+        //    8-digit hex (#AARRGGBB) has a maximum of 0xFFFFFFFF (4,294,967,295),
+        //    so UInt64 can safely store it.
         //
-        // 📌 초기값 0:
-        //    변수 선언 시 반드시 초기값을 지정해야 합니다.
-        //    Scanner가 파싱에 실패하면 int는 0으로 유지됩니다.
+        // Initial value of 0:
+        //    A variable must be given an initial value when declared.
+        //    If Scanner fails to parse, int remains 0.
         //
         var int: UInt64 = 0
 
-        // 📌 Scanner란?
-        //    Foundation 프레임워크의 클래스로, 문자열을 파싱하는 도구입니다.
-        //    scanHexInt64(_:)는 16진수 문자열을 UInt64로 변환합니다.
+        // What is Scanner?
+        //    A Foundation framework class that is a tool for parsing strings.
+        //    scanHexInt64(_:) converts hexadecimal strings to UInt64.
         //
-        // 📌 & 연산자의 의미:
-        //    Swift에서 &는 inout 파라미터를 전달할 때 사용합니다.
-        //    inout은 함수 내부에서 파라미터를 수정하면, 원본 변수도 변경되는 것을 의미합니다.
+        // Meaning of the & operator:
+        //    In Swift, & is used when passing inout parameters.
+        //    inout means that if the parameter is modified inside the function, the original variable is also changed.
         //
-        //    scanHexInt64는 변환된 값을 int 변수에 직접 저장합니다.
+        //    scanHexInt64 stores the converted value directly in the int variable.
         //
-        // 📌 예시:
+        // Example:
         //    hex = "FF0000"
-        //    → Scanner가 이를 파싱
-        //    → int = 0xFF0000 = 16,711,680 (10진수)
+        //    → Scanner parses it
+        //    → int = 0xFF0000 = 16,711,680 (decimal)
         //
         Scanner(string: hex).scanHexInt64(&int)
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // 3단계: 색상 채널 추출 (비트 연산)
+        // Step 3: Extract color channels (bit operations)
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         //
-        // 📌 변수 선언 방식:
+        // Variable declaration style:
         //    let a, r, g, b: UInt64
-        //    이는 4개의 변수를 한 번에 선언하는 문법입니다.
-        //    모두 UInt64 타입이며, 아직 값이 할당되지 않았습니다.
+        //    This is syntax for declaring 4 variables at once.
+        //    All are of type UInt64 and no values have been assigned yet.
         //
-        // 📌 왜 let을 사용하나요?
-        //    a, r, g, b 값은 한 번 설정되면 변경되지 않으므로 상수(let)로 선언합니다.
-        //    불변성(Immutability)을 보장하여 실수로 값을 변경하는 것을 방지합니다.
+        // Why use let?
+        //    The a, r, g, b values don't change once set, so they're declared as constants (let).
+        //    This ensures immutability and prevents accidentally changing values.
         //
         let a, r, g, b: UInt64
 
-        // 📌 switch 문으로 hex 길이 분류:
-        //    hex 문자열의 길이에 따라 다른 파싱 로직을 적용합니다.
+        // Classifying hex length with switch:
+        //    Applies different parsing logic depending on the length of the hex string.
         //
         switch hex.count {
 
         // ─────────────────────────────────────────────────────────────────
-        // Case 1: 3자리 RGB (#RGB)
+        // Case 1: 3-digit RGB (#RGB)
         // ─────────────────────────────────────────────────────────────────
         //
-        // 📌 형식 예시: "#F0A" → #FF00AA
+        // Format example: "#F0A" → #FF00AA
         //
-        // 📌 변환 원리:
-        //    각 hex 자리(0~F)를 2배 확장합니다.
+        // Conversion principle:
+        //    Each hex digit (0~F) is expanded 2x.
         //    F(15) → FF(255)
         //    0(0)  → 00(0)
         //    A(10) → AA(170)
         //
-        // 📌 비트 구조:
-        //    int = 0x0RGB (12비트만 사용)
-        //    예: 0xF0A = 0000 1111 0000 1010
+        // Bit structure:
+        //    int = 0x0RGB (only 12 bits used)
+        //    Example: 0xF0A = 0000 1111 0000 1010
         //
-        // 📌 각 채널 추출 과정:
+        // Channel extraction process:
         //
-        //    1) 알파(투명도): 항상 255 (완전 불투명)
+        //    1) Alpha (transparency): Always 255 (fully opaque)
         //       a = 255
         //
-        //    2) 빨강(Red): 상위 8비트 추출 후 17 곱하기
+        //    2) Red: Extract upper 8 bits then multiply by 17
         //       int >> 8 = 0xF0A >> 8 = 0x00F (0000 0000 0000 1111)
         //       0x00F * 17 = 15 * 17 = 255
         //
-        //       💡 왜 17을 곱하나요?
-        //       한 자리 hex(0~F)를 두 자리(00~FF)로 확장하는 공식:
+        //       Why multiply by 17?
+        //       Formula to expand one hex digit (0~F) to two digits (00~FF):
         //       value * 17 = value * 16 + value = value << 4 | value
-        //       예: F * 17 = 15 * 17 = 255 = 0xFF
+        //       Example: F * 17 = 15 * 17 = 255 = 0xFF
         //
-        //    3) 초록(Green): 중간 4비트 추출 후 17 곱하기
+        //    3) Green: Extract middle 4 bits then multiply by 17
         //       (int >> 4) & 0xF = (0xF0A >> 4) & 0xF
         //                        = 0x0F0 & 0x00F
         //                        = 0x000 (0)
         //       0x000 * 17 = 0
         //
-        //    4) 파랑(Blue): 하위 4비트 추출 후 17 곱하기
+        //    4) Blue: Extract lower 4 bits then multiply by 17
         //       int & 0xF = 0xF0A & 0x00F = 0x00A (10)
         //       0x00A * 17 = 10 * 17 = 170
         //
-        // 📌 최종 결과:
-        //    #F0A → RGBA(255, 0, 170, 255) = 불투명한 분홍색
+        // Final result:
+        //    #F0A → RGBA(255, 0, 170, 255) = opaque pink
         //
         case 3: // RGB (12-bit)
             (a, r, g, b) = (255, (int >> 8) * 17, (int >> 4 & 0xF) * 17, (int & 0xF) * 17)
 
         // ─────────────────────────────────────────────────────────────────
-        // Case 2: 6자리 RGB (#RRGGBB) - 가장 일반적
+        // Case 2: 6-digit RGB (#RRGGBB) - Most common
         // ─────────────────────────────────────────────────────────────────
         //
-        // 📌 형식 예시: "#FF0000" → 빨간색
+        // Format example: "#FF0000" → red
         //
-        // 📌 비트 구조:
-        //    int = 0xRRGGBB (24비트)
-        //    예: 0xFF0000 = 11111111 00000000 00000000
+        // Bit structure:
+        //    int = 0xRRGGBB (24 bits)
+        //    Example: 0xFF0000 = 11111111 00000000 00000000
         //
-        // 📌 각 채널 추출 과정:
+        // Channel extraction process:
         //
-        //    1) 알파: 항상 255 (완전 불투명)
+        //    1) Alpha: Always 255 (fully opaque)
         //       a = 255
         //
-        //    2) 빨강: 상위 16비트 시프트
+        //    2) Red: Shift upper 16 bits
         //       int >> 16 = 0xFF0000 >> 16 = 0x0000FF (255)
         //
-        //       비트로 표현:
+        //       Bit representation:
         //       11111111 00000000 00000000 >> 16
         //       = 00000000 00000000 11111111
         //
-        //    3) 초록: 중간 8비트 추출
+        //    3) Green: Extract middle 8 bits
         //       (int >> 8) & 0xFF = (0xFF0000 >> 8) & 0xFF
         //                         = 0x00FF00 & 0x0000FF
         //                         = 0x000000 (0)
         //
-        //       비트로 표현:
+        //       Bit representation:
         //       11111111 00000000 00000000 >> 8
         //       = 00000000 11111111 00000000
         //       & 00000000 00000000 11111111
         //       = 00000000 00000000 00000000
         //
-        //    4) 파랑: 하위 8비트 추출
+        //    4) Blue: Extract lower 8 bits
         //       int & 0xFF = 0xFF0000 & 0x0000FF = 0x000000 (0)
         //
-        //       비트로 표현:
+        //       Bit representation:
         //       11111111 00000000 00000000
         //       & 00000000 00000000 11111111
         //       = 00000000 00000000 00000000
         //
-        // 📌 최종 결과:
-        //    #FF0000 → RGBA(255, 0, 0, 255) = 불투명한 빨간색
+        // Final result:
+        //    #FF0000 → RGBA(255, 0, 0, 255) = opaque red
         //
         case 6: // RGB (24-bit)
             (a, r, g, b) = (255, int >> 16, int >> 8 & 0xFF, int & 0xFF)
 
         // ─────────────────────────────────────────────────────────────────
-        // Case 3: 8자리 ARGB (#AARRGGBB)
+        // Case 3: 8-digit ARGB (#AARRGGBB)
         // ─────────────────────────────────────────────────────────────────
         //
-        // 📌 형식 예시: "#80FF0000" → 50% 투명한 빨간색
+        // Format example: "#80FF0000" → 50% transparent red
         //
-        // 📌 비트 구조:
-        //    int = 0xAARRGGBB (32비트)
-        //    예: 0x80FF0000 = 10000000 11111111 00000000 00000000
+        // Bit structure:
+        //    int = 0xAARRGGBB (32 bits)
+        //    Example: 0x80FF0000 = 10000000 11111111 00000000 00000000
         //
-        // 📌 각 채널 추출 과정:
+        // Channel extraction process:
         //
-        //    1) 알파: 최상위 8비트
+        //    1) Alpha: Uppermost 8 bits
         //       int >> 24 = 0x80FF0000 >> 24 = 0x00000080 (128)
         //
-        //       비트로 표현:
+        //       Bit representation:
         //       10000000 11111111 00000000 00000000 >> 24
         //       = 00000000 00000000 00000000 10000000
         //
-        //       💡 알파 값의 의미:
-        //       0 = 완전 투명 (invisible)
-        //       128 = 50% 투명 (semi-transparent)
-        //       255 = 완전 불투명 (opaque)
+        //       Meaning of alpha values:
+        //       0 = Fully transparent (invisible)
+        //       128 = 50% transparent (semi-transparent)
+        //       255 = Fully opaque (opaque)
         //
-        //    2) 빨강: 상위 16비트 시프트 후 마스킹
+        //    2) Red: Shift upper 16 bits then mask
         //       (int >> 16) & 0xFF = (0x80FF0000 >> 16) & 0xFF
         //                          = 0x000080FF & 0x000000FF
         //                          = 0x000000FF (255)
         //
-        //    3) 초록: 상위 8비트 시프트 후 마스킹
+        //    3) Green: Shift upper 8 bits then mask
         //       (int >> 8) & 0xFF = (0x80FF0000 >> 8) & 0xFF
         //                         = 0x0080FF00 & 0x000000FF
         //                         = 0x00000000 (0)
         //
-        //    4) 파랑: 하위 8비트 추출
+        //    4) Blue: Extract lower 8 bits
         //       int & 0xFF = 0x80FF0000 & 0x000000FF = 0x00000000 (0)
         //
-        // 📌 최종 결과:
-        //    #80FF0000 → RGBA(255, 0, 0, 128) = 50% 투명한 빨간색
+        // Final result:
+        //    #80FF0000 → RGBA(255, 0, 0, 128) = 50% transparent red
         //
         case 8: // ARGB (32-bit)
             (a, r, g, b) = (int >> 24, int >> 16 & 0xFF, int >> 8 & 0xFF, int & 0xFF)
 
         // ─────────────────────────────────────────────────────────────────
-        // Case 4: 잘못된 형식 처리
+        // Case 4: Invalid format handling
         // ─────────────────────────────────────────────────────────────────
         //
-        // 📌 발생 조건:
-        //    hex 길이가 3, 6, 8이 아닌 경우 (예: 1, 2, 4, 5, 7, 9+ 자리)
+        // Occurs when:
+        //    hex length is not 3, 6, or 8 (e.g., 1, 2, 4, 5, 7, 9+ digits)
         //
-        // 📌 기본값:
-        //    검은색(R=0, G=0, B=0)을 반환하되, 완전 불투명(A=255)으로 설정
+        // Default value:
+        //    Returns black (R=0, G=0, B=0) but fully opaque (A=255)
         //
-        // 📌 에러 처리 전략:
-        //    Swift에서는 throw로 에러를 던질 수도 있지만, 이 경우 사용성을 위해
-        //    안전한 기본값을 반환하는 방식을 선택했습니다.
+        // Error handling strategy:
+        //    In Swift, errors can be thrown, but for usability we've chosen
+        //    to return a safe default value.
         //
-        //    장점: Color(hex: "invalid") 같은 잘못된 입력도 크래시 없이 처리
-        //    단점: 개발자가 오타를 눈치채기 어려울 수 있음
+        //    Advantages: Invalid inputs like Color(hex: "invalid") are handled without crashes
+        //    Disadvantages: Developers may have difficulty noticing typos
         //
-        // 📌 대안적 설계:
-        //    Optional Color를 반환하거나(init?(hex: String))
-        //    에러를 throw할 수도 있지만, 현재 설계는 편의성을 우선합니다.
+        // Alternative designs:
+        //    Could return Optional Color (init?(hex: String))
+        //    or throw an error, but the current design prioritizes convenience.
         //
         default:
             (a, r, g, b) = (255, 0, 0, 0)
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // 4~5단계: sRGB Color 객체 생성
+        // Steps 4~5: Create sRGB Color object
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         //
-        // 📌 정규화(Normalization)란?
-        //    0~255 범위의 정수를 0.0~1.0 범위의 실수로 변환하는 과정입니다.
+        // What is Normalization?
+        //    The process of converting integers in the 0~255 range to real numbers in the 0.0~1.0 range.
         //
-        //    SwiftUI Color는 색상 채널 값을 0.0~1.0 범위로 받습니다.
-        //    따라서 255로 나누어 변환합니다:
-        //    • 0 ÷ 255 = 0.0 (최소값)
-        //    • 128 ÷ 255 ≈ 0.502 (중간값)
-        //    • 255 ÷ 255 = 1.0 (최대값)
+        //    SwiftUI Color accepts color channel values in the 0.0~1.0 range.
+        //    Therefore, we divide by 255 to convert:
+        //    • 0 ÷ 255 = 0.0 (minimum value)
+        //    • 128 ÷ 255 ≈ 0.502 (middle value)
+        //    • 255 ÷ 255 = 1.0 (maximum value)
         //
-        // 📌 Double 타입 변환:
-        //    UInt64를 Double로 변환해야 나눗셈 결과가 실수가 됩니다.
-        //    정수 나눗셈은 소수점 이하를 버리기 때문입니다.
+        // Double type conversion:
+        //    UInt64 must be converted to Double for division results to be real numbers.
+        //    Integer division discards the decimal portion.
         //
-        //    예: Int(255) / Int(255) = 1 (정수)
-        //        Double(255) / 255.0 = 1.0 (실수)
+        //    Example: Int(255) / Int(255) = 1 (integer)
+        //             Double(255) / 255.0 = 1.0 (real number)
         //
-        // 📌 .sRGB 색공간:
-        //    Color의 첫 번째 파라미터는 RGBColorSpace입니다.
-        //    .sRGB는 표준 RGB 색공간으로, 웹과 대부분의 디스플레이에서 사용됩니다.
+        // .sRGB color space:
+        //    The first parameter of Color is RGBColorSpace.
+        //    .sRGB is the standard RGB color space used on the web and most displays.
         //
-        //    다른 색공간:
-        //    • .sRGBLinear: 감마 보정이 없는 선형 RGB
-        //    • .displayP3: 더 넓은 색영역을 지원 (최신 Apple 기기)
+        //    Other color spaces:
+        //    • .sRGBLinear: Linear RGB without gamma correction
+        //    • .displayP3: Supports wider color gamut (recent Apple devices)
         //
-        // 📌 self.init의 의미:
-        //    Extension 내에서 원래 타입의 다른 생성자를 호출합니다.
-        //    self는 "현재 생성 중인 인스턴스"를 의미합니다.
+        // Meaning of self.init:
+        //    Calls another initializer of the original type from within an Extension.
+        //    self refers to "the instance being created".
         //
-        //    SwiftUI Color는 다음과 같은 기본 생성자를 제공합니다:
+        //    SwiftUI Color provides the following default initializer:
         //    init(_ colorSpace: RGBColorSpace,
         //         red: Double,
         //         green: Double,
         //         blue: Double,
         //         opacity: Double)
         //
-        // 📌 실제 변환 예시:
-        //    r = 255, g = 0, b = 0, a = 128 (빨간색, 50% 투명)
+        // Actual conversion example:
+        //    r = 255, g = 0, b = 0, a = 128 (red, 50% transparent)
         //    → red: 255/255 = 1.0
         //      green: 0/255 = 0.0
         //      blue: 0/255 = 0.0
         //      opacity: 128/255 ≈ 0.502
         //
-        //    결과: 50% 투명한 빨간색 Color 객체
+        //    Result: 50% transparent red Color object
         //
         self.init(
             .sRGB,

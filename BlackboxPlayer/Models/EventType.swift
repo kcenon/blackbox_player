@@ -1,51 +1,51 @@
 /// @file EventType.swift
-/// @brief 블랙박스 녹화 이벤트 유형 열거형
+/// @brief Blackbox recording event type enumeration
 /// @author BlackboxPlayer Development Team
-/// @details 블랙박스 녹화 이벤트 유형을 분류하는 열거형입니다.
-///          일반 녹화, 충격 이벤트, 주차 모드, 수동 녹화, 비상 녹화 등을 구분하며,
-///          파일 경로로부터 자동으로 이벤트 유형을 감지하는 기능을 제공합니다.
+/// @details Enumeration for classifying blackbox recording event types.
+///          Distinguishes between normal recording, impact events, parking mode, manual recording, emergency recording, etc.,
+///          and provides functionality to automatically detect event types from file paths.
 
 /*
  ┌──────────────────────────────────────────────────────────────────────────┐
- │                       EventType Enum 개요                                │
+ │                       EventType Enum Overview                            │
  │                                                                          │
- │  블랙박스 녹화 이벤트 유형을 분류하는 열거형입니다.                      │
+ │  Enumeration for classifying blackbox recording event types.            │
  │                                                                          │
- │  【이벤트 종류】                                                         │
+ │  【Event Types】                                                         │
  │                                                                          │
- │  1. normal (일반 녹화)                                                   │
- │     - 지속적인 루프 녹화                                                 │
- │     - 우선순위: 1 (가장 낮음)                                            │
- │     - 색상: Green (#4CAF50)                                              │
+ │  1. normal (Normal Recording)                                            │
+ │     - Continuous loop recording                                          │
+ │     - Priority: 1 (Lowest)                                               │
+ │     - Color: Green (#4CAF50)                                             │
  │                                                                          │
- │  2. impact (충격 이벤트)                                                 │
- │     - G-센서로 감지된 충격/충돌                                          │
- │     - 우선순위: 4 (높음)                                                 │
- │     - 색상: Red (#F44336)                                                │
+ │  2. impact (Impact Event)                                                │
+ │     - Impact/collision detected by G-sensor                              │
+ │     - Priority: 4 (High)                                                 │
+ │     - Color: Red (#F44336)                                               │
  │                                                                          │
- │  3. parking (주차 모드)                                                  │
- │     - 주차 중 움직임/충격 감지                                           │
- │     - 우선순위: 2                                                        │
- │     - 색상: Blue (#2196F3)                                               │
+ │  3. parking (Parking Mode)                                               │
+ │     - Motion/impact detected while parked                                │
+ │     - Priority: 2                                                        │
+ │     - Color: Blue (#2196F3)                                              │
  │                                                                          │
- │  4. manual (수동 녹화)                                                   │
- │     - 사용자가 버튼으로 직접 트리거                                      │
- │     - 우선순위: 3                                                        │
- │     - 색상: Orange (#FF9800)                                             │
+ │  4. manual (Manual Recording)                                            │
+ │     - User-triggered via button                                          │
+ │     - Priority: 3                                                        │
+ │     - Color: Orange (#FF9800)                                            │
  │                                                                          │
- │  5. emergency (비상 녹화)                                                │
- │     - SOS 버튼 등 비상 상황                                              │
- │     - 우선순위: 5 (가장 높음)                                            │
- │     - 색상: Purple (#9C27B0)                                             │
+ │  5. emergency (Emergency Recording)                                      │
+ │     - Emergency situations such as SOS button                            │
+ │     - Priority: 5 (Highest)                                              │
+ │     - Color: Purple (#9C27B0)                                            │
  │                                                                          │
- │  6. unknown (알 수 없음)                                                 │
- │     - 인식할 수 없는 유형                                                │
- │     - 우선순위: 0 (기본값)                                               │
- │     - 색상: Gray (#9E9E9E)                                               │
+ │  6. unknown (Unknown)                                                    │
+ │     - Unrecognized type                                                  │
+ │     - Priority: 0 (Default)                                              │
+ │     - Color: Gray (#9E9E9E)                                              │
  │                                                                          │
- │  【디렉토리 구조에서 자동 감지】                                         │
+ │  【Auto-detection from Directory Structure】                             │
  │                                                                          │
- │  SD 카드 파일 경로로부터 이벤트 유형을 자동으로 판별합니다.              │
+ │  Automatically determines event type from SD card file path.             │
  │                                                                          │
  │  /sdcard/                                                                │
  │    ├── normal/          → EventType.normal                               │
@@ -61,17 +61,17 @@
  │                                                                          │
  └──────────────────────────────────────────────────────────────────────────┘
 
- 【Enum (열거형)이란?】
+ 【What is an Enum (Enumeration)?】
 
- Enum은 관련된 값들의 그룹을 정의하는 타입입니다.
+ Enum is a type that defines a group of related values.
 
- 장점:
- 1. 타입 안전성: 컴파일 타임에 잘못된 값 검출
- 2. 자동 완성: Xcode가 가능한 케이스 제시
- 3. 코드 가독성: 의미 있는 이름 사용
- 4. 패턴 매칭: switch 문에서 강력한 기능
+ Advantages:
+ 1. Type safety: Detects invalid values at compile time
+ 2. Auto-completion: Xcode suggests possible cases
+ 3. Code readability: Uses meaningful names
+ 4. Pattern matching: Powerful features in switch statements
 
- 기본 사용법:
+ Basic usage:
  ```swift
  enum EventType {
  case normal
@@ -79,12 +79,12 @@
  case parking
  }
 
- let event: EventType = .impact  // 타입 추론
+ let event: EventType = .impact  // Type inference
  ```
 
- Raw Values (원시 값):
+ Raw Values:
  ```swift
- enum EventType: String {  // String 타입 지정
+ enum EventType: String {  // String type specification
  case normal = "normal"
  case impact = "impact"
  }
@@ -95,11 +95,11 @@
  let parsed = EventType(rawValue: "impact")  // Optional<EventType>
  ```
 
- 【Codable 프로토콜】
+ 【Codable Protocol】
 
- Enum에 Codable을 적용하면 JSON 직렬화가 자동으로 가능합니다.
+ Applying Codable to Enum enables automatic JSON serialization.
 
- JSON 변환:
+ JSON conversion:
  ```swift
  let event = EventType.impact
 
@@ -114,15 +114,15 @@
  // EventType.impact
  ```
 
- Raw Value가 있을 때:
- - JSON에서는 rawValue (String)로 표현됨
- - 예: "impact", "normal", "parking"
+ When Raw Value exists:
+ - Represented as rawValue (String) in JSON
+ - Examples: "impact", "normal", "parking"
 
- 【CaseIterable 프로토콜】
+ 【CaseIterable Protocol】
 
- 모든 enum case를 배열로 제공합니다.
+ Provides all enum cases as an array.
 
- 사용법:
+ Usage:
  ```swift
  enum EventType: String, CaseIterable {
  case normal
@@ -134,75 +134,75 @@
  print(eventType.displayName)
  }
 
- // UI Picker/Dropdown 생성
- Picker("이벤트 유형", selection: $selectedEvent) {
+ // Creating UI Picker/Dropdown
+ Picker("Event Type", selection: $selectedEvent) {
  ForEach(EventType.allCases, id: \.self) { type in
  Text(type.displayName).tag(type)
  }
  }
 
- print("총 이벤트 유형: \(EventType.allCases.count)")  // 6
+ print("Total event types: \(EventType.allCases.count)")  // 6
  ```
  */
 
 import Foundation
 
 /*
- 【EventType 열거형】
+ 【EventType Enumeration】
 
- 블랙박스 녹화 이벤트 유형을 분류합니다.
+ Classifies blackbox recording event types.
 
- 프로토콜:
- - String: Raw Value로 문자열 사용
- - Codable: JSON 직렬화/역직렬화
- - CaseIterable: allCases 배열 제공
- - Comparable: 우선순위 기반 정렬
+ Protocols:
+ - String: Uses string as Raw Value
+ - Codable: JSON serialization/deserialization
+ - CaseIterable: Provides allCases array
+ - Comparable: Priority-based sorting
 
- 사용 예시:
+ Usage examples:
  ```swift
- // 1. 파일 경로에서 자동 감지
+ // 1. Auto-detect from file path
  let path = "/sdcard/event/20250115_100000_F.mp4"
  let type = EventType.detect(from: path)  // .impact
 
- // 2. UI 표시
- let color = type.colorHex  // "#F44336" (빨강)
+ // 2. UI display
+ let color = type.colorHex  // "#F44336" (Red)
  let name = type.displayName  // "Impact"
 
- // 3. 정렬 (우선순위 높은 순)
+ // 3. Sorting (by priority, highest first)
  let events = [EventType.normal, .impact, .emergency]
  let sorted = events.sorted(by: >)  // [.emergency, .impact, .normal]
 
- // 4. 필터링
+ // 4. Filtering
  let videos = allVideos.filter { $0.eventType == .impact }
  ```
  */
 /// @enum EventType
-/// @brief 블랙박스 녹화 이벤트 유형 분류
-/// @details 블랙박스 녹화 이벤트를 normal, impact, parking, manual, emergency, unknown으로 분류합니다.
-///          String raw value를 사용하며, Codable, CaseIterable, Comparable 프로토콜을 준수합니다.
+/// @brief Blackbox recording event type classification
+/// @details Classifies blackbox recording events into normal, impact, parking, manual, emergency, and unknown.
+///          Uses String raw values and conforms to Codable, CaseIterable, and Comparable protocols.
 enum EventType: String, Codable, CaseIterable {
     /*
-     【normal - 일반 녹화】
+     【normal - Normal Recording】
 
-     지속적인 루프 녹화 파일입니다.
+     Continuous loop recording files.
 
-     특징:
-     - 자동으로 계속 녹화됨
-     - 오래된 파일은 자동 삭제 (메모리 공간 확보)
-     - 일반적으로 1-3분 단위 파일
-     - 가장 많은 비율 차지
+     Characteristics:
+     - Automatically records continuously
+     - Old files are auto-deleted (to free memory space)
+     - Typically 1-3 minute file segments
+     - Occupies the largest proportion
 
-     디렉토리: /normal/ 또는 /Normal/
+     Directory: /normal/ or /Normal/
 
-     우선순위: 1 (가장 낮음)
-     - 일상적인 녹화이므로 우선순위 낮음
-     - 다른 이벤트가 있으면 먼저 표시
+     Priority: 1 (Lowest)
+     - Low priority as it's routine recording
+     - Other events are displayed first
 
-     색상: Green (#4CAF50)
-     - 정상 상태를 나타내는 초록색
-     - UI에서 눈에 덜 띄도록
+     Color: Green (#4CAF50)
+     - Green indicates normal state
+     - Less prominent in UI
 
-     예시 파일명:
+     Example filenames:
      - 20250115_100000_F.mp4
      - 20250115_100100_R.mp4
      */
@@ -210,180 +210,180 @@ enum EventType: String, Codable, CaseIterable {
     case normal = "normal"
 
     /*
-     【impact - 충격 이벤트】
+     【impact - Impact Event】
 
-     G-센서(가속도 센서)가 감지한 충격/충돌 이벤트입니다.
+     Impact/collision events detected by G-sensor (accelerometer).
 
-     트리거 조건:
-     - 급제동: 0.5G 이상
-     - 충돌: 1.0G 이상
-     - 급가속/급회전: 설정에 따라
+     Trigger conditions:
+     - Sudden braking: 0.5G or higher
+     - Collision: 1.0G or higher
+     - Rapid acceleration/sharp turns: Depending on settings
 
-     특징:
-     - 충격 전후 30초 저장 (총 1분)
-     - 이벤트 전 10초, 후 20초
-     - 자동 삭제 방지 (보호 파일)
-     - 중요한 증거 영상
+     Characteristics:
+     - Saves 30 seconds before and after impact (1 minute total)
+     - 10 seconds before event, 20 seconds after
+     - Protected from auto-deletion
+     - Important evidence footage
 
-     디렉토리:
-     - /event/ 또는 /Event/
-     - /impact/ 또는 /Impact/
+     Directories:
+     - /event/ or /Event/
+     - /impact/ or /Impact/
 
-     우선순위: 4 (높음)
-     - 사고 영상이므로 중요
-     - emergency 다음으로 높은 우선순위
+     Priority: 4 (High)
+     - Important as accident footage
+     - Second highest priority after emergency
 
-     색상: Red (#F44336)
-     - 위험/주의를 나타내는 빨강
-     - 사용자의 즉각적인 주목 필요
+     Color: Red (#F44336)
+     - Red indicates danger/warning
+     - Requires immediate user attention
 
-     예시:
-     - 추돌 사고
-     - 급제동
-     - 도로 요철 통과
-     - 포트홀 충격
+     Examples:
+     - Collision accident
+     - Sudden braking
+     - Driving over road bumps
+     - Pothole impact
      */
     /// Impact/collision event recording (triggered by G-sensor)
     case impact = "impact"
 
     /*
-     【parking - 주차 모드】
+     【parking - Parking Mode】
 
-     주차 중 움직임이나 충격을 감지한 녹화입니다.
+     Recording triggered by motion or impact while parked.
 
-     트리거 조건:
-     - 차량 주변 움직임 감지 (모션 센서)
-     - 주차 중 충격 (문콕, 접촉사고)
-     - 진동 감지
+     Trigger conditions:
+     - Motion detection around vehicle (motion sensor)
+     - Impact while parked (door dings, contact accidents)
+     - Vibration detection
 
-     특징:
-     - 배터리 절약 모드 (저전력)
-     - 감지 시에만 녹화 (타임랩스)
-     - 프레임 레이트 낮음 (1-5 fps)
-     - 별도 배터리 필요할 수 있음
+     Characteristics:
+     - Battery-saving mode (low power)
+     - Records only when detected (time-lapse)
+     - Low frame rate (1-5 fps)
+     - May require separate battery
 
-     디렉토리:
-     - /parking/ 또는 /Parking/
-     - /park/ 또는 /Park/
+     Directories:
+     - /parking/ or /Parking/
+     - /park/ or /Park/
 
-     우선순위: 2
-     - 중요하지만 impact보다는 낮음
-     - 주차장 접촉사고 증거
+     Priority: 2
+     - Important but lower than impact
+     - Evidence for parking lot contact accidents
 
-     색상: Blue (#2196F3)
-     - 주차 모드를 나타내는 파랑
-     - 차분하고 안정적인 느낌
+     Color: Blue (#2196F3)
+     - Blue indicates parking mode
+     - Calm and stable feeling
 
-     예시:
-     - 주차장 문콕
-     - 주차 중 접촉사고
-     - 도난 시도
+     Examples:
+     - Parking lot door dings
+     - Contact accidents while parked
+     - Theft attempts
      */
     /// Parking mode recording (motion/impact detection while parked)
     case parking = "parking"
 
     /*
-     【manual - 수동 녹화】
+     【manual - Manual Recording】
 
-     사용자가 버튼을 눌러 직접 시작한 녹화입니다.
+     Recording started manually by user button press.
 
-     트리거 방법:
-     - 블랙박스의 수동 녹화 버튼
-     - 스마트폰 앱의 녹화 버튼
-     - 음성 명령 ("녹화 시작")
+     Trigger methods:
+     - Manual recording button on blackbox
+     - Recording button on smartphone app
+     - Voice command ("Start recording")
 
-     특징:
-     - 사용자가 의도적으로 기록
-     - 자동 삭제 방지 (보호 파일)
-     - 긴 녹화 시간 (5-10분)
-     - 즉시 녹화 시작
+     Characteristics:
+     - Intentionally recorded by user
+     - Protected from auto-deletion
+     - Longer recording duration (5-10 minutes)
+     - Starts recording immediately
 
-     디렉토리: /manual/ 또는 /Manual/
+     Directory: /manual/ or /Manual/
 
-     우선순위: 3
-     - impact와 parking 사이
-     - 사용자가 중요하다고 판단한 영상
+     Priority: 3
+     - Between impact and parking
+     - Footage deemed important by user
 
-     색상: Orange (#FF9800)
-     - 주의를 끄는 주황색
-     - 수동 액션을 나타냄
+     Color: Orange (#FF9800)
+     - Orange draws attention
+     - Indicates manual action
 
-     예시 상황:
-     - 경찰 단속
-     - 교통 위반 차량 목격
-     - 경치 좋은 도로
-     - 블랙박스 테스트
+     Example situations:
+     - Police enforcement
+     - Witnessing traffic violations
+     - Scenic roads
+     - Blackbox testing
      */
     /// Manual recording (user-triggered)
     case manual = "manual"
 
     /*
-     【emergency - 비상 녹화】
+     【emergency - Emergency Recording】
 
-     SOS 버튼 등으로 트리거된 비상 상황 녹화입니다.
+     Emergency situation recording triggered by SOS button, etc.
 
-     트리거 방법:
-     - 블랙박스의 SOS/Emergency 버튼
-     - 스마트폰 앱의 비상 버튼
-     - 자동 감지 (에어백 전개 등)
+     Trigger methods:
+     - SOS/Emergency button on blackbox
+     - Emergency button on smartphone app
+     - Auto-detection (airbag deployment, etc.)
 
-     특징:
-     - 최우선 보호 (절대 삭제 안 됨)
-     - 긴 녹화 시간 (10-15분)
-     - GPS 위치 자동 저장
-     - 비상 연락처에 알림 전송 (일부 모델)
+     Characteristics:
+     - Highest priority protection (never deleted)
+     - Long recording duration (10-15 minutes)
+     - Automatic GPS location saving
+     - Notification sent to emergency contacts (some models)
 
-     디렉토리:
-     - /emergency/ 또는 /Emergency/
-     - /sos/ 또는 /SOS/
+     Directories:
+     - /emergency/ or /Emergency/
+     - /sos/ or /SOS/
 
-     우선순위: 5 (가장 높음)
-     - 생명/안전과 직결된 영상
-     - 모든 이벤트 중 최우선
+     Priority: 5 (Highest)
+     - Footage directly related to life/safety
+     - Highest priority among all events
 
-     색상: Purple (#9C27B0)
-     - 특별한 상황을 나타내는 보라
-     - 긴급 상황 강조
+     Color: Purple (#9C27B0)
+     - Purple indicates special situations
+     - Emphasizes emergency
 
-     예시 상황:
-     - 심각한 교통사고
-     - 위급한 의료 상황
-     - 범죄 목격
-     - 도움 요청 필요 상황
+     Example situations:
+     - Serious traffic accidents
+     - Critical medical situations
+     - Witnessing crimes
+     - Situations requiring help
      */
     /// Emergency recording
     case emergency = "emergency"
 
     /*
-     【unknown - 알 수 없음】
+     【unknown - Unknown】
 
-     파일 경로나 메타데이터에서 이벤트 유형을 판별할 수 없을 때 사용합니다.
+     Used when event type cannot be determined from file path or metadata.
 
-     발생 원인:
-     - 비표준 디렉토리 구조
-     - 손상된 파일 경로
-     - 알 수 없는 블랙박스 모델
-     - 사용자 정의 폴더
+     Causes:
+     - Non-standard directory structure
+     - Corrupted file path
+     - Unknown blackbox model
+     - User-defined folder
 
-     특징:
-     - 기본값 (fallback)
-     - 추후 수동 분류 가능
-     - 자동 처리 불가
+     Characteristics:
+     - Default value (fallback)
+     - Can be manually classified later
+     - Cannot be automatically processed
 
-     디렉토리: 패턴 매칭 실패 시
+     Directory: When pattern matching fails
 
-     우선순위: 0 (기본값)
-     - 가장 낮은 우선순위
-     - 정렬 시 맨 아래 표시
+     Priority: 0 (Default)
+     - Lowest priority
+     - Displayed at bottom when sorted
 
-     색상: Gray (#9E9E9E)
-     - 알 수 없음을 나타내는 회색
-     - 분류 필요 표시
+     Color: Gray (#9E9E9E)
+     - Gray indicates unknown
+     - Indicates classification needed
 
-     처리 방법:
+     Handling method:
      ```swift
      if eventType == .unknown {
-     // 사용자에게 수동 분류 요청
+     // Request manual classification from user
      showEventTypeSelector()
      }
      ```
@@ -394,34 +394,34 @@ enum EventType: String, Codable, CaseIterable {
     // MARK: - Display Properties
 
     /*
-     【표시 이름 (Display Name)】
+     【Display Name】
 
-     UI에 표시할 사람이 읽기 쉬운 이름을 반환합니다.
+     Returns a human-readable name to display in UI.
 
-     반환값:
-     - String: 이벤트 유형의 영문 이름
+     Return value:
+     - String: English name of event type
 
-     사용 예시:
+     Usage examples:
      ```swift
      let event = EventType.impact
      let name = event.displayName  // "Impact"
 
-     // UI 레이블
+     // UI label
      eventLabel.stringValue = event.displayName
 
-     // 리스트 아이템
+     // List item
      List(events) { event in
      Text(event.displayName)
      }
 
-     // 필터 버튼
+     // Filter button
      Button(event.displayName) {
      filterBy(event)
      }
      ```
 
-     다국어화 (Localization):
-     현재는 영문만 지원하지만, 추후 다국어 지원 시:
+     Localization:
+     Currently supports English only, but for future multi-language support:
      ```swift
      var displayName: String {
      switch self {
@@ -432,36 +432,36 @@ enum EventType: String, Codable, CaseIterable {
      }
      ```
      */
-    /// @brief 사람이 읽기 쉬운 이벤트 유형 이름
-    /// @return 이벤트 유형의 영문 표시 이름
+    /// @brief Human-readable event type name
+    /// @return English display name of event type
     var displayName: String {
         switch self {
         case .normal:
-            return "Normal"  // 일반 녹화
+            return "Normal"  // Normal recording
         case .impact:
-            return "Impact"  // 충격 이벤트
+            return "Impact"  // Impact event
         case .parking:
-            return "Parking"  // 주차 모드
+            return "Parking"  // Parking mode
         case .manual:
-            return "Manual"  // 수동 녹화
+            return "Manual"  // Manual recording
         case .emergency:
-            return "Emergency"  // 비상 녹화
+            return "Emergency"  // Emergency recording
         case .unknown:
-            return "Unknown"  // 알 수 없음
+            return "Unknown"  // Unknown
         }
     }
 
     /*
-     【색상 코드 (Color Hex)】
+     【Color Code (Color Hex)】
 
-     이벤트 유형에 해당하는 Hex 색상 코드를 반환합니다.
+     Returns the hex color code corresponding to the event type.
 
-     형식: "#RRGGBB"
+     Format: "#RRGGBB"
      - RR: Red (00-FF)
      - GG: Green (00-FF)
      - BB: Blue (00-FF)
 
-     반환값:
+     Return values:
      - normal: #4CAF50 (Green) - RGB(76, 175, 80)
      - impact: #F44336 (Red) - RGB(244, 67, 54)
      - parking: #2196F3 (Blue) - RGB(33, 150, 243)
@@ -469,7 +469,7 @@ enum EventType: String, Codable, CaseIterable {
      - emergency: #9C27B0 (Purple) - RGB(156, 39, 176)
      - unknown: #9E9E9E (Gray) - RGB(158, 158, 158)
 
-     사용 예시:
+     Usage examples:
      ```swift
      let event = EventType.impact
      let colorHex = event.colorHex  // "#F44336"
@@ -506,154 +506,154 @@ enum EventType: String, Codable, CaseIterable {
      .frame(width: 20, height: 20)
      ```
 
-     색상 선택 이유:
-     - Red: 위험/충격 (교통 신호와 일치)
-     - Green: 정상/안전
-     - Blue: 주차/대기
-     - Orange: 주의/수동
-     - Purple: 특별/비상
-     - Gray: 중립/알 수 없음
+     Color selection rationale:
+     - Red: Danger/impact (matches traffic signals)
+     - Green: Normal/safe
+     - Blue: Parking/standby
+     - Orange: Caution/manual
+     - Purple: Special/emergency
+     - Gray: Neutral/unknown
      */
-    /// @brief 이벤트 유형에 해당하는 색상 코드
-    /// @return Hex 색상 코드 (#RRGGBB)
+    /// @brief Color code corresponding to event type
+    /// @return Hex color code (#RRGGBB)
     var colorHex: String {
         switch self {
         case .normal:
-            return "#4CAF50"  // Green - 정상/안전
+            return "#4CAF50"  // Green - Normal/safe
         case .impact:
-            return "#F44336"  // Red - 위험/충격
+            return "#F44336"  // Red - Danger/impact
         case .parking:
-            return "#2196F3"  // Blue - 주차/대기
+            return "#2196F3"  // Blue - Parking/standby
         case .manual:
-            return "#FF9800"  // Orange - 주의/수동
+            return "#FF9800"  // Orange - Caution/manual
         case .emergency:
-            return "#9C27B0"  // Purple - 특별/비상
+            return "#9C27B0"  // Purple - Special/emergency
         case .unknown:
-            return "#9E9E9E"  // Gray - 중립/알 수 없음
+            return "#9E9E9E"  // Gray - Neutral/unknown
         }
     }
 
     /*
-     【우선순위 (Priority)】
+     【Priority】
 
-     이벤트 유형의 중요도를 나타내는 우선순위를 반환합니다.
+     Returns the priority indicating the importance of the event type.
 
-     범위: 0 ~ 5
-     - 5: emergency (가장 높음)
+     Range: 0 ~ 5
+     - 5: emergency (Highest)
      - 4: impact
      - 3: manual
      - 2: parking
      - 1: normal
-     - 0: unknown (가장 낮음)
+     - 0: unknown (Lowest)
 
-     사용 목적:
-     1. 정렬: 중요한 영상을 먼저 표시
-     2. 필터링: 우선순위 기준으로 필터
-     3. 알림: 높은 우선순위만 알림
-     4. 백업: 중요한 파일 우선 백업
+     Usage purposes:
+     1. Sorting: Display important footage first
+     2. Filtering: Filter by priority
+     3. Notifications: Notify only high priority
+     4. Backup: Prioritize important files for backup
 
-     사용 예시:
+     Usage examples:
      ```swift
-     // 1. 정렬 (우선순위 높은 순)
+     // 1. Sort (by priority, highest first)
      let events = [EventType.normal, .impact, .emergency, .parking]
      let sorted = events.sorted { $0.priority > $1.priority }
      // [.emergency, .impact, .parking, .normal]
 
-     // 2. 비디오 정렬
+     // 2. Sort videos
      let sortedVideos = videos.sorted { video1, video2 in
      if video1.eventType.priority != video2.eventType.priority {
      return video1.eventType.priority > video2.eventType.priority
      }
-     return video1.timestamp > video2.timestamp  // 같은 우선순위면 최신순
+     return video1.timestamp > video2.timestamp  // If same priority, newest first
      }
 
-     // 3. 중요 이벤트 필터링
+     // 3. Filter important events
      let importantVideos = videos.filter { $0.eventType.priority >= 3 }
 
-     // 4. 자동 백업 (우선순위 4 이상)
+     // 4. Auto-backup (priority 4 or higher)
      let backupCandidates = videos.filter { $0.eventType.priority >= 4 }
 
-     // 5. UI 배지 표시
+     // 5. UI badge display
      if event.priority >= 4 {
-     showBadge(text: "중요", color: .red)
+     showBadge(text: "Important", color: .red)
      }
      ```
 
-     Comparable 프로토콜과 함께 사용:
+     Using with Comparable protocol:
      ```swift
      let event1 = EventType.normal  // priority = 1
      let event2 = EventType.impact  // priority = 4
 
      if event1 < event2 {  // true (1 < 4)
-     print("event2가 더 중요합니다")
+     print("event2 is more important")
      }
 
      let events = [EventType.normal, .impact, .emergency]
-     let sorted = events.sorted()  // Comparable 프로토콜 사용
-     // [.normal, .impact, .emergency]  // 오름차순
+     let sorted = events.sorted()  // Using Comparable protocol
+     // [.normal, .impact, .emergency]  // Ascending order
      ```
      */
-    /// @brief 이벤트 유형의 우선순위
-    /// @return 우선순위 값 (0-5, 높을수록 중요)
+    /// @brief Priority of event type
+    /// @return Priority value (0-5, higher is more important)
     var priority: Int {
         switch self {
         case .emergency:
-            return 5  // 최우선 - 생명/안전 관련
+            return 5  // Highest - Life/safety related
         case .impact:
-            return 4  // 높음 - 사고 영상
+            return 4  // High - Accident footage
         case .manual:
-            return 3  // 중간 - 사용자가 중요하다고 판단
+            return 3  // Medium - User deemed important
         case .parking:
-            return 2  // 낮음 - 주차 중 이벤트
+            return 2  // Low - Event while parked
         case .normal:
-            return 1  // 최하위 - 일반 녹화
+            return 1  // Lowest - Normal recording
         case .unknown:
-            return 0  // 기본값 - 알 수 없음
+            return 0  // Default - Unknown
         }
     }
 
     // MARK: - Detection
 
     /*
-     【파일 경로에서 이벤트 유형 감지】
+     【Detect Event Type from File Path】
 
-     블랙박스 SD 카드의 파일 경로를 분석하여 이벤트 유형을 자동으로 판별합니다.
+     Analyzes blackbox SD card file path to automatically determine event type.
 
-     매개변수:
-     - path: 분석할 파일 경로 (예: "/sdcard/event/20250115_100000_F.mp4")
+     Parameters:
+     - path: File path to analyze (e.g., "/sdcard/event/20250115_100000_F.mp4")
 
-     반환값:
-     - EventType: 감지된 이벤트 유형
+     Return value:
+     - EventType: Detected event type
 
-     감지 패턴:
-     1. "/normal/" 또는 "normal/" → .normal
+     Detection patterns:
+     1. "/normal/" or "normal/" → .normal
      2. "/event/", "/impact/" → .impact
      3. "/parking/", "/park/" → .parking
      4. "/manual/" → .manual
      5. "/emergency/", "/sos/" → .emergency
-     6. 매칭 실패 → .unknown
+     6. Match failed → .unknown
 
-     대소문자 무시:
-     - lowercased()로 변환하여 비교
-     - "/Event/", "/EVENT/", "/event/" 모두 인식
+     Case-insensitive:
+     - Compares after converting to lowercased()
+     - Recognizes "/Event/", "/EVENT/", "/event/" all
 
-     경로 패턴:
-     - contains(): 중간에 디렉토리명 포함
-     - hasPrefix(): 경로 시작 부분에 디렉토리명
+     Path patterns:
+     - contains(): Directory name included in middle
+     - hasPrefix(): Directory name at start of path
 
-     사용 예시:
+     Usage examples:
      ```swift
-     // 1. 파일 경로에서 자동 감지
+     // 1. Auto-detect from file path
      let path1 = "/sdcard/event/20250115_100000_F.mp4"
      let type1 = EventType.detect(from: path1)  // .impact
 
      let path2 = "/mnt/sdcard/Normal/20250115_100500_R.mp4"
      let type2 = EventType.detect(from: path2)  // .normal
 
-     let path3 = "emergency/20250115_120000_F.mp4"  // 상대 경로
+     let path3 = "emergency/20250115_120000_F.mp4"  // Relative path
      let type3 = EventType.detect(from: path3)  // .emergency
 
-     // 2. 파일 스캔 시 자동 분류
+     // 2. Auto-classify during file scan
      let files = fileManager.contentsOfDirectory(atPath: sdcardPath)
      for file in files {
      let fullPath = sdcardPath + "/" + file
@@ -661,14 +661,14 @@ enum EventType: String, Codable, CaseIterable {
      print("\(file): \(eventType.displayName)")
      }
 
-     // 3. VideoFile 생성 시 자동 설정
+     // 3. Auto-set when creating VideoFile
      let videoFile = VideoFile(
      path: filePath,
      eventType: EventType.detect(from: filePath),
      // ...
      )
 
-     // 4. 여러 패턴 처리
+     // 4. Handle multiple patterns
      let paths = [
      "/normal/file.mp4",        // .normal
      "event/file.mp4",          // .impact
@@ -680,49 +680,49 @@ enum EventType: String, Codable, CaseIterable {
      }
      ```
 
-     블랙박스 제조사별 차이:
-     - 대부분: "/event/" (충격)
-     - 일부: "/impact/" (충격)
-     - 일부: "/emer/" (비상)
-     - 이 메서드는 여러 패턴 모두 지원
+     Differences by blackbox manufacturer:
+     - Most: "/event/" (impact)
+     - Some: "/impact/" (impact)
+     - Some: "/emer/" (emergency)
+     - This method supports all patterns
 
-     fallback 처리:
-     - 모든 패턴 매칭 실패 시 .unknown 반환
-     - 추후 수동 분류 필요
-     - 사용자 정의 디렉토리 대응
+     Fallback handling:
+     - Returns .unknown when all pattern matching fails
+     - Manual classification needed later
+     - Handles user-defined directories
      */
-    /// @brief 파일 경로에서 이벤트 유형 자동 감지
-    /// @param path 분석할 파일 경로
-    /// @return 감지된 이벤트 유형
+    /// @brief Auto-detect event type from file path
+    /// @param path File path to analyze
+    /// @return Detected event type
     static func detect(from path: String) -> EventType {
-        // 대소문자 무시하고 비교
+        // Compare case-insensitively
         let lowercasedPath = path.lowercased()
 
-        // 1. Normal 검사
+        // 1. Check Normal
         if lowercasedPath.contains("/normal/") || lowercasedPath.hasPrefix("normal/") {
             return .normal
         }
-        // 2. Impact 검사 (event 또는 impact 디렉토리)
+        // 2. Check Impact (event or impact directory)
         else if lowercasedPath.contains("/event/") || lowercasedPath.hasPrefix("event/") ||
                     lowercasedPath.contains("/impact/") || lowercasedPath.hasPrefix("impact/") {
             return .impact
         }
-        // 3. Parking 검사 (parking 또는 park 디렉토리)
+        // 3. Check Parking (parking or park directory)
         else if lowercasedPath.contains("/parking/") || lowercasedPath.hasPrefix("parking/") ||
                     lowercasedPath.contains("/park/") || lowercasedPath.hasPrefix("park/") {
             return .parking
         }
-        // 4. Manual 검사
+        // 4. Check Manual
         else if lowercasedPath.contains("/manual/") || lowercasedPath.hasPrefix("manual/") {
             return .manual
         }
-        // 5. Emergency 검사 (emergency 또는 sos 디렉토리)
+        // 5. Check Emergency (emergency or sos directory)
         else if lowercasedPath.contains("/emergency/") || lowercasedPath.hasPrefix("emergency/") ||
                     lowercasedPath.contains("/sos/") || lowercasedPath.hasPrefix("sos/") {
             return .emergency
         }
 
-        // 6. 매칭 실패 시 unknown 반환
+        // 6. Return unknown on match failure
         return .unknown
     }
 }
@@ -730,84 +730,84 @@ enum EventType: String, Codable, CaseIterable {
 // MARK: - Comparable
 
 /*
- 【Comparable 프로토콜 확장】
+ 【Comparable Protocol Extension】
 
- EventType을 우선순위 기준으로 정렬할 수 있게 합니다.
+ Enables sorting EventType by priority.
 
- Comparable 프로토콜:
- - <, <=, >, >= 연산자 제공
- - sorted() 함수 사용 가능
- - Equatable을 자동으로 포함
+ Comparable protocol:
+ - Provides <, <=, >, >= operators
+ - Enables sorted() function usage
+ - Automatically includes Equatable
 
- 구현:
- - priority 속성을 기준으로 비교
- - 낮은 priority가 "작음"으로 간주
+ Implementation:
+ - Compares based on priority property
+ - Lower priority is considered "less than"
 
- 사용 예시:
+ Usage examples:
  ```swift
- // 1. 비교 연산
+ // 1. Comparison operations
  let normal = EventType.normal  // priority = 1
  let impact = EventType.impact  // priority = 4
 
  if normal < impact {  // true (1 < 4)
- print("normal이 더 낮은 우선순위")
+ print("normal has lower priority")
  }
 
  if impact > normal {  // true (4 > 1)
- print("impact가 더 높은 우선순위")
+ print("impact has higher priority")
  }
 
- // 2. 배열 정렬 (오름차순)
+ // 2. Sort array (ascending)
  let events = [EventType.emergency, .normal, .impact, .parking]
  let ascending = events.sorted()
  // [.normal, .parking, .impact, .emergency]
 
- // 3. 배열 정렬 (내림차순)
+ // 3. Sort array (descending)
  let descending = events.sorted(by: >)
  // [.emergency, .impact, .parking, .normal]
 
- // 4. 최소/최대값 찾기
+ // 4. Find min/max
  let minEvent = events.min()  // .normal
  let maxEvent = events.max()  // .emergency
 
- // 5. 비디오 정렬 (이벤트 우선순위 + 시간)
+ // 5. Sort videos (event priority + time)
  let sortedVideos = videos.sorted { video1, video2 in
  if video1.eventType != video2.eventType {
- return video1.eventType > video2.eventType  // 우선순위 높은 순
+ return video1.eventType > video2.eventType  // Highest priority first
  }
- return video1.timestamp > video2.timestamp  // 같으면 최신순
+ return video1.timestamp > video2.timestamp  // If same, newest first
  }
  ```
 
- 왜 < 연산자만 구현하는가?
- - Swift가 나머지 연산자 자동 생성
- - < 정의하면 >, <=, >= 자동으로 사용 가능
- - Comparable 프로토콜의 요구사항
+ Why implement only < operator?
+ - Swift automatically generates remaining operators
+ - Defining < automatically enables >, <=, >=
+ - Requirement of Comparable protocol
  */
 extension EventType: Comparable {
     /*
-     【< 연산자 구현】
+     【< Operator Implementation】
 
-     두 EventType을 우선순위로 비교합니다.
+     Compares two EventTypes by priority.
 
-     매개변수:
-     - lhs: Left Hand Side (왼쪽 피연산자)
-     - rhs: Right Hand Side (오른쪽 피연산자)
+     Parameters:
+     - lhs: Left Hand Side (left operand)
+     - rhs: Right Hand Side (right operand)
 
-     반환값:
-     - Bool: lhs의 우선순위가 rhs보다 낮으면 true
+     Return value:
+     - Bool: true if lhs has lower priority than rhs
 
-     예시:
+     Examples:
      ```swift
      EventType.normal < EventType.impact  // true (1 < 4)
-     EventType.emergency < EventType.normal  // false (5 < 1은 false)
+     EventType.emergency < EventType.normal  // false (5 < 1 is false)
      ```
      */
-    /// @brief 우선순위 기반 비교 연산자
-    /// @param lhs 왼쪽 EventType
-    /// @param rhs 오른쪽 EventType
-    /// @return lhs의 우선순위가 rhs보다 낮으면 true
+    /// @brief Priority-based comparison operator
+    /// @param lhs Left EventType
+    /// @param rhs Right EventType
+    /// @return true if lhs has lower priority than rhs
     static func < (lhs: EventType, rhs: EventType) -> Bool {
-        return lhs.priority < rhs.priority  // 우선순위 숫자로 비교
+        return lhs.priority < rhs.priority  // Compare by priority number
     }
 }
