@@ -143,13 +143,15 @@ class GPSSensorIntegrationTests_Improved: XCTestCase {
         // Given: 0초와 2초에 GPS 포인트
         let baseDate = Date()
         let point1 = GPSPoint(
-            coordinate: CLLocationCoordinate2D(latitude: 37.5000, longitude: 127.0000),
             timestamp: baseDate,
+            latitude: 37.5000,
+            longitude: 127.0000,
             speed: 30.0
         )
         let point2 = GPSPoint(
-            coordinate: CLLocationCoordinate2D(latitude: 37.5020, longitude: 127.0020),
             timestamp: baseDate.addingTimeInterval(2.0),
+            latitude: 37.5020,
+            longitude: 127.0020,
             speed: 40.0
         )
 
@@ -164,7 +166,7 @@ class GPSSensorIntegrationTests_Improved: XCTestCase {
         if let location = interpolated {
             XCTAssertEqual(location.coordinate.latitude, 37.5010, accuracy: 0.0001)
             XCTAssertEqual(location.coordinate.longitude, 127.0010, accuracy: 0.0001)
-            XCTAssertEqual(location.speed, 35.0, accuracy: 0.1)
+            XCTAssertEqual(location.speed ?? 0.0, 35.0, accuracy: 0.1)
         }
     }
 
@@ -267,11 +269,9 @@ class GPSSensorIntegrationTests_Improved: XCTestCase {
         var gpsPoints: [GPSPoint] = []
         for i in 0..<1000 {
             let point = GPSPoint(
-                coordinate: CLLocationCoordinate2D(
-                    latitude: 37.5 + Double(i) * 0.0001,
-                    longitude: 127.0 + Double(i) * 0.0001
-                ),
                 timestamp: baseDate.addingTimeInterval(Double(i)),
+                latitude: 37.5 + Double(i) * 0.0001,
+                longitude: 127.0 + Double(i) * 0.0001,
                 speed: 30.0
             )
             gpsPoints.append(point)
@@ -309,11 +309,9 @@ enum TestDataFactory {
 
         for i in 0..<count {
             let point = GPSPoint(
-                coordinate: CLLocationCoordinate2D(
-                    latitude: 37.5665 + Double(i) * 0.001,
-                    longitude: 126.9780 + Double(i) * 0.001
-                ),
                 timestamp: baseDate.addingTimeInterval(Double(i)),
+                latitude: 37.5665 + Double(i) * 0.001,
+                longitude: 126.9780 + Double(i) * 0.001,
                 speed: 30.0 + Double(i) * 2.0,
                 heading: Double(i) * 36.0 // 0, 36, 72, ... 도
             )
@@ -360,16 +358,18 @@ enum TestDataFactory {
         let channelInfo = ChannelInfo(
             position: .front,
             filePath: "/mock/test_front.mp4",  // Mock 경로 (실제 파일 불필요)
-            displayName: "Front Camera",
-            isEnabled: true
+            width: 1920,
+            height: 1080,
+            frameRate: 30.0
         )
 
         return VideoFile(
-            name: "test_video",
-            channels: [channelInfo],
+            timestamp: baseDate,
+            eventType: .normal,
             duration: 10.0,
+            channels: [channelInfo],
             metadata: metadata,
-            timestamp: baseDate
+            basePath: "/mock/test_video"
         )
     }
 }

@@ -277,13 +277,15 @@ class GPSSensorIntegrationTests: XCTestCase {
         // Given: 0초와 2초에 GPS 포인트
         let baseDate = Date()
         let point1 = GPSPoint(
-            coordinate: CLLocationCoordinate2D(latitude: 37.5000, longitude: 127.0000),
             timestamp: baseDate,
+            latitude: 37.5000,
+            longitude: 127.0000,
             speed: 30.0
         )
         let point2 = GPSPoint(
-            coordinate: CLLocationCoordinate2D(latitude: 37.5020, longitude: 127.0020),
             timestamp: baseDate.addingTimeInterval(2.0),
+            latitude: 37.5020,
+            longitude: 127.0020,
             speed: 40.0
         )
 
@@ -305,7 +307,7 @@ class GPSSensorIntegrationTests: XCTestCase {
             XCTAssertEqual(location.coordinate.longitude, 127.0010, accuracy: 0.0001,
                            "경도가 선형 보간되어야 함")
             // 속도: (30.0 + 40.0) / 2 = 35.0
-            XCTAssertEqual(location.speed, 35.0, accuracy: 0.1,
+            XCTAssertEqual(location.speed ?? 0.0, 35.0, accuracy: 0.1,
                            "속도가 선형 보간되어야 함")
         }
     }
@@ -475,9 +477,9 @@ class GPSSensorIntegrationTests: XCTestCase {
         var gpsPoints: [GPSPoint] = []
         for i in 0..<10000 {
             let point = GPSPoint(
-                coordinate: CLLocationCoordinate2D(latitude: 37.5 + Double(i) * 0.0001,
-                                                   longitude: 127.0 + Double(i) * 0.0001),
                 timestamp: baseDate.addingTimeInterval(Double(i)),
+                latitude: 37.5 + Double(i) * 0.0001,
+                longitude: 127.0 + Double(i) * 0.0001,
                 speed: 30.0
             )
             gpsPoints.append(point)
@@ -678,11 +680,9 @@ class GPSSensorIntegrationTests: XCTestCase {
         var gpsPoints: [GPSPoint] = []
         for i in 0..<10 {
             let point = GPSPoint(
-                coordinate: CLLocationCoordinate2D(
-                    latitude: 37.5665 + Double(i) * 0.001,
-                    longitude: 126.9780 + Double(i) * 0.001
-                ),
                 timestamp: baseDate.addingTimeInterval(Double(i)),
+                latitude: 37.5665 + Double(i) * 0.001,
+                longitude: 126.9780 + Double(i) * 0.001,
                 speed: 30.0 + Double(i) * 2.0
             )
             gpsPoints.append(point)
@@ -707,16 +707,18 @@ class GPSSensorIntegrationTests: XCTestCase {
         let channelInfo = ChannelInfo(
             position: .front,
             filePath: "/tmp/test_front.mp4",
-            displayName: "Front Camera",
-            isEnabled: true
+            width: 1920,
+            height: 1080,
+            frameRate: 30.0
         )
 
         let videoFile = VideoFile(
-            name: "test_video",
-            channels: [channelInfo],
+            timestamp: baseDate,
+            eventType: .normal,
             duration: 10.0,
+            channels: [channelInfo],
             metadata: metadata,
-            timestamp: baseDate
+            basePath: "/tmp/test_video"
         )
 
         return videoFile
@@ -734,11 +736,9 @@ class GPSSensorIntegrationTests: XCTestCase {
 
         for i in 0..<count {
             let point = GPSPoint(
-                coordinate: CLLocationCoordinate2D(
-                    latitude: 37.5665 + Double(i) * 0.001,
-                    longitude: 126.9780 + Double(i) * 0.001
-                ),
                 timestamp: baseDate.addingTimeInterval(Double(i)),
+                latitude: 37.5665 + Double(i) * 0.001,
+                longitude: 126.9780 + Double(i) * 0.001,
                 speed: 30.0 + Double(i) * 2.0
             )
             points.append(point)

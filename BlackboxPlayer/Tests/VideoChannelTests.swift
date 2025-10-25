@@ -397,7 +397,9 @@ final class VideoChannelTests: XCTestCase {
         testChannelInfo = ChannelInfo(
             position: .front,
             filePath: "/path/to/test/video.mp4",
-            displayName: "Test Channel"
+            width: 1920,
+            height: 1080,
+            frameRate: 30.0
         )
     }
 
@@ -2785,7 +2787,9 @@ final class VideoChannelIntegrationTests: XCTestCase {
         testChannelInfo = ChannelInfo(
             position: .front,
             filePath: videoPath,
-            displayName: "Test Channel"
+            width: 1920,
+            height: 1080,
+            frameRate: 30.0
         )
 
         /**

@@ -2643,21 +2643,21 @@ final class SyncControllerIntegrationTests: XCTestCase {
         // 🎬 VideoFile 인스턴스 생성
         testVideoFile = VideoFile(
             id: UUID(),                    // 고유 ID
-            name: "Test Video",            // 비디오 이름
-            filePath: videoPath,           // 실제 파일 경로
             timestamp: Date(),             // 생성 시간
-            duration: 10.0,                // 10초 길이
             eventType: .normal,            // 일반 주행
-            size: 1024 * 1024,             // 1MB
+            duration: 10.0,                // 10초 길이
             channels: [
                 // 전방 채널 1개
                 ChannelInfo(
                     position: .front,      // 전방 카메라
-                    filePath: videoPath,   // 같은 파일 사용
-                    displayName: "Front"   // UI 표시명
+                    filePath: videoPath,   // 실제 파일 경로
+                    width: 1920,           // Full HD 너비
+                    height: 1080,          // Full HD 높이
+                    frameRate: 30.0        // 30 fps
                 )
             ],
-            metadata: VideoMetadata.empty  // 빈 메타데이터
+            metadata: VideoMetadata.empty, // 빈 메타데이터
+            basePath: videoPath            // 기본 경로
         )
 
         // 🔧 SyncController 생성

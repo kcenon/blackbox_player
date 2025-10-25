@@ -10,6 +10,7 @@
 
 import Foundation
 import CoreLocation
+import CoreVideo
 import Combine
 @testable import BlackboxPlayer
 
@@ -87,8 +88,9 @@ class MockGPSService: GPSService {
                 let speed = (p1.speed ?? 0) + ((p2.speed ?? 0) - (p1.speed ?? 0)) * ratio
 
                 return GPSPoint(
-                    coordinate: CLLocationCoordinate2D(latitude: lat, longitude: lon),
                     timestamp: targetTime,
+                    latitude: lat,
+                    longitude: lon,
                     speed: speed
                 )
             }
@@ -216,24 +218,27 @@ class MockVideoDecoder {
 
         guard time >= 0 && time <= duration else { return nil }
 
-        // Mock CVPixelBuffer 생성 (실제로는 더미)
-        var pixelBuffer: CVPixelBuffer?
-        let status = CVPixelBufferCreate(
-            kCFAllocatorDefault,
-            1920, 1080,
-            kCVPixelFormatType_420YpCbCr8BiPlanarFullRange,
-            nil,
-            &pixelBuffer
-        )
+        // Mock 프레임 데이터 생성
+        let width = 1920
+        let height = 1080
+        let bytesPerPixel = 4 // RGBA
+        let lineSize = width * bytesPerPixel
+        let dataSize = lineSize * height
 
-        guard status == kCVReturnSuccess, let buffer = pixelBuffer else {
-            return nil
-        }
+        // 더미 픽셀 데이터 (검은색)
+        let dummyData = Data(count: dataSize)
+
+        let frameNumber = Int(time * fps)
 
         return VideoFrame(
-            pixelBuffer: buffer,
             timestamp: time,
-            duration: 1.0 / fps
+            width: width,
+            height: height,
+            pixelFormat: .rgba,
+            data: dummyData,
+            lineSize: lineSize,
+            frameNumber: frameNumber,
+            isKeyFrame: frameNumber % 30 == 0 // 매 30프레임마다 키프레임
         )
     }
 
@@ -291,10 +296,9 @@ class MockSyncController {
         loadCallCount += 1
         videoFile = file
 
-        if let metadata = file.metadata {
-            gpsService.loadGPSData(from: metadata, startTime: file.timestamp)
-            gsensorService.loadAccelerationData(from: metadata, startTime: file.timestamp)
-        }
+        let metadata = file.metadata
+        gpsService.loadGPSData(from: metadata, startTime: file.timestamp)
+        gsensorService.loadAccelerationData(from: metadata, startTime: file.timestamp)
     }
 
     func play() {

@@ -2554,8 +2554,7 @@ final class VideoDecoderIntegrationTests: XCTestCase {
          * 테스트 로그에서 확인할 수 있습니다.
          */
         /**
-         *
-         * @section ______ 💡 유용한 정보
+         * 💡 유용한 정보
          * - 테스트 비디오의 길이 파악
          * - 다른 테스트에서 참고 가능
          */

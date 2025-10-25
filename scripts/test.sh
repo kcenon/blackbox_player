@@ -9,6 +9,7 @@
 
 set -e  # Exit on error
 set -u  # Exit on undefined variable
+set -o pipefail  # Exit on pipe failure
 
 # Colors for output
 RED='\033[0;31m'

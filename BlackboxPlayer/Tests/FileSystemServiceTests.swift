@@ -653,7 +653,7 @@ final class FileSystemServiceTests: XCTestCase {
    -enableCodeCoverage YES
 
  커버리지 리포트 확인:
- open DerivedData/BlackboxPlayer/Logs/Test/*.xcresult
+ open DerivedData/BlackboxPlayer/Logs/Test/<results>.xcresult
 
  【CI/CD 통합】
 
